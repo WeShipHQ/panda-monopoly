@@ -1,15 +1,16 @@
 /* Monopoly-specific styles */
 .monopoly-board {
-  font-family: var(--font-oswald), 'Oswald', sans-serif;
+  font-family: var(--font-oswald), "Oswald", sans-serif;
   font-weight: 400;
   font-size: 1.5vh;
   color: #080808;
   text-transform: uppercase;
+  background-color: #f5d6b9; /* Fallback color if image fails to load */
 }
 
 /* Fix for head element in Next.js */
 .next-head-font-fix {
-  font-family: var(--font-oswald), 'Oswald', sans-serif !important;
+  font-family: var(--font-oswald), "Oswald", sans-serif !important;
 }
 
 /* Vertical space styles */

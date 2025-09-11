@@ -9,6 +9,34 @@ export interface PropertyData {
   blueIcon?: boolean;
 }
 
+// Board mapping matching current UI order (24 spaces)
+export const boardSpaces = [
+  { name: "GO", type: "corner" }, // 0
+  { name: "Baltic Ave", type: "property" }, // 1
+  { name: "Oriental Ave", type: "property" }, // 2
+  { name: "Chance", type: "chance" }, // 3
+  { name: "Vermont Ave", type: "property" }, // 4
+  { name: "Connecticut Ave", type: "property" }, // 5
+  { name: "JAIL", type: "corner" }, // 6
+  { name: "States Ave", type: "property" }, // 7
+  { name: "Virginia Ave", type: "property" }, // 8
+  { name: "Community Chest", type: "community-chest" }, // 9
+  { name: "Tennessee Ave", type: "property" }, // 10
+  { name: "New York Ave", type: "property" }, // 11
+  { name: "Free Parking", type: "corner" }, // 12
+  { name: "Kentucky Ave", type: "property" }, // 13
+  { name: "Indiana Ave", type: "property" }, // 14
+  { name: "Chance", type: "chance" }, // 15
+  { name: "Atlantic Ave", type: "property" }, // 16
+  { name: "Marvin Gardens", type: "property" }, // 17
+  { name: "Go To Jail", type: "corner" }, // 18
+  { name: "Pacific Ave", type: "property" }, // 19
+  { name: "N. Carolina Ave", type: "property" }, // 20
+  { name: "Community Chest", type: "community-chest" }, // 21
+  { name: "Park Place", type: "property" }, // 22
+  { name: "Boardwalk", type: "property" }, // 23
+];
+
 export const monopolyData = {
   bottomRow: [
     {
