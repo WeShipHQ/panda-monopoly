@@ -92,12 +92,13 @@ export const Dice: React.FC<DiceProps> = ({ onRoll, disabled = false }) => {
             <button
                 onClick={rollDice}
                 disabled={disabled || isRolling}
-                className={`px-6 py-3 rounded-lg font-bold text-white transition-all ${disabled || isRolling
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-green-600 hover:bg-green-700 active:scale-95'
+                className={`z-0 group relative inline-flex items-center justify-center box-border appearance-none select-none whitespace-nowrap subpixel-antialiased overflow-hidden tap-highlight-transparent transform-gpu outline-none px-4 min-w-20 gap-2 transition-transform-colors-opacity motion-reduce:transition-none w-full text-center h-12 rounded-full text-white font-medium border-b-2 transition-transform text-base font-cherry-bomb shadow-lg ${disabled || isRolling
+                    ? 'bg-gray-400 border-gray-500 cursor-not-allowed opacity-50'
+                    : 'bg-[#4BD467] border-[#27AC4B] hover:opacity-85 active:scale-[98%] hover:shadow-xl'
                     }`}
+                style={{ fontFamily: 'var(--font-cherry-bomb-one)' }}
             >
-                {isRolling ? 'Rolling...' : 'Roll Dice'}
+                {isRolling ? '🎲 Rolling...' : '🎲 Roll Dice'}
             </button>
 
             <div className="text-center">

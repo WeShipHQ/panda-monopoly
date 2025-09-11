@@ -6,6 +6,7 @@ export interface Player {
     id: number;
     name: string;
     color: string;
+    avatar: string; // Path to player avatar image
     position: number;
     money: number;
     properties: number[];
@@ -158,16 +159,22 @@ export const PlayerToken: React.FC<PlayerTokenProps> = ({
 
     return (
         <div
-            className="absolute w-6 h-6 rounded-full border-2 border-white shadow-lg transition-all duration-300 ease-in-out flex items-center justify-center text-white text-xs font-bold"
+            className="absolute w-8 h-8 transition-all duration-300 ease-in-out flex items-center justify-center"
             style={{
-                backgroundColor: player.color,
                 left: tokenPos.left,
                 top: tokenPos.top,
                 transform: `translate(-50%, -50%) rotate(${-boardRotation}deg)`,
                 zIndex: 1000 + player.id, // High z-index to ensure visibility above board elements
             }}
         >
-            {player.id}
+            <img
+                src={player.avatar}
+                alt={`${player.name} token`}
+                className="w-full h-full object-contain drop-shadow-lg"
+                style={{
+                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+                }}
+            />
         </div>
     );
 };

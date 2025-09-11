@@ -40,16 +40,15 @@ export const PropertySpace: React.FC<SpaceProps> = ({
   const nameClass = longName
     ? "px-0"
     : threeLines
-    ? "px-[15px] relative top-[5px]"
-    : "px-[15px]";
+      ? "px-[15px] relative top-[5px]"
+      : "px-[15px]";
 
   const isVertical = rotate === "left" || rotate === "right";
 
   return (
     <div
-      className={`bg-[#fafaf8] text-center ${
-        isVertical ? "vertical-space" : ""
-      }`}
+      className={`bg-[#fafaf8] text-center ${isVertical ? "vertical-space" : ""
+        }`}
     >
       <div
         className="space-container"
@@ -59,11 +58,11 @@ export const PropertySpace: React.FC<SpaceProps> = ({
         <div className={`${nameClass} flex-1 flex items-center justify-center text-center px-2`}>
           {threeLines && name?.includes("-")
             ? name.split("-").map((part, i) => (
-                <React.Fragment key={i}>
-                  {part}
-                  {i < name.split("-").length - 1 && <br />}
-                </React.Fragment>
-              ))
+              <React.Fragment key={i}>
+                {part}
+                {i < name.split("-").length - 1 && <br />}
+              </React.Fragment>
+            ))
             : name}
         </div>
         <div className="text-center pb-1 font-normal">Price ${price}</div>
@@ -86,9 +85,8 @@ export const RailroadSpace: React.FC<SpaceProps> = ({
 
   return (
     <div
-      className={`bg-[#fafaf8] text-center ${
-        isVertical ? "vertical-space" : ""
-      }`}
+      className={`bg-[#fafaf8] text-center ${isVertical ? "vertical-space" : ""
+        }`}
     >
       <div
         className="space-container"
@@ -127,9 +125,8 @@ export const UtilitySpace: React.FC<SpaceProps> = ({
 
   return (
     <div
-      className={`bg-[#fafaf8] text-center ${
-        isVertical ? "vertical-space" : ""
-      }`}
+      className={`bg-[#fafaf8] text-center ${isVertical ? "vertical-space" : ""
+        }`}
     >
       <div
         className="space-container"
@@ -155,19 +152,19 @@ export const ChanceSpace: React.FC<SpaceProps> = ({
 
   return (
     <div
-      className={`bg-[#fafaf8] text-center ${
-        isVertical ? "vertical-space" : ""
-      }`}
+      className={`bg-[#fafaf8] text-center ${isVertical ? "vertical-space" : ""
+        }`}
     >
       <div
         className="space-container justify-center"
         style={containerStyle}
       >
-        <div className="px-2 text-center">Chance</div>
         <div className="flex-1 flex items-center justify-center">
-          <i className={`fa fa-question icon-large ${
-            blueIcon ? "text-[#5a6dba]" : "text-[#f50c2b]"
-          }`}></i>
+          <img
+            src="/images/CHANCE.png"
+            alt="Chance"
+            className="w-30 h-30 object-contain"
+          />
         </div>
       </div>
     </div>
@@ -183,20 +180,19 @@ export const CommunityChestSpace: React.FC<SpaceProps> = ({ rotate }) => {
 
   return (
     <div
-      className={`bg-[#fafaf8] text-center ${
-        isVertical ? "vertical-space" : ""
-      }`}
+      className={`bg-[#fafaf8] text-center ${isVertical ? "vertical-space" : ""
+        }`}
     >
       <div
-        className="space-container justify-around"
+        className="space-container justify-center"
         style={containerStyle}
       >
-        <div className="px-2 text-center">Community Chest</div>
         <div className="flex-1 flex items-center justify-center">
-          <i className="fa fa-cube text-[#d2eaf5] icon-medium"></i>
-        </div>
-        <div className="px-2 text-center text-xs">
-          Follow instructions on top card
+          <img
+            src="/images/CHEST.png"
+            alt="Community Chest"
+            className="w-30 h-30 object-contain"
+          />
         </div>
       </div>
     </div>
@@ -218,20 +214,17 @@ export const TaxSpace: React.FC<SpaceProps> = ({
 
   return (
     <div
-      className={`bg-[#fafaf8] text-center ${
-        isVertical ? "vertical-space" : ""
-      }`}
+      className={`bg-[#fafaf8] text-center ${isVertical ? "vertical-space" : ""
+        }`}
     >
       <div
-        className={`space-container ${
-          type === "income" ? "justify-center items-center" : ""
-        }`}
+        className={`space-container ${type === "income" ? "justify-center items-center" : ""
+          }`}
         style={containerStyle}
       >
         <div
-          className={`px-2 text-sm ${
-            type === "income" ? "pb-1" : "pt-2"
-          } text-center`}
+          className={`px-2 text-sm ${type === "income" ? "pb-1" : "pt-2"
+            } text-center`}
         >
           {name}
         </div>

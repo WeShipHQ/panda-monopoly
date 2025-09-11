@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import { Player } from "./player-tokens";
-import { boardSpaces } from "@/data/monopoly-data";
+import { boardSpaces, CardData, chanceCards, communityChestCards } from "@/data/monopoly-data";
 
 interface PropertyOwnership {
     [propertyIndex: number]: number; // propertyIndex -> playerId
@@ -32,6 +32,10 @@ interface GameState {
         type: 'buy-property' | 'pay-rent' | 'chance' | 'community-chest' | 'tax' | 'go-to-jail' | 'jail-options';
         data?: any;
     };
+    cardDrawModal?: {
+        isOpen: boolean;
+        cardType: 'chance' | 'community-chest';
+    };
 }
 
 interface GameManagerProps {
@@ -42,10 +46,10 @@ interface GameManagerProps {
 export const useGameManager = () => {
     const [gameState, setGameState] = useState<GameState>({
         players: [
-            { id: 1, name: "Player 1", color: "#ff4444", position: 0, money: 1500, properties: [], inJail: false, jailTurns: 0 },
-            { id: 2, name: "Player 2", color: "#4444ff", position: 0, money: 1500, properties: [], inJail: false, jailTurns: 0 },
-            { id: 3, name: "Player 3", color: "#44ff44", position: 0, money: 1500, properties: [], inJail: false, jailTurns: 0 },
-            { id: 4, name: "Player 4", color: "#ffff44", position: 0, money: 1500, properties: [], inJail: false, jailTurns: 0 },
+            { id: 1, name: "Blue Baron", color: "#4444ff", avatar: "/images/blue-figure.png", position: 0, money: 1500, properties: [], inJail: false, jailTurns: 0 },
+            { id: 2, name: "Green Giant", color: "#44ff44", avatar: "/images/green-figure.png", position: 0, money: 1500, properties: [], inJail: false, jailTurns: 0 },
+            { id: 3, name: "Red Tycoon", color: "#ff4444", avatar: "/images/red-figure.png", position: 0, money: 1500, properties: [], inJail: false, jailTurns: 0 },
+            { id: 4, name: "Yellow Mogul", color: "#ffdd44", avatar: "/images/yellow-figure.png", position: 0, money: 1500, properties: [], inJail: false, jailTurns: 0 },
         ],
         currentPlayerIndex: 0,
         gamePhase: 'waiting',
@@ -285,12 +289,12 @@ export const useGameManager = () => {
                     break;
 
                 case 'chance':
-                    action = { type: 'chance' as const, data: { cardType: 'chance' } };
+                    newState.cardDrawModal = { isOpen: true, cardType: 'chance' };
                     newState.gamePhase = 'special-action';
                     break;
 
                 case 'community-chest':
-                    action = { type: 'community-chest' as const, data: { cardType: 'community-chest' } };
+                    newState.cardDrawModal = { isOpen: true, cardType: 'community-chest' };
                     newState.gamePhase = 'special-action';
                     break;
 
@@ -637,6 +641,153 @@ export const useGameManager = () => {
         }, 500);
     }, [gameState.players, gameState.currentPlayerIndex, nextTurn, drawnCards, chanceCards, communityChestCards]);
 
+    // Handle card drawn from CardDrawModal
+    const handleCardDrawn = useCallback((card: CardData) => {
+        const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+
+        setGameState(prevState => {
+            let newState = { ...prevState };
+            let logMessage = `${currentPlayer.name}: ${card.title} - ${card.description}`;
+
+            switch (card.action) {
+                case 'collect-money':
+                    newState.players = prevState.players.map(player =>
+                        player.id === currentPlayer.id
+                            ? { ...player, money: player.money + card.value }
+                            : player
+                    );
+                    break;
+
+                case 'pay-money':
+                    newState.players = prevState.players.map(player =>
+                        player.id === currentPlayer.id
+                            ? { ...player, money: Math.max(0, player.money - card.value) }
+                            : player
+                    );
+                    break;
+
+                case 'advance-to-go':
+                    newState.players = prevState.players.map(player =>
+                        player.id === currentPlayer.id
+                            ? { ...player, position: 0, money: player.money + card.value }
+                            : player
+                    );
+                    break;
+
+                case 'advance-to-boardwalk':
+                    const boardwalkPosition = 23; // Boardwalk position
+                    const passedGo = boardwalkPosition < currentPlayer.position;
+                    newState.players = prevState.players.map(player =>
+                        player.id === currentPlayer.id
+                            ? {
+                                ...player,
+                                position: boardwalkPosition,
+                                money: player.money + (passedGo ? 200 : 0)
+                            }
+                            : player
+                    );
+                    if (passedGo) {
+                        logMessage += ' (Collected $200 for passing GO)';
+                    }
+                    break;
+
+                case 'go-to-jail':
+                    newState.players = prevState.players.map(player =>
+                        player.id === currentPlayer.id
+                            ? { ...player, position: 7, inJail: true, jailTurns: 0 }
+                            : player
+                    );
+                    break;
+
+                case 'get-out-of-jail':
+                    // Add "Get Out of Jail Free" card to player's inventory
+                    setDrawnCards(prev => ({
+                        ...prev,
+                        playerJailCards: {
+                            ...prev.playerJailCards,
+                            [currentPlayer.id]: (prev.playerJailCards[currentPlayer.id] || 0) + 1
+                        }
+                    }));
+                    break;
+
+                case 'collect-from-players':
+                    const totalCollected = (gameState.players.length - 1) * card.value;
+                    newState.players = prevState.players.map(player => {
+                        if (player.id === currentPlayer.id) {
+                            return { ...player, money: player.money + totalCollected };
+                        } else {
+                            return { ...player, money: Math.max(0, player.money - card.value) };
+                        }
+                    });
+                    break;
+
+                case 'pay-each-player':
+                    const totalPaid = (gameState.players.length - 1) * card.value;
+                    newState.players = prevState.players.map(player => {
+                        if (player.id === currentPlayer.id) {
+                            return { ...player, money: Math.max(0, player.money - totalPaid) };
+                        } else {
+                            return { ...player, money: player.money + card.value };
+                        }
+                    });
+                    break;
+
+                case 'street-repairs':
+                    let repairCost = 0;
+                    currentPlayer.properties.forEach(propIndex => {
+                        const buildings = gameState.propertyBuildings[propIndex];
+                        if (buildings) {
+                            repairCost += buildings.houses * 40;
+                            if (buildings.hasHotel) {
+                                repairCost += 115;
+                            }
+                        }
+                    });
+
+                    newState.players = prevState.players.map(player =>
+                        player.id === currentPlayer.id
+                            ? { ...player, money: Math.max(0, player.money - repairCost) }
+                            : player
+                    );
+                    logMessage += ` (Paid $${repairCost} for repairs)`;
+                    break;
+
+                default:
+                    break;
+            }
+
+            // Add to game log
+            newState.gameLog = [...prevState.gameLog, logMessage];
+
+            // Set current message
+            newState.currentMessage = {
+                text: card.description,
+                type: card.action.includes('collect') || card.action.includes('advance-to-go') ? 'success' : 'info',
+                duration: 3000
+            };
+
+            // Keep the card modal open to show the drawn card
+            // Modal will be closed when user clicks "Apply Card Effect"
+
+            return newState;
+        });
+
+        // Call nextTurn after handling the card
+        setTimeout(() => {
+            nextTurn();
+        }, 1000);
+    }, [gameState.players, gameState.currentPlayerIndex, gameState.propertyBuildings, nextTurn, setDrawnCards]);
+
+    // Close card modal and advance turn
+    const closeCardModal = useCallback(() => {
+        setGameState(prevState => ({
+            ...prevState,
+            cardDrawModal: { isOpen: false, cardType: 'chance' },
+            gamePhase: 'waiting'
+        }));
+        nextTurn();
+    }, [nextTurn]);
+
     // Enhanced Jail mechanics
     const payJailFine = useCallback(() => {
         const currentPlayer = gameState.players[gameState.currentPlayerIndex];
@@ -911,6 +1062,8 @@ export const useGameManager = () => {
         buyProperty,
         skipProperty,
         handleSpecialCard,
+        handleCardDrawn,
+        closeCardModal,
         payJailFine,
         useJailFreeCard,
         tryJailDoubles,

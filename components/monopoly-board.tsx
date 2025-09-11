@@ -11,6 +11,7 @@ import { PlayerTokensContainer } from "@/components/player-tokens";
 import { Dice } from "@/components/dice";
 import { useGameManager } from "@/components/game-manager";
 import { PropertyDialog, SpecialCardDialog, JailDialog } from "@/components/property-dialog";
+import { CardDrawModal } from "@/components/card-draw-modal";
 import { PropertyIndicatorsContainer } from "@/components/property-indicators";
 import { MessageDisplay } from "@/components/message-display";
 
@@ -50,6 +51,8 @@ const MonopolyBoard = () => {
     buyProperty,
     skipProperty,
     handleSpecialCard,
+    handleCardDrawn,
+    closeCardModal,
     payJailFine,
     useJailFreeCard,
     drawnCards
@@ -80,11 +83,12 @@ const MonopolyBoard = () => {
         <div className="mb-6 p-4 bg-white rounded-lg shadow">
           <h2 className="text-xl font-bold mb-2">Current Turn</h2>
           <div className="flex items-center gap-3">
-            <div
-              className="w-8 h-8 rounded-full border-2 border-white shadow flex items-center justify-center text-white font-bold"
-              style={{ backgroundColor: currentPlayer.color }}
-            >
-              {currentPlayer.id}
+            <div className="w-8 h-8 flex items-center justify-center">
+              <img
+                src={currentPlayer.avatar}
+                alt={`${currentPlayer.name} avatar`}
+                className="w-full h-full object-contain drop-shadow-md"
+              />
             </div>
             <div>
               <div className="font-semibold">{currentPlayer.name}</div>
@@ -114,11 +118,12 @@ const MonopolyBoard = () => {
                 className={`flex items-center gap-3 p-2 rounded ${index === gameState.currentPlayerIndex ? 'bg-blue-100' : 'bg-gray-50'
                   }`}
               >
-                <div
-                  className="w-6 h-6 rounded-full border-2 border-white shadow flex items-center justify-center text-white text-xs font-bold"
-                  style={{ backgroundColor: player.color }}
-                >
-                  {player.id}
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <img
+                    src={player.avatar}
+                    alt={`${player.name} avatar`}
+                    className="w-full h-full object-contain drop-shadow-sm"
+                  />
                 </div>
                 <div className="flex-1">
                   <div className="font-medium">{player.name}</div>
@@ -220,21 +225,33 @@ const MonopolyBoard = () => {
               </div>
             </div>
 
-            <div className="col-start-1 row-start-7 bg-[#fafaf8] text-center">
-              <div className="corner-space">
-                <div className="text-lg font-bold">JAIL</div>
+            <div className="col-start-1 row-start-7 bg-[#fafaf8] text-center flex items-center justify-center">
+              <div className="corner-space flex items-center justify-center">
+                <img
+                  src="/images/JAIL.png"
+                  alt="Jail"
+                  className="w-35 h-35 object-contain"
+                />
               </div>
             </div>
 
-            <div className="col-start-1 row-start-1 bg-[#fafaf8] text-center">
-              <div className="corner-space">
-                <div className="text-base font-semibold">Free Parking</div>
+            <div className="col-start-1 row-start-1 bg-[#fafaf8] text-center flex items-center justify-center">
+              <div className="corner-space flex items-center justify-center">
+                <img
+                  src="/images/FREEPARKING.png"
+                  alt="Free Parking"
+                  className="w-20 h-20 object-contain"
+                />
               </div>
             </div>
 
-            <div className="col-start-7 row-start-1 bg-[#fafaf8] text-center">
-              <div className="corner-space">
-                <div className="text-base font-semibold">Go To Jail</div>
+            <div className="col-start-7 row-start-1 bg-[#fafaf8] text-center flex items-center justify-center">
+              <div className="corner-space flex items-center justify-center">
+                <img
+                  src="/images/GOTOJAIL.png"
+                  alt="Go To Jail"
+                  className="w-20 h-20 object-contain"
+                />
               </div>
             </div>
 
@@ -284,21 +301,12 @@ const MonopolyBoard = () => {
         onClose={() => setCurrentDialogVisible(false)}
       />
 
-      {/* Special Card Dialog */}
-      <SpecialCardDialog
-        isOpen={currentDialogVisible && gameState.gamePhase === 'special-action' && (
-          gameState.currentAction?.type === 'chance' ||
-          gameState.currentAction?.type === 'community-chest'
-        )}
-        cardType={gameState.currentAction?.type === 'chance' ? 'chance' : 'community-chest'}
-        message="Click Continue to draw a card..."
-        onContinue={() => {
-          const cardType = gameState.currentAction?.data?.cardType;
-          if (cardType) {
-            handleSpecialCard(cardType);
-          }
-        }}
-        onClose={() => setCurrentDialogVisible(false)}
+      {/* Card Draw Modal */}
+      <CardDrawModal
+        isOpen={gameState.cardDrawModal?.isOpen || false}
+        cardType={gameState.cardDrawModal?.cardType || 'chance'}
+        onCardDrawn={handleCardDrawn}
+        onClose={closeCardModal}
       />
 
       {/* Jail Dialog */}
