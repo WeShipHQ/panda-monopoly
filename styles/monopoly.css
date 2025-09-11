@@ -1,0 +1,83 @@
+/* Monopoly-specific styles */
+.monopoly-board {
+  font-family: var(--font-oswald), 'Oswald', sans-serif;
+  font-weight: 400;
+  font-size: 1.5vh;
+  color: #080808;
+  text-transform: uppercase;
+}
+
+/* Fix for head element in Next.js */
+.next-head-font-fix {
+  font-family: var(--font-oswald), 'Oswald', sans-serif !important;
+}
+
+/* Vertical space styles */
+.vertical-space {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* Board spaces responsive sizing */
+.monopoly-board .space-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  font-size: 1.2vh;
+}
+
+.monopoly-board .corner-space {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.4vh;
+}
+
+/* Property color bars */
+.monopoly-board .color-bar {
+  height: 20%;
+  width: 100%;
+}
+
+/* Icon sizing */
+.monopoly-board .icon-large {
+  font-size: 6vh;
+}
+
+.monopoly-board .icon-medium {
+  font-size: 4vh;
+}
+
+.monopoly-board .icon-small {
+  font-size: 3vh;
+}
+
+/* Center title */
+.monopoly-board .center-title {
+  font-size: 8vh;
+  font-weight: 400;
+  letter-spacing: 0.6vh;
+}
+
+/* Deck labels */
+.monopoly-board .deck-label {
+  font-size: 1vh;
+  font-weight: 500;
+  letter-spacing: 0.3vh;
+  padding-bottom: 1vh;
+}
+
+.monopoly-board .deck-box {
+  border: 0.2vh dashed #080808;
+  width: 12vh;
+  height: 9vh;
+}
