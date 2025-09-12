@@ -48,9 +48,7 @@ interface MonopolyBoardProps {
   boardRotation: number;
   onRotateClockwise: () => void;
   onRotateCounterClockwise: () => void;
-  gameManager: ReturnType<
-    typeof import("@/components/game-manager").useGameManager
-  >;
+  gameManager: ReturnType<typeof import("@/hooks").useGameManager>;
 }
 
 const MonopolyBoard: React.FC<MonopolyBoardProps> = ({

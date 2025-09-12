@@ -8,9 +8,7 @@ interface RightPanelProps {
   boardRotation: number;
   onRotateClockwise: () => void;
   onRotateCounterClockwise: () => void;
-  gameManager: ReturnType<
-    typeof import("@/components/game-manager").useGameManager
-  >;
+  gameManager: ReturnType<typeof import("@/hooks").useGameManager>;
 }
 
 export const RightPanel: React.FC<RightPanelProps> = ({

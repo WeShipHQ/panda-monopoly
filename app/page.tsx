@@ -4,7 +4,7 @@ import { useState } from "react";
 import MonopolyBoard from "@/components/monopoly-board";
 import { RightPanel } from "@/components/right-panel";
 import { LeftSidebar } from "@/components/left-sidebar";
-import { useGameManager } from "@/components/game-manager";
+import { useGameManager } from "@/hooks";
 
 export default function Home() {
   const [boardRotation, setBoardRotation] = useState(0);

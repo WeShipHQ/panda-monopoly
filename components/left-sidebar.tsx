@@ -2,9 +2,7 @@
 
 import React from "react";
 interface LeftSidebarProps {
-  gameManager: ReturnType<
-    typeof import("@/components/game-manager").useGameManager
-  >;
+  gameManager: ReturnType<typeof import("@/hooks").useGameManager>;
 }
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({ gameManager }) => {
