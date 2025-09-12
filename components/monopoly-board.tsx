@@ -9,8 +9,11 @@ import {
 import { monopolyData, PropertyData, boardSpaces } from "@/data/monopoly-data";
 import { PlayerTokensContainer } from "@/components/player-tokens";
 import { Dice } from "@/components/dice";
-import { useGameManager } from "@/components/game-manager";
-import { PropertyDialog, SpecialCardDialog, JailDialog } from "@/components/property-dialog";
+import {
+  PropertyDialog,
+  SpecialCardDialog,
+  JailDialog,
+} from "@/components/property-dialog";
 import { CardDrawModal } from "@/components/card-draw-modal";
 import { PropertyIndicatorsContainer } from "@/components/property-indicators";
 import { MessageDisplay } from "@/components/message-display";
@@ -41,8 +44,21 @@ const renderSpace = (space: PropertyData, index: number) => {
   return null;
 };
 
-const MonopolyBoard = () => {
-  const [boardRotation, setBoardRotation] = useState(0);
+interface MonopolyBoardProps {
+  boardRotation: number;
+  onRotateClockwise: () => void;
+  onRotateCounterClockwise: () => void;
+  gameManager: ReturnType<
+    typeof import("@/components/game-manager").useGameManager
+  >;
+}
+
+const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
+  boardRotation,
+  onRotateClockwise,
+  onRotateCounterClockwise,
+  gameManager,
+}) => {
   const [currentDialogVisible, setCurrentDialogVisible] = useState(true);
   const {
     gameState,
@@ -55,8 +71,8 @@ const MonopolyBoard = () => {
     closeCardModal,
     payJailFine,
     useJailFreeCard,
-    drawnCards
-  } = useGameManager();
+    drawnCards,
+  } = gameManager;
 
   // Reset dialog visibility when action changes
   React.useEffect(() => {
@@ -65,130 +81,20 @@ const MonopolyBoard = () => {
     }
   }, [gameState.currentAction]);
 
-  const rotateBoardClockwise = () => {
-    setBoardRotation(prev => (prev + 90) % 360);
-  };
-
-  const rotateBoardCounterClockwise = () => {
-    setBoardRotation(prev => (prev - 90 + 360) % 360);
-  };
-
   return (
-    <div className="flex h-screen w-screen monopoly-board overflow-hidden" style={{ backgroundImage: 'url("/images/monopoly-bg.jpg")', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+    <div
+      className="h-screen w-full monopoly-board overflow-hidden"
+      style={{
+        backgroundImage: 'url("/images/monopoly-bg.jpg")',
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
       {/* Message Display */}
       <MessageDisplay message={gameState.currentMessage} />
-      {/* Left Panel - Game Controls */}
-      <div className="w-80 bg-gray-100 p-4 flex flex-col">
-        {/* Current Player Info */}
-        <div className="mb-6 p-4 bg-white rounded-lg shadow">
-          <h2 className="text-xl font-bold mb-2">Current Turn</h2>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 flex items-center justify-center">
-              <img
-                src={currentPlayer.avatar}
-                alt={`${currentPlayer.name} avatar`}
-                className="w-full h-full object-contain drop-shadow-md"
-              />
-            </div>
-            <div>
-              <div className="font-semibold">{currentPlayer.name}</div>
-              <div className="text-sm text-gray-600">Money: ${currentPlayer.money}</div>
-              <div className="text-sm text-gray-600">Position: {currentPlayer.position}</div>
-              <div className="text-xs text-blue-600">{boardSpaces[currentPlayer.position]?.name}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Dice */}
-        <div className="mb-6 p-4 bg-white rounded-lg shadow">
-          <h3 className="text-lg font-bold mb-4">Roll Dice</h3>
-          <Dice
-            onRoll={handleDiceRoll}
-            disabled={gameState.gamePhase !== 'waiting'}
-          />
-        </div>
-
-        {/* Players List */}
-        <div className="mb-6 p-4 bg-white rounded-lg shadow">
-          <h3 className="text-lg font-bold mb-4">Players List</h3>
-          <div className="space-y-3">
-            {gameState.players.map((player, index) => (
-              <div
-                key={player.id}
-                className={`flex items-center gap-3 p-2 rounded ${index === gameState.currentPlayerIndex ? 'bg-blue-100' : 'bg-gray-50'
-                  }`}
-              >
-                <div className="w-6 h-6 flex items-center justify-center">
-                  <img
-                    src={player.avatar}
-                    alt={`${player.name} avatar`}
-                    className="w-full h-full object-contain drop-shadow-sm"
-                  />
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium">{player.name}</div>
-                  <div className="text-xs text-gray-600">${player.money}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Game Log */}
-        <div className="mb-6 p-4 bg-white rounded-lg shadow flex-1">
-          <h3 className="text-lg font-bold mb-4">Game Log</h3>
-          <div className="space-y-1 max-h-40 overflow-y-auto">
-            {gameState.gameLog.slice(-10).map((log, index) => (
-              <div key={index} className="text-xs text-gray-600 p-1 bg-gray-50 rounded">
-                {log}
-              </div>
-            ))}
-          </div>
-          <div className="mt-2 text-xs text-blue-600">
-            Phase: {gameState.gamePhase}
-          </div>
-        </div>
-
-        {/* Controls */}
-        <div className="p-4 bg-white rounded-lg shadow">
-          <h3 className="text-lg font-bold mb-4">Controls</h3>
-
-          {/* Current Dialog Toggle - only show when there's an active dialog */}
-          {(gameState.gamePhase === 'property-action' || gameState.gamePhase === 'special-action') && (
-            <div className="mb-4">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={currentDialogVisible}
-                  onChange={(e) => setCurrentDialogVisible(e.target.checked)}
-                  className="rounded"
-                />
-                Show Current Dialog
-              </label>
-            </div>
-          )}
-
-          {/* Rotation Controls */}
-          <div className="flex gap-2">
-            <button
-              onClick={rotateBoardCounterClockwise}
-              className="flex-1 px-3 py-2 bg-gray-600 text-white hover:bg-gray-700 transition-colors text-sm"
-            >
-              ↺ Left
-            </button>
-            <button
-              onClick={rotateBoardClockwise}
-              className="flex-1 px-3 py-2 bg-gray-600 text-white hover:bg-gray-700 transition-colors text-sm"
-            >
-              ↻ Right
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Board Container */}
-      <div className="flex-1 flex items-center justify-center p-4">
-
+      <div className="h-full flex items-center justify-center p-4">
         <div
           className="relative aspect-square h-full max-h-screen w-auto bg-black border-2 border-black transition-transform duration-500 ease-in-out"
           style={{ transform: `rotate(${boardRotation}deg)` }}
@@ -288,8 +194,17 @@ const MonopolyBoard = () => {
 
       {/* Property Dialog */}
       <PropertyDialog
-        isOpen={currentDialogVisible && gameState.gamePhase === 'property-action' && gameState.currentAction?.type === 'buy-property'}
-        propertyName={gameState.currentAction?.data?.position ? boardSpaces[gameState.currentAction.data.position]?.name || 'Unknown Property' : 'Unknown Property'}
+        isOpen={
+          currentDialogVisible &&
+          gameState.gamePhase === "property-action" &&
+          gameState.currentAction?.type === "buy-property"
+        }
+        propertyName={
+          gameState.currentAction?.data?.position
+            ? boardSpaces[gameState.currentAction.data.position]?.name ||
+              "Unknown Property"
+            : "Unknown Property"
+        }
         propertyPrice={gameState.currentAction?.data?.price || 0}
         playerMoney={currentPlayer.money}
         onBuy={() => {
@@ -304,18 +219,20 @@ const MonopolyBoard = () => {
       {/* Card Draw Modal */}
       <CardDrawModal
         isOpen={gameState.cardDrawModal?.isOpen || false}
-        cardType={gameState.cardDrawModal?.cardType || 'chance'}
+        cardType={gameState.cardDrawModal?.cardType || "chance"}
         onCardDrawn={handleCardDrawn}
         onClose={closeCardModal}
       />
 
       {/* Jail Dialog */}
       <JailDialog
-        isOpen={currentPlayer.inJail && gameState.gamePhase === 'waiting'}
+        isOpen={currentPlayer.inJail && gameState.gamePhase === "waiting"}
         playerName={currentPlayer.name}
         playerMoney={currentPlayer.money}
         jailTurns={currentPlayer.jailTurns}
-        hasJailFreeCard={(drawnCards.playerJailCards[currentPlayer.id] || 0) > 0}
+        hasJailFreeCard={
+          (drawnCards.playerJailCards[currentPlayer.id] || 0) > 0
+        }
         onPayFine={payJailFine}
         onUseCard={useJailFreeCard}
         onRollDice={() => {
