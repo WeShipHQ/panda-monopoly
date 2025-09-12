@@ -10,6 +10,8 @@ type SpaceProps = {
   instructions?: string;
   type?: string;
   blueIcon?: boolean;
+  position?: number;
+  onRightClick?: (position: number) => void;
 };
 
 const getRotationClass = (rotate?: string) => {
@@ -32,6 +34,8 @@ export const PropertySpace: React.FC<SpaceProps> = ({
   rotate,
   longName = false,
   threeLines = false,
+  position,
+  onRightClick,
 }) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
@@ -45,17 +49,39 @@ export const PropertySpace: React.FC<SpaceProps> = ({
 
   const isVertical = rotate === "left" || rotate === "right";
 
+  // For different orientations, we need different positioning
+  const getColorBarClass = () => {
+    if (rotate === "left") {
+      return "absolute right-0 top-0 h-full w-6 border-l border-black";
+    } else if (rotate === "right") {
+      return "absolute left-0 top-0 h-full w-6 border-r border-black";
+    } else if (rotate === "top") {
+      return "absolute bottom-0 left-0 w-full h-6 border-t border-black";
+    } else {
+      return "color-bar border-b border-black h-6";
+    }
+  };
+
+  const handleRightClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onRightClick && position !== undefined) {
+      onRightClick(position);
+    }
+  };
+
   return (
     <div
-      className={`bg-[#fafaf8] text-center ${isVertical ? "vertical-space" : ""
-        }`}
+      className={`bg-[#fafaf8] text-center border border-black ${isVertical ? "vertical-space" : ""} relative cursor-help`}
+      onContextMenu={handleRightClick}
     >
+      {/* Color bar - positioned differently for vertical vs horizontal spaces */}
+      <div className={`${getColorBarClass()} ${colorClass}`}></div>
+
       <div
-        className="space-container"
+        className="space-container h-full"
         style={containerStyle}
       >
-        <div className={`color-bar border-b-2 border-black ${colorClass}`}></div>
-        <div className={`${nameClass} flex-1 flex items-center justify-center text-center px-2`}>
+        <div className={`${nameClass} flex items-center justify-center text-center px-1 ${rotate === "top" ? "pt-8" : "pt-1"} text-[0.6rem] font-bold`}>
           {threeLines && name?.includes("-")
             ? name.split("-").map((part, i) => (
               <React.Fragment key={i}>
@@ -65,7 +91,7 @@ export const PropertySpace: React.FC<SpaceProps> = ({
             ))
             : name}
         </div>
-        <div className="text-center pb-1 font-normal">Price ${price}</div>
+        <div className={`text-center ${rotate === "top" ? "pb-8 pt-1" : "pb-1"} font-normal text-[0.6rem]`}>${price}</div>
       </div>
     </div>
   );
@@ -76,6 +102,8 @@ export const RailroadSpace: React.FC<SpaceProps> = ({
   price,
   rotate,
   longName = false,
+  position,
+  onRightClick,
 }) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
@@ -83,22 +111,71 @@ export const RailroadSpace: React.FC<SpaceProps> = ({
 
   const isVertical = rotate === "left" || rotate === "right";
 
+  const handleRightClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onRightClick && position !== undefined) {
+      onRightClick(position);
+    }
+  };
+
   return (
     <div
-      className={`bg-[#fafaf8] text-center ${isVertical ? "vertical-space" : ""
-        }`}
+      className={`bg-[#fafaf8] text-center border border-black ${isVertical ? "vertical-space" : ""} cursor-help`}
+      onContextMenu={handleRightClick}
     >
       <div
-        className="space-container"
+        className="space-container h-full"
         style={containerStyle}
       >
-        <div className={`pt-2 ${longName ? "px-0" : "px-2"} text-center`}>
+        <div className={`${rotate === "top" ? "pt-2" : "pt-1"} ${longName ? "px-0" : "px-1"} text-center text-[0.6rem] font-bold`}>
           {name}
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <i className="fa fa-subway icon-large text-black"></i>
+          <div className="text-2xl">🚂</div>
         </div>
-        <div className="text-center pb-1 font-normal">Price ${price}</div>
+        <div className={`text-center ${rotate === "top" ? "pb-8 pt-1" : "pb-1"} font-normal text-[0.6rem]`}>${price}</div>
+      </div>
+    </div>
+  );
+};
+
+export const BeachSpace: React.FC<SpaceProps> = ({
+  name,
+  price,
+  rotate,
+  longName = false,
+  position,
+  onRightClick,
+}) => {
+  const containerStyle = {
+    transform: getRotationClass(rotate),
+  };
+
+  const isVertical = rotate === "left" || rotate === "right";
+
+  const handleRightClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onRightClick && position !== undefined) {
+      onRightClick(position);
+    }
+  };
+
+  return (
+    <div
+      className={`bg-[#e6f3ff] text-center border border-black ${isVertical ? "vertical-space" : ""} cursor-help`}
+      onContextMenu={handleRightClick}
+    >
+      <div
+        className="space-container h-full"
+        style={containerStyle}
+      >
+        <div className={`${rotate === "top" ? "pt-2" : "pt-1"} ${longName ? "px-0" : "px-1"} text-center text-[0.6rem] font-bold`}>
+          {name}
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-2xl">🏖️</div>
+        </div>
+        <div className={`text-center ${rotate === "top" ? "pb-8 pt-1" : "pb-1"} font-normal text-[0.6rem]`}>${price}</div>
       </div>
     </div>
   );
@@ -109,6 +186,8 @@ export const UtilitySpace: React.FC<SpaceProps> = ({
   price,
   type,
   rotate,
+  position,
+  onRightClick,
 }) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
@@ -116,25 +195,32 @@ export const UtilitySpace: React.FC<SpaceProps> = ({
 
   const icon =
     type === "electric" ? (
-      <i className="fa fa-lightbulb-o text-[#ffed20] icon-medium"></i>
+      <div className="text-2xl">💡</div>
     ) : (
-      <i className="fa fa-tint text-[#5a6dba] icon-medium"></i>
+      <div className="text-2xl">💧</div>
     );
 
   const isVertical = rotate === "left" || rotate === "right";
 
+  const handleRightClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onRightClick && position !== undefined) {
+      onRightClick(position);
+    }
+  };
+
   return (
     <div
-      className={`bg-[#fafaf8] text-center ${isVertical ? "vertical-space" : ""
-        }`}
+      className={`bg-[#fafaf8] text-center border border-black ${isVertical ? "vertical-space" : ""} cursor-help`}
+      onContextMenu={handleRightClick}
     >
       <div
-        className="space-container"
+        className="space-container h-full"
         style={containerStyle}
       >
-        <div className="px-2 pt-2 text-center">{name}</div>
+        <div className={`px-1 ${rotate === "top" ? "pt-2" : "pt-1"} text-center text-[0.6rem] font-bold`}>{name}</div>
         <div className="flex-1 flex items-center justify-center">{icon}</div>
-        <div className="text-center pb-1 font-normal">Price ${price}</div>
+        <div className={`text-center ${rotate === "top" ? "pb-8 pt-1" : "pb-1"} font-normal text-[0.6rem]`}>${price}</div>
       </div>
     </div>
   );
@@ -143,6 +229,8 @@ export const UtilitySpace: React.FC<SpaceProps> = ({
 export const ChanceSpace: React.FC<SpaceProps> = ({
   rotate,
   blueIcon = false,
+  position,
+  onRightClick,
 }) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
@@ -150,20 +238,27 @@ export const ChanceSpace: React.FC<SpaceProps> = ({
 
   const isVertical = rotate === "left" || rotate === "right";
 
+  const handleRightClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onRightClick && position !== undefined) {
+      onRightClick(position);
+    }
+  };
+
   return (
     <div
-      className={`bg-[#fafaf8] text-center ${isVertical ? "vertical-space" : ""
-        }`}
+      className={`bg-[#fafaf8] text-center border border-black ${isVertical ? "vertical-space" : ""} cursor-help`}
+      onContextMenu={handleRightClick}
     >
       <div
-        className="space-container justify-center"
+        className="space-container justify-center h-full"
         style={containerStyle}
       >
         <div className="flex-1 flex items-center justify-center">
           <img
             src="/images/CHANCE.png"
             alt="Chance"
-            className="w-30 h-30 object-contain"
+            className="w-12 h-12 object-contain"
           />
         </div>
       </div>
@@ -171,27 +266,38 @@ export const ChanceSpace: React.FC<SpaceProps> = ({
   );
 };
 
-export const CommunityChestSpace: React.FC<SpaceProps> = ({ rotate }) => {
+export const CommunityChestSpace: React.FC<SpaceProps> = ({
+  rotate,
+  position,
+  onRightClick,
+}) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
   };
 
   const isVertical = rotate === "left" || rotate === "right";
 
+  const handleRightClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onRightClick && position !== undefined) {
+      onRightClick(position);
+    }
+  };
+
   return (
     <div
-      className={`bg-[#fafaf8] text-center ${isVertical ? "vertical-space" : ""
-        }`}
+      className={`bg-[#fafaf8] text-center border border-black ${isVertical ? "vertical-space" : ""} cursor-help`}
+      onContextMenu={handleRightClick}
     >
       <div
-        className="space-container justify-center"
+        className="space-container justify-center h-full"
         style={containerStyle}
       >
         <div className="flex-1 flex items-center justify-center">
           <img
             src="/images/CHEST.png"
             alt="Community Chest"
-            className="w-30 h-30 object-contain"
+            className="w-12 h-12 object-contain"
           />
         </div>
       </div>
@@ -205,6 +311,8 @@ export const TaxSpace: React.FC<SpaceProps> = ({
   instructions,
   type,
   rotate,
+  position,
+  onRightClick,
 }) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
@@ -212,19 +320,24 @@ export const TaxSpace: React.FC<SpaceProps> = ({
 
   const isVertical = rotate === "left" || rotate === "right";
 
+  const handleRightClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onRightClick && position !== undefined) {
+      onRightClick(position);
+    }
+  };
+
   return (
     <div
-      className={`bg-[#fafaf8] text-center ${isVertical ? "vertical-space" : ""
-        }`}
+      className={`bg-[#fafaf8] text-center border border-black ${isVertical ? "vertical-space" : ""} cursor-help`}
+      onContextMenu={handleRightClick}
     >
       <div
-        className={`space-container ${type === "income" ? "justify-center items-center" : ""
-          }`}
+        className={`space-container h-full ${type === "income" ? "justify-center items-center" : ""}`}
         style={containerStyle}
       >
         <div
-          className={`px-2 text-sm ${type === "income" ? "pb-1" : "pt-2"
-            } text-center`}
+          className={`px-1 text-[0.6rem] font-bold ${type === "income" ? "pb-1" : rotate === "top" ? "pt-2" : "pt-1"} text-center`}
         >
           {name}
         </div>
@@ -233,7 +346,7 @@ export const TaxSpace: React.FC<SpaceProps> = ({
           <>
             <div className="inline-block w-1 h-1 bg-black transform rotate-45"></div>
             <div
-              className="px-2 py-1 text-center text-xs"
+              className={`px-1 py-1 text-center text-[0.6rem] ${rotate === "top" ? "pb-7" : ""}`}
               dangerouslySetInnerHTML={{
                 __html: instructions?.replace("or", "<br>or<br>") || "",
               }}
@@ -242,9 +355,9 @@ export const TaxSpace: React.FC<SpaceProps> = ({
         ) : (
           <>
             <div className="flex-1 flex items-center justify-center">
-              <i className="fa fa-diamond icon-medium"></i>
+              <div className="text-2xl">💎</div>
             </div>
-            <div className="px-2 pb-1 text-center">Pay ${price}</div>
+            <div className={`px-1 ${rotate === "top" ? "pb-8 pt-1" : "pb-1"} text-center text-[0.6rem]`}>Pay ${price}</div>
           </>
         )}
       </div>
