@@ -211,7 +211,6 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
           }
         }}
         onSkip={skipProperty}
-        onClose={() => setCurrentDialogVisible(false)}
       />
 
       {/* Card Draw Modal */}
@@ -219,7 +218,6 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
         isOpen={gameState.cardDrawModal?.isOpen || false}
         cardType={gameState.cardDrawModal?.cardType || "chance"}
         onCardDrawn={handleCardDrawn}
-        onClose={closeCardModal}
       />
 
       {/* Jail Dialog */}
@@ -237,7 +235,6 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
           // The dice component will handle the roll and call handleDiceRoll
           setCurrentDialogVisible(false);
         }}
-        onClose={() => setCurrentDialogVisible(false)}
       />
     </div>
   );

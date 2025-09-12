@@ -32,10 +32,7 @@ export const PropertyDialog: React.FC<PropertyDialogProps> = ({
       }`}
     >
       {/* Lighter background overlay */}
-      <div
-        className="absolute inset-0 bg-white bg-opacity-40"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black opacity-20" />
 
       {/* Dialog with slide-up animation */}
       <div
@@ -43,16 +40,6 @@ export const PropertyDialog: React.FC<PropertyDialogProps> = ({
           isOpen ? "translate-y-0 scale-100" : "translate-y-8 scale-95"
         }`}
       >
-        {/* Close button */}
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="absolute top-2 right-2 w-6 h-6 text-gray-400 hover:text-gray-600 text-lg leading-none"
-          >
-            ×
-          </button>
-        )}
-
         <div className="text-center mb-4">
           <h3 className="text-lg font-medium text-gray-800 mb-1">
             {propertyName}
@@ -143,10 +130,7 @@ export const SpecialCardDialog: React.FC<SpecialCardDialogProps> = ({
       }`}
     >
       {/* Lighter background overlay */}
-      <div
-        className="absolute inset-0 bg-white bg-opacity-40"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black opacity-20" />
 
       {/* Dialog with slide-up animation */}
       <div
@@ -154,16 +138,6 @@ export const SpecialCardDialog: React.FC<SpecialCardDialogProps> = ({
           isOpen ? "translate-y-0 scale-100" : "translate-y-8 scale-95"
         }`}
       >
-        {/* Close button */}
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="absolute top-2 right-2 w-6 h-6 text-gray-400 hover:text-gray-600 text-lg leading-none"
-          >
-            ×
-          </button>
-        )}
-
         <div className="text-center mb-4">
           <h3 className="text-lg font-medium text-gray-800 mb-2">
             {cardType === "chance" ? "Chance" : "Community Chest"}
@@ -207,10 +181,7 @@ export const JailDialog: React.FC<JailDialogProps> = ({
       }`}
     >
       {/* Background overlay */}
-      <div
-        className="absolute inset-0 bg-white bg-opacity-40"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black opacity-20" />
 
       {/* Dialog */}
       <div
@@ -218,16 +189,6 @@ export const JailDialog: React.FC<JailDialogProps> = ({
           isOpen ? "translate-y-0 scale-100" : "translate-y-8 scale-95"
         }`}
       >
-        {/* Close button */}
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="absolute top-2 right-2 w-6 h-6 text-gray-400 hover:text-gray-600 text-lg leading-none"
-          >
-            ×
-          </button>
-        )}
-
         <div className="text-center mb-4">
           <h3 className="text-lg font-medium text-gray-800 mb-2">
             {playerName} is in Jail
