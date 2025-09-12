@@ -26,7 +26,6 @@ export const RightPanel: React.FC<RightPanelProps> = ({
     skipProperty,
     handleSpecialCard,
     handleCardDrawn,
-    closeCardModal,
     payJailFine,
     useJailFreeCard,
     drawnCards,
@@ -107,18 +106,18 @@ export const RightPanel: React.FC<RightPanelProps> = ({
         {/* Current Dialog Toggle - only show when there's an active dialog */}
         {(gameState.gamePhase === "property-action" ||
           gameState.gamePhase === "special-action") && (
-          <div className="mb-4">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={currentDialogVisible}
-                onChange={(e) => setCurrentDialogVisible(e.target.checked)}
-                className="rounded"
-              />
-              Show Current Dialog
-            </label>
-          </div>
-        )}
+            <div className="mb-4">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={currentDialogVisible}
+                  onChange={(e) => setCurrentDialogVisible(e.target.checked)}
+                  className="rounded"
+                />
+                Show Current Dialog
+              </label>
+            </div>
+          )}
 
         {/* Rotation Controls */}
         <div className="flex gap-2">

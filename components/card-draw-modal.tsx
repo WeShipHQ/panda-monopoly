@@ -95,9 +95,8 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
 
               {/* Main Card */}
               <div
-                className={`w-40 h-56 rounded-lg bg-gradient-to-br ${cardColor} shadow-lg cursor-pointer transform transition-all duration-500 ${
-                  isSpinning ? "animate-pulse scale-110" : "hover:scale-105"
-                } ${showCard ? "opacity-0" : "opacity-100"}`}
+                className={`w-40 h-56 rounded-lg bg-gradient-to-br ${cardColor} shadow-lg cursor-pointer transform transition-all duration-500 ${isSpinning ? "animate-pulse scale-110" : "hover:scale-105"
+                  } ${showCard ? "opacity-0" : "opacity-100"}`}
                 onClick={drawCard}
               >
                 <div className="flex flex-col items-center justify-center h-full text-white">
@@ -125,9 +124,8 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
           {/* Drawn Card Display */}
           {showCard && drawnCard && (
             <div
-              className={`transform transition-all duration-500 ${
-                showCard ? "opacity-100 scale-100" : "opacity-0 scale-95"
-              }`}
+              className={`transform transition-all duration-500 ${showCard ? "opacity-100 scale-100" : "opacity-0 scale-95"
+                }`}
             >
               <div className="bg-white border-2 border-gray-300 rounded-lg p-4 shadow-lg">
                 <div className="text-center">
@@ -139,15 +137,14 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
                   {/* Action indicator */}
                   {drawnCard.value > 0 && (
                     <div
-                      className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-                        drawnCard.action.includes("collect") ||
-                        drawnCard.action.includes("advance-to-go")
+                      className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${drawnCard.action.includes("collect") ||
+                          drawnCard.action.includes("advance-to-go")
                           ? "bg-green-100 text-green-800"
                           : "bg-red-100 text-red-800"
-                      }`}
+                        }`}
                     >
                       {drawnCard.action.includes("collect") ||
-                      drawnCard.action.includes("advance-to-go")
+                        drawnCard.action.includes("advance-to-go")
                         ? `+$${drawnCard.value}`
                         : `-$${drawnCard.value}`}
                     </div>
@@ -173,8 +170,8 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
                 onClick={() => {
                   if (drawnCard) {
                     onCardDrawn(drawnCard);
+                    // Don't call handleClose() - let the game logic handle modal closing
                   }
-                  handleClose();
                 }}
                 className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
               >

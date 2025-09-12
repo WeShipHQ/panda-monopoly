@@ -8,6 +8,7 @@ export interface PropertyBuildings {
   [propertyIndex: number]: {
     houses: number;
     hasHotel: boolean;
+    hasFlag: boolean;
   };
 }
 
@@ -25,6 +26,8 @@ export interface GameState {
   propertyBuildings: PropertyBuildings;
   mortgagedProperties: number[];
   gameLog: string[];
+  doublesCount: number; // Track consecutive doubles
+  hasRolledDoubles: boolean; // Track if current turn rolled doubles
   currentMessage?: {
     text: string;
     type: "info" | "warning" | "success" | "error";

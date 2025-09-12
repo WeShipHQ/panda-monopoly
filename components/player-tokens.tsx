@@ -27,88 +27,48 @@ export const PlayerToken: React.FC<PlayerTokenProps> = ({
     boardRotation,
     playersOnSameSpace
 }) => {
-    // Position token based on board position (40 spaces)
+    // Position token based on board position (40 spaces total)
     const getTokenPosition = (pos: number) => {
-        // Precise positioning based on actual board measurements
-        // Looking at the image, the board has:
-        // - Corner spaces: approximately 14.3% each
-        // - Regular spaces: approximately 14.3% width each
-        // - Board starts at ~7.15% from edges
+        // 14x14 grid with 2x2 corner spaces and 2x2 side spaces
+        // Each grid cell is approximately 7.14% wide (100% / 14)
+        const cellSize = 7.14;
+        const cornerCenter = 10.71; // Center of 2x2 corner (1.5 cells from edge)
+        const sideSpaceCenter = 17.86; // Center position for 2x2 side spaces
 
         if (pos === 0) {
-            // GO corner (bottom-right) - center of the corner space
-            return { left: '92.85%', top: '92.85%' };
-        } else if (pos === 1) {
-            // Baltic Ave - first space from GO
-            return { left: '78.55%', top: '92.85%' };
-        } else if (pos === 2) {
-            // Oriental Ave
-            return { left: '64.25%', top: '92.85%' };
-        } else if (pos === 3) {
-            // Chance
-            return { left: '49.95%', top: '92.85%' };
-        } else if (pos === 4) {
-            // Vermont Ave
-            return { left: '35.65%', top: '92.85%' };
-        } else if (pos === 5) {
-            // Connecticut Ave
-            return { left: '21.35%', top: '92.85%' };
-        } else if (pos === 6) {
-            // JAIL corner (bottom-left)
-            return { left: '7.15%', top: '92.85%' };
-        } else if (pos === 7) {
-            // States Ave (left column)
-            return { left: '7.15%', top: '78.55%' };
-        } else if (pos === 8) {
-            // Virginia Ave
-            return { left: '7.15%', top: '64.25%' };
-        } else if (pos === 9) {
-            // Community Chest
-            return { left: '7.15%', top: '49.95%' };
+            // GO corner (bottom-right) - center of 2x2 corner
+            return { left: `${100 - cornerCenter}%`, top: `${100 - cornerCenter}%` };
+        } else if (pos >= 1 && pos <= 9) {
+            // Bottom row (right to left from GO) - center of 2x2 side spaces
+            const spaceIndex = pos - 1;
+            const left = 100 - sideSpaceCenter - (spaceIndex * (cellSize * 10 / 9)); // Adjust spacing for 9 spaces in 10 cells
+            return { left: `${left}%`, top: `${100 - cornerCenter}%` };
         } else if (pos === 10) {
-            // Tennessee Ave
-            return { left: '7.15%', top: '35.65%' };
-        } else if (pos === 11) {
-            // New York Ave
-            return { left: '7.15%', top: '21.35%' };
-        } else if (pos === 12) {
-            // Free Parking corner (top-left)
-            return { left: '7.15%', top: '7.15%' };
-        } else if (pos === 13) {
-            // Kentucky Ave (top row)
-            return { left: '21.35%', top: '7.15%' };
-        } else if (pos === 14) {
-            // Indiana Ave
-            return { left: '35.65%', top: '7.15%' };
-        } else if (pos === 15) {
-            // Chance
-            return { left: '49.95%', top: '7.15%' };
-        } else if (pos === 16) {
-            // Atlantic Ave
-            return { left: '64.25%', top: '7.15%' };
-        } else if (pos === 17) {
-            // Marvin Gardens
-            return { left: '78.55%', top: '7.15%' };
-        } else if (pos === 18) {
-            // Go To Jail corner (top-right)
-            return { left: '92.85%', top: '7.15%' };
-        } else if (pos === 19) {
-            // Pacific Ave (right column)
-            return { left: '92.85%', top: '21.35%' };
+            // JAIL corner (bottom-left) - center of 2x2 corner
+            return { left: `${cornerCenter}%`, top: `${100 - cornerCenter}%` };
+        } else if (pos >= 11 && pos <= 19) {
+            // Left column (bottom to top) - center of 2x2 side spaces
+            const spaceIndex = pos - 11;
+            const top = 100 - sideSpaceCenter - (spaceIndex * (cellSize * 10 / 9)); // Adjust spacing for 9 spaces in 10 cells
+            return { left: `${cornerCenter}%`, top: `${top}%` };
         } else if (pos === 20) {
-            // N. Carolina Ave
-            return { left: '92.85%', top: '35.65%' };
-        } else if (pos === 21) {
-            // Community Chest
-            return { left: '92.85%', top: '49.95%' };
-        } else if (pos === 22) {
-            // Park Place
-            return { left: '92.85%', top: '64.25%' };
-        } else if (pos === 23) {
-            // Boardwalk
-            return { left: '92.85%', top: '78.55%' };
+            // Free Parking corner (top-left) - center of 2x2 corner
+            return { left: `${cornerCenter}%`, top: `${cornerCenter}%` };
+        } else if (pos >= 21 && pos <= 29) {
+            // Top row (left to right) - center of 2x2 side spaces
+            const spaceIndex = pos - 21;
+            const left = sideSpaceCenter + (spaceIndex * (cellSize * 10 / 9)); // Adjust spacing for 9 spaces in 10 cells
+            return { left: `${left}%`, top: `${cornerCenter}%` };
+        } else if (pos === 30) {
+            // Go To Jail corner (top-right) - center of 2x2 corner
+            return { left: `${100 - cornerCenter}%`, top: `${cornerCenter}%` };
+        } else if (pos >= 31 && pos <= 39) {
+            // Right column (top to bottom) - center of 2x2 side spaces
+            const spaceIndex = pos - 31;
+            const top = sideSpaceCenter + (spaceIndex * (cellSize * 10 / 9)); // Adjust spacing for 9 spaces in 10 cells
+            return { left: `${100 - cornerCenter}%`, top: `${top}%` };
         } else {
-            // Default fallback for any remaining positions
+            // Default fallback
             return { left: '50%', top: '50%' };
         }
     };

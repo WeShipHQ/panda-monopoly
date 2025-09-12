@@ -1,131 +1,276 @@
 import { useCallback } from "react";
-import { boardSpaces } from "@/data/monopoly-data";
+import {
+  getPropertyData,
+  colorGroups,
+  isProperty,
+  isRailroad,
+  isUtility,
+  isBeach,
+} from "@/data/unified-monopoly-data";
 import { GameState } from "./types";
 
 export const useGameUtils = () => {
-  // Color groups mapping
-  const colorGroups = {
-    brown: [1, 2], // Baltic Ave, Oriental Ave
-    lightblue: [4, 5], // Vermont Ave, Connecticut Ave
-    pink: [7, 8], // States Ave, Virginia Ave
-    orange: [10, 11], // Tennessee Ave, New York Ave
-    red: [13, 14], // Kentucky Ave, Indiana Ave
-    yellow: [16, 17], // Atlantic Ave, Marvin Gardens
-    green: [19, 20], // Pacific Ave, N. Carolina Ave
-    darkblue: [22, 23], // Park Place, Boardwalk
-  };
-
-  // Property prices (based on actual Monopoly values)
+  // Get property price from unified data
   const getPropertyPrice = useCallback((position: number): number => {
-    const space = boardSpaces[position];
-    if (space?.type === "property") {
-      // Actual Monopoly prices
-      const prices: { [key: number]: number } = {
-        1: 60, // Baltic Ave
-        2: 60, // Oriental Ave
-        4: 100, // Vermont Ave
-        5: 120, // Connecticut Ave
-        7: 140, // States Ave
-        8: 160, // Virginia Ave
-        10: 180, // Tennessee Ave
-        11: 200, // New York Ave
-        13: 220, // Kentucky Ave
-        14: 220, // Indiana Ave
-        16: 260, // Atlantic Ave
-        17: 280, // Marvin Gardens
-        19: 300, // Pacific Ave
-        20: 300, // N. Carolina Ave
-        22: 350, // Park Place
-        23: 400, // Boardwalk
-      };
-      return prices[position] || 60;
-    }
-    return 0;
+    const property = getPropertyData(position);
+    return property?.price || 0;
   }, []);
 
-  // Calculate rent with buildings
+  // Calculate rent using unified data
   const getPropertyRent = useCallback(
     (position: number, state?: GameState): number => {
       const currentState = state || ({} as GameState);
-      const baseRent: { [key: number]: number } = {
-        1: 2,
-        2: 4,
-        4: 6,
-        5: 8,
-        7: 10,
-        8: 12,
-        10: 14,
-        11: 16,
-        13: 18,
-        14: 18,
-        16: 22,
-        17: 24,
-        19: 26,
-        20: 26,
-        22: 35,
-        23: 50,
-      };
+      const property = getPropertyData(position);
 
-      const buildings = currentState.propertyBuildings?.[position];
-      let rent = baseRent[position] || 2;
+      if (!property) return 0;
 
-      // Check if property is mortgaged
-      if (currentState.mortgagedProperties?.includes(position)) {
-        return 0; // No rent for mortgaged properties
+      // Handle different property types
+      if (property.type === "property") {
+        return calculatePropertyRent(property, position, currentState);
+      } else if (property.type === "railroad") {
+        return calculateRailroadRent(position, currentState);
+      } else if (property.type === "beach") {
+        return calculateBeachRent(position, currentState);
+      } else if (property.type === "utility") {
+        return calculateUtilityRent(position, currentState);
       }
 
-      // Check if player owns full color group
-      const colorGroup = Object.entries(colorGroups).find(([_, positions]) =>
-        positions.includes(position)
+      return 0;
+    },
+    []
+  );
+
+  const calculatePropertyRent = (
+    property: any,
+    position: number,
+    state: GameState
+  ): number => {
+    // Check if property is mortgaged
+    if (state.mortgagedProperties?.includes(position)) {
+      return 0;
+    }
+
+    const buildings = state.propertyBuildings?.[position];
+    const owner = state.propertyOwnership?.[position];
+
+    // Base rent
+    let rent = property.baseRent || 0;
+
+    // Check if player owns full color group
+    const colorGroup = property.colorGroup;
+    if (colorGroup) {
+      const groupPositions =
+        colorGroups[colorGroup as keyof typeof colorGroups] || [];
+      const ownsFullGroup = groupPositions.every(
+        (pos) => state.propertyOwnership?.[pos] === owner
       );
 
-      if (colorGroup) {
-        const [_, groupPositions] = colorGroup;
-        const owner = currentState.propertyOwnership?.[position];
-        const ownsFullGroup = groupPositions.every(
-          (pos) => currentState.propertyOwnership?.[pos] === owner
-        );
-
-        if (ownsFullGroup && !buildings?.houses && !buildings?.hasHotel) {
-          // Double rent for owning full color group
-          rent *= 2;
+      if (ownsFullGroup) {
+        // Apply building rent or double base rent
+        if (buildings?.hasHotel) {
+          rent = property.rentWithHotel || rent;
+        } else if (buildings?.houses) {
+          switch (buildings.houses) {
+            case 1:
+              rent = property.rentWith1House || rent;
+              break;
+            case 2:
+              rent = property.rentWith2Houses || rent;
+              break;
+            case 3:
+              rent = property.rentWith3Houses || rent;
+              break;
+            case 4:
+              rent = property.rentWith4Houses || rent;
+              break;
+          }
+        } else {
+          // Double rent for owning full color group with no buildings
+          rent = property.rentWithColorGroup || rent * 2;
         }
       }
+    }
 
-      // Apply building multipliers
-      if (buildings?.hasHotel) {
-        rent *= 25; // Hotel multiplier
-      } else if (buildings?.houses) {
-        const houseMultipliers = [5, 15, 20, 25]; // 1-4 houses
-        rent *= houseMultipliers[buildings.houses - 1] || 1;
-      }
+    return rent;
+  };
 
-      return rent;
-    },
-    [colorGroups]
-  );
+  const calculateRailroadRent = (
+    position: number,
+    state: GameState
+  ): number => {
+    if (state.mortgagedProperties?.includes(position)) {
+      return 0;
+    }
+
+    const owner = state.propertyOwnership?.[position];
+    if (!owner) return 0;
+
+    // Count owned railroads
+    const railroadPositions = [5, 15, 25, 35];
+    const ownedRailroads = railroadPositions.filter(
+      (pos) => state.propertyOwnership?.[pos] === owner
+    ).length;
+
+    const property = getPropertyData(position);
+    const railroadRent = property?.railroadRent || [25, 50, 100, 200];
+
+    return railroadRent[ownedRailroads - 1] || 0;
+  };
+
+  const calculateBeachRent = (position: number, state: GameState): number => {
+    if (state.mortgagedProperties?.includes(position)) {
+      return 0;
+    }
+
+    const owner = state.propertyOwnership?.[position];
+    if (!owner) return 0;
+
+    // Count owned beaches
+    const beachPositions = [5, 15, 25, 35];
+    const ownedBeaches = beachPositions.filter(
+      (pos) => state.propertyOwnership?.[pos] === owner
+    ).length;
+
+    const property = getPropertyData(position);
+    const beachRent = property?.beachRent || [50, 100, 200, 400];
+
+    return beachRent[ownedBeaches - 1] || 0;
+  };
+
+  const calculateUtilityRent = (
+    position: number,
+    state: GameState,
+    diceRoll: number = 7
+  ): number => {
+    if (state.mortgagedProperties?.includes(position)) {
+      return 0;
+    }
+
+    const owner = state.propertyOwnership?.[position];
+    if (!owner) return 0;
+
+    // Count owned utilities
+    const utilityPositions = [12, 28];
+    const ownedUtilities = utilityPositions.filter(
+      (pos) => state.propertyOwnership?.[pos] === owner
+    ).length;
+
+    const property = getPropertyData(position);
+    const utilityMultiplier = property?.utilityMultiplier || [4, 10];
+
+    return diceRoll * utilityMultiplier[ownedUtilities - 1];
+  };
 
   // Check if player owns full color group
   const ownsFullColorGroup = useCallback(
-    (playerId: number, position: number, gameState: GameState): boolean => {
-      const colorGroup = Object.entries(colorGroups).find(([_, positions]) =>
-        positions.includes(position)
-      );
-
-      if (!colorGroup) return false;
-
-      const [_, groupPositions] = colorGroup;
+    (playerId: number, colorGroup: string, state: GameState): boolean => {
+      const groupPositions =
+        colorGroups[colorGroup as keyof typeof colorGroups] || [];
       return groupPositions.every(
-        (pos) => gameState.propertyOwnership[pos] === playerId
+        (position) => state.propertyOwnership?.[position] === playerId
       );
     },
-    [colorGroups]
+    []
+  );
+
+  // Check if player can build on property
+  const canBuildOnProperty = useCallback(
+    (playerId: number, position: number, state: GameState): boolean => {
+      const property = getPropertyData(position);
+      if (!property || property.type !== "property") return false;
+
+      // Must own the property
+      if (state.propertyOwnership?.[position] !== playerId) return false;
+
+      // Must own full color group
+      if (!property.colorGroup) return false;
+      if (!ownsFullColorGroup(playerId, property.colorGroup, state))
+        return false;
+
+      // Property must not be mortgaged
+      if (state.mortgagedProperties?.includes(position)) return false;
+
+      // Check building limits
+      const buildings = state.propertyBuildings?.[position];
+      if (buildings?.hasHotel) return false; // Already has hotel
+      if (buildings?.houses >= 4) return false; // Already has 4 houses
+
+      return true;
+    },
+    [ownsFullColorGroup]
+  );
+
+  // Get building cost for property
+  const getBuildingCost = useCallback(
+    (position: number, buildingType: "house" | "hotel"): number => {
+      const property = getPropertyData(position);
+      if (!property || property.type !== "property") return 0;
+
+      return buildingType === "house"
+        ? property.houseCost || 0
+        : property.hotelCost || 0;
+    },
+    []
+  );
+
+  // Get mortgage value
+  const getMortgageValue = useCallback((position: number): number => {
+    const property = getPropertyData(position);
+    return property?.mortgageValue || 0;
+  }, []);
+
+  // Check if position is a property that can be owned
+  const isOwnableProperty = useCallback((position: number): boolean => {
+    return (
+      isProperty(position) ||
+      isRailroad(position) ||
+      isBeach(position) ||
+      isUtility(position)
+    );
+  }, []);
+
+  // Get property color group
+  const getPropertyColorGroup = useCallback(
+    (position: number): string | null => {
+      const property = getPropertyData(position);
+      return property?.colorGroup || null;
+    },
+    []
+  );
+
+  // Get properties in same color group
+  const getPropertiesInColorGroup = useCallback(
+    (colorGroup: string): number[] => {
+      return colorGroups[colorGroup as keyof typeof colorGroups] || [];
+    },
+    []
+  );
+
+  // Check if player owns all 4 beaches (win condition)
+  const ownsAllBeaches = useCallback(
+    (playerId: number, state: GameState): boolean => {
+      const beachPositions = [5, 15, 25, 35];
+      return beachPositions.every(
+        (position) => state.propertyOwnership?.[position] === playerId
+      );
+    },
+    []
   );
 
   return {
-    colorGroups,
     getPropertyPrice,
     getPropertyRent,
     ownsFullColorGroup,
+    canBuildOnProperty,
+    getBuildingCost,
+    getMortgageValue,
+    isOwnableProperty,
+    getPropertyColorGroup,
+    getPropertiesInColorGroup,
+    calculatePropertyRent,
+    calculateRailroadRent,
+    calculateBeachRent,
+    calculateUtilityRent,
+    ownsAllBeaches,
   };
 };

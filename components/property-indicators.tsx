@@ -8,6 +8,7 @@ interface PropertyIndicatorProps {
     ownerColor?: string;
     houses: number;
     hasHotel: boolean;
+    hasFlag: boolean;
     isMortgaged: boolean;
 }
 
@@ -17,62 +18,56 @@ export const PropertyIndicator: React.FC<PropertyIndicatorProps> = ({
     ownerColor,
     houses,
     hasHotel,
+    hasFlag,
     isMortgaged
 }) => {
     if (!ownerId) return null;
 
-    // Position indicators based on board position
+    // Position indicators based on board position (40 spaces)
     const getIndicatorPosition = (pos: number) => {
-        // Same positioning logic as tokens but offset for property indicators
+        // 14x14 grid with 2x2 corner spaces and 2x2 side spaces
+        // Each grid cell is approximately 7.14% wide (100% / 14)
+        const cellSize = 7.14;
+        const cornerCenter = 10.71; // Center of 2x2 corner (1.5 cells from edge)
+        const sideSpaceCenter = 17.86; // Center position for 2x2 side spaces
+
+        // Offset for property indicators (slightly inside the spaces)
+        const indicatorOffset = 1.5; // 1.5% offset towards center
+
         if (pos === 0) {
-            return { left: '92.85%', top: '88%' }; // GO
-        } else if (pos === 1) {
-            return { left: '78.55%', top: '88%' }; // Baltic Ave
-        } else if (pos === 2) {
-            return { left: '64.25%', top: '88%' }; // Oriental Ave
-        } else if (pos === 3) {
-            return { left: '49.95%', top: '88%' }; // Chance
-        } else if (pos === 4) {
-            return { left: '35.65%', top: '88%' }; // Vermont Ave
-        } else if (pos === 5) {
-            return { left: '21.35%', top: '88%' }; // Connecticut Ave
-        } else if (pos === 6) {
-            return { left: '7.15%', top: '88%' }; // JAIL
-        } else if (pos === 7) {
-            return { left: '11.5%', top: '78.55%' }; // States Ave
-        } else if (pos === 8) {
-            return { left: '11.5%', top: '64.25%' }; // Virginia Ave
-        } else if (pos === 9) {
-            return { left: '11.5%', top: '49.95%' }; // Community Chest
+            // GO corner (bottom-right) - no indicator needed for corner
+            return { left: `${100 - cornerCenter}%`, top: `${100 - cornerCenter}%` };
+        } else if (pos >= 1 && pos <= 9) {
+            // Bottom row (right to left from GO) - center of 2x2 side spaces
+            const spaceIndex = pos - 1;
+            const left = 100 - sideSpaceCenter - (spaceIndex * (cellSize * 10 / 9));
+            return { left: `${left}%`, top: `${100 - cornerCenter + indicatorOffset}%` };
         } else if (pos === 10) {
-            return { left: '11.5%', top: '35.65%' }; // Tennessee Ave
-        } else if (pos === 11) {
-            return { left: '11.5%', top: '21.35%' }; // New York Ave
-        } else if (pos === 12) {
-            return { left: '7.15%', top: '11.5%' }; // Free Parking
-        } else if (pos === 13) {
-            return { left: '21.35%', top: '11.5%' }; // Kentucky Ave
-        } else if (pos === 14) {
-            return { left: '35.65%', top: '11.5%' }; // Indiana Ave
-        } else if (pos === 15) {
-            return { left: '49.95%', top: '11.5%' }; // Chance
-        } else if (pos === 16) {
-            return { left: '64.25%', top: '11.5%' }; // Atlantic Ave
-        } else if (pos === 17) {
-            return { left: '78.55%', top: '11.5%' }; // Marvin Gardens
-        } else if (pos === 18) {
-            return { left: '92.85%', top: '11.5%' }; // Go To Jail
-        } else if (pos === 19) {
-            return { left: '88.5%', top: '21.35%' }; // Pacific Ave
+            // JAIL corner (bottom-left) - no indicator needed for corner
+            return { left: `${cornerCenter}%`, top: `${100 - cornerCenter}%` };
+        } else if (pos >= 11 && pos <= 19) {
+            // Left column (bottom to top) - center of 2x2 side spaces
+            const spaceIndex = pos - 11;
+            const top = 100 - sideSpaceCenter - (spaceIndex * (cellSize * 10 / 9));
+            return { left: `${cornerCenter - indicatorOffset}%`, top: `${top}%` };
         } else if (pos === 20) {
-            return { left: '88.5%', top: '35.65%' }; // N. Carolina Ave
-        } else if (pos === 21) {
-            return { left: '88.5%', top: '49.95%' }; // Community Chest
-        } else if (pos === 22) {
-            return { left: '88.5%', top: '64.25%' }; // Park Place
-        } else if (pos === 23) {
-            return { left: '88.5%', top: '78.55%' }; // Boardwalk
+            // Free Parking corner (top-left) - no indicator needed for corner
+            return { left: `${cornerCenter}%`, top: `${cornerCenter}%` };
+        } else if (pos >= 21 && pos <= 29) {
+            // Top row (left to right) - center of 2x2 side spaces
+            const spaceIndex = pos - 21;
+            const left = sideSpaceCenter + (spaceIndex * (cellSize * 10 / 9));
+            return { left: `${left}%`, top: `${cornerCenter - indicatorOffset}%` };
+        } else if (pos === 30) {
+            // Go To Jail corner (top-right) - no indicator needed for corner
+            return { left: `${100 - cornerCenter}%`, top: `${cornerCenter}%` };
+        } else if (pos >= 31 && pos <= 39) {
+            // Right column (top to bottom) - center of 2x2 side spaces
+            const spaceIndex = pos - 31;
+            const top = sideSpaceCenter + (spaceIndex * (cellSize * 10 / 9));
+            return { left: `${100 - cornerCenter + indicatorOffset}%`, top: `${top}%` };
         } else {
+            // Default fallback
             return { left: '50%', top: '50%' };
         }
     };
@@ -91,26 +86,36 @@ export const PropertyIndicator: React.FC<PropertyIndicatorProps> = ({
         >
             {/* Owner indicator */}
             <div
-                className="w-3 h-3 rounded-full border border-white shadow-sm"
+                className="w-2 h-2 rounded-full border border-white shadow-sm"
                 style={{ backgroundColor: ownerColor }}
             />
 
             {/* Mortgage indicator */}
             {isMortgaged && (
-                <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-white" />
+                <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-white" />
+            )}
+
+            {/* Flag */}
+            {hasFlag && houses === 0 && !hasHotel && (
+                <div className="absolute -bottom-1.5 left-1/2 transform -translate-x-1/2">
+                    <div
+                        className="w-1.5 h-1.5 bg-yellow-500 border border-white text-white text-xs flex items-center justify-center font-bold shadow-sm"
+                        title="Flag"
+                        style={{ fontSize: '6px' }}
+                    >
+                        🚩
+                    </div>
+                </div>
             )}
 
             {/* Houses */}
             {houses > 0 && !hasHotel && (
-                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 flex gap-0.5">
+                <div className="absolute -bottom-1.5 left-1/2 transform -translate-x-1/2 flex gap-0.5">
                     {Array.from({ length: houses }).map((_, i) => (
                         <div
                             key={i}
-                            className="w-1.5 h-1.5 border border-white"
-                            style={{
-                                backgroundColor: ownerColor,
-                                fontSize: '6px'
-                            }}
+                            className="w-1 h-1 bg-green-600 border border-white shadow-sm"
+                            title={`${houses} house${houses > 1 ? 's' : ''}`}
                         />
                     ))}
                 </div>
@@ -118,10 +123,10 @@ export const PropertyIndicator: React.FC<PropertyIndicatorProps> = ({
 
             {/* Hotel */}
             {hasHotel && (
-                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
+                <div className="absolute -bottom-1.5 left-1/2 transform -translate-x-1/2">
                     <div
-                        className="w-2 h-2 border border-white text-white text-xs flex items-center justify-center font-bold"
-                        style={{ backgroundColor: ownerColor }}
+                        className="w-1.5 h-1.5 bg-red-600 border border-white text-white text-xs flex items-center justify-center font-bold shadow-sm"
+                        title="Hotel"
                     >
                         H
                     </div>
@@ -134,7 +139,7 @@ export const PropertyIndicator: React.FC<PropertyIndicatorProps> = ({
 interface PropertyIndicatorsContainerProps {
     propertyOwnership: { [position: number]: number };
     players: Array<{ id: number; color: string }>;
-    propertyBuildings: { [position: number]: { houses: number; hasHotel: boolean } };
+    propertyBuildings: { [position: number]: { houses: number; hasHotel: boolean; hasFlag: boolean } };
     mortgagedProperties: number[];
 }
 
@@ -149,7 +154,7 @@ export const PropertyIndicatorsContainer: React.FC<PropertyIndicatorsContainerPr
             {Object.entries(propertyOwnership).map(([positionStr, ownerId]) => {
                 const position = parseInt(positionStr);
                 const owner = players.find(p => p.id === ownerId);
-                const buildings = propertyBuildings[position] || { houses: 0, hasHotel: false };
+                const buildings = propertyBuildings[position] || { houses: 0, hasHotel: false, hasFlag: false };
                 const isMortgaged = mortgagedProperties.includes(position);
 
                 if (!owner) return null;
@@ -162,6 +167,7 @@ export const PropertyIndicatorsContainer: React.FC<PropertyIndicatorsContainerPr
                         ownerColor={owner.color}
                         houses={buildings.houses}
                         hasHotel={buildings.hasHotel}
+                        hasFlag={buildings.hasFlag}
                         isMortgaged={isMortgaged}
                     />
                 );

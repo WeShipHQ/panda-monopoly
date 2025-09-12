@@ -1,5 +1,11 @@
 import { useCallback } from "react";
-import { boardSpaces, CardData, chanceCards, communityChestCards } from "@/data/monopoly-data";
+import {
+  boardSpaces,
+  CardData,
+  chanceCards,
+  communityChestCards,
+} from "@/data/monopoly-data";
+import { getPropertyData } from "@/data/unified-monopoly-data";
 import { useGameState } from "./useGameState";
 import { useGameUtils } from "./useGameUtils";
 
@@ -14,7 +20,14 @@ export const useGameActions = () => {
     showMessage,
   } = useGameState();
 
-  const { getPropertyPrice, getPropertyRent, ownsFullColorGroup } = useGameUtils();
+  const {
+    getPropertyPrice,
+    getPropertyRent,
+    ownsFullColorGroup,
+    canBuildOnProperty,
+    getBuildingCost,
+    ownsAllBeaches,
+  } = useGameUtils();
 
   // Add money and log
   const addMoney = useCallback(
@@ -63,7 +76,23 @@ export const useGameActions = () => {
         switch (space.type) {
           case "corner":
             if (space.name === "GO") {
-              // Already handled in movement - just advance turn
+              // Landing on GO - $200 already collected in movement
+              newState.gameLog = [
+                ...prevState.gameLog,
+                `${player.name} landed on GO`,
+              ];
+              showMessage(`${player.name} landed on GO!`, "success", 2000);
+
+              setTimeout(() => {
+                nextTurn();
+              }, 1000);
+            } else if (space.name === "JAIL") {
+              // Just visiting jail - no penalty
+              newState.gameLog = [
+                ...prevState.gameLog,
+                `${player.name} is just visiting Jail`,
+              ];
+
               setTimeout(() => {
                 nextTurn();
               }, 1000);
@@ -71,7 +100,7 @@ export const useGameActions = () => {
               // Send to jail
               const newPlayers = prevState.players.map((p) =>
                 p.id === playerId
-                  ? { ...p, position: 6, inJail: true, jailTurns: 0 } // Position 6 is JAIL
+                  ? { ...p, position: 10, inJail: true, jailTurns: 0 } // Position 10 is JAIL
                   : p
               );
               newState.players = newPlayers;
@@ -101,6 +130,9 @@ export const useGameActions = () => {
             break;
 
           case "property":
+          case "beach":
+          case "railroad":
+          case "utility":
             const owner = prevState.propertyOwnership[position];
 
             if (!owner) {
@@ -205,7 +237,14 @@ export const useGameActions = () => {
         return newState;
       });
     },
-    [gameState.players, nextTurn, showMessage, updateGameState, getPropertyPrice, getPropertyRent]
+    [
+      gameState.players,
+      nextTurn,
+      showMessage,
+      updateGameState,
+      getPropertyPrice,
+      getPropertyRent,
+    ]
   );
 
   // Move player
@@ -230,7 +269,7 @@ export const useGameActions = () => {
           const newPlayers = prevState.players.map((player) => {
             if (player.id === playerId) {
               const currentPosition = player.position;
-              const nextPosition = (currentPosition + 1) % 24;
+              const nextPosition = (currentPosition + 1) % 40;
               finalPosition = nextPosition;
 
               // Debug: Log the movement
@@ -304,7 +343,7 @@ export const useGameActions = () => {
               : player
           );
 
-          return {
+          const newState = {
             ...prevState,
             players: newPlayers,
             propertyOwnership: {
@@ -315,18 +354,44 @@ export const useGameActions = () => {
               ...prevState.gameLog,
               `${currentPlayer.name} bought ${boardSpaces[position]?.name} for $${price}`,
             ],
-            gamePhase: "waiting",
+            gamePhase: "waiting" as const,
             currentAction: undefined,
           };
+
+          // Check for win condition after buying property
+          if (ownsAllBeaches(currentPlayer.id, newState)) {
+            newState.gameLog.push(
+              `🏆 ${currentPlayer.name} WINS! Owned all 4 beaches! 🏖️`
+            );
+            (newState as any).gamePhase = "finished";
+            showMessage(
+              `🏆 ${currentPlayer.name} WINS! Owned all 4 beaches! 🏖️`,
+              "success",
+              10000
+            );
+          }
+
+          return newState;
         });
 
-        // Call nextTurn after buying property
+        // Advance turn or end game
         setTimeout(() => {
-          nextTurn();
+          if (gameState.gamePhase !== "finished") {
+            nextTurn();
+          }
         }, 500);
       }
     },
-    [gameState.players, gameState.currentPlayerIndex, nextTurn, updateGameState, getPropertyPrice]
+    [
+      gameState.players,
+      gameState.currentPlayerIndex,
+      gameState.gamePhase,
+      nextTurn,
+      updateGameState,
+      getPropertyPrice,
+      ownsAllBeaches,
+      showMessage,
+    ]
   );
 
   // Skip buying property
@@ -347,12 +412,18 @@ export const useGameActions = () => {
     setTimeout(() => {
       nextTurn();
     }, 500);
-  }, [gameState.players, gameState.currentPlayerIndex, nextTurn, updateGameState]);
+  }, [
+    gameState.players,
+    gameState.currentPlayerIndex,
+    nextTurn,
+    updateGameState,
+  ]);
 
   // Handle dice roll
   const handleDiceRoll = useCallback(
     (total: number, dice1: number, dice2: number) => {
       const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+      const isDoubles = dice1 === dice2;
 
       // Check if player is in jail
       if (currentPlayer.inJail) {
@@ -361,10 +432,53 @@ export const useGameActions = () => {
         return;
       }
 
-      setGamePhase("moving");
+      // Update game state with doubles info
+      updateGameState((prevState) => {
+        const newDoublesCount = isDoubles ? prevState.doublesCount + 1 : 0;
+
+        // Check for 3 doubles in a row -> go to jail
+        if (isDoubles && newDoublesCount >= 3) {
+          const newPlayers = prevState.players.map((player) =>
+            player.id === currentPlayer.id
+              ? { ...player, position: 10, inJail: true, jailTurns: 0 }
+              : player
+          );
+
+          showMessage(
+            `${currentPlayer.name} rolled 3 doubles in a row and goes to Jail!`,
+            "warning",
+            3000
+          );
+
+          return {
+            ...prevState,
+            players: newPlayers,
+            doublesCount: 0,
+            hasRolledDoubles: false,
+            gamePhase: "waiting",
+            gameLog: [
+              ...prevState.gameLog,
+              `${currentPlayer.name} rolled 3 doubles in a row and went to Jail!`,
+            ],
+          };
+        }
+
+        return {
+          ...prevState,
+          doublesCount: newDoublesCount,
+          hasRolledDoubles: isDoubles,
+          gamePhase: "moving",
+        };
+      });
 
       // Animation delay before moving
       setTimeout(() => {
+        // If 3 doubles, don't move (already went to jail)
+        if (isDoubles && gameState.doublesCount + 1 >= 3) {
+          setTimeout(() => nextTurn(), 1000);
+          return;
+        }
+
         movePlayer(currentPlayer.id, total);
 
         // Don't automatically call nextTurn here
@@ -375,8 +489,11 @@ export const useGameActions = () => {
     [
       gameState.players,
       gameState.currentPlayerIndex,
+      gameState.doublesCount,
       movePlayer,
-      setGamePhase,
+      updateGameState,
+      showMessage,
+      nextTurn,
     ]
   );
 
@@ -386,8 +503,10 @@ export const useGameActions = () => {
       const currentPlayer = gameState.players[gameState.currentPlayerIndex];
       const isDoubles = dice1 === dice2;
       const total = dice1 + dice2;
-      
-      console.log(`Jail roll: ${currentPlayer.name} rolled ${dice1}, ${dice2} (doubles: ${isDoubles})`);
+
+      console.log(
+        `Jail roll: ${currentPlayer.name} rolled ${dice1}, ${dice2} (doubles: ${isDoubles})`
+      );
 
       updateGameState((prevState) => {
         let newState = { ...prevState };
@@ -404,6 +523,9 @@ export const useGameActions = () => {
             `${currentPlayer.name} rolled doubles (${dice1}, ${dice2}) and got out of jail!`,
           ];
           newState.gamePhase = "moving";
+          // Set doubles flag for extra turn after getting out
+          newState.hasRolledDoubles = true;
+          newState.doublesCount = 1;
 
           // Move the player after getting out
           setTimeout(() => {
@@ -458,7 +580,13 @@ export const useGameActions = () => {
         return newState;
       });
     },
-    [gameState.players, gameState.currentPlayerIndex, nextTurn, movePlayer, updateGameState]
+    [
+      gameState.players,
+      gameState.currentPlayerIndex,
+      nextTurn,
+      movePlayer,
+      updateGameState,
+    ]
   );
 
   // Pay jail fine
@@ -491,7 +619,12 @@ export const useGameActions = () => {
         nextTurn();
       }, 500);
     }
-  }, [gameState.players, gameState.currentPlayerIndex, nextTurn, updateGameState]);
+  }, [
+    gameState.players,
+    gameState.currentPlayerIndex,
+    nextTurn,
+    updateGameState,
+  ]);
 
   // Use Get Out of Jail Free card
   const useJailFreeCard = useCallback(() => {
@@ -528,7 +661,14 @@ export const useGameActions = () => {
         nextTurn();
       }, 500);
     }
-  }, [gameState.players, gameState.currentPlayerIndex, drawnCards, nextTurn, updateGameState, setDrawnCards]);
+  }, [
+    gameState.players,
+    gameState.currentPlayerIndex,
+    drawnCards,
+    nextTurn,
+    updateGameState,
+    setDrawnCards,
+  ]);
 
   // Handle card drawn from CardDrawModal
   const handleCardDrawn = useCallback(
@@ -565,7 +705,7 @@ export const useGameActions = () => {
             break;
 
           case "advance-to-boardwalk":
-            const boardwalkPosition = 23; // Boardwalk position
+            const boardwalkPosition = 39; // Boardwalk position
             const passedGo = boardwalkPosition < currentPlayer.position;
             newState.players = prevState.players.map((player) =>
               player.id === currentPlayer.id
@@ -584,7 +724,7 @@ export const useGameActions = () => {
           case "go-to-jail":
             newState.players = prevState.players.map((player) =>
               player.id === currentPlayer.id
-                ? { ...player, position: 6, inJail: true, jailTurns: 0 } // Position 6 is JAIL
+                ? { ...player, position: 10, inJail: true, jailTurns: 0 } // Position 10 is JAIL
                 : player
             );
             break;
@@ -667,8 +807,9 @@ export const useGameActions = () => {
           duration: 3000,
         };
 
-        // Keep the card modal open to show the drawn card
-        // Modal will be closed when user clicks "Apply Card Effect"
+        // Close the card modal after applying effect
+        newState.cardDrawModal = { isOpen: false, cardType: "chance" };
+        newState.gamePhase = "waiting";
 
         return newState;
       });
@@ -687,16 +828,6 @@ export const useGameActions = () => {
       updateGameState,
     ]
   );
-
-  // Close card modal and advance turn
-  const closeCardModal = useCallback(() => {
-    updateGameState((prevState) => ({
-      ...prevState,
-      cardDrawModal: { isOpen: false, cardType: "chance" },
-      gamePhase: "waiting",
-    }));
-    nextTurn();
-  }, [nextTurn, updateGameState]);
 
   // Handle Chance/Community Chest cards
   const handleSpecialCard = useCallback(
@@ -746,7 +877,7 @@ export const useGameActions = () => {
             break;
 
           case "advance-to-boardwalk":
-            const boardwalkPosition = 23; // Boardwalk position
+            const boardwalkPosition = 39; // Boardwalk position
             const passedGo = boardwalkPosition < currentPlayer.position;
             newState.players = prevState.players.map((player) =>
               player.id === currentPlayer.id
@@ -765,7 +896,7 @@ export const useGameActions = () => {
           case "go-to-jail":
             newState.players = prevState.players.map((player) =>
               player.id === currentPlayer.id
-                ? { ...player, position: 6, inJail: true, jailTurns: 0 } // Position 6 is JAIL
+                ? { ...player, position: 10, inJail: true, jailTurns: 0 } // Position 10 is JAIL
                 : player
             );
             break;
@@ -857,6 +988,189 @@ export const useGameActions = () => {
     ]
   );
 
+  // Build houses on property
+  const buildHouses = useCallback(
+    (playerId: number, position: number, housesToBuild: number) => {
+      const property = getPropertyData(position);
+      if (!property || property.type !== "property") return;
+
+      const player = gameState.players.find((p) => p.id === playerId);
+      if (!player) return;
+
+      // Check if player can build
+      if (!canBuildOnProperty(playerId, position, gameState)) return;
+
+      const houseCost = getBuildingCost(position, "house");
+      const totalCost = houseCost * housesToBuild;
+
+      // Check if player has enough money
+      if (player.money < totalCost) return;
+
+      // Check building limits
+      const currentBuildings = gameState.propertyBuildings?.[position];
+      const currentHouses = currentBuildings?.houses || 0;
+
+      if (currentHouses + housesToBuild > 4) return;
+
+      updateGameState((prevState) => {
+        const newPlayers = prevState.players.map((p) =>
+          p.id === playerId ? { ...p, money: p.money - totalCost } : p
+        );
+
+        const newBuildings = {
+          ...prevState.propertyBuildings,
+          [position]: {
+            houses: currentHouses + housesToBuild,
+            hasHotel: false,
+            hasFlag: false, // Clear flag when building houses
+          },
+        };
+
+        return {
+          ...prevState,
+          players: newPlayers,
+          propertyBuildings: newBuildings,
+          gameLog: [
+            ...prevState.gameLog,
+            `${player.name} built ${housesToBuild} house${
+              housesToBuild > 1 ? "s" : ""
+            } on ${property.name} for $${totalCost}`,
+          ],
+        };
+      });
+
+      showMessage(
+        `Built ${housesToBuild} house${housesToBuild > 1 ? "s" : ""} on ${
+          property.name
+        }!`,
+        "success"
+      );
+    },
+    [
+      gameState,
+      canBuildOnProperty,
+      getBuildingCost,
+      updateGameState,
+      showMessage,
+    ]
+  );
+
+  // Build hotel on property
+  const buildHotel = useCallback(
+    (playerId: number, position: number) => {
+      const property = getPropertyData(position);
+      if (!property || property.type !== "property") return;
+
+      const player = gameState.players.find((p) => p.id === playerId);
+      if (!player) return;
+
+      // Check if player can build hotel
+      const currentBuildings = gameState.propertyBuildings?.[position];
+      if (
+        !currentBuildings ||
+        currentBuildings.houses !== 4 ||
+        currentBuildings.hasHotel
+      )
+        return;
+
+      const hotelCost = getBuildingCost(position, "hotel");
+
+      // Check if player has enough money
+      if (player.money < hotelCost) return;
+
+      updateGameState((prevState) => {
+        const newPlayers = prevState.players.map((p) =>
+          p.id === playerId ? { ...p, money: p.money - hotelCost } : p
+        );
+
+        const newBuildings = {
+          ...prevState.propertyBuildings,
+          [position]: {
+            houses: 0, // Houses are returned to bank when hotel is built
+            hasHotel: true,
+            hasFlag: false, // Clear flag when building hotel
+          },
+        };
+
+        return {
+          ...prevState,
+          players: newPlayers,
+          propertyBuildings: newBuildings,
+          gameLog: [
+            ...prevState.gameLog,
+            `${player.name} built a hotel on ${property.name} for $${hotelCost}`,
+          ],
+        };
+      });
+
+      showMessage(`Built hotel on ${property.name}!`, "success");
+    },
+    [gameState, getBuildingCost, updateGameState, showMessage]
+  );
+
+  const buyPropertyWithFlag = useCallback(
+    (position: number, buildingType: "flag" | "house1" = "flag") => {
+      const property = getPropertyData(position);
+      if (!property) return;
+
+      const flagCost = property.flagCost || property.price || 0;
+      const houseCost = property.houseCost || 0;
+      const totalCost =
+        buildingType === "house1" ? flagCost + houseCost : flagCost;
+      const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+
+      if (currentPlayer.money < totalCost) {
+        showMessage(`Not enough money to buy with ${buildingType}!`, "error");
+        return;
+      }
+
+      updateGameState((prevState) => {
+        const newState = { ...prevState };
+        const player = newState.players[newState.currentPlayerIndex];
+
+        // Deduct cost
+        player.money -= totalCost;
+
+        // Add property to player's owned properties
+        player.properties.push(position);
+
+        // Set property ownership
+        newState.propertyOwnership[position] = player.id;
+
+        // Set building state (flag or ready for house)
+        newState.propertyBuildings[position] = {
+          houses: 0,
+          hasHotel: false,
+          hasFlag: buildingType === "flag",
+        };
+
+        // Clear current action and advance game
+        newState.currentAction = undefined;
+        newState.gamePhase = "waiting";
+
+        // Add to game log
+        const logMessage =
+          buildingType === "house1"
+            ? `${player.name} bought ${property.name} with 1 house for $${totalCost}`
+            : `${player.name} bought ${property.name} with flag for $${totalCost}`;
+        newState.gameLog.push(logMessage);
+
+        return newState;
+      });
+
+      const toastMessage =
+        buildingType === "house1"
+          ? `Bought ${property.name} with 1 house for $${totalCost}!`
+          : `Bought ${property.name} with flag for $${totalCost}!`;
+      showMessage(toastMessage, "success");
+
+      setTimeout(() => {
+        nextTurn();
+      }, 1000);
+    },
+    [gameState, updateGameState, showMessage, nextTurn]
+  );
+
   return {
     gameState,
     drawnCards,
@@ -866,17 +1180,23 @@ export const useGameActions = () => {
     nextTurn,
     setGamePhase,
     buyProperty,
+    buyPropertyWithFlag,
     skipProperty,
     handleSpaceLanding,
     payJailFine,
     useJailFreeCard,
     tryJailDoubles,
     handleCardDrawn,
-    closeCardModal,
     handleSpecialCard,
     addMoney,
     getPropertyPrice,
     getPropertyRent,
-    ownsFullColorGroup: (playerId: number, position: number) => ownsFullColorGroup(playerId, position, gameState),
+    ownsFullColorGroup: (playerId: number, colorGroup: string) =>
+      ownsFullColorGroup(playerId, colorGroup, gameState),
+    buildHouses,
+    buildHotel,
+    canBuildOnProperty: (playerId: number, position: number) =>
+      canBuildOnProperty(playerId, position, gameState),
+    getBuildingCost,
   };
 };

@@ -55,6 +55,8 @@ export const useGameState = () => {
     propertyBuildings: {},
     mortgagedProperties: [],
     gameLog: ["Game started!"],
+    doublesCount: 0,
+    hasRolledDoubles: false,
   });
 
   const [drawnCards, setDrawnCards] = useState<DrawnCards>({
@@ -63,9 +65,12 @@ export const useGameState = () => {
     playerJailCards: {},
   });
 
-  const updateGameState = useCallback((updater: (prevState: GameState) => GameState) => {
-    setGameState(updater);
-  }, []);
+  const updateGameState = useCallback(
+    (updater: (prevState: GameState) => GameState) => {
+      setGameState(updater);
+    },
+    []
+  );
 
   const setGamePhase = useCallback((phase: GameState["gamePhase"]) => {
     setGameState((prevState) => ({
@@ -77,6 +82,23 @@ export const useGameState = () => {
   const nextTurn = useCallback(() => {
     console.log("nextTurn called - advancing to next player");
     setGameState((prevState) => {
+      // If current player rolled doubles, they get another turn
+      if (prevState.hasRolledDoubles && prevState.doublesCount < 3) {
+        console.log(
+          `${
+            prevState.players[prevState.currentPlayerIndex].name
+          } rolled doubles and gets another turn!`
+        );
+        return {
+          ...prevState,
+          gamePhase: "waiting",
+          currentAction: undefined,
+          hasRolledDoubles: false, // Reset for next roll
+          currentMessage: undefined,
+        };
+      }
+
+      // Normal turn advance
       const newPlayerIndex =
         (prevState.currentPlayerIndex + 1) % prevState.players.length;
       const newPlayer = prevState.players[newPlayerIndex];
@@ -90,6 +112,8 @@ export const useGameState = () => {
         gamePhase: "waiting",
         currentAction: undefined,
         currentMessage: undefined,
+        doublesCount: 0, // Reset doubles count for new player
+        hasRolledDoubles: false,
       };
     });
   }, []);
