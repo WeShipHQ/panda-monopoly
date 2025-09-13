@@ -1,0 +1,183 @@
+use anchor_lang::prelude::*;
+
+use crate::{error::GameError, ColorGroup, PlayerState, PropertyState, PropertyType};
+
+// Helper function for rent calculation
+pub fn calculate_rent_for_property(
+    property_state: &PropertyState,
+    owner_state: &PlayerState,
+    dice_result: [u8; 2],
+) -> Result<u64> {
+    match property_state.property_type {
+        PropertyType::Street => {
+            if property_state.has_hotel {
+                Ok(property_state.rent_with_hotel as u64)
+            } else if property_state.houses > 0 {
+                let house_index = (property_state.houses - 1) as usize;
+                if house_index < property_state.rent_with_houses.len() {
+                    Ok(property_state.rent_with_houses[house_index] as u64)
+                } else {
+                    Err(GameError::InvalidHouseCount.into())
+                }
+            } else {
+                // Check for monopoly to double rent
+                if has_color_group_monopoly(owner_state, property_state.color_group) {
+                    Ok(property_state.rent_with_color_group as u64)
+                } else {
+                    Ok(property_state.rent_base as u64)
+                }
+            }
+        }
+        PropertyType::Railroad => {
+            // Count railroads owned by the owner
+            let railroads_owned = count_railroads_owned(owner_state);
+            let base_rent = property_state.rent_base as u64;
+
+            match railroads_owned {
+                1 => Ok(base_rent),
+                2 => Ok(base_rent * 2),
+                3 => Ok(base_rent * 4),
+                4 => Ok(base_rent * 8),
+                _ => Ok(base_rent),
+            }
+        }
+        PropertyType::Utility => {
+            // Count utilities owned by the owner
+            let utilities_owned = count_utilities_owned(owner_state);
+            let dice_sum = (dice_result[0] + dice_result[1]) as u64;
+
+            let multiplier = if utilities_owned == 1 { 4 } else { 10 };
+            Ok(dice_sum * multiplier)
+        }
+        _ => Ok(0), // No rent for other property types
+    }
+}
+
+// Helper function to check if owner has monopoly on color group
+fn has_color_group_monopoly(owner_state: &PlayerState, color_group: ColorGroup) -> bool {
+    let properties_in_group = get_color_group_properties(color_group);
+
+    properties_in_group
+        .iter()
+        .all(|&position| owner_state.properties_owned.contains(&position))
+}
+
+// Helper function to count railroads owned
+fn count_railroads_owned(owner_state: &PlayerState) -> u8 {
+    let railroad_positions = [5, 15, 25, 35]; // Railroad positions on the board
+
+    railroad_positions
+        .iter()
+        .filter(|&&pos| owner_state.properties_owned.contains(&pos))
+        .count() as u8
+}
+
+// Helper function to count utilities owned
+fn count_utilities_owned(owner_state: &PlayerState) -> u8 {
+    let utility_positions = [12, 28]; // Electric Company and Water Works
+
+    utility_positions
+        .iter()
+        .filter(|&&pos| owner_state.properties_owned.contains(&pos))
+        .count() as u8
+}
+
+// Helper function to get properties in a color group
+fn get_color_group_properties(color_group: ColorGroup) -> Vec<u8> {
+    match color_group {
+        ColorGroup::Brown => vec![1, 3],
+        ColorGroup::LightBlue => vec![6, 8, 9],
+        ColorGroup::Pink => vec![11, 13, 14],
+        ColorGroup::Orange => vec![16, 18, 19],
+        ColorGroup::Red => vec![21, 23, 24],
+        ColorGroup::Yellow => vec![26, 27, 29],
+        ColorGroup::Green => vec![31, 32, 34],
+        ColorGroup::DarkBlue => vec![37, 39],
+        ColorGroup::Railroad => vec![5, 15, 25, 35],
+        ColorGroup::Utility => vec![12, 28],
+        ColorGroup::Special => vec![], // No properties in special group
+    }
+}
+
+// Helper functions for building validation
+pub fn has_monopoly_for_player(player_state: &PlayerState, color_group: ColorGroup) -> bool {
+    let properties_in_group = get_color_group_properties(color_group);
+
+    properties_in_group
+        .iter()
+        .all(|&pos| player_state.properties_owned.contains(&pos))
+}
+
+pub fn can_build_evenly_for_player(
+    _player_state: &PlayerState,
+    color_group: ColorGroup,
+    _target_position: u8,
+    _target_houses: u8,
+) -> bool {
+    let _properties_in_group = get_color_group_properties(color_group);
+
+    // For this simplified version, we'll assume even building is allowed
+    // In a full implementation, you'd need to check other properties in the group
+    // This would require additional property state lookups
+    true
+}
+
+pub fn can_sell_evenly_for_player(
+    _player_state: &PlayerState,
+    color_group: ColorGroup,
+    _target_position: u8,
+    _target_houses: u8,
+) -> bool {
+    let _properties_in_group = get_color_group_properties(color_group);
+    
+    // For this simplified version, we'll assume even selling is allowed
+    // In a full implementation, you'd need to check other properties in the group
+    // This would require additional property state lookups
+    true
+}
+
+
+// Helper function to generate random card index
+pub fn generate_card_index(recent_blockhashes: &UncheckedAccount, timestamp: i64, deck_size: usize) -> Result<usize> {
+    // Get recent blockhash data for randomness
+    let data = recent_blockhashes.try_borrow_data()?;
+
+    // Use a combination of blockhash and timestamp for randomness
+    let mut seed_bytes = [0u8; 32];
+
+    // Take first 24 bytes from recent blockhash data
+    if data.len() >= 24 {
+        seed_bytes[..24].copy_from_slice(&data[..24]);
+    }
+
+    // Add timestamp to last 8 bytes
+    let timestamp_bytes = timestamp.to_le_bytes();
+    seed_bytes[24..].copy_from_slice(&timestamp_bytes);
+
+    // Generate random index
+    let random_value = u32::from_le_bytes([
+        seed_bytes[0],
+        seed_bytes[1],
+        seed_bytes[2],
+        seed_bytes[3],
+    ]);
+
+    Ok((random_value as usize) % deck_size)
+}
+
+// Helper function for generating random seed (similar to dice roll generation)
+pub fn generate_random_seed(recent_blockhashes: &UncheckedAccount, timestamp: i64) -> Result<u64> {
+    let recent_blockhashes_data = recent_blockhashes.try_borrow_data()?;
+    
+    if recent_blockhashes_data.len() < 8 {
+        return Err(GameError::RandomnessUnavailable.into());
+    }
+    
+    let mut seed_bytes = [0u8; 8];
+    seed_bytes.copy_from_slice(&recent_blockhashes_data[0..8]);
+    
+    let blockhash_seed = u64::from_le_bytes(seed_bytes);
+    let timestamp_seed = timestamp as u64;
+    
+    Ok(blockhash_seed.wrapping_mul(timestamp_seed))
+}
