@@ -12,9 +12,11 @@ import {
 } from "next/font/google";
 import { cn } from "@/lib/utils";
 import "@/styles/globals.css";
+import "@wallet-ui/tailwind/index.css";
 import "@/styles/fonts.css";
 import "@/styles/monopoly.css";
 import RootProviders from "@/providers";
+import { AppProviders } from "./providers";
 
 // Geist Sans
 const geistSans = Geist({
@@ -107,7 +109,9 @@ export default function RootLayout({
           "antialiased font-sans"
         )}
       >
-        <RootProviders>{children}</RootProviders >
+        {/* <RootProviders> */}
+        <AppProviders>{children}</AppProviders>
+        {/* </RootProviders> */}
       </body>
     </html>
   );

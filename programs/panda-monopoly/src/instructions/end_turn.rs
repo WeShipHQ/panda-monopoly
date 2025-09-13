@@ -6,8 +6,8 @@ use anchor_lang::prelude::*;
 pub struct EndTurn<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref()],
-        bump,
+        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
     pub game: Account<'info, GameState>,

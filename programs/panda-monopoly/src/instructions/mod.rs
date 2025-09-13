@@ -8,8 +8,8 @@ pub mod special_spaces;
 
 pub use initialize::*;
 pub use dice::*;
-// pub use property::*;
-pub use movement::*;
+pub use property::*;
+// pub use movement::*;
 pub use end_turn::*;
 // pub use trading::*;
 pub use special_spaces::*;

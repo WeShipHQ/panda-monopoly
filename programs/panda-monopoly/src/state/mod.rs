@@ -1,5 +1,8 @@
 use anchor_lang::prelude::*;
 
+mod events;
+pub use events::*;
+
 #[derive(Debug, InitSpace, AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 pub enum GameStatus {
     WaitingForPlayers,
@@ -54,6 +57,7 @@ pub enum BuildingType {
 #[account]
 #[derive(Debug, InitSpace)]
 pub struct GameState {
+    pub game_id: u64,
     pub authority: Pubkey,   // 32 bytes - game creator
     pub bump: u8,            // 1 byte - PDA bump seed
     pub max_players: u8,     // 1 byte - maximum players (2-8)
@@ -66,7 +70,7 @@ pub struct GameState {
     pub game_status: GameStatus, // 1 byte - current game status
     pub dice_result: [u8; 2], // 2 bytes - last dice roll
     pub bank_balance: u64,   // 8 bytes - bank's money
-    pub free_parking_pool: u64,   // 8 bytes - parking pool
+    pub free_parking_pool: u64, // 8 bytes - parking pool
     pub houses_remaining: u8, // 1 byte - houses left in bank (32 total)
     pub hotels_remaining: u8, // 1 byte - hotels left in bank (12 total)
     pub time_limit: Option<i64>, // 9 bytes - optional time limit
@@ -94,17 +98,19 @@ pub struct PlayerState {
     pub last_rent_collected: i64, // 8 bytes - last rent collection time
     pub festival_boost_turns: u8, // 1 byte - remaining festival boost turns
 
-    pub has_rolled_dice: bool, // 1 byte - has rolled dice this turn
-    pub last_dice_roll: [u8; 2], // 2 bytes - last dice roll
+    pub has_rolled_dice: bool,       // 1 byte - has rolled dice this turn
+    pub last_dice_roll: [u8; 2],     // 2 bytes - last dice roll
     pub needs_property_action: bool, // Player landed on property
     pub pending_property_position: Option<u8>, // Which property
-    pub needs_chance_card: bool, // Needs to draw chance card
+    pub needs_chance_card: bool,     // Needs to draw chance card
     pub needs_community_chest_card: bool, // Needs to draw community chest
     pub needs_bankruptcy_check: bool, // Insufficient funds detected
-    pub can_end_turn: bool, // All actions completed
+    pub can_end_turn: bool,          // All actions completed
 
     pub needs_special_space_action: bool, // Player landed on special space
     pub pending_special_space_position: Option<u8>, // Which special space
+
+    pub card_drawn_at: Option<i64>, // Timestamp when card was drawn
 }
 
 impl PlayerState {}
@@ -145,8 +151,7 @@ pub struct TradeState {
     pub expires_at: i64,
 }
 
-impl TradeState {
-}
+impl TradeState {}
 
 #[account]
 pub struct AuctionState {
