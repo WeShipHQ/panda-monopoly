@@ -30,7 +30,7 @@ import { useGameWallet } from "@/hooks/use-game-wallet";
 import {
   useExportWallet,
 } from "@privy-io/react-auth/solana";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import envConfig from "@/configs/env";
 
 interface CreateGameWalletDialogProps {
@@ -49,7 +49,7 @@ function DelegateWalletDialog({
   const [isDelegating, setIsDelegating] = useState(false);
 
   const gameWalletAddress = gameWalletData?.gameWalletAddress;
-  const isDelegated = gameWalletData?.isDelegated;
+  const isDelegated = gameWalletData?.isDelegated || false;
 
   const handleDelegate = async () => {
     if (!gameWalletAddress) {
@@ -150,6 +150,26 @@ export default function ConnectWalletBtn() {
   const gameWalletData = useGameWallet();
   const gameWalletAddress = gameWalletData?.gameWalletAddress;
   const [isDelegationDialogOpen, setIsDelegationDialogOpen] = useState(false);
+  const [hasShownDelegationDialog, setHasShownDelegationDialog] = useState(false);
+
+  useEffect(() => {
+    if (authenticated && gameWalletAddress && !gameWalletData?.isDelegated && !hasShownDelegationDialog) {
+      const timer = setTimeout(() => {
+        setIsDelegationDialogOpen(true);
+        setHasShownDelegationDialog(true);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [authenticated, gameWalletAddress, gameWalletData?.isDelegated, hasShownDelegationDialog]);
+
+  // Reset delegation dialog state when user logs out
+  useEffect(() => {
+    if (!authenticated) {
+      setHasShownDelegationDialog(false);
+      setIsDelegationDialogOpen(false);
+    }
+  }, [authenticated]);
  
 
   if (!ready) {
@@ -188,21 +208,26 @@ export default function ConnectWalletBtn() {
           <DropdownMenuTrigger className="h-full" asChild>
             <Button
               variant="ghost"
-              className={cn("size-14 aspect-square p-2 md:p-3")}
+              className={cn("size-14 aspect-square p-2 md:p-3 relative")}
               asChild
             >
-              <Avatar>
-                <AvatarImage
-                  src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${
-                    gameWalletAddress || ""
-                  }`}
-                  alt={gameWalletAddress || "Wallet"}
-                  className="rounded-full bg-accent select-none hover:animate-none hover:scale-105 hover:rotate-[10deg] transition-all duration-300"
-                />
-                <AvatarFallback className="rounded-full bg-primary/10 text-primary">
-                  {gameWalletAddress || "?"}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar>
+                  <AvatarImage
+                    src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${
+                      gameWalletAddress || ""
+                    }`}
+                    alt={gameWalletAddress || "Wallet"}
+                    className="rounded-full bg-accent select-none hover:animate-none hover:scale-105 hover:rotate-[10deg] transition-all duration-300"
+                  />
+                  <AvatarFallback className="rounded-full bg-primary/10 text-primary">
+                    {gameWalletAddress || "?"}
+                  </AvatarFallback>
+                </Avatar>
+                {gameWalletData?.isDelegated && (
+                  <div className="absolute -top-1 -right-1 size-3 bg-green-500 rounded-full border-2 border-background"></div>
+                )}
+              </div>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-[300px]" align="end">
@@ -242,29 +267,40 @@ export default function ConnectWalletBtn() {
                     )}
                   </Button>
                 </div >
-                <p className="text-sm text-muted-foreground">
-                 Embedded wallet <Link href="https://docs.privy.io/wallets/overview" target="_blank" className="text-primary underline">learn more</Link>
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                   Embedded wallet <Link href="https://docs.privy.io/wallets/overview" target="_blank" className="text-primary underline">learn more</Link>
+                  </p>
+                  {gameWalletData?.isDelegated && (
+                    <span className="text-xs px-2 py-1 rounded bg-green-500/20 text-green-500">
+                      Delegated
+                    </span>
+                  )}
+                </div>
                 </div>
               
             </div>
-            <DelegateWalletDialog
-              open={isDelegationDialogOpen}
-              onOpenChange={setIsDelegationDialogOpen}
-              trigger={
-                <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    setIsDelegationDialogOpen(true);
-                  }}
-                  className="flex items-center justify-between"
-                >
-                  <span>Delegate Wallet</span>
-                  <WalletIcon size={14} />
-                </DropdownMenuItem>
-              }
-            />
-            <DropdownMenuSeparator />
+            {!gameWalletData?.isDelegated && (
+              <>
+                <DelegateWalletDialog
+                  open={isDelegationDialogOpen}
+                  onOpenChange={setIsDelegationDialogOpen}
+                  trigger={
+                    <DropdownMenuItem
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        setIsDelegationDialogOpen(true);
+                      }}
+                      className="flex items-center justify-between"
+                    >
+                      <span>Delegate Wallet</span>
+                      <WalletIcon size={14} />
+                    </DropdownMenuItem>
+                  }
+                />
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuItem
               onClick={() => exportWallet({ address: gameWalletAddress })}
               className="flex items-center justify-between "
