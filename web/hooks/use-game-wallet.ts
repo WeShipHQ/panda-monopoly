@@ -17,5 +17,6 @@ export function useGameWallet() {
     return {
         gameWalletAddress: gameWallet?.address,
         gameWalletId: gameWallet?.id,
+        isDelegated: gameWallet?.delegated
     }
 }

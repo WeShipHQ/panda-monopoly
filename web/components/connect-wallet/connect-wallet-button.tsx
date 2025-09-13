@@ -1,8 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { Copy, CopyCheck, Download, PlugZap, Unplug } from "lucide-react";
+import { usePrivy, useSolanaWallets, useSessionSigners } from "@privy-io/react-auth";
+import { Copy, CopyCheck, Download, PlugZap, Unplug, WalletIcon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +10,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "../ui/dialog";
 import { cn, formatAddress } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { toast } from "sonner";
@@ -20,13 +30,126 @@ import { useGameWallet } from "@/hooks/use-game-wallet";
 import {
   useExportWallet,
 } from "@privy-io/react-auth/solana";
+import { useState } from "react";
+import envConfig from "@/configs/env";
 
+interface CreateGameWalletDialogProps {
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+function DelegateWalletDialog({
+  trigger,
+  open,
+  onOpenChange,
+}: CreateGameWalletDialogProps) {
+  const { addSessionSigners } = useSessionSigners();
+  const gameWalletData = useGameWallet();
+  const [isDelegating, setIsDelegating] = useState(false);
+
+  const gameWalletAddress = gameWalletData?.gameWalletAddress;
+  const isDelegated = gameWalletData?.isDelegated;
+
+  const handleDelegate = async () => {
+    if (!gameWalletAddress) {
+      toast.error("No game wallet found");
+      return;
+    }
+
+    try {
+      setIsDelegating(true);
+      await addSessionSigners({
+        address: gameWalletAddress,
+        signers: [
+          {
+            signerId: envConfig.NEXT_PUBLIC_AUTH_ID_PRIVY,
+            policyIds: [],
+          },
+        ],
+      });
+      toast.success("Successfully delegated game wallet");
+      setIsDelegating(false);
+      onOpenChange?.(false);
+    } catch (error) {
+      console.error("Error in handleDelegate:", error);
+      toast.error("Failed to delegate game wallet");
+      setIsDelegating(false);
+    }
+  };
+
+  const getButtonText = () => {
+    if (isDelegating) return "Delegating...";
+    return "Delegate Wallet";
+  };
+
+  const isLoading = isDelegating;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            🔐 Delegate Your Game Wallet
+          </DialogTitle>
+          <DialogDescription className="text-left space-y-3 text-base leading-relaxed text-foreground">
+            Delegating your game wallet enables a seamless monopoly experience without
+            interrupting your gameplay for wallet approvals on every move. This
+            allows our system to securely sign transactions on your
+            behalf—no more popups from wallets like Phantom!
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="p-3 rounded-lg border bg-muted/30">
+          <div className="flex items-center gap-2 mb-2">
+            <WalletIcon className="h-4 w-4" />
+            <span className="font-medium text-sm">Game Wallet Status</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              Wallet: {gameWalletAddress?.slice(0, 8)}...
+              {gameWalletAddress?.slice(-8)}
+            </span>
+            <span
+              className={cn(
+                "text-xs px-2 py-1 rounded",
+                isDelegated
+                  ? "bg-green-500/20 text-green-500"
+                  : "bg-yellow-500/20 text-yellow-500"
+              )}
+            >
+              {isDelegated ? "Delegated" : "Not Delegated"}
+            </span>
+          </div>
+        </div>
+
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <DialogClose asChild>
+            <Button variant="ghost" disabled={isLoading}>
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button
+            onClick={handleDelegate}
+            disabled={isLoading || isDelegated}
+            className={cn(isDelegated && "bg-green-600 hover:bg-green-700")}
+          >
+            {getButtonText()}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function ConnectWalletBtn() {
   const { ready, authenticated, login, logout } = usePrivy();
   const { exportWallet } = useExportWallet();
   const [copy, isCopied] = useCopyToClipboard();
-  const { gameWalletAddress} = useGameWallet() || {};
+  const gameWalletData = useGameWallet();
+  const gameWalletAddress = gameWalletData?.gameWalletAddress;
+  const [isDelegationDialogOpen, setIsDelegationDialogOpen] = useState(false);
  
 
   if (!ready) {
@@ -125,6 +248,23 @@ export default function ConnectWalletBtn() {
                 </div>
               
             </div>
+            <DelegateWalletDialog
+              open={isDelegationDialogOpen}
+              onOpenChange={setIsDelegationDialogOpen}
+              trigger={
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    setIsDelegationDialogOpen(true);
+                  }}
+                  className="flex items-center justify-between"
+                >
+                  <span>Delegate Wallet</span>
+                  <WalletIcon size={14} />
+                </DropdownMenuItem>
+              }
+            />
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => exportWallet({ address: gameWalletAddress })}
               className="flex items-center justify-between "
