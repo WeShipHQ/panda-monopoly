@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import "@/styles/globals.css";
 import "@/styles/fonts.css";
 import "@/styles/monopoly.css";
+import RootProviders from "@/providers";
 
 // Geist Sans
 const geistSans = Geist({
@@ -106,7 +107,7 @@ export default function RootLayout({
           "antialiased font-sans"
         )}
       >
-        {children}
+        <RootProviders>{children}</RootProviders >
       </body>
     </html>
   );
