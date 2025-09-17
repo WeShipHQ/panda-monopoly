@@ -11,7 +11,7 @@ import {
   TaxSpace,
 } from "@/components/board-spaces";
 import { monopolyData, PropertyData, boardSpaces } from "@/data/monopoly-data";
-import { getLegacyPropertyData, getPropertyData } from "@/data/unified-monopoly-data";
+import { getLegacyPropertyData, getPropertyData, unifiedPropertyData } from "@/data/unified-monopoly-data";
 import { PlayerTokensContainer } from "@/components/player-tokens";
 import { Dice } from "@/components/dice";
 import {
@@ -226,14 +226,113 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
             />
 
             {/* Center */}
-            <div className="col-start-3 col-end-13 row-start-3 row-end-13 bg-[#c7e9b5] grid grid-cols-3 grid-rows-3 justify-items-center items-center relative">
-              {/* MONOPOLY Logo */}
-              <h1 className="col-start-1 col-end-4 row-start-2 center-title text-black font-bold">
-                MONOPOLY
-              </h1>
-              {/* Decorative diamond pattern in center */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-32 h-32 border-2 border-black transform rotate-45 bg-white opacity-20"></div>
+            <div className="col-start-3 pt-[7rem] col-end-13 row-start-3 row-end-13 bg-[#c7e9b5] flex flex-col items-center justify-center p-4">
+              {/* Dice Section */}
+              <div className="flex-shrink-0">
+                <Dice 
+                  onRoll={handleDiceRoll} 
+                  disabled={gameState.gamePhase !== "waiting" || currentPlayer.inJail}
+                />
+              </div>
+              
+              {/* Game Log Section */}
+              <div className="flex-1 w-full max-w-md flex items-center justify-center">
+                <div className="h-24 overflow-y-auto w-full">
+                  <div className="space-y-2 text-center">
+                    {gameState.gameLog && gameState.gameLog.length > 0 ? (
+                      gameState.gameLog.slice(-8).reverse().map((log, index) => {
+                        // Find all player names mentioned in the log
+                        const mentionedPlayers = gameState.players.filter(player => 
+                          log.includes(player.name)
+                        );
+                        
+                        // Find property mentioned in the log and get its color
+                        const propertyMatch = boardSpaces.find(space => 
+                          log.includes(space.name)
+                        );
+                        
+                        // Create formatted log with bold player names and colored property names
+                        let formattedLog = log;
+                        
+                        // Replace all mentioned player names with bold markers
+                        mentionedPlayers.forEach(player => {
+                          const regex = new RegExp(`\\b${player.name}\\b`, 'g');
+                          formattedLog = formattedLog.replace(regex, `**${player.name}**`);
+                        });
+                        
+                        // Replace property name with colored version if found
+                        if (propertyMatch && propertyMatch.name) {
+                          const regex = new RegExp(`\\b${propertyMatch.name}\\b`, 'g');
+                          formattedLog = formattedLog.replace(regex, `##${propertyMatch.name}##`);
+                        }
+                        
+                        // Split the log by markers to separate bold, colored, and normal text
+                        const parts = formattedLog.split(/(\*\*[^*]+\*\*|##[^#]+##)/);
+                        
+                        // Get property color class based on the actual data
+                        const getPropertyColor = (propertyName: string) => {
+                          const unifiedProperty = unifiedPropertyData.find(p => p.name === propertyName);
+                          if (unifiedProperty && unifiedProperty.colorClass) {
+                            // Map actual colorClass to text color
+                            switch (unifiedProperty.colorClass) {
+                              case 'bg-[#8b4513]': return 'text-amber-800'; // Brown
+                              case 'bg-[#aae0fa]': return 'text-sky-400'; // Light Blue
+                              case 'bg-[#d93a96]': return 'text-pink-600'; // Pink/Magenta
+                              case 'bg-[#ffa500]': return 'text-orange-500'; // Orange
+                              case 'bg-[#ff0000]': return 'text-red-600'; // Red
+                              case 'bg-[#ffff00]': return 'text-yellow-500'; // Yellow
+                              case 'bg-[#00ff00]': return 'text-green-500'; // Green
+                              case 'bg-[#0000ff]': return 'text-blue-600'; // Dark Blue
+                              case 'bg-blue-200': return 'text-blue-400'; // Railroad/Utility
+                              case 'bg-white': return 'text-gray-600'; // Utility/Special
+                              default: return 'text-gray-800';
+                            }
+                          }
+                          return 'text-gray-800';
+                        };
+                        
+                        return (
+                          <div key={index} className="text-xs text-black flex items-center justify-center gap-1">
+                            {/* Show avatars of all mentioned players */}
+                            {mentionedPlayers.slice(0, 2).map((player, pIndex) => (
+                              <img
+                                key={pIndex}
+                                src={player.avatar}
+                                alt={`${player.name} avatar`}
+                                className="w-4 h-4 object-contain flex-shrink-0"
+                              />
+                            ))}
+                            <span>
+                              {parts.map((part, partIndex) => {
+                                if (part.startsWith('**') && part.endsWith('**')) {
+                                  // Bold player name
+                                  return (
+                                    <span key={partIndex} className="font-bold">
+                                      {part.slice(2, -2)}
+                                    </span>
+                                  );
+                                } else if (part.startsWith('##') && part.endsWith('##')) {
+                                  // Colored property name
+                                  const propertyName = part.slice(2, -2);
+                                  return (
+                                    <span key={partIndex} className={`font-semibold ${getPropertyColor(propertyName)}`}>
+                                      {propertyName}
+                                    </span>
+                                  );
+                                } else {
+                                  // Normal text
+                                  return <span key={partIndex}>{part}</span>;
+                                }
+                              })}
+                            </span>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-xs text-black/70 italic">no game events yet...</div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
