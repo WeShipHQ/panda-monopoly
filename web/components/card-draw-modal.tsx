@@ -10,14 +10,12 @@ import {
 interface CardDrawModalProps {
   isOpen: boolean;
   cardType: "chance" | "community-chest";
-  onClose?: () => void;
   onCardDrawn: (card: CardData) => void;
 }
 
 export const CardDrawModal: React.FC<CardDrawModalProps> = ({
   isOpen,
   cardType,
-  onClose,
   onCardDrawn,
 }) => {
   const [isSpinning, setIsSpinning] = useState(false);
@@ -61,12 +59,6 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
       setIsRolling(false);
       setShowCard(true);
     }, 2000); // 2 second rolling animation
-  };
-
-  const handleClose = () => {
-    setShowCard(false);
-    setDrawnCard(null);
-    onClose?.();
   };
 
   if (!isOpen) return null;
