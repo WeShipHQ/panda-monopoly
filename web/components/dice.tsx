@@ -12,6 +12,10 @@ export const Dice: React.FC<DiceProps> = ({ onRoll, disabled = false }) => {
     const [dice2, setDice2] = useState(1);
     const [isRolling, setIsRolling] = useState(false);
     const [diceTheme, setDiceTheme] = useState<'classic' | 'golden' | 'neon'>('classic');
+    
+    // State for dice rotation trajectories
+    const [dice1Rotation, setDice1Rotation] = useState({ x: -10, y: 15, z: 0 });
+    const [dice2Rotation, setDice2Rotation] = useState({ x: -10, y: -15, z: 0 });
 
     // Dice theme configurations
     const themes = {
@@ -48,11 +52,59 @@ export const Dice: React.FC<DiceProps> = ({ onRoll, disabled = false }) => {
 
         setIsRolling(true);
 
-        // Dice rolling animation
+        // Generate different rotation patterns for more variety
+        const rotationPatterns = [
+            // Pattern 1: Clockwise with bounce
+            { 
+                dice1: { xMult: 1, yMult: 1, zMult: 0.5, xBase: 360, yBase: 270, zBase: 180 },
+                dice2: { xMult: -1, yMult: 1, zMult: -0.5, xBase: 450, yBase: 360, zBase: 270 }
+            },
+            // Pattern 2: Counter-clockwise with wobble
+            { 
+                dice1: { xMult: -1, yMult: -1, zMult: 1, xBase: 540, yBase: 720, zBase: 360 },
+                dice2: { xMult: 1, yMult: -1, zMult: 0.8, xBase: 630, yBase: 450, zBase: 540 }
+            },
+            // Pattern 3: Fast spin with slow roll
+            { 
+                dice1: { xMult: 0.5, yMult: 2, zMult: -1, xBase: 270, yBase: 900, zBase: 450 },
+                dice2: { xMult: 2, yMult: 0.5, zMult: 1.5, xBase: 720, yBase: 540, zBase: 720 }
+            },
+            // Pattern 4: Erratic tumbling
+            { 
+                dice1: { xMult: 1.5, yMult: -0.8, zMult: 2, xBase: 810, yBase: 360, zBase: 630 },
+                dice2: { xMult: -1.2, yMult: 1.8, zMult: -0.6, xBase: 450, yBase: 810, zBase: 270 }
+            }
+        ];
+
+        // Randomly select a rotation pattern
+        const selectedPattern = rotationPatterns[Math.floor(Math.random() * rotationPatterns.length)];
+
+        // Dice rolling animation with selected pattern
         let rollCount = 0;
         const rollInterval = setInterval(() => {
             setDice1(Math.floor(Math.random() * 6) + 1);
             setDice2(Math.floor(Math.random() * 6) + 1);
+            
+            // Calculate rotation progress (0 to 1)
+            const progress = rollCount / 10;
+            
+            // Apply easing function for more natural movement
+            const easeInOut = (t: number) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+            const easedProgress = easeInOut(progress);
+            
+            // Update dice rotations with pattern and easing
+            setDice1Rotation({
+                x: selectedPattern.dice1.xBase * easedProgress * selectedPattern.dice1.xMult + Math.sin(progress * Math.PI * 4) * 20,
+                y: selectedPattern.dice1.yBase * easedProgress * selectedPattern.dice1.yMult + Math.cos(progress * Math.PI * 6) * 15,
+                z: selectedPattern.dice1.zBase * easedProgress * selectedPattern.dice1.zMult + Math.sin(progress * Math.PI * 8) * 10
+            });
+
+            setDice2Rotation({
+                x: selectedPattern.dice2.xBase * easedProgress * selectedPattern.dice2.xMult + Math.cos(progress * Math.PI * 5) * 20,
+                y: selectedPattern.dice2.yBase * easedProgress * selectedPattern.dice2.yMult + Math.sin(progress * Math.PI * 7) * 15,
+                z: selectedPattern.dice2.zBase * easedProgress * selectedPattern.dice2.zMult + Math.cos(progress * Math.PI * 9) * 10
+            });
+
             rollCount++;
 
             if (rollCount >= 10) {
@@ -65,6 +117,18 @@ export const Dice: React.FC<DiceProps> = ({ onRoll, disabled = false }) => {
                 setDice1(finalDice1);
                 setDice2(finalDice2);
                 setIsRolling(false);
+
+                // Set final resting positions with slight random variation
+                setDice1Rotation({
+                    x: -10 + (Math.random() - 0.5) * 20,
+                    y: 15 + (Math.random() - 0.5) * 30,
+                    z: (Math.random() - 0.5) * 15
+                });
+                setDice2Rotation({
+                    x: -10 + (Math.random() - 0.5) * 20,
+                    y: -15 + (Math.random() - 0.5) * 30,
+                    z: (Math.random() - 0.5) * 15
+                });
 
                 onRoll(finalDice1 + finalDice2, finalDice1, finalDice2);
             }
@@ -118,12 +182,12 @@ export const Dice: React.FC<DiceProps> = ({ onRoll, disabled = false }) => {
     return (
         <div className="flex flex-col items-center gap-4">
             {/* Theme Selector */}
-            <div className="flex gap-2 mb-2">
+            <div className="flex gap-1 sm:gap-2 mb-2">
                 {(Object.keys(themes) as Array<keyof typeof themes>).map((theme) => (
                     <button
                         key={theme}
                         onClick={() => setDiceTheme(theme)}
-                        className={`px-3 py-1 text-xs rounded-full transition-all ${
+                        className={`px-2 sm:px-3 py-1 sm:py-2 text-xs rounded-full transition-all min-h-[36px] sm:min-h-[44px] min-w-[50px] sm:min-w-[60px] ${
                             diceTheme === theme
                                 ? 'bg-blue-500 text-white shadow-lg'
                                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -141,9 +205,8 @@ export const Dice: React.FC<DiceProps> = ({ onRoll, disabled = false }) => {
                     <div
                         className={`dice-3d ${isRolling ? 'dice-rolling' : ''}`}
                         style={{
-                            transform: isRolling 
-                                ? `rotateX(${Math.random() * 360}deg) rotateY(${Math.random() * 360}deg)`
-                                : 'rotateX(-10deg) rotateY(15deg)'
+                            transform: `rotateX(${dice1Rotation.x}deg) rotateY(${dice1Rotation.y}deg) rotateZ(${dice1Rotation.z}deg)`,
+                            transition: isRolling ? 'none' : 'transform 0.5s ease-out'
                         }}
                     >
                         <DiceFace value={dice1} className="dice-front" />
@@ -160,9 +223,8 @@ export const Dice: React.FC<DiceProps> = ({ onRoll, disabled = false }) => {
                     <div
                         className={`dice-3d ${isRolling ? 'dice-rolling' : ''}`}
                         style={{
-                            transform: isRolling 
-                                ? `rotateX(${Math.random() * 360}deg) rotateY(${Math.random() * 360}deg)`
-                                : 'rotateX(-10deg) rotateY(-15deg)'
+                            transform: `rotateX(${dice2Rotation.x}deg) rotateY(${dice2Rotation.y}deg) rotateZ(${dice2Rotation.z}deg)`,
+                            transition: isRolling ? 'none' : 'transform 0.5s ease-out'
                         }}
                     >
                         <DiceFace value={dice2} className="dice-front" />
@@ -188,10 +250,10 @@ export const Dice: React.FC<DiceProps> = ({ onRoll, disabled = false }) => {
             </button>
 
             <div className="text-center">
-                <div className="text-lg font-bold">
+                <div className="text-sm sm:text-lg font-bold">
                     Total: {dice1 + dice2}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-xs sm:text-sm text-gray-600">
                     ({dice1} + {dice2})
                 </div>
             </div>

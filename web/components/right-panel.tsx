@@ -30,15 +30,12 @@ export const RightPanel: React.FC<RightPanelProps> = ({
   }, [gameState.currentAction]);
 
   return (
-    <div
-      className="w-[34rem] bg-background p-4 flex flex-col h-screen overflow-y-auto"
-      style={{ height: "100vh" }}
-    >
-      {/* Current Player Info */}
-      <div className="mb-6 p-4 bg-white rounded-lg shadow">
-        <h2 className="text-xl font-bold mb-2">Current Turn</h2>
+    <div className="w-full lg:w-[34rem] bg-background p-2 sm:p-4 flex flex-col h-full overflow-y-auto">
+      {/* Current Player Info - Hide on small mobile */}
+      <div className="hidden sm:block mb-4 lg:mb-6 p-3 lg:p-4 bg-white rounded-lg shadow">
+        <h2 className="text-lg lg:text-xl font-bold mb-2">Current Turn</h2>
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 flex items-center justify-center">
+          <div className="w-6 h-6 lg:w-8 lg:h-8 flex items-center justify-center">
             <img
               src={currentPlayer.avatar}
               alt={`${currentPlayer.name} avatar`}
@@ -46,11 +43,11 @@ export const RightPanel: React.FC<RightPanelProps> = ({
             />
           </div>
           <div>
-            <div className="font-bold text-gray-800">{currentPlayer.name}</div>
-            <div className="text-sm text-gray-700 font-semibold">
+            <div className="font-bold text-gray-800 text-sm lg:text-base">{currentPlayer.name}</div>
+            <div className="text-xs lg:text-sm text-gray-700 font-semibold">
               Money: ${currentPlayer.money}
             </div>
-            <div className="text-sm text-gray-700 font-semibold">
+            <div className="text-xs lg:text-sm text-gray-700 font-semibold">
               Position: {currentPlayer.position}
             </div>
             <div className="text-xs text-blue-700 font-medium">
@@ -61,36 +58,42 @@ export const RightPanel: React.FC<RightPanelProps> = ({
       </div>
 
       {/* Players List */}
-      <div className="p-4 bg-white rounded-lg shadow flex-1">
-        <h3 className="text-lg font-bold mb-4">Players List</h3>
-        <div className="space-y-3">
-          {gameState.players.map((player, index) => (
+      <div className="flex-1 p-3 lg:p-4 bg-white rounded-lg shadow overflow-y-auto">
+        <h2 className="text-lg lg:text-xl font-bold mb-3 lg:mb-4">Players</h2>
+        <div className="space-y-2 lg:space-y-3">
+          {gameState.players.map((player) => (
             <div
               key={player.id}
-              className={`flex items-center gap-3 p-2 rounded ${
-                index === gameState.currentPlayerIndex
-                  ? "bg-blue-100"
+              className={`p-2 lg:p-3 rounded-lg transition-colors ${
+                player.id === currentPlayer.id
+                  ? "bg-blue-100 border-2 border-blue-500"
                   : "bg-gray-50"
               }`}
             >
-              <div className="w-6 h-6 flex items-center justify-center">
-                <img
-                  src={player.avatar}
-                  alt={`${player.name} avatar`}
-                  className="w-full h-full object-contain drop-shadow-sm"
-                />
-              </div>
-              <div className="flex-1">
-                <div className="font-bold text-gray-800">{player.name}</div>
-                <div className="text-xs text-gray-700 font-semibold">${player.money}</div>
+              <div className="flex items-center gap-2 lg:gap-3">
+                <div className="w-5 h-5 lg:w-6 lg:h-6 flex items-center justify-center">
+                  <img
+                    src={player.avatar}
+                    alt={`${player.name} avatar`}
+                    className="w-full h-full object-contain drop-shadow-md"
+                  />
+                </div>
+                <div className="flex-1">
+                  <div className="font-bold text-gray-800 text-xs lg:text-sm">{player.name}</div>
+                  <div className="text-xs text-gray-600 font-semibold">${player.money}</div>
+                </div>
+                {/* Position indicator - only show on larger screens */}
+                <div className="hidden sm:block text-xs text-gray-500">
+                  Position: {player.position}
+                </div>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="p-4 bg-white rounded-lg shadow">
+      {/* Controls - Hide on mobile, show on desktop */}
+      <div className="hidden lg:block mt-4 p-3 lg:p-4 bg-white rounded-lg shadow">
         <h3 className="text-lg font-bold mb-4">Controls</h3>
 
         {/* Current Dialog Toggle - only show when there's an active dialog */}
@@ -113,13 +116,13 @@ export const RightPanel: React.FC<RightPanelProps> = ({
         <div className="flex gap-2">
           <button
             onClick={onRotateCounterClockwise}
-            className="flex-1 px-3 py-2 bg-gray-700 text-white hover:bg-gray-800 transition-colors text-sm font-semibold"
+            className="flex-1 px-3 py-3 min-h-[44px] bg-gray-700 text-white hover:bg-gray-800 transition-colors text-sm font-semibold rounded-lg"
           >
             ↺ Left
           </button>
           <button
             onClick={onRotateClockwise}
-            className="flex-1 px-3 py-2 bg-gray-700 text-white hover:bg-gray-800 transition-colors text-sm font-semibold"
+            className="flex-1 px-3 py-3 min-h-[44px] bg-gray-700 text-white hover:bg-gray-800 transition-colors text-sm font-semibold rounded-lg"
           >
             ↻ Right
           </button>
