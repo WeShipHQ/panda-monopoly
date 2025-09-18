@@ -2,6 +2,7 @@
 
 import React from "react";
 import { getPropertyData } from "@/data/unified-monopoly-data";
+import { playPropertySound, playSound } from "@/lib/soundUtil";
 
 interface PropertyDialogProps {
   isOpen: boolean;
@@ -80,7 +81,11 @@ export const PropertyDialog: React.FC<PropertyDialogProps> = ({
 
           {/* Flag Option */}
           <button
-            onClick={() => onBuyWithBuilding('flag')}
+            onClick={() => {
+              playPropertySound('buy');
+              onBuyWithBuilding('flag');
+            }}
+            onMouseEnter={() => canAffordFlag && playSound("button-hover", 0.2)}
             disabled={!canAffordFlag}
             className={`w-full px-3 py-2 transition-colors text-sm flex justify-between items-center ${canAffordFlag
                 ? "bg-yellow-500 text-white hover:bg-yellow-600"
@@ -96,7 +101,11 @@ export const PropertyDialog: React.FC<PropertyDialogProps> = ({
 
           {/* House 1 Option */}
           <button
-            onClick={() => onBuyWithBuilding('house1')}
+            onClick={() => {
+              playPropertySound('buy');
+              onBuyWithBuilding('house1');
+            }}
+            onMouseEnter={() => canAffordHouse1 && playSound("button-hover", 0.2)}
             disabled={!canAffordHouse1}
             className={`w-full px-3 py-2 transition-colors text-sm flex justify-between items-center ${canAffordHouse1
               ? "bg-blue-600 text-white hover:bg-blue-700"
@@ -204,7 +213,11 @@ export const SpecialCardDialog: React.FC<SpecialCardDialogProps> = ({
         </div>
 
         <button
-          onClick={onContinue}
+          onClick={() => {
+            playSound("button-click", 0.6);
+            onContinue();
+          }}
+          onMouseEnter={() => playSound("button-hover", 0.2)}
           className="w-full px-3 py-2 bg-gray-800 text-white hover:bg-gray-900 transition-colors text-sm"
         >
           Continue
@@ -267,7 +280,11 @@ export const JailDialog: React.FC<JailDialogProps> = ({
         <div className="space-y-2">
           {/* Roll for doubles */}
           <button
-            onClick={onRollDice}
+            onClick={() => {
+              playSound("dice-roll", 0.5);
+              onRollDice();
+            }}
+            onMouseEnter={() => playSound("button-hover", 0.2)}
             className="w-full px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm"
           >
             Roll Dice (Try for doubles)
@@ -275,7 +292,13 @@ export const JailDialog: React.FC<JailDialogProps> = ({
 
           {/* Pay fine */}
           <button
-            onClick={onPayFine}
+            onClick={() => {
+              if (canAffordFine) {
+                playSound("money-pay", 0.7);
+                onPayFine();
+              }
+            }}
+            onMouseEnter={() => canAffordFine && playSound("button-hover", 0.2)}
             disabled={!canAffordFine}
             className={`w-full px-3 py-2 transition-colors text-sm ${canAffordFine
               ? "bg-green-600 text-white hover:bg-green-700"

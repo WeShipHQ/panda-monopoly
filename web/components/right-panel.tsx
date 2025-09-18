@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import { boardSpaces } from "@/data/monopoly-data";
+import { SoundControl } from "@/components/sound-control";
+import { playSound } from "@/lib/soundUtil";
 
 interface RightPanelProps {
   boardRotation: number;
@@ -112,16 +114,30 @@ export const RightPanel: React.FC<RightPanelProps> = ({
             </div>
           )}
 
+        {/* Sound Controls */}
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold mb-2 text-gray-700">Sound Settings</h3>
+          <SoundControl />
+        </div>
+
         {/* Rotation Controls */}
         <div className="flex gap-2">
           <button
-            onClick={onRotateCounterClockwise}
+            onClick={() => {
+              playSound("button-click", 0.5);
+              onRotateCounterClockwise();
+            }}
+            onMouseEnter={() => playSound("button-hover", 0.2)}
             className="flex-1 px-3 py-3 min-h-[44px] bg-gray-700 text-white hover:bg-gray-800 transition-colors text-sm font-semibold rounded-lg"
           >
             ↺ Left
           </button>
           <button
-            onClick={onRotateClockwise}
+            onClick={() => {
+              playSound("button-click", 0.5);
+              onRotateClockwise();
+            }}
+            onMouseEnter={() => playSound("button-hover", 0.2)}
             className="flex-1 px-3 py-3 min-h-[44px] bg-gray-700 text-white hover:bg-gray-800 transition-colors text-sm font-semibold rounded-lg"
           >
             ↻ Right
