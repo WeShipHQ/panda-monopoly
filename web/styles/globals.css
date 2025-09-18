@@ -574,3 +574,54 @@ li::marker {
 .theme-button:hover {
   transform: translateY(-1px);
 }
+
+/* Card Carousel Arrow Animation */
+@keyframes spin-arrow {
+  0% {
+    transform: rotate(0deg);
+  }
+  70% {
+    transform: rotate(calc(var(--spin-degrees, 360deg) * 0.9));
+  }
+  85% {
+    transform: rotate(calc(var(--spin-degrees, 360deg) * 0.95));
+  }
+  100% {
+    transform: rotate(var(--spin-degrees, 360deg));
+  }
+}
+
+.animate-spin-arrow {
+  animation: spin-arrow 3.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Card Carousel Enhanced Animations */
+@keyframes card-carousel-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  70% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-card-carousel {
+  animation: card-carousel-spin 3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Pulse effect for selected card */
+@keyframes card-selected-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(255, 215, 0, 0);
+  }
+}
+
+.card-selected {
+  animation: card-selected-pulse 1.5s ease-in-out infinite;
+}

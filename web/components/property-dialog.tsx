@@ -152,7 +152,7 @@ export const PropertyDialog: React.FC<PropertyDialogProps> = ({
             <li><strong>Phase 1:</strong> Choose Flag (${flagCost}) or 1 House (${house1Cost})</li>
             <li><strong>Flag:</strong> Lower cost, basic rent</li>
             <li><strong>1 House:</strong> Higher cost, better rent</li>
-            <li><strong>Phase 2+:</strong> Right-click to upgrade to 2, 3, 4 houses, then hotel</li>
+            <li><strong>Phase 2+:</strong> Click to upgrade to 2, 3, 4 houses, then hotel</li>
           </ul>
         </div>
       </div>

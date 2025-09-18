@@ -22,7 +22,7 @@ export const SOUND_CONFIG = {
   
   // Volume levels (0.0 to 1.0)
   volumes: {
-    diceRoll: 0.15,
+    diceRoll: 0.5,
     diceLand: 0.4,
     buttonClick: 0.5,
     buttonHover: 0.2,

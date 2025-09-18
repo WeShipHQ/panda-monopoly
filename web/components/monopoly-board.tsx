@@ -69,7 +69,7 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
     }
   }, [gameState.currentAction]);
 
-  const handleSpaceRightClick = (position: number) => {
+  const handleSpaceClick = (position: number) => {
     const property = getPropertyData(position);
     const isOwned = gameState.propertyOwnership[position] === currentPlayer.id;
     const canBuild = canBuildOnProperty(currentPlayer.id, position);
@@ -116,7 +116,7 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
           longName={space.longName}
           threeLines={space.threeLines}
           position={position}
-          onRightClick={handleSpaceRightClick}
+          onClick={handleSpaceClick}
         />
       );
     } else if (space.type === "railroad") {
@@ -128,7 +128,7 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
           rotate={space.rotate}
           longName={space.longName}
           position={position}
-          onRightClick={handleSpaceRightClick}
+          onClick={handleSpaceClick}
         />
       );
     } else if (space.type === "beach") {
@@ -140,7 +140,7 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
           rotate={space.rotate}
           longName={space.longName}
           position={position}
-          onRightClick={handleSpaceRightClick}
+          onClick={handleSpaceClick}
         />
       );
     } else if (space.type === "utility") {
@@ -152,7 +152,7 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
           type={space.name.includes("Electric") ? "electric" : "water"}
           rotate={space.rotate}
           position={position}
-          onRightClick={handleSpaceRightClick}
+          onClick={handleSpaceClick}
         />
       );
     } else if (space.type === "tax") {
@@ -165,7 +165,7 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
           type={space.name.includes("Income") ? "income" : "luxury"}
           rotate={space.rotate}
           position={position}
-          onRightClick={handleSpaceRightClick}
+          onClick={handleSpaceClick}
         />
       );
     } else if (space.type === "chance") {
@@ -175,7 +175,7 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
           rotate={space.rotate}
           blueIcon={space.blueIcon}
           position={position}
-          onRightClick={handleSpaceRightClick}
+          onClick={handleSpaceClick}
         />
       );
     } else if (space.type === "community-chest") {
@@ -184,7 +184,7 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
           key={key}
           rotate={space.rotate}
           position={position}
-          onRightClick={handleSpaceRightClick}
+          onClick={handleSpaceClick}
         />
       );
     }

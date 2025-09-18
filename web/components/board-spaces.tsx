@@ -1,4 +1,5 @@
 import React from "react";
+import { playSound, SOUND_CONFIG } from "@/lib/soundUtil";
 
 type SpaceProps = {
   name?: string;
@@ -11,7 +12,7 @@ type SpaceProps = {
   type?: string;
   blueIcon?: boolean;
   position?: number;
-  onRightClick?: (position: number) => void;
+  onClick?: (position: number) => void;
 };
 
 const getRotationClass = (rotate?: string) => {
@@ -35,7 +36,7 @@ export const PropertySpace: React.FC<SpaceProps> = ({
   longName = false,
   threeLines = false,
   position,
-  onRightClick,
+  onClick,
 }) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
@@ -62,17 +63,18 @@ export const PropertySpace: React.FC<SpaceProps> = ({
     }
   };
 
-  const handleRightClick = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (onRightClick && position !== undefined) {
-      onRightClick(position);
+    playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+    if (onClick && position !== undefined) {
+      onClick(position);
     }
   };
 
   return (
     <div
-      className={`bg-[#fafaf8] text-center border border-black ${isVertical ? "vertical-space" : ""} relative cursor-help`}
-      onContextMenu={handleRightClick}
+      className={`bg-[#fafaf8] text-center border border-black ${isVertical ? "vertical-space" : ""} relative cursor-pointer`}
+      onClick={handleClick}
     >
       {/* Color bar - positioned differently for vertical vs horizontal spaces */}
       <div className={`${getColorBarClass()} ${colorClass}`}></div>
@@ -103,7 +105,7 @@ export const RailroadSpace: React.FC<SpaceProps> = ({
   rotate,
   longName = false,
   position,
-  onRightClick,
+  onClick,
 }) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
@@ -111,17 +113,18 @@ export const RailroadSpace: React.FC<SpaceProps> = ({
 
   const isVertical = rotate === "left" || rotate === "right";
 
-  const handleRightClick = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (onRightClick && position !== undefined) {
-      onRightClick(position);
+    playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+    if (onClick && position !== undefined) {
+      onClick(position);
     }
   };
 
   return (
     <div
-      className={`bg-[#fafaf8] text-center border border-black ${isVertical ? "vertical-space" : ""} cursor-help`}
-      onContextMenu={handleRightClick}
+      className={`bg-[#fafaf8] text-center border border-black ${isVertical ? "vertical-space" : ""} cursor-pointer`}
+      onClick={handleClick}
     >
       <div
         className="space-container h-full"
@@ -145,7 +148,7 @@ export const BeachSpace: React.FC<SpaceProps> = ({
   rotate,
   longName = false,
   position,
-  onRightClick,
+  onClick,
 }) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
@@ -153,17 +156,18 @@ export const BeachSpace: React.FC<SpaceProps> = ({
 
   const isVertical = rotate === "left" || rotate === "right";
 
-  const handleRightClick = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (onRightClick && position !== undefined) {
-      onRightClick(position);
+    playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+    if (onClick && position !== undefined) {
+      onClick(position);
     }
   };
 
   return (
     <div
-      className={`bg-[#e6f3ff] text-center border border-black ${isVertical ? "vertical-space" : ""} cursor-help`}
-      onContextMenu={handleRightClick}
+      className={`bg-[#e6f3ff] text-center border border-black ${isVertical ? "vertical-space" : ""} cursor-pointer`}
+      onClick={handleClick}
     >
       <div
         className="space-container h-full"
@@ -187,7 +191,7 @@ export const UtilitySpace: React.FC<SpaceProps> = ({
   type,
   rotate,
   position,
-  onRightClick,
+  onClick,
 }) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
@@ -202,17 +206,18 @@ export const UtilitySpace: React.FC<SpaceProps> = ({
 
   const isVertical = rotate === "left" || rotate === "right";
 
-  const handleRightClick = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (onRightClick && position !== undefined) {
-      onRightClick(position);
+    playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+    if (onClick && position !== undefined) {
+      onClick(position);
     }
   };
 
   return (
     <div
-      className={`bg-[#fafaf8] text-center border border-black ${isVertical ? "vertical-space" : ""} cursor-help`}
-      onContextMenu={handleRightClick}
+      className={`bg-[#fafaf8] text-center border border-black ${isVertical ? "vertical-space" : ""} cursor-pointer`}
+      onClick={handleClick}
     >
       <div
         className="space-container h-full"
@@ -230,7 +235,7 @@ export const ChanceSpace: React.FC<SpaceProps> = ({
   rotate,
   blueIcon = false,
   position,
-  onRightClick,
+  onClick,
 }) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
@@ -238,17 +243,18 @@ export const ChanceSpace: React.FC<SpaceProps> = ({
 
   const isVertical = rotate === "left" || rotate === "right";
 
-  const handleRightClick = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (onRightClick && position !== undefined) {
-      onRightClick(position);
+    playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+    if (onClick && position !== undefined) {
+      onClick(position);
     }
   };
 
   return (
     <div
-      className={`bg-[#fafaf8] text-center border border-black ${isVertical ? "vertical-space" : ""} cursor-help`}
-      onContextMenu={handleRightClick}
+      className={`bg-[#fafaf8] text-center border border-black ${isVertical ? "vertical-space" : ""} cursor-pointer`}
+      onClick={handleClick}
     >
       <div
         className="space-container justify-center h-full"
@@ -269,7 +275,7 @@ export const ChanceSpace: React.FC<SpaceProps> = ({
 export const CommunityChestSpace: React.FC<SpaceProps> = ({
   rotate,
   position,
-  onRightClick,
+  onClick,
 }) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
@@ -277,17 +283,18 @@ export const CommunityChestSpace: React.FC<SpaceProps> = ({
 
   const isVertical = rotate === "left" || rotate === "right";
 
-  const handleRightClick = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (onRightClick && position !== undefined) {
-      onRightClick(position);
+    playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+    if (onClick && position !== undefined) {
+      onClick(position);
     }
   };
 
   return (
     <div
-      className={`bg-[#fafaf8] text-center border border-black ${isVertical ? "vertical-space" : ""} cursor-help`}
-      onContextMenu={handleRightClick}
+      className={`bg-[#fafaf8] text-center border border-black ${isVertical ? "vertical-space" : ""} cursor-pointer`}
+      onClick={handleClick}
     >
       <div
         className="space-container justify-center h-full"
@@ -312,7 +319,7 @@ export const TaxSpace: React.FC<SpaceProps> = ({
   type,
   rotate,
   position,
-  onRightClick,
+  onClick,
 }) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
@@ -320,17 +327,18 @@ export const TaxSpace: React.FC<SpaceProps> = ({
 
   const isVertical = rotate === "left" || rotate === "right";
 
-  const handleRightClick = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (onRightClick && position !== undefined) {
-      onRightClick(position);
+    playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+    if (onClick && position !== undefined) {
+      onClick(position);
     }
   };
 
   return (
     <div
-      className={`bg-[#fafaf8] text-center border border-black ${isVertical ? "vertical-space" : ""} cursor-help`}
-      onContextMenu={handleRightClick}
+      className={`bg-[#fafaf8] text-center border border-black ${isVertical ? "vertical-space" : ""} cursor-pointer`}
+      onClick={handleClick}
     >
       <div
         className={`space-container h-full ${type === "income" ? "justify-center items-center" : ""}`}

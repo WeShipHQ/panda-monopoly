@@ -77,7 +77,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ gameManager }) => {
           </div>
           <div className="flex items-start gap-2">
             <span className="text-blue-500 font-bold">•</span>
-            <span>Right-click properties to see details</span>
+            <span>Click properties to see details</span>
           </div>
           <div className="flex items-start gap-2">
             <span className="text-blue-500 font-bold">•</span>
