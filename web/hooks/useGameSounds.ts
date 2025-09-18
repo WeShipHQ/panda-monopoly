@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from 'react';
-import { playGameStateSound, playPropertySound, playSound } from '@/lib/soundUtil';
+import { playGameStateSound, playPropertySound, playSound, SOUND_CONFIG } from '@/lib/soundUtil';
 
 export const useGameSounds = (gameState: any, previousGameState: any) => {
   useEffect(() => {
@@ -12,7 +12,7 @@ export const useGameSounds = (gameState: any, previousGameState: any) => {
     // Player moved to a new position
     if (gameState.currentPlayer?.position !== previousGameState.currentPlayer?.position) {
       // Small movement sound
-      setTimeout(() => playSound("button-click", 0.4), 300);
+      setTimeout(() => playSound("button-click", SOUND_CONFIG.volumes.buttonClick), SOUND_CONFIG.delays.movementFeedback);
     }
 
     // Player went to jail
@@ -22,7 +22,7 @@ export const useGameSounds = (gameState: any, previousGameState: any) => {
 
     // Player got out of jail
     if (!gameState.currentPlayer?.inJail && previousGameState.currentPlayer?.inJail) {
-      playSound("anime-wow", 0.6);
+      playSound("anime-wow", SOUND_CONFIG.volumes.specialEvents);
     }
 
     // Property was bought
@@ -32,7 +32,7 @@ export const useGameSounds = (gameState: any, previousGameState: any) => {
       
       if (currentOwnedCount > previousOwnedCount) {
         // Property was purchased
-        setTimeout(() => playPropertySound('buy'), 500);
+        setTimeout(() => playPropertySound('buy'), SOUND_CONFIG.delays.propertyBuyFeedback);
       }
     }
 
@@ -42,10 +42,10 @@ export const useGameSounds = (gameState: any, previousGameState: any) => {
       
       if (moneyDiff > 0) {
         // Player received money
-        setTimeout(() => playSound("money-receive", 0.5), 400);
+        setTimeout(() => playSound("money-receive", SOUND_CONFIG.volumes.moneyReceive), SOUND_CONFIG.delays.moneyChangeFeedback);
       } else if (moneyDiff < 0) {
         // Player paid money
-        setTimeout(() => playSound("money-pay", 0.6), 400);
+        setTimeout(() => playSound("money-pay", SOUND_CONFIG.volumes.moneyPay), SOUND_CONFIG.delays.moneyChangeFeedback);
       }
     }
 
@@ -64,11 +64,11 @@ export const useGameSounds = (gameState: any, previousGameState: any) => {
       const action = gameState.currentAction;
       
       if (action.type === 'draw_chance' || action.type === 'draw_community_chest') {
-        setTimeout(() => playSound("anime-wow", 0.4), 200);
+        setTimeout(() => playSound("anime-wow", SOUND_CONFIG.volumes.specialEvents), SOUND_CONFIG.delays.specialEventFeedback);
       }
       
       if (action.type === 'pay_tax') {
-        setTimeout(() => playSound("money-pay", 0.7), 300);
+        setTimeout(() => playSound("money-pay", SOUND_CONFIG.volumes.moneyPay), SOUND_CONFIG.delays.taxPaymentFeedback);
       }
     }
 

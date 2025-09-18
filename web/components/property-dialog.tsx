@@ -2,7 +2,7 @@
 
 import React from "react";
 import { getPropertyData } from "@/data/unified-monopoly-data";
-import { playPropertySound, playSound } from "@/lib/soundUtil";
+import { playPropertySound, playSound, SOUND_CONFIG } from "@/lib/soundUtil";
 
 interface PropertyDialogProps {
   isOpen: boolean;
@@ -281,10 +281,10 @@ export const JailDialog: React.FC<JailDialogProps> = ({
           {/* Roll for doubles */}
           <button
             onClick={() => {
-              playSound("dice-roll", 0.5);
+              playSound("dice-roll", SOUND_CONFIG.volumes.diceRoll, SOUND_CONFIG.durations.diceRoll);
               onRollDice();
             }}
-            onMouseEnter={() => playSound("button-hover", 0.2)}
+            onMouseEnter={() => playSound("button-hover", SOUND_CONFIG.volumes.buttonHover)}
             className="w-full px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm"
           >
             Roll Dice (Try for doubles)
