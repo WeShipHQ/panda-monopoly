@@ -10,19 +10,19 @@ import {
 interface CardDrawModalProps {
   isOpen: boolean;
   cardType: "chance" | "community-chest";
-  onClose?: () => void;
   onCardDrawn: (card: CardData) => void;
 }
 
 export const CardDrawModal: React.FC<CardDrawModalProps> = ({
   isOpen,
   cardType,
-  onClose,
   onCardDrawn,
 }) => {
   const [isSpinning, setIsSpinning] = useState(false);
   const [drawnCard, setDrawnCard] = useState<CardData | null>(null);
   const [showCard, setShowCard] = useState(false);
+  const [isRolling, setIsRolling] = useState(false);
+  const [rollingCards, setRollingCards] = useState<CardData[]>([]);
 
   const cardDeck = cardType === "chance" ? chanceCards : communityChestCards;
   const cardTitle = cardType === "chance" ? "CHANCE" : "COMMUNITY CHEST";
@@ -37,34 +37,34 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
       setIsSpinning(false);
       setDrawnCard(null);
       setShowCard(false);
+      setIsRolling(false);
+      setRollingCards([]);
     }
   }, [isOpen]);
 
   const drawCard = () => {
-    if (isSpinning) return;
+    if (isSpinning || isRolling) return;
 
-    setIsSpinning(true);
+    setIsRolling(true);
+    
+    // Generate rolling cards - mix of random cards for animation
+    const shuffledDeck = [...cardDeck].sort(() => Math.random() - 0.5);
+    const rollingCardsList = shuffledDeck.slice(0, 8); // Show 8 cards rolling
+    setRollingCards(rollingCardsList);
 
-    // Simulate card drawing with simple animation
+    // After rolling animation, show the final card
     setTimeout(() => {
       const randomCard = cardDeck[Math.floor(Math.random() * cardDeck.length)];
       setDrawnCard(randomCard);
-      setIsSpinning(false);
+      setIsRolling(false);
       setShowCard(true);
-      // Don't automatically apply card effect - let user see the card first
-    }, 1000);
-  };
-
-  const handleClose = () => {
-    setShowCard(false);
-    setDrawnCard(null);
-    onClose?.();
+    }, 2000); // 2 second rolling animation
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-transparent flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full mx-4 relative overflow-hidden">
         {/* Background decoration */}
         <div className="absolute inset-0 bg-gradient-to-br from-green-100 to-green-200 opacity-30"></div>
@@ -78,47 +78,63 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
             <p className="text-gray-600">Draw a card to see what happens!</p>
           </div>
 
-          {/* Card Stack/Spinning Area */}
+          {/* Card Rolling Area */}
           <div className="flex justify-center mb-6">
-            <div className="relative">
-              {/* Card Stack Background */}
-              <div className="absolute inset-0 transform rotate-2 translate-x-1 translate-y-1">
-                <div
-                  className={`w-40 h-56 rounded-lg bg-gradient-to-br ${cardColor} opacity-30`}
-                ></div>
-              </div>
-              <div className="absolute inset-0 transform -rotate-1 translate-x-0.5 translate-y-0.5">
-                <div
-                  className={`w-40 h-56 rounded-lg bg-gradient-to-br ${cardColor} opacity-50`}
-                ></div>
-              </div>
+            {!isRolling && !showCard && (
+              <div className="relative">
+                {/* Card Stack Background */}
+                <div className="absolute inset-0 transform rotate-2 translate-x-1 translate-y-1">
+                  <div
+                    className={`w-40 h-56 rounded-lg bg-gradient-to-br ${cardColor} opacity-30`}
+                  ></div>
+                </div>
+                <div className="absolute inset-0 transform -rotate-1 translate-x-0.5 translate-y-0.5">
+                  <div
+                    className={`w-40 h-56 rounded-lg bg-gradient-to-br ${cardColor} opacity-50`}
+                  ></div>
+                </div>
 
-              {/* Main Card */}
-              <div
-                className={`w-40 h-56 rounded-lg bg-gradient-to-br ${cardColor} shadow-lg cursor-pointer transform transition-all duration-500 ${isSpinning ? "animate-pulse scale-110" : "hover:scale-105"
-                  } ${showCard ? "opacity-0" : "opacity-100"}`}
-                onClick={drawCard}
-              >
-                <div className="flex flex-col items-center justify-center h-full text-white">
-                  <div className="text-4xl mb-2">{cardIcon}</div>
-                  <div className="text-sm font-semibold text-center px-2">
-                    {cardTitle}
-                  </div>
-                  {!isSpinning && (
+                {/* Main Card */}
+                <div
+                  className={`w-40 h-56 rounded-lg bg-gradient-to-br ${cardColor} shadow-lg cursor-pointer transform transition-all duration-500 hover:scale-105`}
+                  onClick={drawCard}
+                >
+                  <div className="flex flex-col items-center justify-center h-full text-white">
+                    <div className="text-4xl mb-2">{cardIcon}</div>
+                    <div className="text-sm font-semibold text-center px-2">
+                      {cardTitle}
+                    </div>
                     <div className="text-xs mt-2 opacity-80">Click to draw</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Spinning indicator */}
-              {isSpinning && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-white text-lg font-bold animate-pulse">
-                    Drawing...
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* Rolling Cards Animation */}
+            {isRolling && (
+              <div className="relative w-full h-56 overflow-hidden">
+                <div className="flex animate-scroll-horizontal">
+                  {rollingCards.concat(rollingCards).map((card, index) => (
+                    <div
+                      key={`${card.title}-${index}`}
+                      className={`flex-shrink-0 w-32 h-48 mx-2 rounded-lg bg-gradient-to-br ${cardColor} shadow-lg`}
+                    >
+                      <div className="flex flex-col items-center justify-center h-full text-white p-2">
+                        <div className="text-2xl mb-1">{cardIcon}</div>
+                        <div className="text-xs font-semibold text-center mb-1">
+                          {card.title}
+                        </div>
+                        <div className="text-xs text-center opacity-80 leading-tight">
+                          {card.description.length > 50 
+                            ? `${card.description.substring(0, 50)}...` 
+                            : card.description}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Drawn Card Display */}
@@ -156,13 +172,19 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
 
           {/* Action Buttons */}
           <div className="flex justify-center gap-4 mt-6">
-            {!showCard && !isSpinning && (
+            {!showCard && !isRolling && (
               <button
                 onClick={drawCard}
                 className={`px-6 py-3 bg-gradient-to-r ${cardColor} text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 pulse-glow`}
               >
                 Draw Card
               </button>
+            )}
+
+            {isRolling && (
+              <div className="px-6 py-3 bg-gray-500 text-white font-semibold rounded-lg opacity-75">
+                Rolling...
+              </div>
             )}
 
             {showCard && (

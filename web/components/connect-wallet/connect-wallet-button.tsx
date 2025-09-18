@@ -27,6 +27,7 @@ import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { Spinner } from "../ui/spinner";
 import Link from "next/link";
 import { useGameWallet } from "@/hooks/use-game-wallet";
+import { playSound, playGameStateSound } from "@/lib/soundUtil";
 import {
   useExportWallet,
 } from "@privy-io/react-auth/solana";
@@ -194,7 +195,12 @@ export default function ConnectWalletBtn() {
   return (
     <div className="">
       {!authenticated ? (
-        <Button onClick={login} className="h-full">
+        <Button onClick={() => {
+          playSound("button-click", 0.7);
+          login();
+        }} 
+        onMouseEnter={() => playSound("button-hover", 0.3)}
+        className="h-full">
           <div className="flex items-center gap-2 group/nav">
             <span>Connect Wallet</span>
             <div className="relative z-10 size-4 overflow-hidden flex items-center justify-center">
@@ -311,7 +317,10 @@ export default function ConnectWalletBtn() {
             <DropdownMenuSeparator />
             
             <DropdownMenuItem
-              onClick={logout}
+              onClick={() => {
+                playSound("button-click", 0.6);
+                logout();
+              }}
               variant="destructive"
               className="flex items-center justify-between "
             >
