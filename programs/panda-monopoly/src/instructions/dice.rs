@@ -7,8 +7,8 @@ use anchor_lang::prelude::*;
 pub struct RollDice<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref()],
-        bump,
+        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
     pub game: Account<'info, GameState>,
@@ -30,7 +30,7 @@ pub struct RollDice<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
-pub fn roll_dice_handler(ctx: Context<RollDice>) -> Result<()> {
+pub fn roll_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> Result<()> {
     let game = &mut ctx.accounts.game;
     let player_state = &mut ctx.accounts.player_state;
     let player_pubkey = ctx.accounts.player.key();
@@ -59,7 +59,9 @@ pub fn roll_dice_handler(ctx: Context<RollDice>) -> Result<()> {
     }
 
     // Generate secure random dice roll using recent blockhash
-    let dice_roll = generate_dice_roll(&ctx.accounts.recent_blockhashes, clock.unix_timestamp)?;
+    let dice_roll = dice_roll.unwrap_or_else(|| {
+        generate_dice_roll(&ctx.accounts.recent_blockhashes, clock.unix_timestamp).unwrap()
+    });
 
     // Update player state
     player_state.has_rolled_dice = true;
@@ -229,6 +231,9 @@ fn handle_space_landing(player_state: &mut PlayerState, position: u8) -> Result<
                 }
                 3 => {
                     // Special space
+                    player_state.needs_special_space_action = true;
+                    player_state.pending_special_space_position = Some(position);
+                    // Special space
                     handle_special_space(player_state, position)?;
                 }
                 _ => {}
@@ -251,18 +256,18 @@ fn handle_special_space(player_state: &mut PlayerState, position: u8) -> Result<
         GO_TO_JAIL_POSITION => {
             send_player_to_jail(player_state);
         }
-        INCOME_TAX_POSITION => {
-            // Deduct income tax
-            if player_state.cash_balance >= INCOME_TAX as u64 {
-                player_state.cash_balance -= INCOME_TAX as u64;
+        MEV_TAX_POSITION => {
+            // Deduct MEV tax
+            if player_state.cash_balance >= MEV_TAX as u64 {
+                player_state.cash_balance -= MEV_TAX as u64;
             } else {
                 // Handle insufficient funds - bankruptcy check needed
                 player_state.needs_bankruptcy_check = true;
             }
         }
-        LUXURY_TAX_POSITION => {
-            if player_state.cash_balance >= LUXURY_TAX as u64 {
-                player_state.cash_balance -= LUXURY_TAX as u64;
+        PRIORITY_FEE_TAX_POSITION => {
+            if player_state.cash_balance >= PRIORITY_FEE_TAX as u64 {
+                player_state.cash_balance -= PRIORITY_FEE_TAX as u64;
             } else {
                 player_state.needs_bankruptcy_check = true;
             }
@@ -285,8 +290,8 @@ fn handle_special_space(player_state: &mut PlayerState, position: u8) -> Result<
 pub struct PayJailFine<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref()],
-        bump,
+        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
     pub game: Account<'info, GameState>,

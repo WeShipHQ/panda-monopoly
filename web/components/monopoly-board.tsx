@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   PropertySpace,
   ChanceSpace,
@@ -11,7 +11,10 @@ import {
   TaxSpace,
 } from "@/components/board-spaces";
 import { monopolyData, PropertyData, boardSpaces } from "@/data/monopoly-data";
-import { getLegacyPropertyData, getPropertyData, unifiedPropertyData } from "@/data/unified-monopoly-data";
+import {
+  getLegacyPropertyData,
+  getPropertyData,
+} from "@/data/unified-monopoly-data";
 import { PlayerTokensContainer } from "@/components/player-tokens";
 import { Dice } from "@/components/dice";
 import {
@@ -24,6 +27,11 @@ import { PropertyIndicatorsContainer } from "@/components/property-indicators";
 import { MessageDisplay } from "@/components/message-display";
 import { PropertyDetailsDialog } from "@/components/property-details-dialog";
 import { PropertyBuildingDialog } from "@/components/property-building-dialog";
+import { useGameContext } from "./game-provider";
+import { createSolanaRpc, isSome } from "@solana/kit";
+import { sdk } from "@/lib/sdk/sdk";
+import { buildAndSendTransaction } from "@/lib/tx";
+import { GameStatus } from "@/lib/sdk/generated";
 
 interface MonopolyBoardProps {
   boardRotation: number;
@@ -38,44 +46,45 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
   onRotateCounterClockwise,
   gameManager,
 }) => {
-  const [currentDialogVisible, setCurrentDialogVisible] = useState(true);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedSpace, setSelectedSpace] = useState<number | null>(null);
   const [buildingDialogOpen, setBuildingDialogOpen] = useState(false);
   const [buildingProperty, setBuildingProperty] = useState<number | null>(null);
+  const [_buyingProperty, setBuyingProperty] = useState(false);
+  const [_skipProperty, setSkipProperty] = useState(false);
+
+  const [isTransactionLoading, setIsTransactionLoading] = useState(false);
+  const [transactionError, setTransactionError] = useState<string | null>(null);
 
   const {
+    gameAddress,
+    currentPlayerState,
+    currentPlayerSigner,
     gameState,
-    handleDiceRoll,
-    currentPlayer,
-    buyProperty,
-    buyPropertyWithFlag,
-    skipProperty,
-    handleSpecialCard,
-    handleCardDrawn,
-    payJailFine,
-    useJailFreeCard,
-    drawnCards,
-    buildHouses,
-    buildHotel,
-    canBuildOnProperty,
-    getBuildingCost,
-  } = gameManager;
+    gameLoading,
+    gameError,
+    players,
+    properties,
+    // ui
+    isPropertyOpen,
+    setIsPropertyOpen,
+  } = useGameContext();
 
-  // Reset dialog visibility when action changes
-  React.useEffect(() => {
-    if (gameState.currentAction) {
-      setCurrentDialogVisible(true);
-    }
-  }, [gameState.currentAction]);
+  const pendingPropertyPosition =
+    currentPlayerState?.pendingPropertyPosition &&
+    isSome(currentPlayerState.pendingPropertyPosition)
+      ? currentPlayerState.pendingPropertyPosition.value
+      : -1;
+
+  // const { handleCardDrawn } = gameManager;
 
   const handleSpaceClick = (position: number) => {
     const property = getPropertyData(position);
-    const isOwned = gameState.propertyOwnership[position] === currentPlayer.id;
-    const canBuild = canBuildOnProperty(currentPlayer.id, position);
+    // const isOwned = gameState.propertyOwnership[position] === currentPlayer.id;
+    // const canBuild = canBuildOnProperty(currentPlayer.id, position);
 
     // If it's a property owned by current player and they can build, show building dialog
-    if (property?.type === "property" && isOwned && canBuild) {
+    if (property?.type === "property") {
       setBuildingProperty(position);
       setBuildingDialogOpen(true);
     } else {
@@ -83,27 +92,25 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
       setSelectedSpace(position);
       setDetailsDialogOpen(true);
     }
-  };
+    // const property = getPropertyData(position);
+    // // Use blockchain data instead of gameState from gameManager
+    // const isOwned =
+    //   gameState.propertyOwnership?.[position] === currentPlayer.id;
+    // // Placeholder for building check - will be implemented later
+    // const canBuild = false; // canBuildOnProperty(currentPlayer.id, position);
 
-  const handleBuildHouses = (housesToBuild: number) => {
-    if (buildingProperty !== null) {
-      buildHouses(currentPlayer.id, buildingProperty, housesToBuild);
-      setBuildingDialogOpen(false);
-      setBuildingProperty(null);
-    }
-  };
-
-  const handleBuildHotel = () => {
-    if (buildingProperty !== null) {
-      buildHotel(currentPlayer.id, buildingProperty);
-      setBuildingDialogOpen(false);
-      setBuildingProperty(null);
-    }
+    // if (property?.type === "property" && isOwned && canBuild) {
+    //   setBuildingProperty(position);
+    //   setBuildingDialogOpen(true);
+    // } else {
+    //   setSelectedSpace(position);
+    //   setDetailsDialogOpen(true);
+    // }
   };
 
   const renderSpace = (space: PropertyData, index: number) => {
     const key = `${space.name}-${index}`;
-    const position = boardSpaces.findIndex(s => s.name === space.name);
+    const position = boardSpaces.findIndex((s) => s.name === space.name);
 
     if (space.type === "property") {
       return (
@@ -161,7 +168,9 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
           key={key}
           name={space.name}
           price={space.price}
-          instructions={space.name.includes("Income") ? "Pay 10% or $200" : undefined}
+          instructions={
+            space.name.includes("Income") ? "Pay 10% or $200" : undefined
+          }
           type={space.name.includes("Income") ? "income" : "luxury"}
           rotate={space.rotate}
           position={position}
@@ -192,6 +201,156 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
     return null;
   };
 
+  const handleBuyProperty = async (
+    position: number,
+    buildingLevel: "flag" | "house" | "hotel"
+  ) => {
+    console.log("Buy property with building level", position, buildingLevel);
+    if (buildingLevel === "flag") {
+      try {
+        if (!gameAddress || !currentPlayerSigner) {
+          return;
+        }
+
+        setBuyingProperty(true);
+        const rpc = createSolanaRpc("http://127.0.0.1:8899");
+
+        console.log("end turn", gameAddress.toString());
+
+        const instruction = await sdk.buyPropertyIx({
+          rpc,
+          gameAddress: gameAddress,
+          player: currentPlayerSigner,
+          position,
+        });
+
+        const signature = await buildAndSendTransaction(
+          rpc,
+          [instruction],
+          currentPlayerSigner
+        );
+
+        console.log("Buy property with building", signature);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setBuyingProperty(false);
+      }
+    } else if (buildingLevel === "house") {
+      try {
+        if (!gameAddress || !currentPlayerSigner) {
+          return;
+        }
+
+        setBuyingProperty(true);
+        const rpc = createSolanaRpc("http://127.0.0.1:8899");
+
+        const instruction = await sdk.buildHouseIx({
+          rpc,
+          gameAddress: gameAddress,
+          player: currentPlayerSigner,
+          position,
+        });
+
+        const signature = await buildAndSendTransaction(
+          rpc,
+          [instruction],
+          currentPlayerSigner
+        );
+
+        console.log("Buy house", signature);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setBuyingProperty(false);
+      }
+    } else if (buildingLevel === "hotel") {
+      try {
+        if (!gameAddress || !currentPlayerSigner) {
+          return;
+        }
+
+        setBuyingProperty(true);
+        const rpc = createSolanaRpc("http://127.0.0.1:8899");
+
+        const instruction = await sdk.buildHotelIx({
+          rpc,
+          gameAddress: gameAddress,
+          player: currentPlayerSigner,
+          position,
+        });
+
+        const signature = await buildAndSendTransaction(
+          rpc,
+          [instruction],
+          currentPlayerSigner
+        );
+
+        console.log("Buy hotel", signature);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setBuyingProperty(false);
+      }
+    }
+  };
+
+  const handleSkipProperty = async (position: number) => {
+    console.log("Skip property");
+    try {
+      if (!gameAddress || !currentPlayerSigner) {
+        return;
+      }
+
+      setSkipProperty(true);
+      const rpc = createSolanaRpc("http://127.0.0.1:8899");
+
+      const instruction = await sdk.declinePropertyIx({
+        rpc,
+        gameAddress: gameAddress,
+        player: currentPlayerSigner,
+        position,
+      });
+
+      const signature = await buildAndSendTransaction(
+        rpc,
+        [instruction],
+        currentPlayerSigner
+      );
+
+      console.log("Skip property", signature);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setSkipProperty(false);
+    }
+  };
+
+  // Handle loading and error states
+  if (gameLoading || gameLoading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center">
+        Loading game...
+      </div>
+    );
+  }
+
+  if (gameError || !gameState || !players) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center">
+        Error loading game data
+      </div>
+    );
+  }
+
+  if (!currentPlayerState) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center">
+        Player not found
+      </div>
+    );
+  }
+
   return (
     <div
       className="h-full w-full monopoly-board overflow-hidden relative"
@@ -202,7 +361,7 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
       }}
     >
       {/* Message Display */}
-      <MessageDisplay message={gameState.currentMessage} />
+      {/* <MessageDisplay message={gameState.currentMessage} /> */}
 
       {/* Board Container */}
       <div className="h-full w-full flex items-center justify-center p-2 sm:p-4">
@@ -215,16 +374,31 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
           <div className="absolute inset-0 grid grid-cols-14 grid-rows-14 gap-[0.1%] p-[0.1%]">
             {/* Player Tokens */}
             <PlayerTokensContainer
-              players={gameState.players}
+              players={players.map((player, index) => ({
+                id: player.wallet.toString(),
+                name: player.wallet.toString(),
+                color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+                avatar: `/images/player-${index + 1}.png`,
+                position: player.position || 0,
+                money: Number(player.cashBalance) || 0,
+                properties: [], // Will be derived from blockchain data
+                inJail: player.inJail || false,
+                jailTurns: player.jailTurns || 0,
+              }))}
               boardRotation={boardRotation}
             />
 
             {/* Property Indicators */}
             <PropertyIndicatorsContainer
-              propertyOwnership={gameState.propertyOwnership}
-              players={gameState.players}
-              propertyBuildings={gameState.propertyBuildings}
-              mortgagedProperties={gameState.mortgagedProperties}
+              propertyOwnership={{}}
+              properties={properties}
+              players={players.map((player, index) => ({
+                id: player.wallet.toString(),
+                name: `Player ${index + 1}`,
+                color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+              }))}
+              propertyBuildings={{}}
+              mortgagedProperties={[]}
             />
 
             {/* Center - Responsive */}
@@ -346,7 +520,9 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
                 <div className="px-1 text-xs font-bold">
                   COLLECT $200.00 SALARY AS YOU PASS
                 </div>
-                <div className="icon-large text-[#f50c2b] font-bold text-4xl">GO</div>
+                <div className="icon-large text-[#f50c2b] font-bold text-4xl">
+                  GO
+                </div>
                 <div className="absolute top-1 left-1 text-xs">→</div>
               </div>
             </div>
@@ -417,60 +593,45 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
         </div>
       </div>
 
-      {/* Property Dialog */}
       <PropertyDialog
-        isOpen={
-          currentDialogVisible &&
-          gameState.gamePhase === "property-action" &&
-          gameState.currentAction?.type === "buy-property"
-        }
+        isOpen={isPropertyOpen}
+        onClose={() => setIsPropertyOpen(false)}
         propertyName={
-          gameState.currentAction?.data?.position
-            ? boardSpaces[gameState.currentAction.data.position]?.name ||
-            "Unknown Property"
+          currentPlayerState.pendingPropertyPosition
+            ? boardSpaces[pendingPropertyPosition]?.name || "Unknown Property"
             : "Unknown Property"
         }
-        propertyPrice={gameState.currentAction?.data?.price || 0}
-        playerMoney={currentPlayer.money}
-        position={gameState.currentAction?.data?.position || 0}
-        onBuy={() => {
-          if (gameState.currentAction?.data?.position) {
-            buyProperty(gameState.currentAction.data.position);
-          }
-        }}
-        onSkip={skipProperty}
-        onBuyWithBuilding={(buildingLevel) => {
-          if (gameState.currentAction?.data?.position) {
-            const position = gameState.currentAction.data.position;
-            if (buildingLevel === 'house1') {
-              // Buy property with flag cost and immediately build 1 house
-              buyPropertyWithFlag(position, 'house1');
-              setTimeout(() => {
-                buildHouses(currentPlayer.id, position, 1);
-              }, 100);
-            } else {
-              // Buy property with flag cost only
-              buyPropertyWithFlag(position, 'flag');
-            }
-          }
-        }}
+        propertyPrice={
+          pendingPropertyPosition >= 0
+            ? getPropertyData(pendingPropertyPosition)?.price || 0
+            : 0
+        }
+        playerMoney={Number(currentPlayerState.cashBalance) || 0}
+        position={pendingPropertyPosition}
+        onSkip={handleSkipProperty}
+        onBuyWithBuilding={handleBuyProperty}
+        isLoading={isTransactionLoading}
+        transactionError={transactionError || undefined}
       />
 
       {/* Card Draw Modal */}
-      <CardDrawModal
+      {/* <CardDrawModal
         isOpen={gameState.cardDrawModal?.isOpen || false}
         cardType={gameState.cardDrawModal?.cardType || "chance"}
         onCardDrawn={handleCardDrawn}
-      />
+      /> */}
 
       {/* Jail Dialog */}
-      <JailDialog
-        isOpen={currentPlayer.inJail && gameState.gamePhase === "waiting"}
-        playerName={currentPlayer.name}
-        playerMoney={currentPlayer.money}
-        jailTurns={currentPlayer.jailTurns}
+      {/* <JailDialog
+        isOpen={
+          currentPlayerState.inJail &&
+          gameState.gameStatus === GameStatus.InProgress
+        }
+        playerName={currentPlayerState.cashBalance.name}
+        playerMoney={currentPlayerState.cashBalance.money}
+        jailTurns={currentPlayerState.cashBalance.jailTurns}
         hasJailFreeCard={
-          (drawnCards.playerJailCards[currentPlayer.id] || 0) > 0
+          (drawnCards.playerJailCards[currentPlayerState.cashBalance.id] || 0) > 0
         }
         onPayFine={payJailFine}
         onUseCard={useJailFreeCard}
@@ -478,7 +639,7 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
           // The dice component will handle the roll and call handleDiceRoll
           setCurrentDialogVisible(false);
         }}
-      />
+      /> */}
 
       {/* Property Details Dialog */}
       <PropertyDetailsDialog
@@ -488,19 +649,24 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
       />
 
       {/* Property Building Dialog */}
-      <PropertyBuildingDialog
+      {/* <PropertyBuildingDialog
         isOpen={buildingDialogOpen}
         position={buildingProperty || 0}
-        playerMoney={currentPlayer.money}
-        currentHouses={gameState.propertyBuildings?.[buildingProperty || 0]?.houses || 0}
-        hasHotel={gameState.propertyBuildings?.[buildingProperty || 0]?.hasHotel || false}
+        playerMoney={Number(currentPlayerState.cashBalance)}
+        currentHouses={
+          gameState.propertyBuildings?.[buildingProperty || 0]?.houses || 0
+        }
+        hasHotel={
+          gameState.propertyBuildings?.[buildingProperty || 0]?.hasHotel ||
+          false
+        }
         onBuildHouses={handleBuildHouses}
         onBuildHotel={handleBuildHotel}
         onClose={() => {
           setBuildingDialogOpen(false);
           setBuildingProperty(null);
         }}
-      />
+      /> */}
     </div>
   );
 };
