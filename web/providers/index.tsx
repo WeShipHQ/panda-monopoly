@@ -7,9 +7,9 @@ export default function RootProviders({
   children: React.ReactNode;
 }) {
   return (
-    <WalletProvider>
-        <Toaster position="top-center" />
-        {children}
-    </WalletProvider>
+    <>
+      <Toaster position="top-center" />
+      {children}
+    </>
   );
 }

@@ -302,4 +302,7 @@ pub enum GameError {
 
     #[msg("Property already mortgaged")]
     PropertyAlreadyMortgaged,
+
+    #[msg("Dice roll error")]
+    DiceRollError,
 }
