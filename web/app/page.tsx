@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import MonopolyBoard from "@/components/monopoly-board";
+// import MonopolyBoard from "@/components/monopoly-board";
 import { RightPanel } from "@/components/right-panel";
 import { LeftSidebar } from "@/components/left-sidebar";
 import { useGameManager } from "@/hooks";
@@ -11,7 +11,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useGameContext } from "@/components/game-provider";
 import { useRouter, useSearchParams } from "next/navigation";
-// import { useGamePlayers } from "@/hooks/useGame";
 import { address, createSignerFromKeyPair, createSolanaRpc } from "@solana/kit";
 import { fakePlayerA, fakePlayerB } from "@/lib/sdk/utils";
 import { sdk } from "@/lib/sdk/sdk";
@@ -60,11 +59,14 @@ export default function Home() {
       <div className="lg:hidden flex flex-col h-screen w-screen overflow-hidden">
         {/* Board Section - Takes most of screen */}
         <div className="flex-1 relative overflow-hidden">
-          <MonopolyBoard
+          <GameBoard
             boardRotation={boardRotation}
             onRotateClockwise={rotateBoardClockwise}
             onRotateCounterClockwise={rotateBoardCounterClockwise}
-            gameManager={gameManager}
+            // boardRotation={boardRotation}
+            // onRotateClockwise={rotateBoardClockwise}
+            // onRotateCounterClockwise={rotateBoardCounterClockwise}
+            // gameManager={gameManager}
           />
         </div>
 

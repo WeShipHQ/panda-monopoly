@@ -16,26 +16,11 @@ export const RightPanel: React.FC<RightPanelProps> = ({
   boardRotation,
   onRotateClockwise,
   onRotateCounterClockwise,
-  // gameManager,
 }) => {
-  const [currentDialogVisible, setCurrentDialogVisible] = useState(true);
-
   const { players, currentPlayerAddress, setDemoDices } = useGameContext();
 
   const [demoDice1, setDemoDice1] = useState(0);
   const [demoDice2, setDemoDice2] = useState(0);
-
-  // const {
-  //   gameState,
-  //   currentPlayer,
-  // } = gameManager;
-
-  // Reset dialog visibility when action changes
-  // React.useEffect(() => {
-  //   if (gameState.currentAction) {
-  //     setCurrentDialogVisible(true);
-  //   }
-  // }, [gameState.currentAction]);
 
   if (!players || players.length === 0) {
     return (
@@ -80,21 +65,22 @@ export const RightPanel: React.FC<RightPanelProps> = ({
       </div> */}
 
       {/* Players List */}
-      <div className="flex-1 p-3 lg:p-4 bg-white rounded-lg shadow overflow-y-auto">
-        <h2 className="text-lg lg:text-xl font-bold mb-3 lg:mb-4">Players</h2>
+      <div
+      // className="flex-1 p-3 lg:p-4 bg-white rounded-lg shadow overflow-y-auto"
+      >
         <div className="space-y-2 lg:space-y-3">
           {players.map((player) => (
             <div
               key={player.address}
-              className={`p-2 lg:p-3 rounded-lg transition-colors bg-gray-50 border-2`}
+              className="transition-colors border-l-4"
               style={
                 player.wallet === currentPlayerAddress
                   ? { borderColor: generatePlayerIcon(player.wallet).color }
                   : {}
               }
             >
-              <div className="flex items-center gap-2 lg:gap-3">
-                <div className="w-5 h-5 lg:w-6 lg:h-6 flex items-center justify-center">
+              <div className="flex items-center gap-2">
+                <div className="size-10 rounded-full flex items-center justify-center">
                   {generatePlayerIcon(player.wallet)?.avatar && (
                     <img
                       src={generatePlayerIcon(player.wallet)?.avatar}
@@ -107,10 +93,11 @@ export const RightPanel: React.FC<RightPanelProps> = ({
                   <div className="font-bold text-gray-800 text-xs lg:text-sm">
                     {formatAddress(player.wallet)}
                   </div>
+                </div>
+                <div>
                   <div className="text-xs text-gray-600 font-semibold">
                     {formatPrice(Number(player.cashBalance))}
                   </div>
-                  {/* Position indicator - only show on larger screens */}
                   <div className="hidden sm:block text-xs text-gray-500">
                     Position: {player.position}
                   </div>

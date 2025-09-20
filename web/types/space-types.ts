@@ -1,8 +1,9 @@
+import { ColorGroup } from "@/configs/board-data";
 import { PropertyAccount } from "@/types/schema";
 
 // Base interface for common space properties
 export interface BaseSpaceProps {
-  position?: number;
+  position: number;
   rotate?: "left" | "top" | "right";
   onClick?: (position: number) => void;
   property?: PropertyAccount | null;
@@ -13,10 +14,10 @@ export interface BaseSpaceProps {
 // Property space specific props
 export interface PropertySpaceProps extends BaseSpaceProps {
   name: string;
-  price: string;
-  colorClass: string;
-  longName?: boolean;
-  threeLines?: boolean;
+  price: number | string;
+  colorGroup: ColorGroup;
+  // longName?: boolean;
+  // threeLines?: boolean;
   // Property-specific data from unified-monopoly-data
   baseRent?: string;
   rentWithColorGroup?: string;
@@ -32,8 +33,8 @@ export interface PropertySpaceProps extends BaseSpaceProps {
 // Railroad/Station space specific props
 export interface RailroadSpaceProps extends BaseSpaceProps {
   name: string;
-  price: string;
-  longName?: boolean;
+  price: number | string;
+  // longName?: boolean;
   // Railroad-specific data
   railroadRent?: [string, string, string, string]; // Rent for 1, 2, 3, 4 railroads
   mortgageValue?: string;
@@ -52,7 +53,7 @@ export interface BeachSpaceProps extends BaseSpaceProps {
 // Utility space specific props
 export interface UtilitySpaceProps extends BaseSpaceProps {
   name: string;
-  price: string;
+  price: number | string;
   type: "electric" | "water";
   // Utility-specific data
   utilityMultiplier?: [number, number]; // Multiplier for 1 and 2 utilities
@@ -61,7 +62,7 @@ export interface UtilitySpaceProps extends BaseSpaceProps {
 
 // Chance space specific props
 export interface ChanceSpaceProps extends BaseSpaceProps {
-  blueIcon?: boolean;
+  // blueIcon?: boolean;
 }
 
 // Community Chest space specific props
@@ -72,7 +73,7 @@ export interface CommunityChestSpaceProps extends BaseSpaceProps {
 // Tax space specific props
 export interface TaxSpaceProps extends BaseSpaceProps {
   name: string;
-  price?: string;
+  price?: string | number;
   instructions?: string;
   type: "income" | "luxury";
   taxAmount?: string;
@@ -96,53 +97,53 @@ export type SpaceProps =
   | TaxSpaceProps
   | CornerSpaceProps;
 
-// Type guards to check space types
-export const isPropertySpace = (
-  props: SpaceProps
-): props is PropertySpaceProps => {
-  return "colorClass" in props;
-};
+// // Type guards to check space types
+// export const isPropertySpace = (
+//   props: SpaceProps
+// ): props is PropertySpaceProps => {
+//   return "colorClass" in props;
+// };
 
-export const isRailroadSpace = (
-  props: SpaceProps
-): props is RailroadSpaceProps => {
-  return (
-    "railroadRent" in props ||
-    ("name" in props && props.name.toLowerCase().includes("railroad"))
-  );
-};
+// export const isRailroadSpace = (
+//   props: SpaceProps
+// ): props is RailroadSpaceProps => {
+//   return (
+//     "railroadRent" in props ||
+//     ("name" in props && props.name.toLowerCase().includes("railroad"))
+//   );
+// };
 
-export const isBeachSpace = (props: SpaceProps): props is BeachSpaceProps => {
-  return "beachRent" in props;
-};
+// export const isBeachSpace = (props: SpaceProps): props is BeachSpaceProps => {
+//   return "beachRent" in props;
+// };
 
-export const isUtilitySpace = (
-  props: SpaceProps
-): props is UtilitySpaceProps => {
-  return (
-    "type" in props && (props.type === "electric" || props.type === "water")
-  );
-};
+// export const isUtilitySpace = (
+//   props: SpaceProps
+// ): props is UtilitySpaceProps => {
+//   return (
+//     "type" in props && (props.type === "electric" || props.type === "water")
+//   );
+// };
 
-export const isChanceSpace = (props: SpaceProps): props is ChanceSpaceProps => {
-  return "blueIcon" in props;
-};
+// export const isChanceSpace = (props: SpaceProps): props is ChanceSpaceProps => {
+//   return "blueIcon" in props;
+// };
 
-export const isCommunityChestSpace = (
-  props: SpaceProps
-): props is CommunityChestSpaceProps => {
-  return !("name" in props) && !("blueIcon" in props) && !("type" in props);
-};
+// export const isCommunityChestSpace = (
+//   props: SpaceProps
+// ): props is CommunityChestSpaceProps => {
+//   return !("name" in props) && !("blueIcon" in props) && !("type" in props);
+// };
 
-export const isTaxSpace = (props: SpaceProps): props is TaxSpaceProps => {
-  return (
-    "type" in props && (props.type === "income" || props.type === "luxury")
-  );
-};
+// export const isTaxSpace = (props: SpaceProps): props is TaxSpaceProps => {
+//   return (
+//     "type" in props && (props.type === "income" || props.type === "luxury")
+//   );
+// };
 
-export const isCornerSpace = (props: SpaceProps): props is CornerSpaceProps => {
-  return (
-    "type" in props &&
-    ["go", "jail", "free-parking", "go-to-jail"].includes(props.type)
-  );
-};
+// export const isCornerSpace = (props: SpaceProps): props is CornerSpaceProps => {
+//   return (
+//     "type" in props &&
+//     ["go", "jail", "free-parking", "go-to-jail"].includes(props.type)
+//   );
+// };

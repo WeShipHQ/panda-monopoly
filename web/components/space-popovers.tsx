@@ -11,6 +11,7 @@ import { PropertyAccount } from "@/types/schema";
 import { UnifiedPropertyData } from "@/data/unified-monopoly-data";
 import { isSome } from "@solana/kit";
 import { cn, formatPrice } from "@/lib/utils";
+import { HotelIcon, HouseIcon } from "lucide-react";
 
 // Base interface for popover props
 interface BasePopoverProps {
@@ -101,9 +102,10 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
                 <div className="flex justify-between text-sm items-center">
                   <div className="flex items-center gap-1">
                     <span>Rent with</span>
-                    <div className="w-4 h-4 bg-green-600 rounded-sm flex items-center justify-center">
+                    <div className="w-4 h-4 bg-green-600 rounded-full flex items-center justify-center">
                       <span className="text-white text-xs font-bold">1</span>
                     </div>
+                    <HouseIcon className="w-4 h-4 text-green-600" />
                   </div>
                   <span className="font-medium">
                     {formatPrice(propertyData.rentWith1House || 0)}
@@ -115,9 +117,10 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
                 <div className="flex justify-between text-sm items-center">
                   <div className="flex items-center gap-1">
                     <span>Rent with</span>
-                    <div className="w-4 h-4 bg-green-600 rounded-sm flex items-center justify-center">
+                    <div className="w-4 h-4 bg-green-600 rounded-full flex items-center justify-center">
                       <span className="text-white text-xs font-bold">2</span>
                     </div>
+                    <HouseIcon className="w-4 h-4 text-green-600" />
                   </div>
                   <span className="font-medium">
                     {formatPrice(propertyData.rentWith2Houses || 0)}
@@ -129,9 +132,10 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
                 <div className="flex justify-between text-sm items-center">
                   <div className="flex items-center gap-1">
                     <span>Rent with</span>
-                    <div className="w-4 h-4 bg-green-600 rounded-sm flex items-center justify-center">
+                    <div className="w-4 h-4 bg-green-600 rounded-full flex items-center justify-center">
                       <span className="text-white text-xs font-bold">3</span>
                     </div>
+                    <HouseIcon className="w-4 h-4 text-green-600" />
                   </div>
                   <span className="font-medium">
                     {formatPrice(propertyData.rentWith3Houses || 0)}
@@ -143,9 +147,10 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
                 <div className="flex justify-between text-sm items-center">
                   <div className="flex items-center gap-1">
                     <span>Rent with</span>
-                    <div className="w-4 h-4 bg-green-600 rounded-sm flex items-center justify-center">
+                    <div className="w-4 h-4 bg-green-600 rounded-full flex items-center justify-center">
                       <span className="text-white text-xs font-bold">4</span>
                     </div>
+                    <HouseIcon className="w-4 h-4 text-green-600" />
                   </div>
                   <span className="font-medium">
                     {formatPrice(propertyData.rentWith4Houses || 0)}
@@ -157,9 +162,10 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
                 <div className="flex justify-between text-sm items-center">
                   <div className="flex items-center gap-1">
                     <span>Rent with</span>
-                    <div className="w-4 h-4 bg-red-600 rounded-sm flex items-center justify-center">
+                    <div className="w-4 h-4 bg-red-600 rounded-full flex items-center justify-center">
                       <span className="text-white text-xs font-bold">H</span>
                     </div>
+                    <HotelIcon className="w-4 h-4 text-red-600" />
                   </div>
                   <span className="font-medium">
                     {formatPrice(propertyData.rentWithHotel || 0)}
@@ -219,7 +225,6 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
             {isOwned && (
               <>
                 <Separator className="my-3" />
-                {/* Ownership status */}
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Owner:</span>
                   <Badge variant={isOwned ? "default" : "secondary"}>
@@ -272,13 +277,9 @@ export const RailroadPopover: React.FC<RailroadPopoverProps> = ({
         side="top"
         className="p-0 border-0 bg-transparent shadow-lg w-auto"
       >
-        <Card className="w-64 rounded-none bg-white border-2 border-black">
-          <CardHeader className="pb-2 bg-white border-b-2 border-black">
-            <div className="text-center">
-              <div className="text-xs font-bold mb-1">TITLE DEED</div>
-              <div className="text-sm font-bold">{propertyData.name}</div>
-              <div className="text-2xl mt-2">🚂</div>
-            </div>
+        <Card className="w-64 rounded-none py-0 bg-white border-2 border-black gap-0">
+          <CardHeader className="gap-0 border-b-2 border-black py-3">
+            <CardTitle className="text-center">{propertyData.name}</CardTitle>
           </CardHeader>
 
           <CardContent className="p-4 space-y-2">
@@ -287,49 +288,53 @@ export const RailroadPopover: React.FC<RailroadPopoverProps> = ({
                 <div className="flex justify-between text-sm">
                   <span>Rent (1 Railroad)</span>
                   <span className="font-medium">
-                    M{propertyData.railroadRent[0]}
+                    {formatPrice(propertyData.railroadRent[0] || 0)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Rent (2 Railroads)</span>
                   <span className="font-medium">
-                    M{propertyData.railroadRent[1]}
+                    {formatPrice(propertyData.railroadRent[1])}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Rent (3 Railroads)</span>
                   <span className="font-medium">
-                    M{propertyData.railroadRent[2]}
+                    {formatPrice(propertyData.railroadRent[2])}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Rent (4 Railroads)</span>
                   <span className="font-medium">
-                    M{propertyData.railroadRent[3]}
+                    {formatPrice(propertyData.railroadRent[3])}
                   </span>
                 </div>
               </div>
             )}
 
-            <Separator className="my-3" />
+            {/* <Separator className="my-3" />
 
             {propertyData.mortgageValue && (
               <div className="flex justify-between text-sm">
                 <span>Mortgage value</span>
                 <span className="font-medium">
-                  M{propertyData.mortgageValue}
+                  {formatPrice(propertyData.mortgageValue || 0)}
                 </span>
               </div>
+            )} */}
+
+            {isOwned && (
+              <>
+                <Separator className="my-3" />
+
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Owner:</span>
+                  <Badge variant={isOwned ? "default" : "secondary"}>
+                    {isOwned ? playerName || "Unknown" : "Unowned"}
+                  </Badge>
+                </div>
+              </>
             )}
-
-            <Separator className="my-3" />
-
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">Owner:</span>
-              <Badge variant={isOwned ? "default" : "secondary"}>
-                {isOwned ? playerName || "Unknown" : "Unowned"}
-              </Badge>
-            </div>
           </CardContent>
         </Card>
       </PopoverContent>
@@ -353,15 +358,12 @@ export const UtilityPopover: React.FC<UtilityPopoverProps> = ({
         side="top"
         className="p-0 border-0 bg-transparent shadow-lg w-auto"
       >
-        <Card className="w-64 rounded-none bg-white border-2 border-black">
-          <CardHeader className="pb-2 bg-white border-b-2 border-black">
-            <div className="text-center">
-              <div className="text-xs font-bold mb-1">TITLE DEED</div>
-              <div className="text-sm font-bold">{propertyData.name}</div>
-              <div className="text-2xl mt-2">
-                {propertyData.name.includes("Electric") ? "💡" : "💧"}
-              </div>
-            </div>
+        <Card className="w-64 rounded-none py-0 bg-white border-2 border-black gap-0">
+          <CardHeader className="gap-0 border-b-2 border-black py-3">
+            <CardTitle className="text-center">
+              {propertyData.name}
+              {propertyData.name.includes("Electric") ? "💡" : "💧"}
+            </CardTitle>
           </CardHeader>
 
           <CardContent className="p-4 space-y-2">
@@ -381,7 +383,7 @@ export const UtilityPopover: React.FC<UtilityPopoverProps> = ({
                 </div>
               </div>
             )}
-
+            {/* 
             <Separator className="my-3" />
 
             {propertyData.mortgageValue && (
@@ -391,16 +393,20 @@ export const UtilityPopover: React.FC<UtilityPopoverProps> = ({
                   M{propertyData.mortgageValue}
                 </span>
               </div>
+            )} */}
+
+            {isOwned && (
+              <>
+                <Separator className="my-3" />
+
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Owner:</span>
+                  <Badge variant={isOwned ? "default" : "secondary"}>
+                    {isOwned ? playerName || "Unknown" : "Unowned"}
+                  </Badge>
+                </div>
+              </>
             )}
-
-            <Separator className="my-3" />
-
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">Owner:</span>
-              <Badge variant={isOwned ? "default" : "secondary"}>
-                {isOwned ? playerName || "Unknown" : "Unowned"}
-              </Badge>
-            </div>
           </CardContent>
         </Card>
       </PopoverContent>

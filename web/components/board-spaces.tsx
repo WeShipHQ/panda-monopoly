@@ -19,7 +19,8 @@ import {
   CornerSpaceProps,
 } from "@/types/space-types";
 import { isSome } from "@solana/kit";
-import { generatePlayerIcon } from "@/lib/utils";
+import { cn, formatPrice, generatePlayerIcon } from "@/lib/utils";
+import { colorMap } from "@/configs/board-data";
 
 const getRotationClass = (rotate?: string) => {
   switch (rotate) {
@@ -37,10 +38,8 @@ const getRotationClass = (rotate?: string) => {
 export const PropertySpace: React.FC<PropertySpaceProps> = ({
   name,
   price,
-  colorClass,
+  colorGroup,
   rotate,
-  longName = false,
-  threeLines = false,
   position,
   property,
   playerName,
@@ -52,19 +51,16 @@ export const PropertySpace: React.FC<PropertySpaceProps> = ({
       : null;
   const ownerMeta = ownerAddress ? generatePlayerIcon(ownerAddress) : null;
 
+  const color = colorMap[colorGroup];
+
+  const nameClass = "";
+
   const containerStyle = {
     transform: getRotationClass(rotate),
   };
 
-  const nameClass = longName
-    ? "px-0"
-    : threeLines
-    ? "px-[15px] relative top-[5px]"
-    : "px-[15px]";
-
   const isVertical = rotate === "left" || rotate === "right";
 
-  // For different orientations, we need different positioning
   const getColorBarClass = () => {
     if (rotate === "left") {
       return "absolute right-0 top-0 h-full w-4 border-l border-black";
@@ -99,17 +95,21 @@ export const PropertySpace: React.FC<PropertySpaceProps> = ({
 
   const children = (
     <div
-      className={`bg-[#fafaf8] text-center border border-black ${
-        isVertical ? "vertical-space" : ""
-      } relative cursor-pointer`}
-      // onClick={handleClick}
+      className={cn(
+        "bg-board-space text-center border border-black relative cursor-pointer",
+        { "vertical-space": isVertical }
+      )}
     >
-      {/* Color bar - positioned differently for vertical vs horizontal spaces */}
-      <div className={`${getColorBarClass()} ${colorClass}`} />
+      <div
+        style={{
+          backgroundColor: color,
+        }}
+        className={getColorBarClass()}
+      />
 
       {ownerMeta && (
         <div
-          className={`absolute ${getColorOwnedClass()}`}
+          className={cn("absolute", getColorOwnedClass())}
           style={{
             backgroundColor: ownerMeta.color,
           }}
@@ -118,25 +118,31 @@ export const PropertySpace: React.FC<PropertySpaceProps> = ({
 
       <div className="space-container h-full" style={containerStyle}>
         <div
-          className={`${nameClass} flex items-center justify-center text-center px-1 ${
-            rotate === "top" ? "pt-6" : "pt-1"
-          } text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-bold leading-tight`}
+          className={cn(
+            nameClass,
+            "flex items-center justify-center text-center px-1",
+            { "pt-6": rotate === "top", "pt-1": rotate !== "top" },
+            "text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-bold leading-tight"
+          )}
         >
-          {threeLines && name?.includes("-")
+          {/* {threeLines && name?.includes("-")
             ? name.split("-").map((part: string, i: number) => (
                 <React.Fragment key={i}>
                   {part}
                   {i < name.split("-").length - 1 && <br />}
                 </React.Fragment>
               ))
-            : name}
+            : name} */}
+          {name}
         </div>
         <div
-          className={`text-center ${
-            rotate === "top" ? "pb-6 pt-1" : "pb-1"
-          } font-normal text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem]`}
+          className={cn(
+            "text-center",
+            { "pb-6 pt-1": rotate === "top", "pb-1": rotate !== "top" },
+            "font-normal text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem]"
+          )}
         >
-          ${price} - {rotate}
+          {formatPrice(Number(price))}
         </div>
       </div>
     </div>
@@ -165,9 +171,9 @@ export const RailroadSpace: React.FC<RailroadSpaceProps> = ({
   name,
   price,
   rotate,
-  longName = false,
+  // longName = false,
   position,
-  onClick,
+  // onClick,
   property,
   playerName,
   onChainProperty,
@@ -196,13 +202,13 @@ export const RailroadSpace: React.FC<RailroadSpaceProps> = ({
     }
   };
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
-    if (onClick && position !== undefined) {
-      onClick(position);
-    }
-  };
+  // const handleClick = (e: React.MouseEvent) => {
+  //   e.preventDefault();
+  //   playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+  //   if (onClick && position !== undefined) {
+  //     onClick(position);
+  //   }
+  // };
 
   const children = (
     <div
@@ -213,7 +219,7 @@ export const RailroadSpace: React.FC<RailroadSpaceProps> = ({
       <div className="space-container h-full" style={containerStyle}>
         <div
           className={`${rotate === "top" ? "pt-1" : "pt-1"} ${
-            longName ? "px-0" : "px-1"
+            false ? "px-0" : "px-1"
           } text-center text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-bold leading-tight`}
         >
           {name}
@@ -366,13 +372,13 @@ export const UtilitySpace: React.FC<UtilitySpaceProps> = ({
 
   const isVertical = rotate === "left" || rotate === "right";
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
-    if (onClick && position !== undefined) {
-      onClick(position);
-    }
-  };
+  // const handleClick = (e: React.MouseEvent) => {
+  //   e.preventDefault();
+  //   playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+  //   if (onClick && position !== undefined) {
+  //     onClick(position);
+  //   }
+  // };
 
   if (!position) {
     return (
@@ -402,10 +408,9 @@ export const UtilitySpace: React.FC<UtilitySpaceProps> = ({
       playerName={playerName}
     >
       <div
-        className={`bg-[#fafaf8] text-center border border-black ${
+        className={`bg-board-space text-center border border-black ${
           isVertical ? "vertical-space" : ""
         } cursor-pointer`}
-        // onClick={handleClick}
       >
         <div className="space-container h-full" style={containerStyle}>
           <div
@@ -429,83 +434,77 @@ export const UtilitySpace: React.FC<UtilitySpaceProps> = ({
   );
 };
 
-export const ChanceSpace: React.FC<ChanceSpaceProps> = ({
-  rotate,
-  blueIcon = false,
-  position,
-  onClick,
-  property,
-  playerName,
-}) => {
+export const ChanceSpace: React.FC<ChanceSpaceProps> = ({ rotate }) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
   };
 
   const isVertical = rotate === "left" || rotate === "right";
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
-    if (onClick && position !== undefined) {
-      onClick(position);
-    }
-  };
+  // const handleClick = (e: React.MouseEvent) => {
+  //   e.preventDefault();
+  //   playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+  //   if (onClick && position !== undefined) {
+  //     onClick(position);
+  //   }
+  // };
 
-  if (!position) {
-    return (
-      <div className="bg-[#fafaf8] text-center border border-black">
-        <div className="flex items-center justify-center h-full">
-          <img
-            src="/images/CHANCE.png"
-            alt="Chance"
-            className="w-6 h-6 object-contain"
-          />
-        </div>
-      </div>
-    );
-  }
+  // if (!position) {
+  //   return (
+  //     <div className="bg-[#fafaf8] text-center border border-black">
+  //       <div className="flex items-center justify-center h-full">
+  //         <img
+  //           src="/images/CHANCE.png"
+  //           alt="Chance"
+  //           className="w-6 h-6 object-contain"
+  //         />
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
-  const propertyData = getPropertyData(position);
-  if (!propertyData) {
-    return (
-      <div className="bg-[#fafaf8] text-center border border-black">
-        <div className="flex items-center justify-center h-full">
-          <img
-            src="/images/CHANCE.png"
-            alt="Chance"
-            className="w-6 h-6 object-contain"
-          />
-        </div>
-      </div>
-    );
-  }
+  // const propertyData = getPropertyData(position);
+
+  // if (!propertyData) {
+  //   return (
+  //     <div className="bg-[#fafaf8] text-center border border-black">
+  //       <div className="flex items-center justify-center h-full">
+  //         <img
+  //           src="/images/CHANCE.png"
+  //           alt="Chance"
+  //           className="w-6 h-6 object-contain"
+  //         />
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
-    <SpecialPopover
-      propertyData={propertyData}
-      property={property}
-      playerName={playerName}
+    // <SpecialPopover
+    //   propertyData={propertyData}
+    //   property={property}
+    //   playerName={playerName}
+    // >
+    //  </SpecialPopover>
+    <div
+      className={`bg-board-space text-center border border-black ${
+        isVertical ? "vertical-space" : ""
+      } cursor-pointer`}
+      // onClick={handleClick}
     >
       <div
-        className={`bg-[#fafaf8] text-center border border-black ${
-          isVertical ? "vertical-space" : ""
-        } cursor-pointer`}
-        // onClick={handleClick}
+        className="space-container justify-center h-full"
+        style={containerStyle}
       >
-        <div
-          className="space-container justify-center h-full"
-          style={containerStyle}
-        >
-          <div className="flex-1 flex items-center justify-center">
-            <img
-              src="/images/CHANCE.png"
-              alt="Chance"
-              className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 object-contain"
-            />
-          </div>
+        <div className="flex-1 flex items-center justify-center">
+          <img
+            src="/images/CHANCE.png"
+            alt="Chance"
+            className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 object-contain"
+          />
         </div>
       </div>
-    </SpecialPopover>
+    </div>
   );
 };
 

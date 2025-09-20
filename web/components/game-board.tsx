@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   PropertySpace,
   ChanceSpace,
@@ -10,24 +10,20 @@ import {
   UtilitySpace,
   TaxSpace,
 } from "@/components/board-spaces";
-import { monopolyData, PropertyData, boardSpaces } from "@/data/monopoly-data";
+// import { monopolyData, PropertyData, boardSpaces } from "@/data/monopoly-data";
 import {
-  getLegacyPropertyData,
-  getPropertyData,
-  unifiedPropertyData,
-} from "@/data/unified-monopoly-data";
+  getBoardRowData,
+  isChanceSpace,
+  isCommunityChestSpace,
+  isPropertySpace,
+  isRailroadSpace,
+  isTaxSpace,
+  isUtilitySpace,
+} from "@/lib/board-utils";
+
 import { PlayerTokensContainer } from "@/components/player-tokens";
 import { Dice } from "@/components/dice";
-import {
-  PropertyDialog,
-  SpecialCardDialog,
-  JailDialog,
-} from "@/components/property-dialog";
 import { CardDrawModal } from "@/components/card-draw-modal";
-import { PropertyIndicatorsContainer } from "@/components/property-indicators";
-import { MessageDisplay } from "@/components/message-display";
-import { PropertyDetailsDialog } from "@/components/property-details-dialog";
-import { PropertyBuildingDialog } from "@/components/property-building-dialog";
 import { useGameContext } from "./game-provider";
 import { Card, CardContent } from "./ui/card";
 import {
@@ -38,6 +34,7 @@ import {
 import { isSome } from "@solana/kit";
 import { Button } from "./ui/button";
 import { PropertyAccount } from "@/types/schema";
+import { BoardSpace } from "@/configs/board-data";
 
 interface MonopolyBoardProps {
   boardRotation: number;
@@ -47,8 +44,8 @@ interface MonopolyBoardProps {
 
 const GameBoard: React.FC<MonopolyBoardProps> = ({
   boardRotation,
-  onRotateClockwise,
-  onRotateCounterClockwise,
+  // onRotateClockwise,
+  // onRotateCounterClockwise,
   //   gameManager,
 }) => {
   const [isLoading, setIsLoading] = useState<string | null>(null);
@@ -134,12 +131,12 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
   };
 
   const renderSpace = (
-    space: PropertyData,
+    space: BoardSpace,
     properties: PropertyAccount[],
     index: number
   ) => {
-    const key = `${space.name}-${index}`;
-    const position = boardSpaces.findIndex((s) => s.name === space.name);
+    const position = space.position;
+    const key = `${space.name}-${position}`;
     const property = getPropertyByPosition(position);
     const onChainProperty = properties?.find(
       (property) => property.position === position
@@ -149,51 +146,51 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
         ? getPlayerName(property.owner.value)
         : undefined;
 
-    if (space.type === "property") {
+    if (isPropertySpace(space)) {
       return (
         <PropertySpace
           key={key}
           name={space.name}
           price={space.price}
-          colorClass={space.colorClass}
+          colorGroup={space.colorGroup}
           rotate={space.rotate}
-          longName={space.longName}
-          threeLines={space.threeLines}
           position={position}
           property={property}
           onChainProperty={onChainProperty}
           playerName={playerName}
         />
       );
-    } else if (space.type === "railroad") {
+    } else if (isRailroadSpace(space)) {
       return (
         <RailroadSpace
           key={key}
           name={space.name}
           price={space.price}
           rotate={space.rotate}
-          longName={space.longName}
+          // longName={space.longName}
           position={position}
           property={property}
           onChainProperty={onChainProperty}
           playerName={playerName}
         />
       );
-    } else if (space.type === "beach") {
-      return (
-        <BeachSpace
-          key={key}
-          name={space.name}
-          price={space.price}
-          rotate={space.rotate}
-          longName={space.longName}
-          position={position}
-          // onClick={handleSpaceClick}
-          property={property}
-          playerName={playerName}
-        />
-      );
-    } else if (space.type === "utility") {
+    }
+    // else if (space.type === "beach") {
+    //   return (
+    //     <BeachSpace
+    //       key={key}
+    //       name={space.name}
+    //       price={space.price}
+    //       rotate={space.rotate}
+    //       longName={space.longName}
+    //       position={position}
+    //       // onClick={handleSpaceClick}
+    //       property={property}
+    //       playerName={playerName}
+    //     />
+    //   );
+    // }
+    else if (isUtilitySpace(space)) {
       return (
         <UtilitySpace
           key={key}
@@ -202,17 +199,16 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
           type={space.name.includes("Electric") ? "electric" : "water"}
           rotate={space.rotate}
           position={position}
-          // onClick={handleSpaceClick}
           property={property}
           playerName={playerName}
         />
       );
-    } else if (space.type === "tax") {
+    } else if (isTaxSpace(space)) {
       return (
         <TaxSpace
           key={key}
           name={space.name}
-          price={space.price}
+          // price={space.price}
           instructions={
             space.name.includes("Income") ? "Pay 10% or $200" : undefined
           }
@@ -224,25 +220,21 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
           playerName={playerName}
         />
       );
-    } else if (space.type === "chance") {
+    } else if (isChanceSpace(space)) {
       return (
         <ChanceSpace
           key={key}
           rotate={space.rotate}
-          blueIcon={space.blueIcon}
           position={position}
-          // onClick={handleSpaceClick}
           property={property}
-          playerName={playerName}
         />
       );
-    } else if (space.type === "community-chest") {
+    } else if (isCommunityChestSpace(space)) {
       return (
         <CommunityChestSpace
           key={key}
           rotate={space.rotate}
           position={position}
-          // onClick={handleSpaceClick}
           property={property}
           playerName={playerName}
         />
@@ -435,28 +427,28 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
 
             {/* Bottom Row */}
             <div className="col-start-3 col-end-13 row-start-13 row-end-15 grid grid-cols-9 grid-rows-1 gap-[0.1%]">
-              {monopolyData.bottomRow.map((space, index) =>
+              {getBoardRowData().bottomRow.map((space, index) =>
                 renderSpace(space, properties, index)
               )}
             </div>
 
             {/* Left Row */}
             <div className="col-start-1 col-end-3 row-start-3 row-end-13 grid grid-cols-1 grid-rows-9 gap-[0.1%]">
-              {monopolyData.leftRow.map((space, index) =>
+              {getBoardRowData().leftRow.map((space, index) =>
                 renderSpace(space, properties, index)
               )}
             </div>
 
             {/* Top Row */}
             <div className="col-start-3 col-end-13 row-start-1 row-end-3 grid grid-cols-9 grid-rows-1 gap-[0.1%]">
-              {monopolyData.topRow.map((space, index) =>
+              {getBoardRowData().topRow.map((space, index) =>
                 renderSpace(space, properties, index)
               )}
             </div>
 
             {/* Right Row */}
             <div className="col-start-13 col-end-15 row-start-3 row-end-13 grid grid-cols-1 grid-rows-9 gap-[0.1%]">
-              {monopolyData.rightRow.map((space, index) =>
+              {getBoardRowData().rightRow.map((space, index) =>
                 renderSpace(space, properties, index)
               )}
             </div>
