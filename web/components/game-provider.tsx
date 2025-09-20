@@ -104,6 +104,7 @@ interface GameContextType {
   getPropertyByPosition: (position: number) => PropertyAccount | null;
   getPlayerByAddress: (address: Address) => PlayerAccount | null;
   isCurrentPlayerTurn: () => boolean;
+  canRollDice: () => boolean;
   canPlayerAct: () => boolean;
   getPlayerName: (address: Address) => string;
 
@@ -113,6 +114,10 @@ interface GameContextType {
   addCardDrawEvent: (event: Omit<GameEvent, "id" | "timestamp">) => void;
   clearCardDrawEvents: () => void;
   acknowledgeCardDraw: () => void; // Mark the latest card as acknowledged
+
+  // demo
+  demoDices: number[] | null;
+  setDemoDices: (dices: number[] | null) => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -150,7 +155,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [cardDrawEvents, setCardDrawEvents] = useState<GameEvent[]>([]);
   const [latestCardDraw, setLatestCardDraw] = useState<GameEvent | null>(null);
 
-  // Game log management
+  const [demoDices, setDemoDices] = useState<number[] | null>(null);
+
   const addGameLog = useCallback(
     (entry: Omit<GameLogEntry, "id" | "timestamp">) => {
       const newLog: GameLogEntry = {
@@ -169,7 +175,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   }, []);
 
   const getPlayerName = useCallback((address: Address): string => {
-    // TODO: Implement player name mapping or use address as fallback
     return address.slice(0, 8) + "...";
   }, []);
 
@@ -245,6 +250,24 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     if (!gameState || !currentPlayerAddress) return false;
     return gameState.players[gameState.currentTurn] === currentPlayerAddress;
   }, [gameState, currentPlayerAddress]);
+
+  const canRollDice = useCallback((): boolean => {
+    if (!currentPlayerState || !isCurrentPlayerTurn()) return false;
+
+    const hasPendingActions =
+      currentPlayerState.needsPropertyAction ||
+      currentPlayerState.needsChanceCard ||
+      currentPlayerState.needsCommunityChestCard ||
+      currentPlayerState.needsBankruptcyCheck ||
+      currentPlayerState.needsSpecialSpaceAction;
+
+    // Player can roll dice if they haven't rolled dice yet and are not in jail
+    return (
+      !currentPlayerState.hasRolledDice &&
+      !currentPlayerState.inJail &&
+      !hasPendingActions
+    );
+  }, [currentPlayerState, isCurrentPlayerTurn]);
 
   const canPlayerAct = useCallback((): boolean => {
     if (!currentPlayerState || !isCurrentPlayerTurn()) return false;
@@ -1054,8 +1077,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     getPropertyByPosition,
     getPlayerByAddress,
     isCurrentPlayerTurn,
+    canRollDice,
     canPlayerAct,
     getPlayerName,
+    // demo
+    demoDices,
+    setDemoDices,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

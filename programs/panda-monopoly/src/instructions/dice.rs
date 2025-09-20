@@ -252,6 +252,9 @@ fn handle_special_space(player_state: &mut PlayerState, position: u8) -> Result<
         }
         JAIL_POSITION => {
             // Just visiting jail, no action needed
+            player_state.in_jail = true;
+            player_state.jail_turns = 0;
+            player_state.doubles_count = 0;
         }
         GO_TO_JAIL_POSITION => {
             send_player_to_jail(player_state);

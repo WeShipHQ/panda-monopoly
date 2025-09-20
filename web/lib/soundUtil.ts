@@ -106,15 +106,41 @@ export function playSound(name: keyof typeof soundMap, volume: number = 1, durat
   }
 }
 
+// Global reference to current dice roll audio for stopping
+let currentDiceRollAudio: HTMLAudioElement | null = null;
+let diceRollTimeout: NodeJS.Timeout | null = null;
+
 // Dice-specific sound effects with timing
 export function playDiceRollSequence() {
-  // Play dice roll sound and stop it after configured duration
-  playSound("dice-roll", SOUND_CONFIG.volumes.diceRoll, SOUND_CONFIG.durations.diceRoll);
+  // Stop any existing dice roll sound
+  stopDiceRollSequence();
+  
+  // Play dice roll sound and store reference
+  currentDiceRollAudio = playSound("dice-roll", SOUND_CONFIG.volumes.diceRoll, SOUND_CONFIG.durations.diceRoll);
   
   // Play landing sound after configured delay
-  setTimeout(() => {
+  diceRollTimeout = setTimeout(() => {
     playSound("dice-land", SOUND_CONFIG.volumes.diceLand);
+    currentDiceRollAudio = null;
+    diceRollTimeout = null;
   }, SOUND_CONFIG.delays.diceLanding);
+}
+
+// Stop dice roll sequence when result is available
+export function stopDiceRollSequence() {
+  if (currentDiceRollAudio) {
+    currentDiceRollAudio.pause();
+    currentDiceRollAudio.currentTime = 0;
+    currentDiceRollAudio = null;
+  }
+  
+  if (diceRollTimeout) {
+    clearTimeout(diceRollTimeout);
+    diceRollTimeout = null;
+  }
+  
+  // Play landing sound immediately when stopping
+  playSound("dice-land", SOUND_CONFIG.volumes.diceLand);
 }
 
 // Theme change sound effect
@@ -158,6 +184,7 @@ export function playGameStateSound(state: 'win' | 'lose' | 'jail' | 'start') {
 export default {
   playSound,
   playDiceRollSequence,
+  stopDiceRollSequence,
   playThemeChangeSound,
   playPropertySound,
   playGameStateSound,

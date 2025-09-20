@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   PropertySpace,
   ChanceSpace,
@@ -29,6 +29,15 @@ import { MessageDisplay } from "@/components/message-display";
 import { PropertyDetailsDialog } from "@/components/property-details-dialog";
 import { PropertyBuildingDialog } from "@/components/property-building-dialog";
 import { useGameContext } from "./game-provider";
+import { Card, CardContent } from "./ui/card";
+import {
+  BankruptcyAction,
+  PlayerInJailAlert,
+  PropertyActions,
+} from "./player-actions";
+import { isSome } from "@solana/kit";
+import { Button } from "./ui/button";
+import { PropertyAccount } from "@/types/schema";
 
 interface MonopolyBoardProps {
   boardRotation: number;
@@ -42,11 +51,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
   onRotateCounterClockwise,
   //   gameManager,
 }) => {
-  const [currentDialogVisible, setCurrentDialogVisible] = useState(true);
-  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-  const [selectedSpace, setSelectedSpace] = useState<number | null>(null);
-  const [buildingDialogOpen, setBuildingDialogOpen] = useState(false);
-  const [buildingProperty, setBuildingProperty] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState<string | null>(null);
 
   const {
     gameState,
@@ -65,68 +70,84 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
     cardDrawType,
     setCardDrawType,
     // Actions
+    endTurn,
     buyProperty,
+    skipProperty,
+    drawChanceCard,
+    drawCommunityChestCard,
     buildHouse,
     buildHotel,
     // Utilities
     getPropertyByPosition,
     getPlayerName,
+    isCurrentPlayerTurn,
   } = useGameContext();
 
-  //   const {
-  //     gameState,
-  //     handleDiceRoll,
-  //     currentPlayer,
-  //     buyProperty,
-  //     buyPropertyWithFlag,
-  //     skipProperty,
-  //     handleSpecialCard,
-  //     handleCardDrawn,
-  //     payJailFine,
-  //     useJailFreeCard,
-  //     drawnCards,
-  //     buildHouses,
-  //     buildHotel,
-  //     canBuildOnProperty,
-  //     getBuildingCost,
-  //   } = gameManager;
+  console.log("current xxx", currentPlayerState);
 
-  // Reset dialog visibility when action changes
+  const isMyTurn = isCurrentPlayerTurn();
 
-  const handleSpaceClick = (position: number) => {
-    // const property = getPropertyData(position);
-    // const isOwned = gameState.propertyOwnership[position] === currentPlayer.id;
-    // const canBuild = canBuildOnProperty(currentPlayer.id, position);
-    // // If it's a property owned by current player and they can build, show building dialog
-    // if (property?.type === "property" && isOwned && canBuild) {
-    //   setBuildingProperty(position);
-    //   setBuildingDialogOpen(true);
-    // } else {
-    //   // Otherwise show property details
-    //   setSelectedSpace(position);
-    //   setDetailsDialogOpen(true);
-    // }
+  const handleBuyProperty = async (position: number) => {
+    setIsLoading("buyProperty");
+    try {
+      await buyProperty(position);
+    } catch (error) {
+      console.error("Failed to buy property:", error);
+    } finally {
+      setIsLoading(null);
+    }
   };
 
-  const handleBuildHouses = (housesToBuild: number) => {
-    // if (buildingProperty !== null) {
-    //   buildHouses(currentPlayer.id, buildingProperty, housesToBuild);
-    //   setBuildingDialogOpen(false);
-    //   setBuildingProperty(null);
-    // }
+  const handleSkipProperty = async (position: number) => {
+    setIsLoading("skipProperty");
+    try {
+      await skipProperty(position);
+    } catch (error) {
+      console.error("Failed to skip property:", error);
+    } finally {
+      setIsLoading(null);
+    }
   };
 
-  const handleBuildHotel = () => {
-    // if (buildingProperty !== null) {
-    //   buildHotel(currentPlayer.id, buildingProperty);
-    //   setBuildingDialogOpen(false);
-    //   setBuildingProperty(null);
-    // }
+  const handleDrawChanceCard = async () => {
+    setIsLoading("chanceCard");
+    try {
+      await drawChanceCard();
+    } catch (error) {
+      console.error("Failed to draw chance card:", error);
+    } finally {
+      setIsLoading(null);
+    }
   };
 
-  const renderSpace = (space: PropertyData, index: number) => {
+  const handleEndTurn = async () => {
+    // if (!currentPlayerState?.canEndTurn) return;
+
+    setIsLoading("endTurn");
+    try {
+      await endTurn();
+    } catch (error) {
+      console.error("Failed to end turn:", error);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
+  const renderSpace = (
+    space: PropertyData,
+    properties: PropertyAccount[],
+    index: number
+  ) => {
     const key = `${space.name}-${index}`;
     const position = boardSpaces.findIndex((s) => s.name === space.name);
+    const property = getPropertyByPosition(position);
+    const onChainProperty = properties?.find(
+      (property) => property.position === position
+    );
+    const playerName =
+      property?.owner && property.owner.__option === "Some"
+        ? getPlayerName(property.owner.value)
+        : undefined;
 
     if (space.type === "property") {
       return (
@@ -139,7 +160,9 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
           longName={space.longName}
           threeLines={space.threeLines}
           position={position}
-          onClick={handleSpaceClick}
+          property={property}
+          onChainProperty={onChainProperty}
+          playerName={playerName}
         />
       );
     } else if (space.type === "railroad") {
@@ -151,7 +174,9 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
           rotate={space.rotate}
           longName={space.longName}
           position={position}
-          onClick={handleSpaceClick}
+          property={property}
+          onChainProperty={onChainProperty}
+          playerName={playerName}
         />
       );
     } else if (space.type === "beach") {
@@ -163,7 +188,9 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
           rotate={space.rotate}
           longName={space.longName}
           position={position}
-          onClick={handleSpaceClick}
+          // onClick={handleSpaceClick}
+          property={property}
+          playerName={playerName}
         />
       );
     } else if (space.type === "utility") {
@@ -175,7 +202,9 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
           type={space.name.includes("Electric") ? "electric" : "water"}
           rotate={space.rotate}
           position={position}
-          onClick={handleSpaceClick}
+          // onClick={handleSpaceClick}
+          property={property}
+          playerName={playerName}
         />
       );
     } else if (space.type === "tax") {
@@ -190,7 +219,9 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
           type={space.name.includes("Income") ? "income" : "luxury"}
           rotate={space.rotate}
           position={position}
-          onClick={handleSpaceClick}
+          // onClick={handleSpaceClick}
+          property={property}
+          playerName={playerName}
         />
       );
     } else if (space.type === "chance") {
@@ -200,7 +231,9 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
           rotate={space.rotate}
           blueIcon={space.blueIcon}
           position={position}
-          onClick={handleSpaceClick}
+          // onClick={handleSpaceClick}
+          property={property}
+          playerName={playerName}
         />
       );
     } else if (space.type === "community-chest") {
@@ -209,13 +242,34 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
           key={key}
           rotate={space.rotate}
           position={position}
-          onClick={handleSpaceClick}
+          // onClick={handleSpaceClick}
+          property={property}
+          playerName={playerName}
         />
       );
     }
 
     return null;
   };
+
+  if (!gameState || !currentPlayerState) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-gray-500">
+            No game data available
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const hasPendingActions =
+    currentPlayerState.needsPropertyAction ||
+    currentPlayerState.needsChanceCard ||
+    currentPlayerState.needsCommunityChestCard ||
+    currentPlayerState.needsBankruptcyCheck ||
+    currentPlayerState.needsSpecialSpaceAction;
 
   return (
     <div
@@ -239,10 +293,10 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
         >
           <div className="absolute inset-0 grid grid-cols-14 grid-rows-14 gap-[0.1%] p-[0.1%]">
             {/* Player Tokens */}
-            {/* <PlayerTokensContainer
-              players={gameState.players}
+            <PlayerTokensContainer
+              players={players}
               boardRotation={boardRotation}
-            /> */}
+            />
 
             {/* Property Indicators */}
             {/* <PropertyIndicatorsContainer
@@ -259,13 +313,73 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
             >
               {/* Dice Section - Responsive */}
               <div className="flex-shrink-0 transform scale-[0.7] sm:scale-75 md:scale-90 lg:scale-100">
-                {/* <Dice
-                  onRoll={handleDiceRoll}
-                  disabled={
-                    gameState.gamePhase !== "waiting" || currentPlayer.inJail
-                  }
-                /> */}
+                <Dice />
+                {currentPlayerState.inJail && (
+                  <PlayerInJailAlert
+                    player={currentPlayerState}
+                    handleEndTurn={handleEndTurn}
+                  />
+                )}
+                {currentPlayerState.needsBankruptcyCheck && (
+                  <BankruptcyAction player={currentPlayerState} />
+                )}
               </div>
+
+              {/* Property Actions */}
+              {isMyTurn &&
+                currentPlayerState.needsPropertyAction &&
+                isSome(currentPlayerState.pendingPropertyPosition) && (
+                  <PropertyActions
+                    player={currentPlayerState}
+                    position={currentPlayerState.pendingPropertyPosition.value}
+                    isLoading={isLoading}
+                    handleBuyProperty={handleBuyProperty}
+                    handleSkipProperty={handleSkipProperty}
+                  />
+                )}
+
+              {isMyTurn && currentPlayerState.needsChanceCard && (
+                <Button
+                  size="sm"
+                  onClick={handleDrawChanceCard}
+                  disabled={isLoading === "chanceCard"}
+                >
+                  {isLoading === "chanceCard"
+                    ? "Drawing..."
+                    : "Draw Chance Card"}
+                </Button>
+              )}
+
+              {isMyTurn && currentPlayerState.needsCommunityChestCard && (
+                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg space-y-2">
+                  <div className="text-sm font-medium text-purple-800">
+                    Draw Community Chest Card
+                  </div>
+                  <div className="text-xs text-purple-600">
+                    You landed on a Community Chest space
+                  </div>
+                  <Button
+                    size="sm"
+                    // onClick={() => handleOpenCardModal("community-chest")}
+                    disabled={isLoading === "communityChestCard"}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    {isLoading === "communityChestCard"
+                      ? "Drawing..."
+                      : "Draw Community Chest Card"}
+                  </Button>
+                </div>
+              )}
+
+              {!hasPendingActions && currentPlayerState.hasRolledDice && (
+                <Button
+                  onClick={handleEndTurn}
+                  disabled={isLoading === "endTurn"}
+                >
+                  {isLoading === "endTurn" ? "Ending Turn..." : "End Turn"}
+                </Button>
+              )}
 
               {/* game-logs */}
             </div>
@@ -322,33 +436,44 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
             {/* Bottom Row */}
             <div className="col-start-3 col-end-13 row-start-13 row-end-15 grid grid-cols-9 grid-rows-1 gap-[0.1%]">
               {monopolyData.bottomRow.map((space, index) =>
-                renderSpace(space, index)
+                renderSpace(space, properties, index)
               )}
             </div>
 
             {/* Left Row */}
             <div className="col-start-1 col-end-3 row-start-3 row-end-13 grid grid-cols-1 grid-rows-9 gap-[0.1%]">
               {monopolyData.leftRow.map((space, index) =>
-                renderSpace(space, index)
+                renderSpace(space, properties, index)
               )}
             </div>
 
             {/* Top Row */}
             <div className="col-start-3 col-end-13 row-start-1 row-end-3 grid grid-cols-9 grid-rows-1 gap-[0.1%]">
               {monopolyData.topRow.map((space, index) =>
-                renderSpace(space, index)
+                renderSpace(space, properties, index)
               )}
             </div>
 
             {/* Right Row */}
             <div className="col-start-13 col-end-15 row-start-3 row-end-13 grid grid-cols-1 grid-rows-9 gap-[0.1%]">
               {monopolyData.rightRow.map((space, index) =>
-                renderSpace(space, index)
+                renderSpace(space, properties, index)
               )}
             </div>
           </div>
         </div>
       </div>
+
+      {cardDrawType && (
+        <CardDrawModal
+          isOpen={isCardDrawModalOpen}
+          cardType={cardDrawType}
+          onClose={() => {
+            setIsCardDrawModalOpen(false);
+            setCardDrawType(null);
+          }}
+        />
+      )}
 
       {/* Property Dialog */}
       {/* <PropertyDialog

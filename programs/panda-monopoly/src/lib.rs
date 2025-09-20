@@ -11,7 +11,7 @@ pub use instructions::*;
 pub use state::*;
 pub use utils::*;
 
-declare_id!("7HQX6PXWbo9TS4hiaZezC6ATYvMa3LCU3pNFutsVkLqz");
+declare_id!("4vucUqMcXN4sgLsgnrXTUC9U7ACZ5DmoRBLbWt4vrnyR");
 
 #[program]
 pub mod panda_monopoly {

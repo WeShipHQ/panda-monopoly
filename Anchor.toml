@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-panda_monopoly = "7HQX6PXWbo9TS4hiaZezC6ATYvMa3LCU3pNFutsVkLqz"
+panda_monopoly = "4vucUqMcXN4sgLsgnrXTUC9U7ACZ5DmoRBLbWt4vrnyR"
 
 [registry]
 url = "https://api.apr.dev"
@@ -16,8 +16,4 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-# test = "pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
-# test = "pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/initialize-game.test.ts"
-# test = "pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/join-game.test.ts"
-# test = "pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/start-game.test.ts"
 test = "pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/roll-dice.test.ts"

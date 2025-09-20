@@ -1,23 +1,25 @@
 import React from "react";
 import { playSound, SOUND_CONFIG } from "@/lib/soundUtil";
-import { SpaceTooltip } from "./space-popover";
-import { PropertyAccount } from "@/types/schema";
-
-type SpaceProps = {
-  name?: string;
-  price?: string;
-  colorClass?: string;
-  rotate?: "left" | "top" | "right";
-  longName?: boolean;
-  threeLines?: boolean;
-  instructions?: string;
-  type?: string;
-  blueIcon?: boolean;
-  position?: number;
-  onClick?: (position: number) => void;
-  property?: PropertyAccount | null;
-  playerName?: string;
-};
+import {
+  PropertyPopover,
+  RailroadPopover,
+  UtilityPopover,
+  TaxPopover,
+  SpecialPopover,
+} from "./space-popovers";
+import { getPropertyData } from "@/data/unified-monopoly-data";
+import {
+  PropertySpaceProps,
+  RailroadSpaceProps,
+  BeachSpaceProps,
+  UtilitySpaceProps,
+  ChanceSpaceProps,
+  CommunityChestSpaceProps,
+  TaxSpaceProps,
+  CornerSpaceProps,
+} from "@/types/space-types";
+import { isSome } from "@solana/kit";
+import { generatePlayerIcon } from "@/lib/utils";
 
 const getRotationClass = (rotate?: string) => {
   switch (rotate) {
@@ -32,7 +34,7 @@ const getRotationClass = (rotate?: string) => {
   }
 };
 
-export const PropertySpace: React.FC<SpaceProps> = ({
+export const PropertySpace: React.FC<PropertySpaceProps> = ({
   name,
   price,
   colorClass,
@@ -42,8 +44,14 @@ export const PropertySpace: React.FC<SpaceProps> = ({
   position,
   property,
   playerName,
-  onClick,
+  onChainProperty,
 }) => {
+  const ownerAddress =
+    onChainProperty && isSome(onChainProperty.owner)
+      ? onChainProperty.owner.value
+      : null;
+  const ownerMeta = ownerAddress ? generatePlayerIcon(ownerAddress) : null;
+
   const containerStyle = {
     transform: getRotationClass(rotate),
   };
@@ -69,6 +77,18 @@ export const PropertySpace: React.FC<SpaceProps> = ({
     }
   };
 
+  const getColorOwnedClass = () => {
+    if (rotate === "left") {
+      return "left-0 top-0 h-full w-3";
+    } else if (rotate === "right") {
+      return "right-0 top-0 h-full w-3";
+    } else if (rotate === "top") {
+      return "top-0 left-0 w-full h-3";
+    } else {
+      return "bottom-0 w-full h-3";
+    }
+  };
+
   // const handleClick = (e: React.MouseEvent) => {
   //   e.preventDefault();
   //   playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
@@ -85,7 +105,16 @@ export const PropertySpace: React.FC<SpaceProps> = ({
       // onClick={handleClick}
     >
       {/* Color bar - positioned differently for vertical vs horizontal spaces */}
-      <div className={`${getColorBarClass()} ${colorClass}`}></div>
+      <div className={`${getColorBarClass()} ${colorClass}`} />
+
+      {ownerMeta && (
+        <div
+          className={`absolute ${getColorOwnedClass()}`}
+          style={{
+            backgroundColor: ownerMeta.color,
+          }}
+        />
+      )}
 
       <div className="space-container h-full" style={containerStyle}>
         <div
@@ -94,7 +123,7 @@ export const PropertySpace: React.FC<SpaceProps> = ({
           } text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-bold leading-tight`}
         >
           {threeLines && name?.includes("-")
-            ? name.split("-").map((part, i) => (
+            ? name.split("-").map((part: string, i: number) => (
                 <React.Fragment key={i}>
                   {part}
                   {i < name.split("-").length - 1 && <br />}
@@ -107,7 +136,7 @@ export const PropertySpace: React.FC<SpaceProps> = ({
             rotate === "top" ? "pb-6 pt-1" : "pb-1"
           } font-normal text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem]`}
         >
-          ${price}
+          ${price} - {rotate}
         </div>
       </div>
     </div>
@@ -115,30 +144,57 @@ export const PropertySpace: React.FC<SpaceProps> = ({
 
   if (!position) return <>{children}</>;
 
+  const propertyData = getPropertyData(position);
+
+  if (!propertyData) {
+    return <>{children}</>;
+  }
+
   return (
-    <SpaceTooltip
-      position={position}
+    <PropertyPopover
+      propertyData={propertyData}
       property={property}
       playerName={playerName}
     >
       {children}
-    </SpaceTooltip>
+    </PropertyPopover>
   );
 };
 
-export const RailroadSpace: React.FC<SpaceProps> = ({
+export const RailroadSpace: React.FC<RailroadSpaceProps> = ({
   name,
   price,
   rotate,
   longName = false,
   position,
   onClick,
+  property,
+  playerName,
+  onChainProperty,
 }) => {
+  const ownerAddress =
+    onChainProperty && isSome(onChainProperty.owner)
+      ? onChainProperty.owner.value
+      : null;
+  const ownerMeta = ownerAddress ? generatePlayerIcon(ownerAddress) : null;
+
   const containerStyle = {
     transform: getRotationClass(rotate),
   };
 
   const isVertical = rotate === "left" || rotate === "right";
+
+  const getColorOwnedClass = () => {
+    if (rotate === "left") {
+      return "left-0 top-0 h-full w-3";
+    } else if (rotate === "right") {
+      return "right-0 top-0 h-full w-3";
+    } else if (rotate === "top") {
+      return "top-0 left-0 w-full h-3";
+    } else {
+      return "bottom-0 w-full h-3";
+    }
+  };
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -148,12 +204,11 @@ export const RailroadSpace: React.FC<SpaceProps> = ({
     }
   };
 
-  return (
+  const children = (
     <div
-      className={`bg-[#fafaf8] text-center border border-black ${
+      className={`relative bg-[#fafaf8] text-center border border-black ${
         isVertical ? "vertical-space" : ""
       } cursor-pointer`}
-      onClick={handleClick}
     >
       <div className="space-container h-full" style={containerStyle}>
         <div
@@ -174,17 +229,48 @@ export const RailroadSpace: React.FC<SpaceProps> = ({
           ${price}
         </div>
       </div>
+
+      {ownerMeta && (
+        <div
+          className={`absolute ${getColorOwnedClass()}`}
+          style={{
+            backgroundColor: ownerMeta.color,
+          }}
+        />
+      )}
     </div>
+  );
+
+  if (!position) {
+    return children;
+  }
+
+  const propertyData = getPropertyData(position);
+
+  if (!propertyData) {
+    return children;
+  }
+
+  return (
+    <RailroadPopover
+      propertyData={propertyData}
+      property={property}
+      playerName={playerName}
+    >
+      {children}
+    </RailroadPopover>
   );
 };
 
-export const BeachSpace: React.FC<SpaceProps> = ({
+export const BeachSpace: React.FC<BeachSpaceProps> = ({
   name,
   price,
   rotate,
   longName = false,
   position,
   onClick,
+  property,
+  playerName,
 }) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
@@ -200,43 +286,72 @@ export const BeachSpace: React.FC<SpaceProps> = ({
     }
   };
 
+  if (!position) {
+    return (
+      <div className="bg-[#e6f3ff] text-center border border-black">
+        <div className="text-xs">{name}</div>
+        <div className="text-lg">🏖️</div>
+        <div className="text-xs">${price}</div>
+      </div>
+    );
+  }
+
+  const propertyData = getPropertyData(position);
+  if (!propertyData) {
+    return (
+      <div className="bg-[#e6f3ff] text-center border border-black">
+        <div className="text-xs">{name}</div>
+        <div className="text-lg">🏖️</div>
+        <div className="text-xs">${price}</div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={`bg-[#e6f3ff] text-center border border-black ${
-        isVertical ? "vertical-space" : ""
-      } cursor-pointer`}
-      onClick={handleClick}
+    <SpecialPopover
+      propertyData={propertyData}
+      property={property}
+      playerName={playerName}
     >
-      <div className="space-container h-full" style={containerStyle}>
-        <div
-          className={`${rotate === "top" ? "pt-1" : "pt-1"} ${
-            longName ? "px-0" : "px-1"
-          } text-center text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-bold leading-tight`}
-        >
-          {name}
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-lg sm:text-xl lg:text-2xl">🏖️</div>
-        </div>
-        <div
-          className={`text-center ${
-            rotate === "top" ? "pb-6 pt-1" : "pb-1"
-          } font-normal text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem]`}
-        >
-          ${price}
+      <div
+        className={`bg-[#e6f3ff] text-center border border-black ${
+          isVertical ? "vertical-space" : ""
+        } cursor-pointer`}
+        onClick={handleClick}
+      >
+        <div className="space-container h-full" style={containerStyle}>
+          <div
+            className={`${rotate === "top" ? "pt-1" : "pt-1"} ${
+              longName ? "px-0" : "px-1"
+            } text-center text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-bold leading-tight`}
+          >
+            {name}
+          </div>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-lg sm:text-xl lg:text-2xl">🏖️</div>
+          </div>
+          <div
+            className={`text-center ${
+              rotate === "top" ? "pb-6 pt-1" : "pb-1"
+            } font-normal text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem]`}
+          >
+            ${price}
+          </div>
         </div>
       </div>
-    </div>
+    </SpecialPopover>
   );
 };
 
-export const UtilitySpace: React.FC<SpaceProps> = ({
+export const UtilitySpace: React.FC<UtilitySpaceProps> = ({
   name,
   price,
   type,
   rotate,
   position,
   onClick,
+  property,
+  playerName,
 }) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
@@ -259,39 +374,68 @@ export const UtilitySpace: React.FC<SpaceProps> = ({
     }
   };
 
+  if (!position) {
+    return (
+      <div className="bg-[#fafaf8] text-center border border-black">
+        <div className="text-xs">{name}</div>
+        <div className="text-lg">{icon}</div>
+        <div className="text-xs">${price}</div>
+      </div>
+    );
+  }
+
+  const propertyData = getPropertyData(position);
+  if (!propertyData) {
+    return (
+      <div className="bg-[#fafaf8] text-center border border-black">
+        <div className="text-xs">{name}</div>
+        <div className="text-lg">{icon}</div>
+        <div className="text-xs">${price}</div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={`bg-[#fafaf8] text-center border border-black ${
-        isVertical ? "vertical-space" : ""
-      } cursor-pointer`}
-      onClick={handleClick}
+    <UtilityPopover
+      propertyData={propertyData}
+      property={property}
+      playerName={playerName}
     >
-      <div className="space-container h-full" style={containerStyle}>
-        <div
-          className={`px-1 ${
-            rotate === "top" ? "pt-1" : "pt-1"
-          } text-center text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-bold leading-tight`}
-        >
-          {name}
-        </div>
-        <div className="flex-1 flex items-center justify-center">{icon}</div>
-        <div
-          className={`text-center ${
-            rotate === "top" ? "pb-6 pt-1" : "pb-1"
-          } font-normal text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem]`}
-        >
-          ${price}
+      <div
+        className={`bg-[#fafaf8] text-center border border-black ${
+          isVertical ? "vertical-space" : ""
+        } cursor-pointer`}
+        // onClick={handleClick}
+      >
+        <div className="space-container h-full" style={containerStyle}>
+          <div
+            className={`px-1 ${
+              rotate === "top" ? "pt-1" : "pt-1"
+            } text-center text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-bold leading-tight`}
+          >
+            {name}
+          </div>
+          <div className="flex-1 flex items-center justify-center">{icon}</div>
+          <div
+            className={`text-center ${
+              rotate === "top" ? "pb-6 pt-1" : "pb-1"
+            } font-normal text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem]`}
+          >
+            ${price}
+          </div>
         </div>
       </div>
-    </div>
+    </UtilityPopover>
   );
 };
 
-export const ChanceSpace: React.FC<SpaceProps> = ({
+export const ChanceSpace: React.FC<ChanceSpaceProps> = ({
   rotate,
   blueIcon = false,
   position,
   onClick,
+  property,
+  playerName,
 }) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
@@ -307,33 +451,70 @@ export const ChanceSpace: React.FC<SpaceProps> = ({
     }
   };
 
-  return (
-    <div
-      className={`bg-[#fafaf8] text-center border border-black ${
-        isVertical ? "vertical-space" : ""
-      } cursor-pointer`}
-      onClick={handleClick}
-    >
-      <div
-        className="space-container justify-center h-full"
-        style={containerStyle}
-      >
-        <div className="flex-1 flex items-center justify-center">
+  if (!position) {
+    return (
+      <div className="bg-[#fafaf8] text-center border border-black">
+        <div className="flex items-center justify-center h-full">
           <img
             src="/images/CHANCE.png"
             alt="Chance"
-            className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 object-contain"
+            className="w-6 h-6 object-contain"
           />
         </div>
       </div>
-    </div>
+    );
+  }
+
+  const propertyData = getPropertyData(position);
+  if (!propertyData) {
+    return (
+      <div className="bg-[#fafaf8] text-center border border-black">
+        <div className="flex items-center justify-center h-full">
+          <img
+            src="/images/CHANCE.png"
+            alt="Chance"
+            className="w-6 h-6 object-contain"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <SpecialPopover
+      propertyData={propertyData}
+      property={property}
+      playerName={playerName}
+    >
+      <div
+        className={`bg-[#fafaf8] text-center border border-black ${
+          isVertical ? "vertical-space" : ""
+        } cursor-pointer`}
+        // onClick={handleClick}
+      >
+        <div
+          className="space-container justify-center h-full"
+          style={containerStyle}
+        >
+          <div className="flex-1 flex items-center justify-center">
+            <img
+              src="/images/CHANCE.png"
+              alt="Chance"
+              className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 object-contain"
+            />
+          </div>
+        </div>
+      </div>
+    </SpecialPopover>
   );
 };
 
-export const CommunityChestSpace: React.FC<SpaceProps> = ({
+export const CommunityChestSpace: React.FC<CommunityChestSpaceProps> = ({
   rotate,
   position,
   onClick,
+  property,
+  playerName,
 }) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
@@ -349,30 +530,65 @@ export const CommunityChestSpace: React.FC<SpaceProps> = ({
     }
   };
 
-  return (
-    <div
-      className={`bg-[#fafaf8] text-center border border-black ${
-        isVertical ? "vertical-space" : ""
-      } cursor-pointer`}
-      onClick={handleClick}
-    >
-      <div
-        className="space-container justify-center h-full"
-        style={containerStyle}
-      >
-        <div className="flex-1 flex items-center justify-center">
+  if (!position) {
+    return (
+      <div className="bg-[#fafaf8] text-center border border-black">
+        <div className="flex items-center justify-center h-full">
           <img
             src="/images/CHEST.png"
             alt="Community Chest"
-            className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 object-contain"
+            className="w-6 h-6 object-contain"
           />
         </div>
       </div>
-    </div>
+    );
+  }
+
+  const propertyData = getPropertyData(position);
+  if (!propertyData) {
+    return (
+      <div className="bg-[#fafaf8] text-center border border-black">
+        <div className="flex items-center justify-center h-full">
+          <img
+            src="/images/CHEST.png"
+            alt="Community Chest"
+            className="w-6 h-6 object-contain"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <SpecialPopover
+      propertyData={propertyData}
+      property={property}
+      playerName={playerName}
+    >
+      <div
+        className={`bg-[#fafaf8] text-center border border-black ${
+          isVertical ? "vertical-space" : ""
+        } cursor-pointer`}
+        // onClick={handleClick}
+      >
+        <div
+          className="space-container justify-center h-full"
+          style={containerStyle}
+        >
+          <div className="flex-1 flex items-center justify-center">
+            <img
+              src="/images/CHEST.png"
+              alt="Community Chest"
+              className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 object-contain"
+            />
+          </div>
+        </div>
+      </div>
+    </SpecialPopover>
   );
 };
 
-export const TaxSpace: React.FC<SpaceProps> = ({
+export const TaxSpace: React.FC<TaxSpaceProps> = ({
   name,
   price,
   instructions,
@@ -380,6 +596,8 @@ export const TaxSpace: React.FC<SpaceProps> = ({
   rotate,
   position,
   onClick,
+  property,
+  playerName,
 }) => {
   const containerStyle = {
     transform: getRotationClass(rotate),
@@ -395,54 +613,81 @@ export const TaxSpace: React.FC<SpaceProps> = ({
     }
   };
 
+  if (!position) {
+    return (
+      <div className="bg-[#fafaf8] text-center border border-black">
+        <div className="text-xs">{name}</div>
+        <div className="text-lg">💎</div>
+        <div className="text-xs">Pay ${price}</div>
+      </div>
+    );
+  }
+
+  const propertyData = getPropertyData(position);
+  if (!propertyData) {
+    return (
+      <div className="bg-[#fafaf8] text-center border border-black">
+        <div className="text-xs">{name}</div>
+        <div className="text-lg">💎</div>
+        <div className="text-xs">Pay ${price}</div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={`bg-[#fafaf8] text-center border border-black ${
-        isVertical ? "vertical-space" : ""
-      } cursor-pointer`}
-      onClick={handleClick}
+    <TaxPopover
+      propertyData={propertyData}
+      property={property}
+      playerName={playerName}
     >
       <div
-        className={`space-container h-full ${
-          type === "income" ? "justify-center items-center" : ""
-        }`}
-        style={containerStyle}
+        className={`bg-[#fafaf8] text-center border border-black ${
+          isVertical ? "vertical-space" : ""
+        } cursor-pointer`}
+        // onClick={handleClick}
       >
         <div
-          className={`px-1 text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-bold leading-tight ${
-            type === "income" ? "pb-1" : rotate === "top" ? "pt-1" : "pt-1"
-          } text-center`}
+          className={`space-container h-full ${
+            type === "income" ? "justify-center items-center" : ""
+          }`}
+          style={containerStyle}
         >
-          {name}
-        </div>
+          <div
+            className={`px-1 text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-bold leading-tight ${
+              type === "income" ? "pb-1" : rotate === "top" ? "pt-1" : "pt-1"
+            } text-center`}
+          >
+            {name}
+          </div>
 
-        {type === "income" ? (
-          <>
-            <div className="inline-block w-1 h-1 bg-black transform rotate-45"></div>
-            <div
-              className={`px-1 py-1 text-center text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] leading-tight ${
-                rotate === "top" ? "pb-5" : ""
-              }`}
-              dangerouslySetInnerHTML={{
-                __html: instructions?.replace("or", "<br>or<br>") || "",
-              }}
-            ></div>
-          </>
-        ) : (
-          <>
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-lg sm:text-xl lg:text-2xl">💎</div>
-            </div>
-            <div
-              className={`px-1 ${
-                rotate === "top" ? "pb-6 pt-1" : "pb-1"
-              } text-center text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem]`}
-            >
-              Pay ${price}
-            </div>
-          </>
-        )}
+          {type === "income" ? (
+            <>
+              <div className="inline-block w-1 h-1 bg-black transform rotate-45"></div>
+              <div
+                className={`px-1 py-1 text-center text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] leading-tight ${
+                  rotate === "top" ? "pb-5" : ""
+                }`}
+                dangerouslySetInnerHTML={{
+                  __html: instructions?.replace("or", "<br>or<br>") || "",
+                }}
+              ></div>
+            </>
+          ) : (
+            <>
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-lg sm:text-xl lg:text-2xl">💎</div>
+              </div>
+              <div
+                className={`px-1 ${
+                  rotate === "top" ? "pb-6 pt-1" : "pb-1"
+                } text-center text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem]`}
+              >
+                Pay ${price}
+              </div>
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </TaxPopover>
   );
 };

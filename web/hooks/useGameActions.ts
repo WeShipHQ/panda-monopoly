@@ -130,7 +130,7 @@ export const useGameActions = () => {
             break;
 
           case "property":
-          case "beach":
+          // case "beach":
           case "railroad":
           case "utility":
             const owner = prevState.propertyOwnership[position];

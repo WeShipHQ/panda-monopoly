@@ -10,7 +10,7 @@ pub enum GameStatus {
     Finished,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, InitSpace, Clone, PartialEq, Eq)]
 pub enum TradeStatus {
     Pending,
     Accepted,
@@ -138,14 +138,15 @@ pub struct PropertyState {
 impl PropertyState {}
 
 #[account]
+#[derive(Debug, InitSpace)]
 pub struct TradeState {
     pub game: Pubkey,
     pub proposer: Pubkey,
     pub receiver: Pubkey,
     pub proposer_money: u64,
     pub receiver_money: u64,
-    pub proposer_properties: Vec<u8>,
-    pub receiver_properties: Vec<u8>,
+    // pub proposer_properties: Vec<u8>,
+    // pub receiver_properties: Vec<u8>,
     pub status: TradeStatus,
     pub created_at: i64,
     pub expires_at: i64,
