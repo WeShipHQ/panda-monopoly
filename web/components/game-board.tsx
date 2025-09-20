@@ -28,19 +28,19 @@ import { PropertyIndicatorsContainer } from "@/components/property-indicators";
 import { MessageDisplay } from "@/components/message-display";
 import { PropertyDetailsDialog } from "@/components/property-details-dialog";
 import { PropertyBuildingDialog } from "@/components/property-building-dialog";
+import { useGameContext } from "./game-provider";
 
 interface MonopolyBoardProps {
   boardRotation: number;
   onRotateClockwise: () => void;
   onRotateCounterClockwise: () => void;
-  gameManager: ReturnType<typeof import("@/hooks").useGameManager>;
 }
 
-const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
+const GameBoard: React.FC<MonopolyBoardProps> = ({
   boardRotation,
   onRotateClockwise,
   onRotateCounterClockwise,
-  gameManager,
+  //   gameManager,
 }) => {
   const [currentDialogVisible, setCurrentDialogVisible] = useState(true);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
@@ -50,59 +50,78 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
 
   const {
     gameState,
-    handleDiceRoll,
-    currentPlayer,
+    players,
+    properties,
+    currentPlayerState,
+    gameLoading,
+    gameError,
+    // UI state from provider
+    selectedProperty,
+    setSelectedProperty,
+    isPropertyDialogOpen,
+    setIsPropertyDialogOpen,
+    isCardDrawModalOpen,
+    setIsCardDrawModalOpen,
+    cardDrawType,
+    setCardDrawType,
+    // Actions
     buyProperty,
-    buyPropertyWithFlag,
-    skipProperty,
-    handleSpecialCard,
-    handleCardDrawn,
-    payJailFine,
-    useJailFreeCard,
-    drawnCards,
-    buildHouses,
+    buildHouse,
     buildHotel,
-    canBuildOnProperty,
-    getBuildingCost,
-  } = gameManager;
+    // Utilities
+    getPropertyByPosition,
+    getPlayerName,
+  } = useGameContext();
+
+  //   const {
+  //     gameState,
+  //     handleDiceRoll,
+  //     currentPlayer,
+  //     buyProperty,
+  //     buyPropertyWithFlag,
+  //     skipProperty,
+  //     handleSpecialCard,
+  //     handleCardDrawn,
+  //     payJailFine,
+  //     useJailFreeCard,
+  //     drawnCards,
+  //     buildHouses,
+  //     buildHotel,
+  //     canBuildOnProperty,
+  //     getBuildingCost,
+  //   } = gameManager;
 
   // Reset dialog visibility when action changes
-  React.useEffect(() => {
-    if (gameState.currentAction) {
-      setCurrentDialogVisible(true);
-    }
-  }, [gameState.currentAction]);
 
   const handleSpaceClick = (position: number) => {
-    const property = getPropertyData(position);
-    const isOwned = gameState.propertyOwnership[position] === currentPlayer.id;
-    const canBuild = canBuildOnProperty(currentPlayer.id, position);
-
-    // If it's a property owned by current player and they can build, show building dialog
-    if (property?.type === "property" && isOwned && canBuild) {
-      setBuildingProperty(position);
-      setBuildingDialogOpen(true);
-    } else {
-      // Otherwise show property details
-      setSelectedSpace(position);
-      setDetailsDialogOpen(true);
-    }
+    // const property = getPropertyData(position);
+    // const isOwned = gameState.propertyOwnership[position] === currentPlayer.id;
+    // const canBuild = canBuildOnProperty(currentPlayer.id, position);
+    // // If it's a property owned by current player and they can build, show building dialog
+    // if (property?.type === "property" && isOwned && canBuild) {
+    //   setBuildingProperty(position);
+    //   setBuildingDialogOpen(true);
+    // } else {
+    //   // Otherwise show property details
+    //   setSelectedSpace(position);
+    //   setDetailsDialogOpen(true);
+    // }
   };
 
   const handleBuildHouses = (housesToBuild: number) => {
-    if (buildingProperty !== null) {
-      buildHouses(currentPlayer.id, buildingProperty, housesToBuild);
-      setBuildingDialogOpen(false);
-      setBuildingProperty(null);
-    }
+    // if (buildingProperty !== null) {
+    //   buildHouses(currentPlayer.id, buildingProperty, housesToBuild);
+    //   setBuildingDialogOpen(false);
+    //   setBuildingProperty(null);
+    // }
   };
 
   const handleBuildHotel = () => {
-    if (buildingProperty !== null) {
-      buildHotel(currentPlayer.id, buildingProperty);
-      setBuildingDialogOpen(false);
-      setBuildingProperty(null);
-    }
+    // if (buildingProperty !== null) {
+    //   buildHotel(currentPlayer.id, buildingProperty);
+    //   setBuildingDialogOpen(false);
+    //   setBuildingProperty(null);
+    // }
   };
 
   const renderSpace = (space: PropertyData, index: number) => {
@@ -208,7 +227,7 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
       }}
     >
       {/* Message Display */}
-      <MessageDisplay message={gameState.currentMessage} />
+      {/* <MessageDisplay message={gameState.currentMessage} /> */}
 
       {/* Board Container */}
       <div className="h-full w-full flex items-center justify-center p-2 sm:p-4">
@@ -220,18 +239,18 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
         >
           <div className="absolute inset-0 grid grid-cols-14 grid-rows-14 gap-[0.1%] p-[0.1%]">
             {/* Player Tokens */}
-            <PlayerTokensContainer
+            {/* <PlayerTokensContainer
               players={gameState.players}
               boardRotation={boardRotation}
-            />
+            /> */}
 
             {/* Property Indicators */}
-            <PropertyIndicatorsContainer
+            {/* <PropertyIndicatorsContainer
               propertyOwnership={gameState.propertyOwnership}
               players={gameState.players}
               propertyBuildings={gameState.propertyBuildings}
               mortgagedProperties={gameState.mortgagedProperties}
-            />
+            /> */}
 
             {/* Center - Responsive */}
             <div
@@ -240,164 +259,15 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
             >
               {/* Dice Section - Responsive */}
               <div className="flex-shrink-0 transform scale-[0.7] sm:scale-75 md:scale-90 lg:scale-100">
-                <Dice
+                {/* <Dice
                   onRoll={handleDiceRoll}
                   disabled={
                     gameState.gamePhase !== "waiting" || currentPlayer.inJail
                   }
-                />
+                /> */}
               </div>
 
-              {/* Game Log Section - Responsive */}
-              <div className="flex-1 w-full max-w-xs sm:max-w-sm md:max-w-md flex items-center justify-center">
-                <div className="h-12 sm:h-16 md:h-20 lg:h-24 overflow-y-auto w-full">
-                  <div className="space-y-2 text-center">
-                    {gameState.gameLog && gameState.gameLog.length > 0 ? (
-                      gameState.gameLog
-                        .slice(-8)
-                        .reverse()
-                        .map((log, index) => {
-                          // Find all player names mentioned in the log
-                          const mentionedPlayers = gameState.players.filter(
-                            (player) => log.includes(player.name)
-                          );
-
-                          // Find property mentioned in the log and get its color
-                          const propertyMatch = boardSpaces.find((space) =>
-                            log.includes(space.name)
-                          );
-
-                          // Create formatted log with bold player names and colored property names
-                          let formattedLog = log;
-
-                          // Replace all mentioned player names with bold markers
-                          mentionedPlayers.forEach((player) => {
-                            const regex = new RegExp(
-                              `\\b${player.name}\\b`,
-                              "g"
-                            );
-                            formattedLog = formattedLog.replace(
-                              regex,
-                              `**${player.name}**`
-                            );
-                          });
-
-                          // Replace property name with colored version if found
-                          if (propertyMatch && propertyMatch.name) {
-                            const regex = new RegExp(
-                              `\\b${propertyMatch.name}\\b`,
-                              "g"
-                            );
-                            formattedLog = formattedLog.replace(
-                              regex,
-                              `##${propertyMatch.name}##`
-                            );
-                          }
-
-                          // Split the log by markers to separate bold, colored, and normal text
-                          const parts = formattedLog.split(
-                            /(\*\*[^*]+\*\*|##[^#]+##)/
-                          );
-
-                          // Get property color class based on the actual data
-                          const getPropertyColor = (propertyName: string) => {
-                            const unifiedProperty = unifiedPropertyData.find(
-                              (p) => p.name === propertyName
-                            );
-                            if (unifiedProperty && unifiedProperty.colorClass) {
-                              // Map actual colorClass to text color
-                              switch (unifiedProperty.colorClass) {
-                                case "bg-[#8b4513]":
-                                  return "text-amber-800"; // Brown
-                                case "bg-[#aae0fa]":
-                                  return "text-sky-400"; // Light Blue
-                                case "bg-[#d93a96]":
-                                  return "text-pink-600"; // Pink/Magenta
-                                case "bg-[#ffa500]":
-                                  return "text-orange-500"; // Orange
-                                case "bg-[#ff0000]":
-                                  return "text-red-600"; // Red
-                                case "bg-[#ffff00]":
-                                  return "text-yellow-500"; // Yellow
-                                case "bg-[#00ff00]":
-                                  return "text-green-500"; // Green
-                                case "bg-[#0000ff]":
-                                  return "text-blue-600"; // Dark Blue
-                                case "bg-blue-200":
-                                  return "text-blue-400"; // Railroad/Utility
-                                case "bg-white":
-                                  return "text-gray-600"; // Utility/Special
-                                default:
-                                  return "text-gray-800";
-                              }
-                            }
-                            return "text-gray-800";
-                          };
-
-                          return (
-                            <div
-                              key={index}
-                              className="text-xs text-black flex items-center justify-center gap-1"
-                            >
-                              {/* Show avatars of all mentioned players */}
-                              {mentionedPlayers
-                                .slice(0, 2)
-                                .map((player, pIndex) => (
-                                  <img
-                                    key={pIndex}
-                                    src={player.avatar}
-                                    alt={`${player.name} avatar`}
-                                    className="w-4 h-4 object-contain flex-shrink-0"
-                                  />
-                                ))}
-                              <span>
-                                {parts.map((part, partIndex) => {
-                                  if (
-                                    part.startsWith("**") &&
-                                    part.endsWith("**")
-                                  ) {
-                                    // Bold player name
-                                    return (
-                                      <span
-                                        key={partIndex}
-                                        className="font-bold"
-                                      >
-                                        {part.slice(2, -2)}
-                                      </span>
-                                    );
-                                  } else if (
-                                    part.startsWith("##") &&
-                                    part.endsWith("##")
-                                  ) {
-                                    // Colored property name
-                                    const propertyName = part.slice(2, -2);
-                                    return (
-                                      <span
-                                        key={partIndex}
-                                        className={`font-semibold ${getPropertyColor(
-                                          propertyName
-                                        )}`}
-                                      >
-                                        {propertyName}
-                                      </span>
-                                    );
-                                  } else {
-                                    // Normal text
-                                    return <span key={partIndex}>{part}</span>;
-                                  }
-                                })}
-                              </span>
-                            </div>
-                          );
-                        })
-                    ) : (
-                      <div className="text-xs text-black/70 italic">
-                        no game events yet...
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+              {/* game-logs */}
             </div>
 
             {/* Corner Spaces */}
@@ -481,7 +351,7 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
       </div>
 
       {/* Property Dialog */}
-      <PropertyDialog
+      {/* <PropertyDialog
         isOpen={
           currentDialogVisible &&
           gameState.gamePhase === "property-action" &&
@@ -517,17 +387,17 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
             }
           }
         }}
-      />
+      /> */}
 
       {/* Card Draw Modal */}
-      <CardDrawModal
+      {/* <CardDrawModal
         isOpen={gameState.cardDrawModal?.isOpen || false}
         cardType={gameState.cardDrawModal?.cardType || "chance"}
         onCardDrawn={handleCardDrawn}
-      />
+      /> */}
 
       {/* Jail Dialog */}
-      <JailDialog
+      {/* <JailDialog
         isOpen={currentPlayer.inJail && gameState.gamePhase === "waiting"}
         playerName={currentPlayer.name}
         playerMoney={currentPlayer.money}
@@ -541,17 +411,17 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
           // The dice component will handle the roll and call handleDiceRoll
           setCurrentDialogVisible(false);
         }}
-      />
+      /> */}
 
       {/* Property Details Dialog */}
-      <PropertyDetailsDialog
+      {/* <PropertyDetailsDialog
         isOpen={detailsDialogOpen}
         position={selectedSpace || 0}
         onClose={() => setDetailsDialogOpen(false)}
-      />
+      /> */}
 
       {/* Property Building Dialog */}
-      <PropertyBuildingDialog
+      {/* <PropertyBuildingDialog
         isOpen={buildingDialogOpen}
         position={buildingProperty || 0}
         playerMoney={currentPlayer.money}
@@ -568,9 +438,9 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
           setBuildingDialogOpen(false);
           setBuildingProperty(null);
         }}
-      />
+      /> */}
     </div>
   );
 };
 
-export default MonopolyBoard;
+export default GameBoard;

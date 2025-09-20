@@ -1,5 +1,6 @@
 import { Toaster } from "@/components/ui/sonner";
 import WalletProvider from "./wallet-provider";
+import { GameProvider } from "@/components/game-provider";
 
 export default function RootProviders({
   children,
@@ -8,8 +9,10 @@ export default function RootProviders({
 }) {
   return (
     <>
-      <Toaster position="top-center" />
-      {children}
+      <GameProvider>
+        <Toaster position="top-center" />
+        {children}
+      </GameProvider>
     </>
   );
 }

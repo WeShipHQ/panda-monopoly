@@ -4,7 +4,6 @@ export interface UnifiedPropertyData {
   type:
     | "property"
     | "railroad"
-    | "beach"
     | "utility"
     | "corner"
     | "chance"
@@ -34,9 +33,6 @@ export interface UnifiedPropertyData {
   // Railroad-specific data
   railroadRent?: number[];
 
-  // Beach-specific data
-  beachRent?: number[];
-
   // Utility-specific data
   utilityMultiplier?: number[];
 
@@ -45,18 +41,18 @@ export interface UnifiedPropertyData {
   instructions?: string;
 }
 
-// Unified property data with all information in one place
+// Unified property data with Solana-themed board spaces
 export const unifiedPropertyData: UnifiedPropertyData[] = [
-  // Row 0 - GO Corner
-  { position: 0, name: "GO", type: "corner" },
+  // Position 0 - Solana Genesis (GO)
+  { position: 0, name: "Solana Genesis", type: "corner" },
 
-  // Row 1 - Bottom row (right to left)
+  // Position 1 - BONK Avenue (Brown Property)
   {
     position: 1,
-    name: "Mediterranean Ave",
+    name: "BONK Avenue",
     type: "property",
     price: 60,
-    flagCost: 40, // ~70% of price
+    flagCost: 40,
     colorGroup: "brown",
     colorClass: "bg-[#8b4513]",
     baseRent: 2,
@@ -71,11 +67,13 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     mortgageValue: 30,
   },
 
-  { position: 2, name: "Community Chest", type: "community-chest" },
+  // Position 2 - Airdrop Chest
+  { position: 2, name: "Airdrop Chest", type: "community-chest" },
 
+  // Position 3 - WIF Lane (Brown Property)
   {
     position: 3,
-    name: "Baltic Ave",
+    name: "WIF Lane",
     type: "property",
     price: 60,
     flagCost: 40,
@@ -93,27 +91,30 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     mortgageValue: 30,
   },
 
+  // Position 4 - MEV Tax
   {
     position: 4,
-    name: "Income Tax",
+    name: "MEV Tax",
     type: "tax",
     taxAmount: 200,
-    instructions: "Pay 10% or $200",
+    instructions: "Pay 10% or 200 SOL",
   },
 
+  // Position 5 - Wormhole Bridge (Railroad)
   {
     position: 5,
-    name: "Nha Trang Beach",
-    type: "beach",
+    name: "Wormhole Bridge",
+    type: "railroad",
     price: 200,
-    colorClass: "bg-blue-200",
-    beachRent: [50, 100, 200, 400],
+    colorClass: "bg-black",
+    railroadRent: [25, 50, 100, 200],
     mortgageValue: 100,
   },
 
+  // Position 6 - JUP Street (Light Blue Property)
   {
     position: 6,
-    name: "Oriental Ave",
+    name: "JUP Street",
     type: "property",
     price: 100,
     flagCost: 70,
@@ -131,11 +132,13 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     mortgageValue: 50,
   },
 
-  { position: 7, name: "Chance", type: "chance" },
+  // Position 7 - Pump.fun Surprise
+  { position: 7, name: "Pump.fun Surprise", type: "chance" },
 
+  // Position 8 - RAY Boulevard (Light Blue Property)
   {
     position: 8,
-    name: "Vermont Ave",
+    name: "RAY Boulevard",
     type: "property",
     price: 100,
     flagCost: 70,
@@ -153,9 +156,10 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     mortgageValue: 50,
   },
 
+  // Position 9 - ORCA Way (Light Blue Property)
   {
     position: 9,
-    name: "Connecticut Ave",
+    name: "ORCA Way",
     type: "property",
     price: 120,
     flagCost: 85,
@@ -173,13 +177,13 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     mortgageValue: 60,
   },
 
-  // Row 10 - JAIL Corner
-  { position: 10, name: "JAIL", type: "corner" },
+  // Position 10 - Validator Jail
+  { position: 10, name: "Validator Jail", type: "corner" },
 
-  // Row 11-19 - Left column (bottom to top)
+  // Position 11 - SAGA Place (Pink Property)
   {
     position: 11,
-    name: "St. Charles Place",
+    name: "SAGA Place",
     type: "property",
     price: 140,
     flagCost: 100,
@@ -192,15 +196,16 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rentWith3Houses: 450,
     rentWith4Houses: 625,
     rentWithHotel: 750,
-    houseCost: 100,
-    hotelCost: 100,
+    houseCost: 50,
+    hotelCost: 50,
     mortgageValue: 70,
     rotate: "left",
   },
 
+  // Position 12 - Pyth Oracle (Utility)
   {
     position: 12,
-    name: "Electric Company",
+    name: "Pyth Oracle",
     type: "utility",
     price: 150,
     colorClass: "bg-white",
@@ -209,9 +214,10 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rotate: "left",
   },
 
+  // Position 13 - TENSOR Avenue (Pink Property)
   {
     position: 13,
-    name: "States Ave",
+    name: "TENSOR Avenue",
     type: "property",
     price: 140,
     flagCost: 100,
@@ -230,9 +236,10 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rotate: "left",
   },
 
+  // Position 14 - MAGIC EDEN Street (Pink Property)
   {
     position: 14,
-    name: "Virginia Ave",
+    name: "MAGIC EDEN Street",
     type: "property",
     price: 160,
     flagCost: 110,
@@ -251,20 +258,22 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rotate: "left",
   },
 
+  // Position 15 - Allbridge (Railroad)
   {
     position: 15,
-    name: "Da Nang Beach",
-    type: "beach",
+    name: "Allbridge",
+    type: "railroad",
     price: 200,
-    colorClass: "bg-blue-200",
-    beachRent: [50, 100, 200, 400],
+    colorClass: "bg-black",
+    railroadRent: [25, 50, 100, 200],
     mortgageValue: 100,
     rotate: "left",
   },
 
+  // Position 16 - HELIO Place (Orange Property)
   {
     position: 16,
-    name: "St. James Place",
+    name: "HELIO Place",
     type: "property",
     price: 180,
     flagCost: 125,
@@ -283,16 +292,18 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rotate: "left",
   },
 
+  // Position 17 - Airdrop Chest
   {
     position: 17,
-    name: "Community Chest",
+    name: "Airdrop Chest",
     type: "community-chest",
     rotate: "left",
   },
 
+  // Position 18 - KAMINO Avenue (Orange Property)
   {
     position: 18,
-    name: "Tennessee Ave",
+    name: "KAMINO Avenue",
     type: "property",
     price: 180,
     flagCost: 125,
@@ -311,9 +322,10 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rotate: "left",
   },
 
+  // Position 19 - DRIFT Street (Orange Property)
   {
     position: 19,
-    name: "New York Ave",
+    name: "DRIFT Street",
     type: "property",
     price: 200,
     flagCost: 140,
@@ -322,7 +334,7 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     baseRent: 16,
     rentWithColorGroup: 32,
     rentWith1House: 80,
-    rentWith2Houses: 220,
+    rentWith2Houses: 240,
     rentWith3Houses: 600,
     rentWith4Houses: 800,
     rentWithHotel: 1000,
@@ -332,13 +344,13 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rotate: "left",
   },
 
-  // Row 20 - Free Parking Corner
-  { position: 20, name: "Free Parking", type: "corner" },
+  // Position 20 - Free Airdrop Parking
+  { position: 20, name: "Free Airdrop Parking", type: "corner" },
 
-  // Row 21-29 - Top row (left to right)
+  // Position 21 - MANGO Markets (Red Property)
   {
     position: 21,
-    name: "Kentucky Ave",
+    name: "MANGO Markets",
     type: "property",
     price: 220,
     flagCost: 155,
@@ -347,9 +359,9 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     baseRent: 18,
     rentWithColorGroup: 36,
     rentWith1House: 90,
-    rentWith2Houses: 250,
-    rentWith3Houses: 700,
-    rentWith4Houses: 875,
+    rentWith2Houses: 270,
+    rentWith3Houses: 650,
+    rentWith4Houses: 850,
     rentWithHotel: 1050,
     houseCost: 150,
     hotelCost: 150,
@@ -357,11 +369,13 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rotate: "top",
   },
 
-  { position: 22, name: "Chance", type: "chance", rotate: "top" },
+  // Position 22 - Pump.fun Surprise
+  { position: 22, name: "Pump.fun Surprise", type: "chance", rotate: "top" },
 
+  // Position 23 - HUBBLE Avenue (Red Property)
   {
     position: 23,
-    name: "Indiana Ave",
+    name: "HUBBLE Avenue",
     type: "property",
     price: 220,
     flagCost: 155,
@@ -370,9 +384,9 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     baseRent: 18,
     rentWithColorGroup: 36,
     rentWith1House: 90,
-    rentWith2Houses: 250,
-    rentWith3Houses: 700,
-    rentWith4Houses: 875,
+    rentWith2Houses: 270,
+    rentWith3Houses: 650,
+    rentWith4Houses: 850,
     rentWithHotel: 1050,
     houseCost: 150,
     hotelCost: 150,
@@ -380,9 +394,10 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rotate: "top",
   },
 
+  // Position 24 - MARINADE Street (Red Property)
   {
     position: 24,
-    name: "Illinois Ave",
+    name: "MARINADE Street",
     type: "property",
     price: 240,
     flagCost: 170,
@@ -393,7 +408,7 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rentWith1House: 100,
     rentWith2Houses: 300,
     rentWith3Houses: 750,
-    rentWith4Houses: 925,
+    rentWith4Houses: 950,
     rentWithHotel: 1100,
     houseCost: 150,
     hotelCost: 150,
@@ -401,41 +416,44 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rotate: "top",
   },
 
+  // Position 25 - LayerZero Bridge (Railroad)
   {
     position: 25,
-    name: "Phu Quoc Beach",
-    type: "beach",
+    name: "LayerZero Bridge",
+    type: "railroad",
     price: 200,
-    colorClass: "bg-blue-200",
-    beachRent: [50, 100, 200, 400],
+    colorClass: "bg-black",
+    railroadRent: [25, 50, 100, 200],
     mortgageValue: 100,
     rotate: "top",
   },
 
+  // Position 26 - BACKPACK Avenue (Yellow Property)
   {
     position: 26,
-    name: "Atlantic Ave",
+    name: "BACKPACK Avenue",
     type: "property",
     price: 260,
     flagCost: 180,
     colorGroup: "yellow",
     colorClass: "bg-[#ffff00]",
     baseRent: 22,
-    rentWithColorGroup: 44,
+    rentWithColorGroup: 40,
     rentWith1House: 110,
     rentWith2Houses: 330,
-    rentWith3Houses: 800,
-    rentWith4Houses: 975,
-    rentWithHotel: 1150,
+    rentWith3Houses: 850,
+    rentWith4Houses: 1050,
+    rentWithHotel: 1200,
     houseCost: 150,
     hotelCost: 150,
-    mortgageValue: 130,
+    mortgageValue: 120,
     rotate: "top",
   },
 
+  // Position 27 - PHANTOM Street (Yellow Property)
   {
     position: 27,
-    name: "Ventnor Ave",
+    name: "PHANTOM Street",
     type: "property",
     price: 260,
     flagCost: 180,
@@ -445,18 +463,19 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rentWithColorGroup: 44,
     rentWith1House: 110,
     rentWith2Houses: 330,
-    rentWith3Houses: 800,
-    rentWith4Houses: 975,
-    rentWithHotel: 1150,
+    rentWith3Houses: 850,
+    rentWith4Houses: 1050,
+    rentWithHotel: 1200,
     houseCost: 150,
     hotelCost: 150,
     mortgageValue: 130,
     rotate: "top",
   },
 
+  // Position 28 - Switchboard Oracle (Utility)
   {
     position: 28,
-    name: "Water Works",
+    name: "Switchboard Oracle",
     type: "utility",
     price: 150,
     colorClass: "bg-white",
@@ -465,9 +484,10 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rotate: "top",
   },
 
+  // Position 29 - SOLFLARE Gardens (Yellow Property)
   {
     position: 29,
-    name: "Marvin Gardens",
+    name: "SOLFLARE Gardens",
     type: "property",
     price: 280,
     flagCost: 195,
@@ -477,22 +497,22 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rentWithColorGroup: 48,
     rentWith1House: 120,
     rentWith2Houses: 360,
-    rentWith3Houses: 850,
-    rentWith4Houses: 1025,
-    rentWithHotel: 1200,
+    rentWith3Houses: 900,
+    rentWith4Houses: 1100,
+    rentWithHotel: 1300,
     houseCost: 150,
     hotelCost: 150,
     mortgageValue: 140,
     rotate: "top",
   },
 
-  // Row 30 - Go To Jail Corner
-  { position: 30, name: "Go To Jail", type: "corner" },
+  // Position 30 - Go To Validator Jail
+  { position: 30, name: "Go To Validator Jail", type: "corner" },
 
-  // Row 31-39 - Right column (top to bottom)
+  // Position 31 - ANATOLY Avenue (Green Property)
   {
     position: 31,
-    name: "Pacific Ave",
+    name: "ANATOLY Avenue",
     type: "property",
     price: 300,
     flagCost: 210,
@@ -504,16 +524,17 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rentWith2Houses: 390,
     rentWith3Houses: 900,
     rentWith4Houses: 1100,
-    rentWithHotel: 1275,
+    rentWithHotel: 1300,
     houseCost: 200,
     hotelCost: 200,
     mortgageValue: 150,
     rotate: "right",
   },
 
+  // Position 32 - RAJ Street (Green Property)
   {
     position: 32,
-    name: "N. Carolina Ave",
+    name: "RAJ Street",
     type: "property",
     price: 300,
     flagCost: 210,
@@ -525,23 +546,25 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rentWith2Houses: 390,
     rentWith3Houses: 900,
     rentWith4Houses: 1100,
-    rentWithHotel: 1275,
+    rentWithHotel: 1300,
     houseCost: 200,
     hotelCost: 200,
     mortgageValue: 150,
     rotate: "right",
   },
 
+  // Position 33 - Airdrop Chest
   {
     position: 33,
-    name: "Community Chest",
+    name: "Airdrop Chest",
     type: "community-chest",
     rotate: "right",
   },
 
+  // Position 34 - FIREDANCER Avenue (Green Property)
   {
     position: 34,
-    name: "Pennsylvania Ave",
+    name: "FIREDANCER Avenue",
     type: "property",
     price: 320,
     flagCost: 225,
@@ -560,22 +583,25 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rotate: "right",
   },
 
+  // Position 35 - deBridge (Railroad)
   {
     position: 35,
-    name: "Vung Tau Beach",
-    type: "beach",
+    name: "deBridge",
+    type: "railroad",
     price: 200,
-    colorClass: "bg-blue-200",
-    beachRent: [50, 100, 200, 400],
+    colorClass: "bg-black",
+    railroadRent: [25, 50, 100, 200],
     mortgageValue: 100,
     rotate: "right",
   },
 
-  { position: 36, name: "Chance", type: "chance", rotate: "right" },
+  // Position 36 - Pump.fun Surprise
+  { position: 36, name: "Pump.fun Surprise", type: "chance", rotate: "right" },
 
+  // Position 37 - SVM Place (Dark Blue Property)
   {
     position: 37,
-    name: "Park Place",
+    name: "SVM Place",
     type: "property",
     price: 350,
     flagCost: 245,
@@ -586,7 +612,7 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rentWith1House: 175,
     rentWith2Houses: 500,
     rentWith3Houses: 1100,
-    rentWith4Houses: 1300,
+    rentWith4Houses: 1400,
     rentWithHotel: 1500,
     houseCost: 200,
     hotelCost: 200,
@@ -594,17 +620,19 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rotate: "right",
   },
 
+  // Position 38 - Priority Fee Tax
   {
     position: 38,
-    name: "Luxury Tax",
+    name: "Priority Fee Tax",
     type: "tax",
     taxAmount: 75,
     rotate: "right",
   },
 
+  // Position 39 - SAGA Boardwalk (Dark Blue Property)
   {
     position: 39,
-    name: "Boardwalk",
+    name: "SAGA Boardwalk",
     type: "property",
     price: 400,
     flagCost: 280,
@@ -614,8 +642,8 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
     rentWithColorGroup: 100,
     rentWith1House: 200,
     rentWith2Houses: 600,
-    rentWith3Houses: 1400,
-    rentWith4Houses: 1700,
+    rentWith3Houses: 1200,
+    rentWith4Houses: 1600,
     rentWithHotel: 2000,
     houseCost: 200,
     hotelCost: 200,
@@ -624,16 +652,16 @@ export const unifiedPropertyData: UnifiedPropertyData[] = [
   },
 ];
 
-// Color group mappings
+// Color group mappings for Solana-themed properties
 export const colorGroups = {
-  brown: [1, 3],
-  lightblue: [6, 8, 9],
-  pink: [11, 13, 14],
-  orange: [16, 18, 19],
-  red: [21, 23, 24],
-  yellow: [26, 27, 29],
-  green: [31, 32, 34],
-  darkblue: [37, 39],
+  brown: [1, 3], // BONK Avenue, WIF Lane
+  lightblue: [6, 8, 9], // JUP Street, RAY Boulevard, ORCA Way
+  pink: [11, 13, 14], // SAGA Place, TENSOR Avenue, MAGIC EDEN Street
+  orange: [16, 18, 19], // HELIO Place, KAMINO Avenue, DRIFT Street
+  red: [21, 23, 24], // MANGO Markets, HUBBLE Avenue, MARINADE Street
+  yellow: [26, 27, 29], // BACKPACK Avenue, PHANTOM Street, SOLFLARE Gardens
+  green: [31, 32, 34], // ANATOLY Avenue, RAJ Street, FIREDANCER Avenue
+  darkblue: [37, 39], // SVM Place, SAGA Boardwalk
 };
 
 // Helper functions
@@ -666,7 +694,7 @@ export const isUtility = (position: number): boolean => {
 
 export const isBeach = (position: number): boolean => {
   const property = getPropertyData(position);
-  return property?.type === "beach";
+  return false; //property?.type === "beach";
 };
 
 // Convert unified data to legacy format for compatibility
@@ -685,6 +713,7 @@ export const getLegacyPropertyData = () => {
   );
 
   const convertToLegacy = (property: UnifiedPropertyData) => ({
+    position: property.position,
     name: property.name,
     price: property.price?.toString() || "",
     colorClass: property.colorClass || "",
