@@ -290,7 +290,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       try {
-        const instruction = await sdk.rollDiceIx({
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        const instruction = await sdk.rollTestDiceIx({
           rpc: createSolanaRpc("http://127.0.0.1:8899"),
           gameAddress,
           player: currentPlayerSigner,

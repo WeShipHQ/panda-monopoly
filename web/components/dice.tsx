@@ -63,6 +63,7 @@ export const Dice: React.FC<DiceProps> = () => {
 
   // Listen for dice result from Solana program
   useEffect(() => {
+    console.log('Dice roll data:', currentPlayerState?.lastDiceRoll);
     if (
       isWaitingForResult.current &&
       currentPlayerState?.lastDiceRoll &&
@@ -71,6 +72,8 @@ export const Dice: React.FC<DiceProps> = () => {
       // Extract dice values from the ReadonlyUint8Array
       const dice1Value = currentPlayerState.lastDiceRoll[0];
       const dice2Value = currentPlayerState.lastDiceRoll[1];
+      
+      console.log('Received dice values:', dice1Value, dice2Value);
 
       // Validate dice values are in valid range (1-6)
       if (
@@ -132,17 +135,7 @@ export const Dice: React.FC<DiceProps> = () => {
     // Play dice roll sound sequence
     playDiceRollSequence();
 
-    // Call Solana program to roll dice
-    try {
-      await rollDice(demoDices ? demoDices : undefined);
-    } catch (error) {
-      console.error("Error rolling dice:", error);
-      // Reset state on error
-      setIsRolling(false);
-      isWaitingForResult.current = false;
-      return;
-    }
-
+    // START ANIMATION IMMEDIATELY
     // Simplified rotation patterns for better performance
     const rotationPatterns = [
       // Pattern 1: Simple clockwise
@@ -215,7 +208,26 @@ export const Dice: React.FC<DiceProps> = () => {
       animationFrameRef.current = requestAnimationFrame(animate);
     };
 
+    // Start animation immediately
     animationFrameRef.current = requestAnimationFrame(animate);
+
+    // Call Solana program to roll dice (this happens in parallel with animation)
+    try {
+      // Remove the 3 second delay
+      // await new Promise((resolve) => setTimeout(resolve, 3000));
+      await rollDice(demoDices ? demoDices : undefined);
+    } catch (error) {
+      console.error("Error rolling dice:", error);
+      // Reset state on error
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      stopDiceRollSequence();
+      setIsRolling(false);
+      isWaitingForResult.current = false;
+      return;
+    }
   };
 
   const getDiceFace = (value: number) => {
@@ -351,7 +363,7 @@ export const Dice: React.FC<DiceProps> = () => {
             <div
               className={`dice-3d ${isRolling ? "dice-rolling" : ""}`}
               style={{
-                transform: `rotateX(${dice1Rotation.x}deg) rotateY(${dice1Rotation.y}deg) rotateZ(${dice1Rotation.z}deg)`,
+                transform: `rotateX(${dice2Rotation.x}deg) rotateY(${dice2Rotation.y}deg) rotateZ(${dice2Rotation.z}deg)`,
                 transition: isRolling
                   ? "none"
                   : "transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)",

@@ -27,5 +27,6 @@ export * from './payRent';
 export * from './rollDice';
 export * from './sellBuilding';
 export * from './startGame';
+export * from './testDiceHandler';
 export * from './unmortgageProperty';
 export * from './visitBeachResort';

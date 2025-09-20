@@ -31,6 +31,7 @@ import {
   getDeclinePropertyInstruction,
   getCommunityChestCardDrawnCodec,
   getChanceCardDrawnCodec,
+  getTestDiceHandlerInstructionAsync,
 } from "./generated";
 import {
   CreateGameIxs,
@@ -148,6 +149,16 @@ class MonopolyGameSDK {
    */
   async rollDiceIx(params: RollDiceParams): Promise<Instruction> {
     return await getRollDiceInstructionAsync({
+      game: params.gameAddress,
+      player: params.player,
+      diceRoll: params.diceRoll
+        ? some(params.diceRoll as unknown as ReadonlyUint8Array)
+        : none(),
+    });
+  }
+
+  async rollTestDiceIx(params: RollDiceParams): Promise<Instruction> {
+    return await getTestDiceHandlerInstructionAsync({
       game: params.gameAddress,
       player: params.player,
       diceRoll: params.diceRoll

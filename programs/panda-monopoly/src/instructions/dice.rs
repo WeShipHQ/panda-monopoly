@@ -134,6 +134,110 @@ pub fn roll_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> 
     Ok(())
 }
 
+pub fn test_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> Result<()> {
+    let game = &mut ctx.accounts.game;
+    let player_state = &mut ctx.accounts.player_state;
+    let player_pubkey = ctx.accounts.player.key();
+    let clock = &ctx.accounts.clock;
+
+    // Find player index in game.players vector
+    let player_index = game
+        .players
+        .iter()
+        .position(|&p| p == player_pubkey)
+        .ok_or(GameError::PlayerNotFound)?;
+
+    // Verify it's the current player's turn
+    if game.current_turn != player_index as u8 {
+        return Err(GameError::NotPlayerTurn.into());
+    }
+
+    // Check if player has already rolled dice this turn
+    if player_state.has_rolled_dice {
+        return Err(GameError::AlreadyRolledDice.into());
+    }
+
+    // Check if player is in jail
+    if player_state.in_jail {
+        return handle_jail_dice_roll(game, player_state, clock);
+    }
+
+    // Generate secure random dice roll using recent blockhash
+    let dice_roll = dice_roll.unwrap_or_else(|| {
+        generate_dice_roll(&ctx.accounts.recent_blockhashes, clock.unix_timestamp).unwrap()
+    });
+
+    // Update player state
+    // player_state.has_rolled_dice = true;
+    player_state.last_dice_roll = dice_roll;
+    // game.turn_started_at = clock.unix_timestamp;
+
+    // Check for doubles
+    let is_doubles = dice_roll[0] == dice_roll[1];
+    if is_doubles {
+        player_state.doubles_count += 1;
+
+        // Three doubles in a row sends player to jail
+        if player_state.doubles_count >= 3 {
+            send_player_to_jail(player_state);
+            msg!(
+                "Player {} rolled three doubles and goes to jail!",
+                player_pubkey
+            );
+            return Ok(());
+        }
+
+        msg!(
+            "Player {} rolled doubles ({}, {})! Gets another turn.",
+            player_pubkey,
+            dice_roll[0],
+            dice_roll[1]
+        );
+    } else {
+        // Reset doubles count if not doubles
+        player_state.doubles_count = 0;
+    }
+
+    msg!(
+        "Player {} rolled: {} and {}",
+        player_pubkey,
+        dice_roll[0],
+        dice_roll[1]
+    );
+
+    // Calculate movement
+    let dice_sum = dice_roll[0] + dice_roll[1];
+    let old_position = player_state.position;
+    let new_position = (old_position + dice_sum) % BOARD_SIZE;
+
+    // Check if player passed GO
+    // if new_position < old_position {
+    //     player_state.cash_balance += GO_SALARY as u64;
+    //     msg!(
+    //         "Player {} passed GO and collected ${}",
+    //         player_pubkey,
+    //         GO_SALARY
+    //     );
+    // }
+
+    // // Update player position
+    // player_state.position = new_position;
+
+    // // Process space action based on landing position
+    // handle_space_landing(player_state, new_position)?;
+
+    msg!(
+        "Player {} rolled: {} and {} - moved from {} to {}",
+        player_pubkey,
+        dice_roll[0],
+        dice_roll[1],
+        old_position,
+        new_position
+    );
+
+    Ok(())
+}
+
 fn generate_dice_roll(recent_blockhashes: &UncheckedAccount, timestamp: i64) -> Result<[u8; 2]> {
     // Get recent blockhash data for randomness
     let data = recent_blockhashes.try_borrow_data()?;
