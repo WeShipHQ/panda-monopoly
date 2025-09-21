@@ -368,9 +368,9 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
                 <img
                   src="/images/FREEPARKING.png"
                   alt="Free Parking"
-                  className="w-12 h-12 object-contain"
+                  className="w-20 h-20 object-contain"
                 />
-                <div className="text-xs font-bold mt-1">FREE PARKING</div>
+                <div className="text-xs font-bold mt-1">MEV Pool</div>
               </div>
             </div>
 
@@ -380,7 +380,7 @@ const MonopolyBoard: React.FC<MonopolyBoardProps> = ({
                 <img
                   src="/images/GOTOJAIL.png"
                   alt="Go To Jail"
-                  className="w-12 h-12 object-contain"
+                  className="w-20 h-20 object-contain"
                 />
                 <div className="text-xs font-bold mt-1">GO TO JAIL</div>
               </div>

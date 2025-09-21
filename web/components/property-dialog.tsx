@@ -34,7 +34,7 @@ export const PropertyDialog: React.FC<PropertyDialogProps> = ({
 
   const flagCost = property.flagCost || propertyPrice; // Fallback to full price if no flagCost
   const houseCost = property.houseCost || 0;
-  const house1Cost = flagCost + houseCost; // Flag cost + house cost
+  const house1Cost = property.price || 0; 
   const canAffordFlag = playerMoney >= flagCost;
   const canAffordHouse1 = playerMoney >= house1Cost;
 

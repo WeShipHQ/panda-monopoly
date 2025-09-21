@@ -264,7 +264,7 @@ export const ChanceSpace: React.FC<SpaceProps> = ({
           <img
             src="/images/CHANCE.png"
             alt="Chance"
-            className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 object-contain"
+            className="w-6 h-6 sm:w-8 sm:h-8 lg:w-20 lg:h-20 object-contain"
           />
         </div>
       </div>
@@ -362,10 +362,16 @@ export const TaxSpace: React.FC<SpaceProps> = ({
           </>
         ) : (
           <>
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-lg sm:text-xl lg:text-2xl">💎</div>
+            <div className="flex items-center justify-center py-0.5">
+              <img
+                src="/images/TAX.png"
+                alt="tax"
+                className="w-6 h-6 sm:w-8 sm:h-8 object-cover"
+              />
             </div>
-            <div className={`px-1 ${rotate === "top" ? "pb-6 pt-1" : "pb-1"} text-center text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem]`}>Pay ${price}</div>
+            <div className={`px-1 text-center text-[0.3rem] sm:text-[0.35rem] lg:text-[0.4rem] leading-tight ${rotate === "top" ? "pb-1" : "pb-0.5"}`}>
+              Pay ${price}
+            </div>
           </>
         )}
       </div>
