@@ -19,7 +19,7 @@ pub mod panda_monopoly {
 
     // Game management instructions
     pub fn initialize_game(ctx: Context<InitializeGame>, game_id: u64) -> Result<()> {
-        instructions::initialize::handler(ctx, game_id)
+        instructions::initialize::initialize_game_handler(ctx, game_id)
     }
 
     pub fn join_game(ctx: Context<JoinGame>) -> Result<()> {
@@ -35,9 +35,9 @@ pub mod panda_monopoly {
         instructions::dice::roll_dice_handler(ctx, dice_roll)
     }
 
-    pub fn test_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> Result<()> {
-        instructions::dice::test_dice_handler(ctx, dice_roll)
-    }
+    // pub fn test_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> Result<()> {
+    //     instructions::dice::test_dice_handler(ctx, dice_roll)
+    // }
 
     pub fn end_turn(ctx: Context<EndTurn>) -> Result<()> {
         instructions::end_turn::end_turn_handler(ctx)
@@ -80,9 +80,9 @@ pub mod panda_monopoly {
         instructions::special_spaces::attend_festival_handler(ctx)
     }
 
-    pub fn collect_go(ctx: Context<CollectGo>) -> Result<()> {
-        instructions::special_spaces::collect_go_handler(ctx)
-    }
+    // pub fn collect_go(ctx: Context<CollectGo>) -> Result<()> {
+    //     instructions::special_spaces::collect_go_handler(ctx)
+    // }
 
     // property instructions
     pub fn buy_property(ctx: Context<BuyProperty>, position: u8) -> Result<()> {
@@ -120,4 +120,48 @@ pub mod panda_monopoly {
     pub fn unmortgage_property(ctx: Context<UnmortgageProperty>, position: u8) -> Result<()> {
         instructions::property::unmortgage_property_handler(ctx, position)
     }
+
+    // Trading instructions
+    pub fn create_trade(
+        ctx: Context<CreateTrade>,
+        trade_type: TradeType,
+        proposer_money: u64,
+        receiver_money: u64,
+        proposer_property: Option<u8>,
+        receiver_property: Option<u8>,
+    ) -> Result<()> {
+        instructions::trading::create_trade_handler(
+            ctx,
+            trade_type,
+            proposer_money,
+            receiver_money,
+            proposer_property,
+            receiver_property,
+        )
+    }
+
+    pub fn accept_trade(ctx: Context<AcceptTrade>) -> Result<()> {
+        instructions::trading::accept_trade_handler(ctx)
+    }
+
+    pub fn reject_trade(ctx: Context<RejectTrade>) -> Result<()> {
+        instructions::trading::reject_trade_handler(ctx)
+    }
+
+    pub fn cancel_trade(ctx: Context<CancelTrade>) -> Result<()> {
+        instructions::trading::cancel_trade_handler(ctx)
+    }
+
+    // Auction instructions
+    // pub fn start_auction(ctx: Context<StartAuction>, property_position: u8) -> Result<()> {
+    //     instructions::auction::start_auction_handler(ctx, property_position)
+    // }
+
+    // pub fn place_bid(ctx: Context<PlaceBid>, bid_amount: u64) -> Result<()> {
+    //     instructions::auction::place_bid_handler(ctx, bid_amount)
+    // }
+
+    // pub fn end_auction(ctx: Context<EndAuction>) -> Result<()> {
+    //     instructions::auction::end_auction_handler(ctx)
+    // }
 }

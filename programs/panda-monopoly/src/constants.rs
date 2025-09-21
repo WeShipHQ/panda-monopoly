@@ -29,7 +29,22 @@ pub const MAX_PROPERTIES_IN_TRADE: usize = 10;
 pub const TRADE_EXPIRY_SECONDS: i64 = 3600; // 1 hour
 pub const AUCTION_DURATION_SECONDS: i64 = 300; // 5 minutes
 
-// Special space constants
+// Special space positions
+pub const GO_POSITION: u8 = 0; // Solana Genesis
+pub const JAIL_POSITION: u8 = 10; // Validator Jail
+pub const GO_TO_JAIL_POSITION: u8 = 30; // Go To Validator Jail
+pub const FREE_PARKING_POSITION: u8 = 20; // Free Airdrop Parking
+// pub const BEACH_RESORT_POSITION: u8 = 20; // Replaces Free Parking
+pub const FESTIVAL_POSITION: u8 = 10; // Additional special space
+
+// Chance and Community Chest positions (now themed)
+pub const CHANCE_POSITIONS: [u8; 3] = [7, 22, 36]; // Pump.fun Surprise
+pub const COMMUNITY_CHEST_POSITIONS: [u8; 3] = [2, 17, 33]; // Airdrop Chest
+
+// Beach Resort and Festival positions (custom spaces)
+
+// Seed for randomness
+pub const RANDOMNESS_SEED: &[u8] = b"panda_monopoly_v1";
 pub const BEACH_RESORT_BONUS_PER_PROPERTY: u32 = 10;
 // pub const FREE_PARKING_POSITION: u8 = 20;
 // pub const JAIL_POSITION: u8 = 10;
@@ -527,23 +542,6 @@ pub fn calculate_utility_rent(dice_roll: u8, utilities_owned: u8) -> u64 {
     let multiplier = if utilities_owned == 1 { 4 } else { 10 };
     (dice_roll as u64) * multiplier
 }
-
-// Special space positions
-pub const GO_POSITION: u8 = 0; // Solana Genesis
-pub const JAIL_POSITION: u8 = 10; // Validator Jail
-pub const GO_TO_JAIL_POSITION: u8 = 30; // Go To Validator Jail
-pub const FREE_PARKING_POSITION: u8 = 20; // Free Airdrop Parking
-
-// Chance and Community Chest positions (now themed)
-pub const CHANCE_POSITIONS: [u8; 3] = [7, 22, 36]; // Pump.fun Surprise
-pub const COMMUNITY_CHEST_POSITIONS: [u8; 3] = [2, 17, 33]; // Airdrop Chest
-
-// Beach Resort and Festival positions (custom spaces)
-pub const BEACH_RESORT_POSITION: u8 = 20; // Replaces Free Parking
-pub const FESTIVAL_POSITION: u8 = 10; // Additional special space
-
-// Seed for randomness
-pub const RANDOMNESS_SEED: &[u8] = b"panda_monopoly_v1";
 
 // Card effect types for Solana-themed cards
 #[derive(Clone, Copy, PartialEq)]

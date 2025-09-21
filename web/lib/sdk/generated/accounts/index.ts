@@ -9,3 +9,4 @@
 export * from './gameState';
 export * from './playerState';
 export * from './propertyState';
+export * from './tradeState';

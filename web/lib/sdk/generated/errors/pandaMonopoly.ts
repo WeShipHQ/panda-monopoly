@@ -206,6 +206,20 @@ export const PANDA_MONOPOLY_ERROR__INVALID_HOUSE_COUNT = 0x17cd; // 6093
 export const PANDA_MONOPOLY_ERROR__PROPERTY_ALREADY_MORTGAGED = 0x17ce; // 6094
 /** DiceRollError: Dice roll error */
 export const PANDA_MONOPOLY_ERROR__DICE_ROLL_ERROR = 0x17cf; // 6095
+/** TradeNotPending: Trade is not pending */
+export const PANDA_MONOPOLY_ERROR__TRADE_NOT_PENDING = 0x17d0; // 6096
+/** NotTradeTarget: Not the trade target */
+export const PANDA_MONOPOLY_ERROR__NOT_TRADE_TARGET = 0x17d1; // 6097
+/** NotTradeProposer: Not the trade proposer */
+export const PANDA_MONOPOLY_ERROR__NOT_TRADE_PROPOSER = 0x17d2; // 6098
+/** InvalidTradeType: Invalid trade type */
+export const PANDA_MONOPOLY_ERROR__INVALID_TRADE_TYPE = 0x17d3; // 6099
+/** AuctionNotActive: Auction is not active */
+export const PANDA_MONOPOLY_ERROR__AUCTION_NOT_ACTIVE = 0x17d4; // 6100
+/** AuctionEnded: Auction has ended */
+export const PANDA_MONOPOLY_ERROR__AUCTION_ENDED = 0x17d5; // 6101
+/** AuctionStillActive: Auction is still active */
+export const PANDA_MONOPOLY_ERROR__AUCTION_STILL_ACTIVE = 0x17d6; // 6102
 
 export type PandaMonopolyError =
   | typeof PANDA_MONOPOLY_ERROR__ACCOUNT_ALREADY_INITIALIZED
@@ -217,8 +231,11 @@ export type PandaMonopolyError =
   | typeof PANDA_MONOPOLY_ERROR__ARITHMETIC_UNDERFLOW
   | typeof PANDA_MONOPOLY_ERROR__AUCTION_ALREADY_ENDED
   | typeof PANDA_MONOPOLY_ERROR__AUCTION_ALREADY_EXISTS
+  | typeof PANDA_MONOPOLY_ERROR__AUCTION_ENDED
   | typeof PANDA_MONOPOLY_ERROR__AUCTION_EXPIRED
+  | typeof PANDA_MONOPOLY_ERROR__AUCTION_NOT_ACTIVE
   | typeof PANDA_MONOPOLY_ERROR__AUCTION_NOT_FOUND
+  | typeof PANDA_MONOPOLY_ERROR__AUCTION_STILL_ACTIVE
   | typeof PANDA_MONOPOLY_ERROR__BANKRUPTCY_ALREADY_STARTED
   | typeof PANDA_MONOPOLY_ERROR__BID_TOO_LOW
   | typeof PANDA_MONOPOLY_ERROR__CANNOT_BID_ON_OWN_AUCTION
@@ -260,6 +277,7 @@ export type PandaMonopolyError =
   | typeof PANDA_MONOPOLY_ERROR__INVALID_SPECIAL_SPACE_ACTION
   | typeof PANDA_MONOPOLY_ERROR__INVALID_TIMESTAMP
   | typeof PANDA_MONOPOLY_ERROR__INVALID_TRADE_PROPOSAL
+  | typeof PANDA_MONOPOLY_ERROR__INVALID_TRADE_TYPE
   | typeof PANDA_MONOPOLY_ERROR__MAX_HOUSES_REACHED
   | typeof PANDA_MONOPOLY_ERROR__MAX_JAIL_TURNS_EXCEEDED
   | typeof PANDA_MONOPOLY_ERROR__MAX_PLAYERS_REACHED
@@ -277,6 +295,8 @@ export type PandaMonopolyError =
   | typeof PANDA_MONOPOLY_ERROR__NOT_ENOUGH_HOTELS_IN_BANK
   | typeof PANDA_MONOPOLY_ERROR__NOT_ENOUGH_HOUSES_IN_BANK
   | typeof PANDA_MONOPOLY_ERROR__NOT_PLAYER_TURN
+  | typeof PANDA_MONOPOLY_ERROR__NOT_TRADE_PROPOSER
+  | typeof PANDA_MONOPOLY_ERROR__NOT_TRADE_TARGET
   | typeof PANDA_MONOPOLY_ERROR__OPERATION_NOT_ALLOWED
   | typeof PANDA_MONOPOLY_ERROR__PLAYER_ALREADY_EXISTS
   | typeof PANDA_MONOPOLY_ERROR__PLAYER_BANKRUPT
@@ -303,6 +323,7 @@ export type PandaMonopolyError =
   | typeof PANDA_MONOPOLY_ERROR__TRADE_ALREADY_REJECTED
   | typeof PANDA_MONOPOLY_ERROR__TRADE_EXPIRED
   | typeof PANDA_MONOPOLY_ERROR__TRADE_NOT_FOUND
+  | typeof PANDA_MONOPOLY_ERROR__TRADE_NOT_PENDING
   | typeof PANDA_MONOPOLY_ERROR__UNAUTHORIZED;
 
 let pandaMonopolyErrorMessages: Record<PandaMonopolyError, string> | undefined;
@@ -317,8 +338,11 @@ if (process.env.NODE_ENV !== 'production') {
     [PANDA_MONOPOLY_ERROR__ARITHMETIC_UNDERFLOW]: `Arithmetic underflow`,
     [PANDA_MONOPOLY_ERROR__AUCTION_ALREADY_ENDED]: `Auction has already ended`,
     [PANDA_MONOPOLY_ERROR__AUCTION_ALREADY_EXISTS]: `Auction already exists`,
+    [PANDA_MONOPOLY_ERROR__AUCTION_ENDED]: `Auction has ended`,
     [PANDA_MONOPOLY_ERROR__AUCTION_EXPIRED]: `Auction has expired`,
+    [PANDA_MONOPOLY_ERROR__AUCTION_NOT_ACTIVE]: `Auction is not active`,
     [PANDA_MONOPOLY_ERROR__AUCTION_NOT_FOUND]: `Auction not found`,
+    [PANDA_MONOPOLY_ERROR__AUCTION_STILL_ACTIVE]: `Auction is still active`,
     [PANDA_MONOPOLY_ERROR__BANKRUPTCY_ALREADY_STARTED]: `Bankruptcy process already started`,
     [PANDA_MONOPOLY_ERROR__BID_TOO_LOW]: `Bid amount too low`,
     [PANDA_MONOPOLY_ERROR__CANNOT_BID_ON_OWN_AUCTION]: `Cannot bid on own auction`,
@@ -360,6 +384,7 @@ if (process.env.NODE_ENV !== 'production') {
     [PANDA_MONOPOLY_ERROR__INVALID_SPECIAL_SPACE_ACTION]: `Invalid special space action`,
     [PANDA_MONOPOLY_ERROR__INVALID_TIMESTAMP]: `Invalid timestamp`,
     [PANDA_MONOPOLY_ERROR__INVALID_TRADE_PROPOSAL]: `Invalid trade proposal`,
+    [PANDA_MONOPOLY_ERROR__INVALID_TRADE_TYPE]: `Invalid trade type`,
     [PANDA_MONOPOLY_ERROR__MAX_HOUSES_REACHED]: `Maximum houses reached on property`,
     [PANDA_MONOPOLY_ERROR__MAX_JAIL_TURNS_EXCEEDED]: `Maximum jail turns exceeded`,
     [PANDA_MONOPOLY_ERROR__MAX_PLAYERS_REACHED]: `Maximum number of players reached`,
@@ -377,6 +402,8 @@ if (process.env.NODE_ENV !== 'production') {
     [PANDA_MONOPOLY_ERROR__NOT_ENOUGH_HOTELS_IN_BANK]: `Not enough hotels available in bank`,
     [PANDA_MONOPOLY_ERROR__NOT_ENOUGH_HOUSES_IN_BANK]: `Not enough houses available in bank`,
     [PANDA_MONOPOLY_ERROR__NOT_PLAYER_TURN]: `Not player's turn`,
+    [PANDA_MONOPOLY_ERROR__NOT_TRADE_PROPOSER]: `Not the trade proposer`,
+    [PANDA_MONOPOLY_ERROR__NOT_TRADE_TARGET]: `Not the trade target`,
     [PANDA_MONOPOLY_ERROR__OPERATION_NOT_ALLOWED]: `Operation not allowed in current game state`,
     [PANDA_MONOPOLY_ERROR__PLAYER_ALREADY_EXISTS]: `Player already exists in game`,
     [PANDA_MONOPOLY_ERROR__PLAYER_BANKRUPT]: `Player is bankrupt`,
@@ -403,6 +430,7 @@ if (process.env.NODE_ENV !== 'production') {
     [PANDA_MONOPOLY_ERROR__TRADE_ALREADY_REJECTED]: `Trade already rejected`,
     [PANDA_MONOPOLY_ERROR__TRADE_EXPIRED]: `Trade has expired`,
     [PANDA_MONOPOLY_ERROR__TRADE_NOT_FOUND]: `Trade not found`,
+    [PANDA_MONOPOLY_ERROR__TRADE_NOT_PENDING]: `Trade is not pending`,
     [PANDA_MONOPOLY_ERROR__UNAUTHORIZED]: `Unauthorized action`,
   };
 }

@@ -39,19 +39,23 @@ import {
   type ResolvedAccount,
 } from '../shared';
 
-export const COLLECT_GO_DISCRIMINATOR = new Uint8Array([
-  150, 113, 70, 233, 149, 97, 216, 161,
+export const ACCEPT_TRADE_DISCRIMINATOR = new Uint8Array([
+  139, 218, 29, 95, 124, 75, 64, 116,
 ]);
 
-export function getCollectGoDiscriminatorBytes() {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(COLLECT_GO_DISCRIMINATOR);
+export function getAcceptTradeDiscriminatorBytes() {
+  return fixEncoderSize(getBytesEncoder(), 8).encode(
+    ACCEPT_TRADE_DISCRIMINATOR
+  );
 }
 
-export type CollectGoInstruction<
+export type AcceptTradeInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountGame extends string | AccountMeta<string> = string,
-  TAccountPlayerState extends string | AccountMeta<string> = string,
-  TAccountPlayer extends string | AccountMeta<string> = string,
+  TAccountTrade extends string | AccountMeta<string> = string,
+  TAccountProposerState extends string | AccountMeta<string> = string,
+  TAccountAccepterState extends string | AccountMeta<string> = string,
+  TAccountAccepter extends string | AccountMeta<string> = string,
   TAccountClock extends
     | string
     | AccountMeta<string> = 'SysvarC1ock11111111111111111111111111111111',
@@ -63,13 +67,19 @@ export type CollectGoInstruction<
       TAccountGame extends string
         ? WritableAccount<TAccountGame>
         : TAccountGame,
-      TAccountPlayerState extends string
-        ? WritableAccount<TAccountPlayerState>
-        : TAccountPlayerState,
-      TAccountPlayer extends string
-        ? WritableSignerAccount<TAccountPlayer> &
-            AccountSignerMeta<TAccountPlayer>
-        : TAccountPlayer,
+      TAccountTrade extends string
+        ? WritableAccount<TAccountTrade>
+        : TAccountTrade,
+      TAccountProposerState extends string
+        ? WritableAccount<TAccountProposerState>
+        : TAccountProposerState,
+      TAccountAccepterState extends string
+        ? WritableAccount<TAccountAccepterState>
+        : TAccountAccepterState,
+      TAccountAccepter extends string
+        ? WritableSignerAccount<TAccountAccepter> &
+            AccountSignerMeta<TAccountAccepter>
+        : TAccountAccepter,
       TAccountClock extends string
         ? ReadonlyAccount<TAccountClock>
         : TAccountClock,
@@ -77,65 +87,75 @@ export type CollectGoInstruction<
     ]
   >;
 
-export type CollectGoInstructionData = { discriminator: ReadonlyUint8Array };
+export type AcceptTradeInstructionData = { discriminator: ReadonlyUint8Array };
 
-export type CollectGoInstructionDataArgs = {};
+export type AcceptTradeInstructionDataArgs = {};
 
-export function getCollectGoInstructionDataEncoder(): FixedSizeEncoder<CollectGoInstructionDataArgs> {
+export function getAcceptTradeInstructionDataEncoder(): FixedSizeEncoder<AcceptTradeInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: COLLECT_GO_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: ACCEPT_TRADE_DISCRIMINATOR })
   );
 }
 
-export function getCollectGoInstructionDataDecoder(): FixedSizeDecoder<CollectGoInstructionData> {
+export function getAcceptTradeInstructionDataDecoder(): FixedSizeDecoder<AcceptTradeInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
-export function getCollectGoInstructionDataCodec(): FixedSizeCodec<
-  CollectGoInstructionDataArgs,
-  CollectGoInstructionData
+export function getAcceptTradeInstructionDataCodec(): FixedSizeCodec<
+  AcceptTradeInstructionDataArgs,
+  AcceptTradeInstructionData
 > {
   return combineCodec(
-    getCollectGoInstructionDataEncoder(),
-    getCollectGoInstructionDataDecoder()
+    getAcceptTradeInstructionDataEncoder(),
+    getAcceptTradeInstructionDataDecoder()
   );
 }
 
-export type CollectGoAsyncInput<
+export type AcceptTradeAsyncInput<
   TAccountGame extends string = string,
-  TAccountPlayerState extends string = string,
-  TAccountPlayer extends string = string,
+  TAccountTrade extends string = string,
+  TAccountProposerState extends string = string,
+  TAccountAccepterState extends string = string,
+  TAccountAccepter extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
-  playerState?: Address<TAccountPlayerState>;
-  player: TransactionSigner<TAccountPlayer>;
+  trade: Address<TAccountTrade>;
+  proposerState: Address<TAccountProposerState>;
+  accepterState?: Address<TAccountAccepterState>;
+  accepter: TransactionSigner<TAccountAccepter>;
   clock?: Address<TAccountClock>;
 };
 
-export async function getCollectGoInstructionAsync<
+export async function getAcceptTradeInstructionAsync<
   TAccountGame extends string,
-  TAccountPlayerState extends string,
-  TAccountPlayer extends string,
+  TAccountTrade extends string,
+  TAccountProposerState extends string,
+  TAccountAccepterState extends string,
+  TAccountAccepter extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: CollectGoAsyncInput<
+  input: AcceptTradeAsyncInput<
     TAccountGame,
-    TAccountPlayerState,
-    TAccountPlayer,
+    TAccountTrade,
+    TAccountProposerState,
+    TAccountAccepterState,
+    TAccountAccepter,
     TAccountClock
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
-  CollectGoInstruction<
+  AcceptTradeInstruction<
     TProgramAddress,
     TAccountGame,
-    TAccountPlayerState,
-    TAccountPlayer,
+    TAccountTrade,
+    TAccountProposerState,
+    TAccountAccepterState,
+    TAccountAccepter,
     TAccountClock
   >
 > {
@@ -146,8 +166,10 @@ export async function getCollectGoInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     game: { value: input.game ?? null, isWritable: true },
-    playerState: { value: input.playerState ?? null, isWritable: true },
-    player: { value: input.player ?? null, isWritable: true },
+    trade: { value: input.trade ?? null, isWritable: true },
+    proposerState: { value: input.proposerState ?? null, isWritable: true },
+    accepterState: { value: input.accepterState ?? null, isWritable: true },
+    accepter: { value: input.accepter ?? null, isWritable: true },
     clock: { value: input.clock ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -156,13 +178,13 @@ export async function getCollectGoInstructionAsync<
   >;
 
   // Resolve default values.
-  if (!accounts.playerState.value) {
-    accounts.playerState.value = await getProgramDerivedAddress({
+  if (!accounts.accepterState.value) {
+    accounts.accepterState.value = await getProgramDerivedAddress({
       programAddress,
       seeds: [
         getBytesEncoder().encode(new Uint8Array([112, 108, 97, 121, 101, 114])),
         getAddressEncoder().encode(expectAddress(accounts.game.value)),
-        getAddressEncoder().encode(expectAddress(accounts.player.value)),
+        getAddressEncoder().encode(expectAddress(accounts.accepter.value)),
       ],
     });
   }
@@ -175,52 +197,66 @@ export async function getCollectGoInstructionAsync<
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.game),
-      getAccountMeta(accounts.playerState),
-      getAccountMeta(accounts.player),
+      getAccountMeta(accounts.trade),
+      getAccountMeta(accounts.proposerState),
+      getAccountMeta(accounts.accepterState),
+      getAccountMeta(accounts.accepter),
       getAccountMeta(accounts.clock),
     ],
-    data: getCollectGoInstructionDataEncoder().encode({}),
+    data: getAcceptTradeInstructionDataEncoder().encode({}),
     programAddress,
-  } as CollectGoInstruction<
+  } as AcceptTradeInstruction<
     TProgramAddress,
     TAccountGame,
-    TAccountPlayerState,
-    TAccountPlayer,
+    TAccountTrade,
+    TAccountProposerState,
+    TAccountAccepterState,
+    TAccountAccepter,
     TAccountClock
   >);
 }
 
-export type CollectGoInput<
+export type AcceptTradeInput<
   TAccountGame extends string = string,
-  TAccountPlayerState extends string = string,
-  TAccountPlayer extends string = string,
+  TAccountTrade extends string = string,
+  TAccountProposerState extends string = string,
+  TAccountAccepterState extends string = string,
+  TAccountAccepter extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
-  playerState: Address<TAccountPlayerState>;
-  player: TransactionSigner<TAccountPlayer>;
+  trade: Address<TAccountTrade>;
+  proposerState: Address<TAccountProposerState>;
+  accepterState: Address<TAccountAccepterState>;
+  accepter: TransactionSigner<TAccountAccepter>;
   clock?: Address<TAccountClock>;
 };
 
-export function getCollectGoInstruction<
+export function getAcceptTradeInstruction<
   TAccountGame extends string,
-  TAccountPlayerState extends string,
-  TAccountPlayer extends string,
+  TAccountTrade extends string,
+  TAccountProposerState extends string,
+  TAccountAccepterState extends string,
+  TAccountAccepter extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: CollectGoInput<
+  input: AcceptTradeInput<
     TAccountGame,
-    TAccountPlayerState,
-    TAccountPlayer,
+    TAccountTrade,
+    TAccountProposerState,
+    TAccountAccepterState,
+    TAccountAccepter,
     TAccountClock
   >,
   config?: { programAddress?: TProgramAddress }
-): CollectGoInstruction<
+): AcceptTradeInstruction<
   TProgramAddress,
   TAccountGame,
-  TAccountPlayerState,
-  TAccountPlayer,
+  TAccountTrade,
+  TAccountProposerState,
+  TAccountAccepterState,
+  TAccountAccepter,
   TAccountClock
 > {
   // Program address.
@@ -230,8 +266,10 @@ export function getCollectGoInstruction<
   // Original accounts.
   const originalAccounts = {
     game: { value: input.game ?? null, isWritable: true },
-    playerState: { value: input.playerState ?? null, isWritable: true },
-    player: { value: input.player ?? null, isWritable: true },
+    trade: { value: input.trade ?? null, isWritable: true },
+    proposerState: { value: input.proposerState ?? null, isWritable: true },
+    accepterState: { value: input.accepterState ?? null, isWritable: true },
+    accepter: { value: input.accepter ?? null, isWritable: true },
     clock: { value: input.clock ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -249,44 +287,50 @@ export function getCollectGoInstruction<
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.game),
-      getAccountMeta(accounts.playerState),
-      getAccountMeta(accounts.player),
+      getAccountMeta(accounts.trade),
+      getAccountMeta(accounts.proposerState),
+      getAccountMeta(accounts.accepterState),
+      getAccountMeta(accounts.accepter),
       getAccountMeta(accounts.clock),
     ],
-    data: getCollectGoInstructionDataEncoder().encode({}),
+    data: getAcceptTradeInstructionDataEncoder().encode({}),
     programAddress,
-  } as CollectGoInstruction<
+  } as AcceptTradeInstruction<
     TProgramAddress,
     TAccountGame,
-    TAccountPlayerState,
-    TAccountPlayer,
+    TAccountTrade,
+    TAccountProposerState,
+    TAccountAccepterState,
+    TAccountAccepter,
     TAccountClock
   >);
 }
 
-export type ParsedCollectGoInstruction<
+export type ParsedAcceptTradeInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
     game: TAccountMetas[0];
-    playerState: TAccountMetas[1];
-    player: TAccountMetas[2];
-    clock: TAccountMetas[3];
+    trade: TAccountMetas[1];
+    proposerState: TAccountMetas[2];
+    accepterState: TAccountMetas[3];
+    accepter: TAccountMetas[4];
+    clock: TAccountMetas[5];
   };
-  data: CollectGoInstructionData;
+  data: AcceptTradeInstructionData;
 };
 
-export function parseCollectGoInstruction<
+export function parseAcceptTradeInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
-): ParsedCollectGoInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 4) {
+): ParsedAcceptTradeInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 6) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -300,10 +344,12 @@ export function parseCollectGoInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       game: getNextAccount(),
-      playerState: getNextAccount(),
-      player: getNextAccount(),
+      trade: getNextAccount(),
+      proposerState: getNextAccount(),
+      accepterState: getNextAccount(),
+      accepter: getNextAccount(),
       clock: getNextAccount(),
     },
-    data: getCollectGoInstructionDataDecoder().decode(instruction.data),
+    data: getAcceptTradeInstructionDataDecoder().decode(instruction.data),
   };
 }

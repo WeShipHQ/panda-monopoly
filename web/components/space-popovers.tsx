@@ -8,41 +8,31 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { PropertyAccount } from "@/types/schema";
-import { UnifiedPropertyData } from "@/data/unified-monopoly-data";
-import { isSome } from "@solana/kit";
-import { cn, formatPrice } from "@/lib/utils";
+import { Address, isSome } from "@solana/kit";
+import { cn, formatAddress, formatPrice } from "@/lib/utils";
 import { HotelIcon, HouseIcon } from "lucide-react";
+import {
+  PropertySpace,
+  RailroadSpace,
+  UtilitySpace,
+  TaxSpace,
+  colorMap,
+} from "@/configs/board-data";
 
 // Base interface for popover props
 interface BasePopoverProps {
   children: React.ReactNode;
   property?: PropertyAccount | null;
-  playerName?: string;
-}
-
-// Property popover props
-interface PropertyPopoverProps extends BasePopoverProps {
-  propertyData: UnifiedPropertyData;
-}
-
-// Railroad popover props
-interface RailroadPopoverProps extends BasePopoverProps {
-  propertyData: UnifiedPropertyData;
-}
-
-// Utility popover props
-interface UtilityPopoverProps extends BasePopoverProps {
-  propertyData: UnifiedPropertyData;
 }
 
 // Tax popover props
 interface TaxPopoverProps extends BasePopoverProps {
-  propertyData: UnifiedPropertyData;
+  propertyData: TaxSpace;
 }
 
 // Special space popover props
 interface SpecialPopoverProps extends BasePopoverProps {
-  propertyData: UnifiedPropertyData;
+  propertyData: any;
 }
 
 // Helper function to check if property is owned
@@ -50,16 +40,25 @@ const isPropertyOwned = (property?: PropertyAccount | null): boolean => {
   return !!property && isSome(property.owner);
 };
 
+const getOwner = (property?: PropertyAccount | null): Address | null => {
+  return !!property && isSome(property.owner) ? property.owner.value : null;
+};
+
+// Property popover props
+interface PropertyPopoverProps extends BasePopoverProps {
+  propertyData: PropertySpace;
+}
+
 export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
   children,
   propertyData,
   property,
-  playerName,
 }) => {
-  const isOwned = isPropertyOwned(property);
+  const owner = getOwner(property);
   const houses = property?.houses || 0;
   const hasHotel = property?.hasHotel || false;
   const isMortgaged = property?.isMortgaged || false;
+  const color = colorMap[propertyData.colorGroup];
 
   return (
     <Popover>
@@ -70,10 +69,8 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
       >
         <Card className="w-64 bg-white border-2 gap-0 border-black py-0 rounded-none overflow-hidden">
           <CardHeader
-            className={cn(
-              "gap-0 border-b-2 border-black py-3",
-              propertyData.colorClass
-            )}
+            className={cn("gap-0 border-b-2 border-black py-3")}
+            style={{ backgroundColor: color }}
           >
             <CardTitle className="text-center text-white">
               {propertyData.name}
@@ -222,17 +219,17 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
               </div>
             )}
 
-            {isOwned && (
+            {owner && (
               <>
                 <Separator className="my-3" />
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Owner:</span>
-                  <Badge variant={isOwned ? "default" : "secondary"}>
-                    {isOwned ? playerName || "Unknown" : "Unowned"}
+                  <Badge variant={!!owner ? "default" : "secondary"}>
+                    {!!owner ? formatAddress(owner) || "Unknown" : "Unowned"}
                   </Badge>
                 </div>
 
-                {isOwned && (
+                {!!owner && (
                   <>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Houses:</span>
@@ -262,13 +259,17 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
   );
 };
 
+// Railroad popover props
+interface RailroadPopoverProps extends BasePopoverProps {
+  propertyData: RailroadSpace;
+}
+
 export const RailroadPopover: React.FC<RailroadPopoverProps> = ({
   children,
   propertyData,
   property,
-  playerName,
 }) => {
-  const isOwned = isPropertyOwned(property);
+  const owner = getOwner(property);
 
   return (
     <Popover>
@@ -323,14 +324,14 @@ export const RailroadPopover: React.FC<RailroadPopoverProps> = ({
               </div>
             )} */}
 
-            {isOwned && (
+            {!!owner && (
               <>
                 <Separator className="my-3" />
 
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Owner:</span>
-                  <Badge variant={isOwned ? "default" : "secondary"}>
-                    {isOwned ? playerName || "Unknown" : "Unowned"}
+                  <Badge variant={!!owner ? "default" : "secondary"}>
+                    {!!owner ? formatAddress(owner) || "Unknown" : "Unowned"}
                   </Badge>
                 </div>
               </>
@@ -342,14 +343,17 @@ export const RailroadPopover: React.FC<RailroadPopoverProps> = ({
   );
 };
 
-// Utility Popover Component (based on Figma Utility Card design)
+// Utility popover props
+interface UtilityPopoverProps extends BasePopoverProps {
+  propertyData: UtilitySpace;
+}
+
 export const UtilityPopover: React.FC<UtilityPopoverProps> = ({
   children,
   propertyData,
   property,
-  playerName,
 }) => {
-  const isOwned = isPropertyOwned(property);
+  const owner = getOwner(property);
 
   return (
     <Popover>
@@ -395,14 +399,14 @@ export const UtilityPopover: React.FC<UtilityPopoverProps> = ({
               </div>
             )} */}
 
-            {isOwned && (
+            {owner && (
               <>
                 <Separator className="my-3" />
 
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Owner:</span>
-                  <Badge variant={isOwned ? "default" : "secondary"}>
-                    {isOwned ? playerName || "Unknown" : "Unowned"}
+                  <Badge variant={owner ? "default" : "secondary"}>
+                    {owner ? formatAddress(owner) || "Unknown" : "Unowned"}
                   </Badge>
                 </div>
               </>

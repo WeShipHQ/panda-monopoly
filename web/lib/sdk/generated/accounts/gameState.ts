@@ -19,8 +19,6 @@ import {
   getAddressEncoder,
   getArrayDecoder,
   getArrayEncoder,
-  getBooleanDecoder,
-  getBooleanEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getI64Decoder,
@@ -73,9 +71,7 @@ export type GameState = {
   currentTurn: number;
   players: Array<Address>;
   createdAt: bigint;
-  isActive: boolean;
   gameStatus: GameStatus;
-  diceResult: ReadonlyUint8Array;
   bankBalance: bigint;
   freeParkingPool: bigint;
   housesRemaining: number;
@@ -94,9 +90,7 @@ export type GameStateArgs = {
   currentTurn: number;
   players: Array<Address>;
   createdAt: number | bigint;
-  isActive: boolean;
   gameStatus: GameStatusArgs;
-  diceResult: ReadonlyUint8Array;
   bankBalance: number | bigint;
   freeParkingPool: number | bigint;
   housesRemaining: number;
@@ -118,9 +112,7 @@ export function getGameStateEncoder(): Encoder<GameStateArgs> {
       ['currentTurn', getU8Encoder()],
       ['players', getArrayEncoder(getAddressEncoder())],
       ['createdAt', getI64Encoder()],
-      ['isActive', getBooleanEncoder()],
       ['gameStatus', getGameStatusEncoder()],
-      ['diceResult', fixEncoderSize(getBytesEncoder(), 2)],
       ['bankBalance', getU64Encoder()],
       ['freeParkingPool', getU64Encoder()],
       ['housesRemaining', getU8Encoder()],
@@ -144,9 +136,7 @@ export function getGameStateDecoder(): Decoder<GameState> {
     ['currentTurn', getU8Decoder()],
     ['players', getArrayDecoder(getAddressDecoder())],
     ['createdAt', getI64Decoder()],
-    ['isActive', getBooleanDecoder()],
     ['gameStatus', getGameStatusDecoder()],
-    ['diceResult', fixDecoderSize(getBytesDecoder(), 2)],
     ['bankBalance', getU64Decoder()],
     ['freeParkingPool', getU64Decoder()],
     ['housesRemaining', getU8Decoder()],

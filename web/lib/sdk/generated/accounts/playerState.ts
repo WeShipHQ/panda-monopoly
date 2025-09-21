@@ -83,7 +83,6 @@ export type PlayerState = {
   needsChanceCard: boolean;
   needsCommunityChestCard: boolean;
   needsBankruptcyCheck: boolean;
-  canEndTurn: boolean;
   needsSpecialSpaceAction: boolean;
   pendingSpecialSpacePosition: Option<number>;
   cardDrawnAt: Option<bigint>;
@@ -110,7 +109,6 @@ export type PlayerStateArgs = {
   needsChanceCard: boolean;
   needsCommunityChestCard: boolean;
   needsBankruptcyCheck: boolean;
-  canEndTurn: boolean;
   needsSpecialSpaceAction: boolean;
   pendingSpecialSpacePosition: OptionOrNullable<number>;
   cardDrawnAt: OptionOrNullable<number | bigint>;
@@ -143,7 +141,6 @@ export function getPlayerStateEncoder(): Encoder<PlayerStateArgs> {
       ['needsChanceCard', getBooleanEncoder()],
       ['needsCommunityChestCard', getBooleanEncoder()],
       ['needsBankruptcyCheck', getBooleanEncoder()],
-      ['canEndTurn', getBooleanEncoder()],
       ['needsSpecialSpaceAction', getBooleanEncoder()],
       ['pendingSpecialSpacePosition', getOptionEncoder(getU8Encoder())],
       ['cardDrawnAt', getOptionEncoder(getI64Encoder())],
@@ -178,7 +175,6 @@ export function getPlayerStateDecoder(): Decoder<PlayerState> {
     ['needsChanceCard', getBooleanDecoder()],
     ['needsCommunityChestCard', getBooleanDecoder()],
     ['needsBankruptcyCheck', getBooleanDecoder()],
-    ['canEndTurn', getBooleanDecoder()],
     ['needsSpecialSpaceAction', getBooleanDecoder()],
     ['pendingSpecialSpacePosition', getOptionDecoder(getU8Decoder())],
     ['cardDrawnAt', getOptionDecoder(getI64Decoder())],

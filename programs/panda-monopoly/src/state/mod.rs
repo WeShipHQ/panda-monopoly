@@ -3,6 +3,8 @@ use anchor_lang::prelude::*;
 mod events;
 pub use events::*;
 
+use crate::STARTING_MONEY;
+
 #[derive(Debug, InitSpace, AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 pub enum GameStatus {
     WaitingForPlayers,
@@ -66,16 +68,16 @@ pub struct GameState {
     #[max_len(4)]
     pub players: Vec<Pubkey>, // 32 * 8 = 256 bytes max
     pub created_at: i64,     // 8 bytes - game creation timestamp
-    pub is_active: bool,     // 1 byte - game active status
+    // pub is_active: bool,     // 1 byte - game active status
     pub game_status: GameStatus, // 1 byte - current game status
-    pub dice_result: [u8; 2], // 2 bytes - last dice roll
-    pub bank_balance: u64,   // 8 bytes - bank's money
-    pub free_parking_pool: u64, // 8 bytes - parking pool
-    pub houses_remaining: u8, // 1 byte - houses left in bank (32 total)
-    pub hotels_remaining: u8, // 1 byte - hotels left in bank (12 total)
+    // pub dice_result: [u8; 2], // 2 bytes - last dice roll
+    pub bank_balance: u64,       // 8 bytes - bank's money
+    pub free_parking_pool: u64,  // 8 bytes - parking pool
+    pub houses_remaining: u8,    // 1 byte - houses left in bank (32 total)
+    pub hotels_remaining: u8,    // 1 byte - hotels left in bank (12 total)
     pub time_limit: Option<i64>, // 9 bytes - optional time limit
-    pub winner: Option<Pubkey>, // 33 bytes - game winner
-    pub turn_started_at: i64, // 8 bytes - when current turn started
+    pub winner: Option<Pubkey>,  // 33 bytes - game winner
+    pub turn_started_at: i64,    // 8 bytes - when current turn started
 }
 
 impl GameState {}
@@ -105,15 +107,46 @@ pub struct PlayerState {
     pub needs_chance_card: bool,     // Needs to draw chance card
     pub needs_community_chest_card: bool, // Needs to draw community chest
     pub needs_bankruptcy_check: bool, // Insufficient funds detected
-    pub can_end_turn: bool,          // All actions completed
-
+    // pub can_end_turn: bool,          // All actions completed
     pub needs_special_space_action: bool, // Player landed on special space
     pub pending_special_space_position: Option<u8>, // Which special space
 
     pub card_drawn_at: Option<i64>, // Timestamp when card was drawn
 }
 
-impl PlayerState {}
+impl PlayerState {
+    pub fn initialize_player_state(
+        self: &mut PlayerState,
+        wallet: Pubkey,
+        game: Pubkey,
+        clock: &Sysvar<Clock>,
+    ) {
+        self.wallet = wallet;
+        self.game = game;
+        self.cash_balance = STARTING_MONEY as u64;
+        self.position = 0;
+        self.in_jail = false;
+        self.jail_turns = 0;
+        self.doubles_count = 0;
+        self.is_bankrupt = false;
+        self.properties_owned = Vec::new();
+        self.get_out_of_jail_cards = 0;
+        self.net_worth = STARTING_MONEY as u64;
+        self.last_rent_collected = clock.unix_timestamp;
+        self.festival_boost_turns = 0;
+        self.has_rolled_dice = false;
+        self.last_dice_roll = [0, 0];
+        self.needs_property_action = false;
+        self.pending_property_position = None;
+        self.needs_chance_card = false;
+        self.needs_community_chest_card = false;
+        self.needs_bankruptcy_check = false;
+        // self.can_end_turn = false;
+        self.needs_special_space_action = false;
+        self.pending_special_space_position = None;
+        self.card_drawn_at = None;
+    }
+}
 
 #[account]
 #[derive(Debug, InitSpace)]
@@ -137,39 +170,47 @@ pub struct PropertyState {
 
 impl PropertyState {}
 
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, InitSpace, Clone, PartialEq, Eq)]
+pub enum TradeType {
+    MoneyOnly,
+    PropertyOnly,
+    MoneyForProperty,
+    PropertyForMoney,
+}
+
 #[account]
 #[derive(Debug, InitSpace)]
 pub struct TradeState {
     pub game: Pubkey,
     pub proposer: Pubkey,
     pub receiver: Pubkey,
+    pub trade_type: TradeType,
+
+    // Money amounts
     pub proposer_money: u64,
     pub receiver_money: u64,
-    // pub proposer_properties: Vec<u8>,
-    // pub receiver_properties: Vec<u8>,
+
+    // Single property (since you want 1 item per trade)
+    pub proposer_property: Option<u8>, // property position
+    pub receiver_property: Option<u8>, // property position
+
     pub status: TradeStatus,
     pub created_at: i64,
     pub expires_at: i64,
+    pub bump: u8,
 }
 
 impl TradeState {}
 
 #[account]
+#[derive(Debug, InitSpace)]
 pub struct AuctionState {
     pub game: Pubkey,
-    pub property_index: u8,
+    pub property_position: u8,
     pub current_bid: u64,
-    pub current_bidder: Option<Pubkey>,
-    pub end_time: i64,
+    pub highest_bidder: Option<Pubkey>,
+    pub started_at: i64,
+    pub ends_at: i64,
     pub is_active: bool,
-}
-
-impl AuctionState {
-    pub const LEN: usize = 8 + // discriminator
-        32 + // game
-        1 + // property_index
-        8 + // current_bid
-        33 + // current_bidder (1 + 32)
-        8 + // end_time
-        1; // is_active
+    pub bump: u8,
 }

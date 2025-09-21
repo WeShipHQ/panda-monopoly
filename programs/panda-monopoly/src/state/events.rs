@@ -19,3 +19,12 @@ pub struct CommunityChestCardDrawn {
     pub amount: i32,
     pub timestamp: i64,
 }
+
+#[event]
+pub struct PlayerPassedGo {
+    pub player: Pubkey,
+    pub game: Pubkey,
+    pub salary_collected: u64,
+    pub new_position: u8,
+    pub timestamp: i64,
+}

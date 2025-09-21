@@ -6,7 +6,6 @@ import { sdk } from "@/lib/sdk/sdk";
 import { fakePlayerA, fakePlayerB } from "@/lib/sdk/utils";
 import { buildAndSendTransaction } from "@/lib/tx";
 import { GameAccount, PlayerAccount, PropertyAccount } from "@/types/schema";
-import { getPropertyData } from "@/data/unified-monopoly-data";
 import {
   Address,
   getAddressFromPublicKey,
@@ -31,8 +30,8 @@ import {
   MEV_TAX_AMOUNT,
   PRIORITY_FEE_TAX_AMOUNT,
 } from "@/lib/constants";
+import { getBoardSpaceData, getTypedSpaceData } from "@/lib/board-utils";
 
-// Game Log Types
 export interface GameLogEntry {
   id: string;
   timestamp: number;
@@ -277,8 +276,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       !currentPlayerState.hasRolledDice ||
       currentPlayerState.needsPropertyAction ||
       currentPlayerState.needsChanceCard ||
-      currentPlayerState.needsCommunityChestCard ||
-      currentPlayerState.canEndTurn
+      currentPlayerState.needsCommunityChestCard
+      // ||
+      // currentPlayerState.canEndTurn
     );
   }, [currentPlayerState, isCurrentPlayerTurn]);
 
@@ -290,8 +290,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       try {
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-        const instruction = await sdk.rollTestDiceIx({
+        // await new Promise((resolve) => setTimeout(resolve, 3000));
+        const instruction = await sdk.rollDiceIx({
           rpc: createSolanaRpc("http://127.0.0.1:8899"),
           gameAddress,
           player: currentPlayerSigner,
@@ -343,7 +343,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[buyProperty] tx", signature);
 
-        const propertyData = getPropertyData(position);
+        const propertyData = getTypedSpaceData(position, "property");
         addGameLog({
           type: "purchase",
           playerId: currentPlayerSigner.address,
@@ -382,7 +382,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[skipProperty] tx", signature);
 
-        const propertyData = getPropertyData(position);
+        const propertyData = getTypedSpaceData(position, "property");
         addGameLog({
           type: "skip",
           playerId: currentPlayerSigner.address,
@@ -424,7 +424,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[payRent] tx", signature);
 
-        const propertyData = getPropertyData(position);
+        const propertyData = getTypedSpaceData(position, "property");
         addGameLog({
           type: "rent",
           playerId: currentPlayerSigner.address,
@@ -612,7 +612,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[buildHouse] tx", signature);
 
-        const propertyData = getPropertyData(position);
+        const propertyData = getTypedSpaceData(position, "property");
         addGameLog({
           type: "building",
           playerId: currentPlayerSigner.address,
@@ -651,7 +651,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[buildHotel] tx", signature);
 
-        const propertyData = getPropertyData(position);
+        const propertyData = getTypedSpaceData(position, "property");
         addGameLog({
           type: "building",
           playerId: currentPlayerSigner.address,
@@ -931,12 +931,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       // Priority 7: Check if player can end turn
-      if (player.canEndTurn) {
-        console.log("Player can end turn");
-        // Don't auto-end turn - let player click the end turn button
-        // This gives them time to review their situation and make decisions
-        return;
-      }
+      // if (player.canEndTurn) {
+      //   console.log("Player can end turn");
+      //   // Don't auto-end turn - let player click the end turn button
+      //   // This gives them time to review their situation and make decisions
+      //   return;
+      // }
 
       // Priority 8: Handle doubles (if player rolled doubles and can roll again)
       if (
@@ -966,7 +966,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         needsCommunityChestCard: player.needsCommunityChestCard,
         needsSpecialSpaceAction: player.needsSpecialSpaceAction,
         needsBankruptcyCheck: player.needsBankruptcyCheck,
-        canEndTurn: player.canEndTurn,
+        // canEndTurn: player.canEndTurn,
         inJail: player.inJail,
         doublesCount: player.doublesCount,
       });

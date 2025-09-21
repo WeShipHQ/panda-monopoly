@@ -228,7 +228,7 @@ pub fn decline_property_handler(ctx: Context<DeclineProperty>, position: u8) -> 
     player_state.pending_property_position = None;
 
     // Allow player to end turn after declining
-    player_state.can_end_turn = true;
+    // player_state.can_end_turn = true;
 
     // Update timestamps
     game.turn_started_at = clock.unix_timestamp;
@@ -331,7 +331,8 @@ pub fn pay_rent_handler(ctx: Context<PayRent>, position: u8) -> Result<()> {
     }
 
     // Calculate rent amount
-    let rent_amount = calculate_rent_for_property(&property_state, &owner_state, game.dice_result)?;
+    let rent_amount =
+        calculate_rent_for_property(&property_state, &owner_state, payer_state.last_dice_roll)?;
 
     // Check if payer has enough money
     if payer_state.cash_balance < rent_amount {

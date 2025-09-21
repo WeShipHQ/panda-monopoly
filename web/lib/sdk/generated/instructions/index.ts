@@ -6,12 +6,14 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './acceptTrade';
 export * from './attendFestival';
 export * from './buildHotel';
 export * from './buildHouse';
 export * from './buyProperty';
+export * from './cancelTrade';
 export * from './collectFreeParking';
-export * from './collectGo';
+export * from './createTrade';
 export * from './declineProperty';
 export * from './drawChanceCard';
 export * from './drawCommunityChestCard';
@@ -24,9 +26,9 @@ export * from './payJailFine';
 export * from './payMevTaxHandler';
 export * from './payPriorityFeeTaxHandler';
 export * from './payRent';
+export * from './rejectTrade';
 export * from './rollDice';
 export * from './sellBuilding';
 export * from './startGame';
-export * from './testDiceHandler';
 export * from './unmortgageProperty';
 export * from './visitBeachResort';

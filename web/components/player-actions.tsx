@@ -1,10 +1,10 @@
 import { PlayerState } from "@/lib/sdk/generated";
 import { useGameContext } from "./game-provider";
 import { useMemo } from "react";
-import { getPropertyData } from "@/data/unified-monopoly-data";
 import { isSome } from "@solana/kit";
 import { Button } from "./ui/button";
 import { formatPrice } from "@/lib/utils";
+import { getTypedSpaceData } from "@/lib/board-utils";
 
 interface PlayerTokenProps {
   player: PlayerState;
@@ -62,7 +62,7 @@ export const PropertyActions: React.FC<PropertyActionsProps> = ({
   const { getPropertyByPosition } = useGameContext();
 
   const pendingPropertyInfo = useMemo(() => {
-    const propertyData = getPropertyData(position);
+    const propertyData = getTypedSpaceData(position, "property");
     const propertyAccount = getPropertyByPosition(position);
 
     return {

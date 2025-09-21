@@ -6,7 +6,6 @@ import {
   ChanceSpace,
   CommunityChestSpace,
   RailroadSpace,
-  BeachSpace,
   UtilitySpace,
   TaxSpace,
 } from "@/components/board-spaces";
@@ -141,37 +140,23 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
     const onChainProperty = properties?.find(
       (property) => property.position === position
     );
-    const playerName =
-      property?.owner && property.owner.__option === "Some"
-        ? getPlayerName(property.owner.value)
-        : undefined;
 
     if (isPropertySpace(space)) {
       return (
-        <PropertySpace
-          key={key}
-          name={space.name}
-          price={space.price}
-          colorGroup={space.colorGroup}
-          rotate={space.rotate}
-          position={position}
-          property={property}
-          onChainProperty={onChainProperty}
-          playerName={playerName}
-        />
+        <PropertySpace key={key} onChainProperty={onChainProperty} {...space} />
       );
     } else if (isRailroadSpace(space)) {
       return (
         <RailroadSpace
           key={key}
-          name={space.name}
-          price={space.price}
-          rotate={space.rotate}
+          // name={space.name}
+          // price={space.price}
+          // rotate={space.rotate}
           // longName={space.longName}
-          position={position}
+          // position={position}
           property={property}
           onChainProperty={onChainProperty}
-          playerName={playerName}
+          {...space}
         />
       );
     }
@@ -194,49 +179,36 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
       return (
         <UtilitySpace
           key={key}
-          name={space.name}
-          price={space.price}
-          type={space.name.includes("Electric") ? "electric" : "water"}
-          rotate={space.rotate}
-          position={position}
           property={property}
-          playerName={playerName}
+          onChainProperty={onChainProperty}
+          {...space}
         />
       );
     } else if (isTaxSpace(space)) {
       return (
         <TaxSpace
           key={key}
-          name={space.name}
-          // price={space.price}
-          instructions={
-            space.name.includes("Income") ? "Pay 10% or $200" : undefined
-          }
-          type={space.name.includes("Income") ? "income" : "luxury"}
-          rotate={space.rotate}
-          position={position}
-          // onClick={handleSpaceClick}
           property={property}
-          playerName={playerName}
+          onChainProperty={onChainProperty}
+          {...space}
         />
       );
     } else if (isChanceSpace(space)) {
       return (
         <ChanceSpace
           key={key}
-          rotate={space.rotate}
-          position={position}
           property={property}
+          onChainProperty={onChainProperty}
+          {...space}
         />
       );
     } else if (isCommunityChestSpace(space)) {
       return (
         <CommunityChestSpace
           key={key}
-          rotate={space.rotate}
-          position={position}
           property={property}
-          playerName={playerName}
+          onChainProperty={onChainProperty}
+          {...space}
         />
       );
     }

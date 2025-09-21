@@ -12,7 +12,7 @@ import {
   getBuildHouseInstructionAsync,
   getBuildHotelInstructionAsync,
   getSellBuildingInstructionAsync,
-  getCollectGoInstructionAsync,
+  // getCollectGoInstructionAsync,
   getCollectFreeParkingInstructionAsync,
   getGoToJailInstructionAsync,
   getAttendFestivalInstructionAsync,
@@ -31,7 +31,7 @@ import {
   getDeclinePropertyInstruction,
   getCommunityChestCardDrawnCodec,
   getChanceCardDrawnCodec,
-  getTestDiceHandlerInstructionAsync,
+  // getTestDiceHandlerInstructionAsync,
 } from "./generated";
 import {
   CreateGameIxs,
@@ -157,15 +157,15 @@ class MonopolyGameSDK {
     });
   }
 
-  async rollTestDiceIx(params: RollDiceParams): Promise<Instruction> {
-    return await getTestDiceHandlerInstructionAsync({
-      game: params.gameAddress,
-      player: params.player,
-      diceRoll: params.diceRoll
-        ? some(params.diceRoll as unknown as ReadonlyUint8Array)
-        : none(),
-    });
-  }
+  // async rollTestDiceIx(params: RollDiceParams): Promise<Instruction> {
+  //   return await getTestDiceHandlerInstructionAsync({
+  //     game: params.gameAddress,
+  //     player: params.player,
+  //     diceRoll: params.diceRoll
+  //       ? some(params.diceRoll as unknown as ReadonlyUint8Array)
+  //       : none(),
+  //   });
+  // }
 
   /**
    * End current player's turn
@@ -352,12 +352,12 @@ class MonopolyGameSDK {
   /**
    * Collect GO salary when passing or landing on GO
    */
-  async collectGoIx(params: CollectGoParams): Promise<Instruction> {
-    return await getCollectGoInstructionAsync({
-      game: params.gameAddress,
-      player: params.player,
-    });
-  }
+  // async collectGoIx(params: CollectGoParams): Promise<Instruction> {
+  //   return await getCollectGoInstructionAsync({
+  //     game: params.gameAddress,
+  //     player: params.player,
+  //   });
+  // }
 
   /**
    * Collect money from Free Parking

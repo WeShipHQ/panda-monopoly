@@ -167,7 +167,7 @@ export const boardData: BoardSpace[] = [
     name: "MEV Tax",
     type: "tax",
     taxAmount: 200,
-    instructions: "Pay 10% or 200 SOL",
+    instructions: "Pay $200",
     logo: "/images/sol.png",
   },
 
@@ -738,39 +738,6 @@ export const boardData: BoardSpace[] = [
   },
 ];
 
-// // Helper functions
-// export const getBoardSpaceData = (position: number): BoardSpace | null => {
-//   return boardData.find((p) => p.position === position) || null;
-// };
-
-// export const getPropertiesByColorGroup = (
-//   colorGroup: ColorGroup
-// ): BoardSpace[] => {
-//   return boardData.filter(
-//     (p) => p.type === "property" && p.colorGroup === colorGroup
-//   );
-// };
-
-// export const isProperty = (position: number): boolean => {
-//   const property = getBoardSpaceData(position);
-//   return property?.type === "property";
-// };
-
-// export const isRailroad = (position: number): boolean => {
-//   const property = getBoardSpaceData(position);
-//   return property?.type === "railroad";
-// };
-
-// export const isUtility = (position: number): boolean => {
-//   const property = getBoardSpaceData(position);
-//   return property?.type === "utility";
-// };
-
-// export const isBeach = (position: number): boolean => {
-//   const property = getBoardSpaceData(position);
-//   return false; //property?.type === "beach";
-// };
-
 // #955235 brow
 // #AAE0FA ligt blue
 // #D93A96 pink
@@ -779,3 +746,91 @@ export const boardData: BoardSpace[] = [
 // #FEF200 yellow
 // #1FB25A green
 // #0072BB blue
+
+// Surprise Cards (Pump.fun Surprise Deck)
+export const surpriseCards = [
+  {
+    id: 1,
+    title: "Memecoin Pump! 🚀",
+    description:
+      "Advance to the nearest memecoin property (BONK or WIF). If unowned, you may buy it. If owned, pay double rent – the pump is real!",
+    action: "advance-to-nearest-memecoin",
+    value: 0,
+  },
+  {
+    id: 2,
+    title: "Rug Pull Alert! 💸",
+    description:
+      "Your latest trade gets rugged. Pay 50 SOL to the bank for exit liquidity.",
+    action: "pay-money",
+    value: 50,
+  },
+  {
+    id: 3,
+    title: "Flash Loan Win ⚡",
+    description:
+      "Borrow big, repay fast. Collect 100 SOL from the bank – degen arbitrage pays off.",
+    action: "collect-money",
+    value: 100,
+  },
+  {
+    id: 4,
+    title: "Congestion Jam 🚧",
+    description:
+      "Network overload! Go back 3 spaces – too many bots in the mempool.",
+    action: "move-back",
+    value: -3,
+  },
+  {
+    id: 5,
+    title: "Dev Unlock 🔓",
+    description:
+      "Team tokens vest early. Get out of Validator Jail free – keep this card or sell it to another player.",
+    action: "get-out-of-jail",
+    value: 0,
+  },
+];
+
+// Treasure Cards (Airdrop Chest Deck)
+export const treasureCards = [
+  {
+    id: 1,
+    title: "Retroactive Airdrop! 🪂",
+    description:
+      "You farmed early. Collect 50 SOL from every player – points paid off.",
+    action: "collect-from-players",
+    value: 50,
+  },
+  {
+    id: 2,
+    title: "Staking Rewards 💰",
+    description:
+      "Your validator performs. Collect 100 SOL from the bank – compounded yields.",
+    action: "collect-money",
+    value: 100,
+  },
+  {
+    id: 3,
+    title: "NFT Floor Sweep 🖼️",
+    description:
+      "Community bids up your jpegs. Advance to Free Airdrop Parking and collect the pot.",
+    action: "advance-to-free-parking",
+    value: 0,
+  },
+  {
+    id: 4,
+    title: "DAO Vote Win 🗳️",
+    description:
+      "Proposal passes in your favor. Repair all your properties for free – grants approved.",
+    action: "repair-free",
+    value: 0,
+  },
+  {
+    id: 5,
+    title: "Wallet Drain Fee 🔒",
+    description:
+      "Phishing attempt succeeds. Pay 50 SOL to the bank – always check your seeds!",
+    action: "pay-money",
+    value: 50,
+  },
+];

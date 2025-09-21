@@ -32,7 +32,7 @@ pub struct InitializeGame<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
-pub fn handler(ctx: Context<InitializeGame>, game_id: u64) -> Result<()> {
+pub fn initialize_game_handler(ctx: Context<InitializeGame>, game_id: u64) -> Result<()> {
     let game = &mut ctx.accounts.game;
     let player_state = &mut ctx.accounts.player_state;
     let clock = &ctx.accounts.clock;
@@ -49,8 +49,8 @@ pub fn handler(ctx: Context<InitializeGame>, game_id: u64) -> Result<()> {
     game.houses_remaining = TOTAL_HOUSES;
     game.hotels_remaining = TOTAL_HOTELS;
     game.created_at = clock.unix_timestamp;
-    game.is_active = true;
-    game.dice_result = [0, 0];
+    // game.is_active = true;
+    // game.dice_result = [0, 0];
     game.bank_balance = 1_000_000; // Initial bank balance
     game.time_limit = None;
     game.winner = None;
@@ -60,19 +60,20 @@ pub fn handler(ctx: Context<InitializeGame>, game_id: u64) -> Result<()> {
     // Properties will be initialized as separate accounts when needed
 
     // Initialize player state
-    player_state.wallet = ctx.accounts.authority.key();
-    player_state.game = game.key();
-    player_state.cash_balance = STARTING_MONEY as u64;
-    player_state.position = 0; // GO position
-    player_state.in_jail = false;
-    player_state.jail_turns = 0;
-    player_state.doubles_count = 0;
-    player_state.is_bankrupt = false;
-    player_state.properties_owned = Vec::new();
-    player_state.get_out_of_jail_cards = 0;
-    player_state.net_worth = STARTING_MONEY as u64;
-    player_state.last_rent_collected = clock.unix_timestamp;
-    player_state.festival_boost_turns = 0;
+    player_state.initialize_player_state(ctx.accounts.authority.key(), game.key(), clock);
+    // player_state.wallet = ctx.accounts.authority.key();
+    // player_state.game = game.key();
+    // player_state.cash_balance = STARTING_MONEY as u64;
+    // player_state.position = 0; // GO position
+    // player_state.in_jail = false;
+    // player_state.jail_turns = 0;
+    // player_state.doubles_count = 0;
+    // player_state.is_bankrupt = false;
+    // player_state.properties_owned = Vec::new();
+    // player_state.get_out_of_jail_cards = 0;
+    // player_state.net_worth = STARTING_MONEY as u64;
+    // player_state.last_rent_collected = clock.unix_timestamp;
+    // player_state.festival_boost_turns = 0;
 
     // Add player to game
     game.players.push(player_state.wallet);
@@ -133,19 +134,20 @@ pub fn join_game_handler(ctx: Context<JoinGame>) -> Result<()> {
     }
 
     // Initialize player state
-    player_state.wallet = player_pubkey;
-    player_state.game = game.key();
-    player_state.cash_balance = STARTING_MONEY as u64;
-    player_state.position = 0; // GO position
-    player_state.in_jail = false;
-    player_state.jail_turns = 0;
-    player_state.doubles_count = 0;
-    player_state.is_bankrupt = false;
-    player_state.properties_owned = Vec::new();
-    player_state.get_out_of_jail_cards = 0;
-    player_state.net_worth = STARTING_MONEY as u64;
-    player_state.last_rent_collected = clock.unix_timestamp;
-    player_state.festival_boost_turns = 0;
+    player_state.initialize_player_state(player_pubkey, game.key(), clock);
+    // player_state.wallet = player_pubkey;
+    // player_state.game = game.key();
+    // player_state.cash_balance = STARTING_MONEY as u64;
+    // player_state.position = 0; // GO position
+    // player_state.in_jail = false;
+    // player_state.jail_turns = 0;
+    // player_state.doubles_count = 0;
+    // player_state.is_bankrupt = false;
+    // player_state.properties_owned = Vec::new();
+    // player_state.get_out_of_jail_cards = 0;
+    // player_state.net_worth = STARTING_MONEY as u64;
+    // player_state.last_rent_collected = clock.unix_timestamp;
+    // player_state.festival_boost_turns = 0;
 
     // Add player to game
     game.players.push(player_pubkey);
