@@ -9,6 +9,7 @@ import {
 } from "../lib/soundUtil";
 import { useGameContext } from "./game-provider";
 import "../styles/dice.css"; // Import the new CSS
+import { Button } from "./ui/button";
 
 interface DiceProps {}
 
@@ -38,8 +39,14 @@ export const Dice: React.FC<DiceProps> = () => {
     useGameContext();
 
   const canRoll = canRollDice();
+  const hasPendingActions =
+    !!currentPlayerState &&
+    (currentPlayerState.needsPropertyAction ||
+      currentPlayerState.needsChanceCard ||
+      currentPlayerState.needsCommunityChestCard ||
+      currentPlayerState.needsBankruptcyCheck ||
+      currentPlayerState.needsSpecialSpaceAction);
 
-  // Listen for dice result from Solana program
   useEffect(() => {
     console.log("Dice roll data:", currentPlayerState?.lastDiceRoll);
     if (
@@ -163,50 +170,54 @@ export const Dice: React.FC<DiceProps> = () => {
     </div>
   );
 
+  if (hasPendingActions) return null;
+
   return (
-    <div className="flex flex-col items-center gap-4 mb-6">
-      <button
-        disabled={!canRoll || isRolling}
-        onClick={handleRollDice}
-        // onMouseEnter={() => !isRolling && playSound("button-hover", 0.2)}
-      >
-        <div className="flex gap-8">
-          {" "}
-          {/* Increased gap from gap-4 to gap-8 for more spacing */}
-          {/* Dice 1 - 3D */}
-          <div className="dice-wrapper">
-            <div
-              ref={dice1Ref}
-              className={`dice-3d ${isRolling ? "dice-rolling" : ""} ${
-                isThrowAnimation ? "dice-throw" : ""
-              }`}
-            >
-              <DiceFace value={dice1} className="dice-front" />
-              <DiceFace value={7 - dice1} className="dice-back" />
-              <DiceFace value={((dice1 + 1) % 6) + 1} className="dice-right" />
-              <DiceFace value={((dice1 + 2) % 6) + 1} className="dice-left" />
-              <DiceFace value={((dice1 + 3) % 6) + 1} className="dice-top" />
-              <DiceFace value={((dice1 + 4) % 6) + 1} className="dice-bottom" />
-            </div>
-          </div>
-          {/* Dice 2 - 3D with different animation */}
-          <div className="dice-wrapper">
-            <div
-              ref={dice2Ref}
-              className={`dice-3d dice-2 ${isRolling ? "dice-rolling" : ""} ${
-                isThrowAnimation ? "dice-throw" : ""
-              }`}
-            >
-              <DiceFace value={dice2} className="dice-front" />
-              <DiceFace value={7 - dice2} className="dice-back" />
-              <DiceFace value={((dice2 + 1) % 6) + 1} className="dice-right" />
-              <DiceFace value={((dice2 + 2) % 6) + 1} className="dice-left" />
-              <DiceFace value={((dice2 + 3) % 6) + 1} className="dice-top" />
-              <DiceFace value={((dice2 + 4) % 6) + 1} className="dice-bottom" />
-            </div>
+    <div className="relative">
+      <div className="absolute -top-[80px] left-1/2 translate-x-[-50%] flex gap-8">
+        {" "}
+        {/* Increased gap from gap-4 to gap-8 for more spacing */}
+        {/* Dice 1 - 3D */}
+        <div className="dice-wrapper">
+          <div
+            ref={dice1Ref}
+            className={`dice-3d ${isRolling ? "dice-rolling" : ""} ${
+              isThrowAnimation ? "dice-throw" : ""
+            }`}
+          >
+            <DiceFace value={dice1} className="dice-front" />
+            <DiceFace value={7 - dice1} className="dice-back" />
+            <DiceFace value={((dice1 + 1) % 6) + 1} className="dice-right" />
+            <DiceFace value={((dice1 + 2) % 6) + 1} className="dice-left" />
+            <DiceFace value={((dice1 + 3) % 6) + 1} className="dice-top" />
+            <DiceFace value={((dice1 + 4) % 6) + 1} className="dice-bottom" />
           </div>
         </div>
-      </button>
+        {/* Dice 2 - 3D with different animation */}
+        <div className="dice-wrapper">
+          <div
+            ref={dice2Ref}
+            className={`dice-3d dice-2 ${isRolling ? "dice-rolling" : ""} ${
+              isThrowAnimation ? "dice-throw" : ""
+            }`}
+          >
+            <DiceFace value={dice2} className="dice-front" />
+            <DiceFace value={7 - dice2} className="dice-back" />
+            <DiceFace value={((dice2 + 1) % 6) + 1} className="dice-right" />
+            <DiceFace value={((dice2 + 2) % 6) + 1} className="dice-left" />
+            <DiceFace value={((dice2 + 3) % 6) + 1} className="dice-top" />
+            <DiceFace value={((dice2 + 4) % 6) + 1} className="dice-bottom" />
+          </div>
+        </div>
+      </div>
+      <Button
+        disabled={!canRoll || isRolling}
+        onClick={handleRollDice}
+        size="sm"
+        loading={isRolling}
+      >
+        Roll dice
+      </Button>
     </div>
   );
 };

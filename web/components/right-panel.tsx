@@ -5,6 +5,7 @@ import { SoundControl } from "@/components/sound-control";
 import { playSound } from "@/lib/soundUtil";
 import { useGameContext } from "./game-provider";
 import { formatAddress, formatPrice, generatePlayerIcon } from "@/lib/utils";
+import { Button } from "./ui/button";
 
 interface RightPanelProps {
   boardRotation: number;

@@ -35,9 +35,9 @@ pub mod panda_monopoly {
         instructions::dice::roll_dice_handler(ctx, dice_roll)
     }
 
-    // pub fn test_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> Result<()> {
-    //     instructions::dice::test_dice_handler(ctx, dice_roll)
-    // }
+    pub fn test_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> Result<()> {
+        instructions::dice::test_dice_handler(ctx, dice_roll)
+    }
 
     pub fn end_turn(ctx: Context<EndTurn>) -> Result<()> {
         instructions::end_turn::end_turn_handler(ctx)

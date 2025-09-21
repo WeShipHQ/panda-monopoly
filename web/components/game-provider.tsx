@@ -30,7 +30,7 @@ import {
   MEV_TAX_AMOUNT,
   PRIORITY_FEE_TAX_AMOUNT,
 } from "@/lib/constants";
-import { getBoardSpaceData, getTypedSpaceData } from "@/lib/board-utils";
+import { getTypedSpaceData } from "@/lib/board-utils";
 
 export interface GameLogEntry {
   id: string;

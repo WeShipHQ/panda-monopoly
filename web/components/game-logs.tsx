@@ -1,3 +1,67 @@
+"use client";
+
+import React from "react";
+import { ScrollArea } from "./ui/scroll-area";
+import { GameLogEntry, useGameContext } from "./game-provider";
+
+interface GameLogsProps {}
+
+export const GameLogs: React.FC<GameLogsProps> = () => {
+  const { gameLogs } = useGameContext();
+  return (
+    <ScrollArea className="h-40 w-[320px] rounded-md border">
+      <div className="p-4">
+        {gameLogs.map((log, index) => (
+          <GameLogItem key={index} log={log} />
+        ))}
+      </div>
+    </ScrollArea>
+  );
+};
+
+function GameLogItem({ log }: { log: GameLogEntry }) {
+  return (
+    <div className="text-xs text-black flex items-center justify-center gap-1">
+      items
+      {/* Show avatars of all mentioned players */}
+      {/* {mentionedPlayers.slice(0, 2).map((player, pIndex) => (
+        <img
+          key={pIndex}
+          src={player.avatar}
+          alt={`${player.name} avatar`}
+          className="w-4 h-4 object-contain flex-shrink-0"
+        />
+      ))}
+      <span>
+        {[].map((part, partIndex) => {
+          if (part.startsWith("**") && part.endsWith("**")) {
+            // Bold player name
+            return (
+              <span key={partIndex} className="font-bold">
+                {part.slice(2, -2)}
+              </span>
+            );
+          } else if (part.startsWith("##") && part.endsWith("##")) {
+            // Colored property name
+            const propertyName = part.slice(2, -2);
+            return (
+              <span
+                key={partIndex}
+                className={`font-semibold ${getPropertyColor(propertyName)}`}
+              >
+                {propertyName}
+              </span>
+            );
+          } else {
+            // Normal text
+            return <span key={partIndex}>{part}</span>;
+          }
+        })}
+      </span> */}
+    </div>
+  );
+}
+
 // {/* Game Log Section - Responsive */}
 //               <div className="flex-1 w-full max-w-xs sm:max-w-sm md:max-w-md flex items-center justify-center">
 //                 <div className="h-12 sm:h-16 md:h-20 lg:h-24 overflow-y-auto w-full">

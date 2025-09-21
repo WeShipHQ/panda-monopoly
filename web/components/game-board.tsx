@@ -34,6 +34,7 @@ import { isSome } from "@solana/kit";
 import { Button } from "./ui/button";
 import { PropertyAccount } from "@/types/schema";
 import { BoardSpace } from "@/configs/board-data";
+import { GameLogs } from "./game-logs";
 
 interface MonopolyBoardProps {
   boardRotation: number;
@@ -117,8 +118,6 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
   };
 
   const handleEndTurn = async () => {
-    // if (!currentPlayerState?.canEndTurn) return;
-
     setIsLoading("endTurn");
     try {
       await endTurn();
@@ -129,11 +128,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
     }
   };
 
-  const renderSpace = (
-    space: BoardSpace,
-    properties: PropertyAccount[],
-    index: number
-  ) => {
+  const renderSpace = (space: BoardSpace, properties: PropertyAccount[]) => {
     const position = space.position;
     const key = `${space.name}-${position}`;
     const property = getPropertyByPosition(position);
@@ -275,7 +270,6 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
               className="col-start-3 col-end-13 row-start-3 row-end-13 bg-[#c7e9b5] flex flex-col items-center justify-center 
                            p-1 sm:p-3 md:p-4 gap-1 sm:gap-3 md:gap-4"
             >
-              {/* Dice Section - Responsive */}
               <div className="flex-shrink-0 transform scale-[0.7] sm:scale-75 md:scale-90 lg:scale-100">
                 <Dice />
                 {currentPlayerState.inJail && (
@@ -346,6 +340,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
               )}
 
               {/* game-logs */}
+              <GameLogs />
             </div>
 
             {/* Corner Spaces */}
@@ -399,29 +394,29 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
 
             {/* Bottom Row */}
             <div className="col-start-3 col-end-13 row-start-13 row-end-15 grid grid-cols-9 grid-rows-1 gap-[0.1%]">
-              {getBoardRowData().bottomRow.map((space, index) =>
-                renderSpace(space, properties, index)
+              {getBoardRowData().bottomRow.map((space) =>
+                renderSpace(space, properties)
               )}
             </div>
 
             {/* Left Row */}
             <div className="col-start-1 col-end-3 row-start-3 row-end-13 grid grid-cols-1 grid-rows-9 gap-[0.1%]">
-              {getBoardRowData().leftRow.map((space, index) =>
-                renderSpace(space, properties, index)
+              {getBoardRowData().leftRow.map((space) =>
+                renderSpace(space, properties)
               )}
             </div>
 
             {/* Top Row */}
             <div className="col-start-3 col-end-13 row-start-1 row-end-3 grid grid-cols-9 grid-rows-1 gap-[0.1%]">
-              {getBoardRowData().topRow.map((space, index) =>
-                renderSpace(space, properties, index)
+              {getBoardRowData().topRow.map((space) =>
+                renderSpace(space, properties)
               )}
             </div>
 
             {/* Right Row */}
             <div className="col-start-13 col-end-15 row-start-3 row-end-13 grid grid-cols-1 grid-rows-9 gap-[0.1%]">
-              {getBoardRowData().rightRow.map((space, index) =>
-                renderSpace(space, properties, index)
+              {getBoardRowData().rightRow.map((space) =>
+                renderSpace(space, properties)
               )}
             </div>
           </div>
