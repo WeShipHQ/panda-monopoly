@@ -7,6 +7,7 @@
  */
 
 export * from './gameState';
+export * from './platformConfig';
 export * from './playerState';
 export * from './propertyState';
 export * from './tradeState';

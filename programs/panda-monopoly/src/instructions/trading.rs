@@ -7,7 +7,8 @@ use anchor_lang::prelude::*;
 pub struct CreateTrade<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -153,7 +154,8 @@ pub fn create_trade_handler(
 pub struct AcceptTrade<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]

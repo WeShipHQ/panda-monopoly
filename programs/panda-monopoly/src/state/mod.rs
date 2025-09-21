@@ -5,6 +5,24 @@ pub use events::*;
 
 use crate::STARTING_MONEY;
 
+#[account]
+#[derive(InitSpace, Debug)]
+pub struct PlatformConfig {
+    pub id: Pubkey,
+    pub fee_basis_points: u16, // 500 = 5%
+    pub authority: Pubkey,
+    pub fee_vault: Pubkey,
+    pub total_games_created: u64,
+    pub next_game_id: u64,
+    pub bump: u8,
+}
+
+impl PlatformConfig {
+    pub fn calculate_fee(&self, amount: u64) -> u64 {
+        (amount * self.fee_basis_points as u64) / 10000
+    }
+}
+
 #[derive(Debug, InitSpace, AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 pub enum GameStatus {
     WaitingForPlayers,
@@ -60,6 +78,7 @@ pub enum BuildingType {
 #[derive(Debug, InitSpace)]
 pub struct GameState {
     pub game_id: u64,
+    pub config_id: Pubkey,
     pub authority: Pubkey,   // 32 bytes - game creator
     pub bump: u8,            // 1 byte - PDA bump seed
     pub max_players: u8,     // 1 byte - maximum players (2-8)

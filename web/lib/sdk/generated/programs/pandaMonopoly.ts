@@ -21,6 +21,7 @@ import {
   type ParsedBuyPropertyInstruction,
   type ParsedCancelTradeInstruction,
   type ParsedCollectFreeParkingInstruction,
+  type ParsedCreatePlatformConfigInstruction,
   type ParsedCreateTradeInstruction,
   type ParsedDeclinePropertyInstruction,
   type ParsedDrawChanceCardInstruction,
@@ -40,6 +41,7 @@ import {
   type ParsedStartGameInstruction,
   type ParsedTestDiceHandlerInstruction,
   type ParsedUnmortgagePropertyInstruction,
+  type ParsedUpdatePlatformConfigInstruction,
   type ParsedVisitBeachResortInstruction,
 } from '../instructions';
 
@@ -48,6 +50,7 @@ export const PANDA_MONOPOLY_PROGRAM_ADDRESS =
 
 export enum PandaMonopolyAccount {
   GameState,
+  PlatformConfig,
   PlayerState,
   PropertyState,
   TradeState,
@@ -67,6 +70,17 @@ export function identifyPandaMonopolyAccount(
     )
   ) {
     return PandaMonopolyAccount.GameState;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([160, 78, 128, 0, 248, 83, 230, 160])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyAccount.PlatformConfig;
   }
   if (
     containsBytes(
@@ -114,6 +128,7 @@ export enum PandaMonopolyInstruction {
   BuyProperty,
   CancelTrade,
   CollectFreeParking,
+  CreatePlatformConfig,
   CreateTrade,
   DeclineProperty,
   DrawChanceCard,
@@ -133,6 +148,7 @@ export enum PandaMonopolyInstruction {
   StartGame,
   TestDiceHandler,
   UnmortgageProperty,
+  UpdatePlatformConfig,
   VisitBeachResort,
 }
 
@@ -216,6 +232,17 @@ export function identifyPandaMonopolyInstruction(
     )
   ) {
     return PandaMonopolyInstruction.CollectFreeParking;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([176, 90, 196, 175, 253, 113, 220, 20])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.CreatePlatformConfig;
   }
   if (
     containsBytes(
@@ -430,6 +457,17 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([195, 60, 76, 129, 146, 45, 67, 143])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.UpdatePlatformConfig;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([29, 144, 200, 42, 23, 132, 255, 15])
       ),
       0
@@ -466,6 +504,9 @@ export type ParsedPandaMonopolyInstruction<
   | ({
       instructionType: PandaMonopolyInstruction.CollectFreeParking;
     } & ParsedCollectFreeParkingInstruction<TProgram>)
+  | ({
+      instructionType: PandaMonopolyInstruction.CreatePlatformConfig;
+    } & ParsedCreatePlatformConfigInstruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.CreateTrade;
     } & ParsedCreateTradeInstruction<TProgram>)
@@ -523,6 +564,9 @@ export type ParsedPandaMonopolyInstruction<
   | ({
       instructionType: PandaMonopolyInstruction.UnmortgageProperty;
     } & ParsedUnmortgagePropertyInstruction<TProgram>)
+  | ({
+      instructionType: PandaMonopolyInstruction.UpdatePlatformConfig;
+    } & ParsedUpdatePlatformConfigInstruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.VisitBeachResort;
     } & ParsedVisitBeachResortInstruction<TProgram>);

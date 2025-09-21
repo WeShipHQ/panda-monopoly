@@ -9,7 +9,8 @@ use anchor_lang::prelude::*;
 pub struct BuyProperty<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -164,7 +165,8 @@ pub fn buy_property_handler(ctx: Context<BuyProperty>, position: u8) -> Result<(
 pub struct DeclineProperty<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -253,7 +255,8 @@ pub fn decline_property_handler(ctx: Context<DeclineProperty>, position: u8) -> 
 pub struct PayRent<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -390,7 +393,8 @@ pub fn pay_rent_handler(ctx: Context<PayRent>, position: u8) -> Result<()> {
 pub struct BuildHouse<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -503,7 +507,8 @@ pub fn build_house_handler(ctx: Context<BuildHouse>, position: u8) -> Result<()>
 pub struct BuildHotel<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -605,7 +610,8 @@ pub fn build_hotel_handler(ctx: Context<BuildHotel>, position: u8) -> Result<()>
 pub struct SellBuilding<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -736,7 +742,8 @@ pub fn sell_building_handler(
 pub struct MortgageProperty<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -818,7 +825,8 @@ pub fn mortgage_property_handler(ctx: Context<MortgageProperty>, position: u8) -
 pub struct UnmortgageProperty<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]

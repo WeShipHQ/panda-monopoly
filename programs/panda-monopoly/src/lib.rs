@@ -17,9 +17,32 @@ declare_id!("4vucUqMcXN4sgLsgnrXTUC9U7ACZ5DmoRBLbWt4vrnyR");
 pub mod panda_monopoly {
     use super::*;
 
+    // Platform instructions
+    pub fn create_platform_config(
+        ctx: Context<CreatePlatformConfig>,
+        platform_id: Pubkey,
+        fee_basis_points: u16,
+        fee_vault: Pubkey,
+    ) -> Result<()> {
+        instructions::platform::create_platform_config_handler(
+            ctx,
+            platform_id,
+            fee_basis_points,
+            fee_vault,
+        )
+    }
+
+    pub fn update_platform_config(
+        ctx: Context<UpdatePlatformConfig>,
+        fee_basis_points: Option<u16>,
+        fee_vault: Option<Pubkey>,
+    ) -> Result<()> {
+        instructions::platform::update_platform_config_handler(ctx, fee_basis_points, fee_vault)
+    }
+
     // Game management instructions
-    pub fn initialize_game(ctx: Context<InitializeGame>, game_id: u64) -> Result<()> {
-        instructions::initialize::initialize_game_handler(ctx, game_id)
+    pub fn initialize_game(ctx: Context<InitializeGame>) -> Result<()> {
+        instructions::initialize::initialize_game_handler(ctx)
     }
 
     pub fn join_game(ctx: Context<JoinGame>) -> Result<()> {

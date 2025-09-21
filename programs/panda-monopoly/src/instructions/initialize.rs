@@ -10,7 +10,12 @@ pub struct InitializeGame<'info> {
         init,
         payer = authority,
         space = 8 + GameState::INIT_SPACE,
-        seeds = [b"game", authority.key().as_ref(),  &game_id.to_le_bytes()],
+        seeds = [
+            // b"game", authority.key().as_ref(),  &game_id.to_le_bytes()
+            b"game",
+            config.id.as_ref(),
+            &game_id.to_le_bytes()
+            ],
         bump
     )]
     pub game: Account<'info, GameState>,
@@ -27,18 +32,31 @@ pub struct InitializeGame<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
 
+    #[account(
+        mut,
+        seeds = [b"platform", config.id.as_ref()],
+        bump = config.bump,
+    )]
+    pub config: Account<'info, PlatformConfig>,
+
     pub system_program: Program<'info, System>,
 
     pub clock: Sysvar<'info, Clock>,
 }
 
-pub fn initialize_game_handler(ctx: Context<InitializeGame>, game_id: u64) -> Result<()> {
+pub fn initialize_game_handler(ctx: Context<InitializeGame>) -> Result<()> {
+    let config = &mut ctx.accounts.config;
     let game = &mut ctx.accounts.game;
     let player_state = &mut ctx.accounts.player_state;
     let clock = &ctx.accounts.clock;
 
+    let game_id = config.next_game_id;
+    config.next_game_id += 1;
+    config.total_games_created += 1;
+
     // Initialize game state
     game.game_id = game_id;
+    game.config_id = config.id;
     game.authority = ctx.accounts.authority.key();
     game.bump = ctx.bumps.game;
     game.game_status = GameStatus::WaitingForPlayers;
@@ -49,31 +67,13 @@ pub fn initialize_game_handler(ctx: Context<InitializeGame>, game_id: u64) -> Re
     game.houses_remaining = TOTAL_HOUSES;
     game.hotels_remaining = TOTAL_HOTELS;
     game.created_at = clock.unix_timestamp;
-    // game.is_active = true;
-    // game.dice_result = [0, 0];
     game.bank_balance = 1_000_000; // Initial bank balance
     game.time_limit = None;
     game.winner = None;
     game.turn_started_at = clock.unix_timestamp;
 
-    // Players will be added when they join the game
-    // Properties will be initialized as separate accounts when needed
-
     // Initialize player state
     player_state.initialize_player_state(ctx.accounts.authority.key(), game.key(), clock);
-    // player_state.wallet = ctx.accounts.authority.key();
-    // player_state.game = game.key();
-    // player_state.cash_balance = STARTING_MONEY as u64;
-    // player_state.position = 0; // GO position
-    // player_state.in_jail = false;
-    // player_state.jail_turns = 0;
-    // player_state.doubles_count = 0;
-    // player_state.is_bankrupt = false;
-    // player_state.properties_owned = Vec::new();
-    // player_state.get_out_of_jail_cards = 0;
-    // player_state.net_worth = STARTING_MONEY as u64;
-    // player_state.last_rent_collected = clock.unix_timestamp;
-    // player_state.festival_boost_turns = 0;
 
     // Add player to game
     game.players.push(player_state.wallet);
@@ -93,7 +93,8 @@ pub fn initialize_game_handler(ctx: Context<InitializeGame>, game_id: u64) -> Re
 pub struct JoinGame<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::WaitingForPlayers @ GameError::GameNotInProgress,
         constraint = game.current_players < MAX_PLAYERS @ GameError::MaxPlayersReached
@@ -135,19 +136,6 @@ pub fn join_game_handler(ctx: Context<JoinGame>) -> Result<()> {
 
     // Initialize player state
     player_state.initialize_player_state(player_pubkey, game.key(), clock);
-    // player_state.wallet = player_pubkey;
-    // player_state.game = game.key();
-    // player_state.cash_balance = STARTING_MONEY as u64;
-    // player_state.position = 0; // GO position
-    // player_state.in_jail = false;
-    // player_state.jail_turns = 0;
-    // player_state.doubles_count = 0;
-    // player_state.is_bankrupt = false;
-    // player_state.properties_owned = Vec::new();
-    // player_state.get_out_of_jail_cards = 0;
-    // player_state.net_worth = STARTING_MONEY as u64;
-    // player_state.last_rent_collected = clock.unix_timestamp;
-    // player_state.festival_boost_turns = 0;
 
     // Add player to game
     game.players.push(player_pubkey);
@@ -171,7 +159,8 @@ pub fn join_game_handler(ctx: Context<JoinGame>) -> Result<()> {
 pub struct StartGame<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump,
         constraint = game.game_status == GameStatus::WaitingForPlayers @ GameError::GameNotInProgress,
         constraint = game.current_players >= MIN_PLAYERS @ GameError::MinPlayersNotMet,

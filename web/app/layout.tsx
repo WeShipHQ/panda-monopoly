@@ -104,10 +104,10 @@ export default function RootLayout({
           bricolageGrotesque.variable,
           oswald.variable,
           cherryBombOne.variable,
-          "antialiased font-sans"
+          "antialiased font-sans dark"
         )}
       >
-        <RootProviders>{children}</RootProviders >
+        <RootProviders>{children}</RootProviders>
       </body>
     </html>
   );

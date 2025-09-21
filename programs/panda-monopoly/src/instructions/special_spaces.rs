@@ -7,7 +7,8 @@ use anchor_lang::prelude::*;
 pub struct GoToJail<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -78,7 +79,8 @@ pub fn go_to_jail_handler(ctx: Context<GoToJail>) -> Result<()> {
 pub struct DrawChanceCard<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -163,7 +165,8 @@ pub fn draw_chance_card_handler(ctx: Context<DrawChanceCard>) -> Result<()> {
 pub struct DrawCommunityChestCard<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -509,7 +512,8 @@ fn execute_community_chest_card_effect(
 pub struct CollectFreeParking<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -587,7 +591,8 @@ pub fn collect_free_parking_handler(ctx: Context<CollectFreeParking>) -> Result<
 pub struct VisitBeachResort<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -667,7 +672,8 @@ pub fn visit_beach_resort_handler(ctx: Context<VisitBeachResort>) -> Result<()> 
 pub struct AttendFestival<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -838,7 +844,8 @@ pub fn attend_festival_handler(ctx: Context<AttendFestival>) -> Result<()> {
 pub struct PayTax<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]

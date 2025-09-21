@@ -16,8 +16,6 @@ import {
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
-  getU64Decoder,
-  getU64Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
@@ -37,7 +35,6 @@ import {
 import { PANDA_MONOPOLY_PROGRAM_ADDRESS } from '../programs';
 import {
   expectAddress,
-  expectSome,
   getAccountMetaFactory,
   type ResolvedAccount,
 } from '../shared';
@@ -57,6 +54,7 @@ export type InitializeGameInstruction<
   TAccountGame extends string | AccountMeta<string> = string,
   TAccountPlayerState extends string | AccountMeta<string> = string,
   TAccountAuthority extends string | AccountMeta<string> = string,
+  TAccountConfig extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | AccountMeta<string> = '11111111111111111111111111111111',
@@ -78,6 +76,9 @@ export type InitializeGameInstruction<
         ? WritableSignerAccount<TAccountAuthority> &
             AccountSignerMeta<TAccountAuthority>
         : TAccountAuthority,
+      TAccountConfig extends string
+        ? WritableAccount<TAccountConfig>
+        : TAccountConfig,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -90,17 +91,13 @@ export type InitializeGameInstruction<
 
 export type InitializeGameInstructionData = {
   discriminator: ReadonlyUint8Array;
-  gameId: bigint;
 };
 
-export type InitializeGameInstructionDataArgs = { gameId: number | bigint };
+export type InitializeGameInstructionDataArgs = {};
 
 export function getInitializeGameInstructionDataEncoder(): FixedSizeEncoder<InitializeGameInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['gameId', getU64Encoder()],
-    ]),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({ ...value, discriminator: INITIALIZE_GAME_DISCRIMINATOR })
   );
 }
@@ -108,7 +105,6 @@ export function getInitializeGameInstructionDataEncoder(): FixedSizeEncoder<Init
 export function getInitializeGameInstructionDataDecoder(): FixedSizeDecoder<InitializeGameInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['gameId', getU64Decoder()],
   ]);
 }
 
@@ -126,21 +122,23 @@ export type InitializeGameAsyncInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountAuthority extends string = string,
+  TAccountConfig extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountClock extends string = string,
 > = {
-  game?: Address<TAccountGame>;
+  game: Address<TAccountGame>;
   playerState?: Address<TAccountPlayerState>;
   authority: TransactionSigner<TAccountAuthority>;
+  config: Address<TAccountConfig>;
   systemProgram?: Address<TAccountSystemProgram>;
   clock?: Address<TAccountClock>;
-  gameId: InitializeGameInstructionDataArgs['gameId'];
 };
 
 export async function getInitializeGameInstructionAsync<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountAuthority extends string,
+  TAccountConfig extends string,
   TAccountSystemProgram extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
@@ -149,6 +147,7 @@ export async function getInitializeGameInstructionAsync<
     TAccountGame,
     TAccountPlayerState,
     TAccountAuthority,
+    TAccountConfig,
     TAccountSystemProgram,
     TAccountClock
   >,
@@ -159,6 +158,7 @@ export async function getInitializeGameInstructionAsync<
     TAccountGame,
     TAccountPlayerState,
     TAccountAuthority,
+    TAccountConfig,
     TAccountSystemProgram,
     TAccountClock
   >
@@ -172,6 +172,7 @@ export async function getInitializeGameInstructionAsync<
     game: { value: input.game ?? null, isWritable: true },
     playerState: { value: input.playerState ?? null, isWritable: true },
     authority: { value: input.authority ?? null, isWritable: true },
+    config: { value: input.config ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     clock: { value: input.clock ?? null, isWritable: false },
   };
@@ -180,20 +181,7 @@ export async function getInitializeGameInstructionAsync<
     ResolvedAccount
   >;
 
-  // Original args.
-  const args = { ...input };
-
   // Resolve default values.
-  if (!accounts.game.value) {
-    accounts.game.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(new Uint8Array([103, 97, 109, 101])),
-        getAddressEncoder().encode(expectAddress(accounts.authority.value)),
-        getU64Encoder().encode(expectSome(args.gameId)),
-      ],
-    });
-  }
   if (!accounts.playerState.value) {
     accounts.playerState.value = await getProgramDerivedAddress({
       programAddress,
@@ -219,18 +207,18 @@ export async function getInitializeGameInstructionAsync<
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.playerState),
       getAccountMeta(accounts.authority),
+      getAccountMeta(accounts.config),
       getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.clock),
     ],
-    data: getInitializeGameInstructionDataEncoder().encode(
-      args as InitializeGameInstructionDataArgs
-    ),
+    data: getInitializeGameInstructionDataEncoder().encode({}),
     programAddress,
   } as InitializeGameInstruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
     TAccountAuthority,
+    TAccountConfig,
     TAccountSystemProgram,
     TAccountClock
   >);
@@ -240,21 +228,23 @@ export type InitializeGameInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountAuthority extends string = string,
+  TAccountConfig extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
   playerState: Address<TAccountPlayerState>;
   authority: TransactionSigner<TAccountAuthority>;
+  config: Address<TAccountConfig>;
   systemProgram?: Address<TAccountSystemProgram>;
   clock?: Address<TAccountClock>;
-  gameId: InitializeGameInstructionDataArgs['gameId'];
 };
 
 export function getInitializeGameInstruction<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountAuthority extends string,
+  TAccountConfig extends string,
   TAccountSystemProgram extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
@@ -263,6 +253,7 @@ export function getInitializeGameInstruction<
     TAccountGame,
     TAccountPlayerState,
     TAccountAuthority,
+    TAccountConfig,
     TAccountSystemProgram,
     TAccountClock
   >,
@@ -272,6 +263,7 @@ export function getInitializeGameInstruction<
   TAccountGame,
   TAccountPlayerState,
   TAccountAuthority,
+  TAccountConfig,
   TAccountSystemProgram,
   TAccountClock
 > {
@@ -284,6 +276,7 @@ export function getInitializeGameInstruction<
     game: { value: input.game ?? null, isWritable: true },
     playerState: { value: input.playerState ?? null, isWritable: true },
     authority: { value: input.authority ?? null, isWritable: true },
+    config: { value: input.config ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     clock: { value: input.clock ?? null, isWritable: false },
   };
@@ -291,9 +284,6 @@ export function getInitializeGameInstruction<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
-
-  // Original args.
-  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.systemProgram.value) {
@@ -311,18 +301,18 @@ export function getInitializeGameInstruction<
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.playerState),
       getAccountMeta(accounts.authority),
+      getAccountMeta(accounts.config),
       getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.clock),
     ],
-    data: getInitializeGameInstructionDataEncoder().encode(
-      args as InitializeGameInstructionDataArgs
-    ),
+    data: getInitializeGameInstructionDataEncoder().encode({}),
     programAddress,
   } as InitializeGameInstruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
     TAccountAuthority,
+    TAccountConfig,
     TAccountSystemProgram,
     TAccountClock
   >);
@@ -337,8 +327,9 @@ export type ParsedInitializeGameInstruction<
     game: TAccountMetas[0];
     playerState: TAccountMetas[1];
     authority: TAccountMetas[2];
-    systemProgram: TAccountMetas[3];
-    clock: TAccountMetas[4];
+    config: TAccountMetas[3];
+    systemProgram: TAccountMetas[4];
+    clock: TAccountMetas[5];
   };
   data: InitializeGameInstructionData;
 };
@@ -351,7 +342,7 @@ export function parseInitializeGameInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedInitializeGameInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+  if (instruction.accounts.length < 6) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -367,6 +358,7 @@ export function parseInitializeGameInstruction<
       game: getNextAccount(),
       playerState: getNextAccount(),
       authority: getNextAccount(),
+      config: getNextAccount(),
       systemProgram: getNextAccount(),
       clock: getNextAccount(),
     },

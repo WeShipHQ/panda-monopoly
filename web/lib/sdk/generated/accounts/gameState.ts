@@ -64,6 +64,7 @@ export function getGameStateDiscriminatorBytes() {
 export type GameState = {
   discriminator: ReadonlyUint8Array;
   gameId: bigint;
+  configId: Address;
   authority: Address;
   bump: number;
   maxPlayers: number;
@@ -83,6 +84,7 @@ export type GameState = {
 
 export type GameStateArgs = {
   gameId: number | bigint;
+  configId: Address;
   authority: Address;
   bump: number;
   maxPlayers: number;
@@ -105,6 +107,7 @@ export function getGameStateEncoder(): Encoder<GameStateArgs> {
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['gameId', getU64Encoder()],
+      ['configId', getAddressEncoder()],
       ['authority', getAddressEncoder()],
       ['bump', getU8Encoder()],
       ['maxPlayers', getU8Encoder()],
@@ -129,6 +132,7 @@ export function getGameStateDecoder(): Decoder<GameState> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['gameId', getU64Decoder()],
+    ['configId', getAddressDecoder()],
     ['authority', getAddressDecoder()],
     ['bump', getU8Decoder()],
     ['maxPlayers', getU8Decoder()],
