@@ -31,28 +31,9 @@ import {
   PRIORITY_FEE_TAX_AMOUNT,
 } from "@/lib/constants";
 import { getTypedSpaceData } from "@/lib/board-utils";
-
-export interface GameLogEntry {
-  id: string;
-  timestamp: number;
-  type:
-    | "move"
-    | "purchase"
-    | "rent"
-    | "card"
-    | "jail"
-    | "bankruptcy"
-    | "turn"
-    | "dice"
-    | "building"
-    | "trade"
-    | "game"
-    | "skip";
-  playerId: Address;
-  playerName?: string;
-  message: string;
-  details?: Record<string, any>;
-}
+import { GameLogEntry } from "@/types/space-types";
+import { formatAddress } from "@/lib/utils";
+import { useGameLogs } from "@/hooks/useGameLogs";
 
 interface GameContextType {
   // Game identification
@@ -95,9 +76,9 @@ interface GameContextType {
   setCardDrawType: (type: "chance" | "community-chest" | null) => void;
 
   // Game logs
-  gameLogs: GameLogEntry[];
-  addGameLog: (log: Omit<GameLogEntry, "id" | "timestamp">) => void;
-  clearGameLogs: () => void;
+  // gameLogs: GameLogEntry[];
+  // addGameLog: (log: Omit<GameLogEntry, "id" | "timestamp">) => void;
+  // clearGameLogs: () => void;
 
   // Utility functions
   getPropertyByPosition: (position: number) => PropertyAccount | null;
@@ -105,7 +86,6 @@ interface GameContextType {
   isCurrentPlayerTurn: () => boolean;
   canRollDice: () => boolean;
   canPlayerAct: () => boolean;
-  getPlayerName: (address: Address) => string;
 
   // events
   cardDrawEvents: GameEvent[];
@@ -148,7 +128,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   >(null);
 
   // Game logs
-  const [gameLogs, setGameLogs] = useState<GameLogEntry[]>([]);
+  // const [gameLogs, setGameLogs] = useState<GameLogEntry[]>([]);
+  const { addGameLog } = useGameLogs();
 
   // events
   const [cardDrawEvents, setCardDrawEvents] = useState<GameEvent[]>([]);
@@ -156,57 +137,44 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
   const [demoDices, setDemoDices] = useState<number[] | null>(null);
 
-  const addGameLog = useCallback(
-    (entry: Omit<GameLogEntry, "id" | "timestamp">) => {
-      const newLog: GameLogEntry = {
-        ...entry,
-        id: crypto.randomUUID(),
-        timestamp: Date.now(),
-      };
+  // const addGameLog = useCallback(
+  //   (entry: Omit<GameLogEntry, "id" | "timestamp">) => {
+  //     const newLog: GameLogEntry = {
+  //       ...entry,
+  //       id: crypto.randomUUID(),
+  //       timestamp: Date.now(),
+  //     };
 
-      setGameLogs((prev) => [...prev, newLog].slice(-100)); // Keep last 100 entries
-    },
-    []
-  );
+  //     setGameLogs((prev) => [...prev, newLog].slice(-100)); // Keep last 100 entries
+  //   },
+  //   []
+  // );
 
-  const clearGameLogs = useCallback(() => {
-    setGameLogs([]);
-  }, []);
-
-  const getPlayerName = useCallback((address: Address): string => {
-    return address.slice(0, 8) + "...";
-  }, []);
+  // const clearGameLogs = useCallback(() => {
+  //   setGameLogs([]);
+  // }, []);
 
   const addCardDrawEvent = useCallback(
     (newEvent: GameEvent) => {
-      // const newEvent: GameEvent = {
-      //   ...event,
-      //   id: crypto.randomUUID(),
-      //   timestamp: Date.now(),
-      // };
-
       setCardDrawEvents((prev) => [...prev, newEvent].slice(-50)); // Keep last 50 events
       setLatestCardDraw(newEvent);
 
-      // Also add to game logs
       addGameLog({
         type: "card",
         playerId: newEvent.data.player,
-        message: `${getPlayerName(newEvent.data.player)} drew a ${
-          newEvent.type === "ChanceCardDrawn" ? "Chance" : "Community Chest"
-        } card`,
+        message: `${formatAddress(newEvent.data.player)} drew a card`,
         details: {
-          cardType: newEvent.type,
+          cardType:
+            newEvent.type === "ChanceCardDrawn" ? "chance" : "community-chest",
           cardIndex: newEvent.data.cardIndex,
           effectType: newEvent.data.effectType,
           amount: newEvent.data.amount,
         },
       });
     },
-    [addGameLog, getPlayerName]
+    [addGameLog]
   );
 
-  // Game state from hook
   const {
     players,
     properties,
@@ -218,7 +186,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     onCardDrawEvent: addCardDrawEvent,
   });
 
-  // Derived state
   const currentPlayerAddress = useMemo(() => {
     return gameState?.players?.[gameState?.currentTurn] || null;
   }, [gameState]);
@@ -309,16 +276,20 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         addGameLog({
           type: "dice",
           playerId: currentPlayerSigner.address,
-          message: `${getPlayerName(
+          message: `${formatAddress(
             currentPlayerSigner.address
           )} rolled the dice`,
+          details: {
+            diceRoll: diceRoll as [number, number] | undefined,
+            signature,
+          },
         });
       } catch (error) {
         console.error("Error rolling dice:", error);
         throw error;
       }
     },
-    [gameAddress, currentPlayerSigner, addGameLog, getPlayerName]
+    [gameAddress, currentPlayerSigner, addGameLog]
   );
 
   const buyProperty = useCallback(
@@ -347,17 +318,22 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         addGameLog({
           type: "purchase",
           playerId: currentPlayerSigner.address,
-          message: `${getPlayerName(currentPlayerSigner.address)} bought ${
-            propertyData?.name || "property"
-          } for $${propertyData?.price || 0}`,
-          details: { position, price: propertyData?.price },
+          message: `${formatAddress(currentPlayerSigner.address)} bought ${
+            propertyData?.name || "N/A"
+          }`,
+          details: {
+            position,
+            propertyName: propertyData?.name || "N/A",
+            price: propertyData?.price || 0,
+            signature,
+          },
         });
       } catch (error) {
         console.error("Error buying property:", error);
         throw error;
       }
     },
-    [gameAddress, currentPlayerSigner, addGameLog, getPlayerName]
+    [gameAddress, currentPlayerSigner, addGameLog]
   );
 
   const skipProperty = useCallback(
@@ -386,7 +362,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         addGameLog({
           type: "skip",
           playerId: currentPlayerSigner.address,
-          message: `${getPlayerName(currentPlayerSigner.address)} skipped ${
+          message: `${formatAddress(currentPlayerSigner.address)} skipped ${
             propertyData?.name || "property"
           }`,
           details: { position },
@@ -396,7 +372,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [gameAddress, currentPlayerSigner, addGameLog, getPlayerName]
+    [gameAddress, currentPlayerSigner, addGameLog]
   );
 
   const payRent = useCallback(
@@ -425,15 +401,19 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         console.log("[payRent] tx", signature);
 
         const propertyData = getTypedSpaceData(position, "property");
+
         addGameLog({
           type: "rent",
           playerId: currentPlayerSigner.address,
-          message: `${getPlayerName(
+          message: `${formatAddress(
             currentPlayerSigner.address
-          )} paid rent to ${getPlayerName(owner)} for ${
-            propertyData?.name || "property"
-          }`,
-          details: { position, owner, signature },
+          )} paid rent to ${formatAddress(owner)}`,
+          details: {
+            position,
+            propertyName: propertyData?.name || "N/A",
+            owner,
+            signature,
+          },
         });
 
         console.log("Rent paid:", signature);
@@ -442,7 +422,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [gameAddress, currentPlayerSigner, addGameLog, getPlayerName]
+    [gameAddress, currentPlayerSigner, addGameLog]
   );
 
   const endTurn = useCallback(async (): Promise<void> => {
@@ -470,7 +450,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       addGameLog({
         type: "turn",
         playerId: currentPlayerSigner.address,
-        message: `${getPlayerName(
+        message: `${formatAddress(
           currentPlayerSigner.address
         )} ended their turn`,
       });
@@ -478,7 +458,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.error("Error ending turn:", error);
       throw error;
     }
-  }, [gameAddress, currentPlayerSigner, addGameLog, getPlayerName]);
+  }, [gameAddress, currentPlayerSigner, addGameLog]);
 
   const drawChanceCard = useCallback(async (): Promise<void> => {
     if (!gameAddress || !currentPlayerSigner) {
@@ -505,7 +485,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       addGameLog({
         type: "card",
         playerId: currentPlayerSigner.address,
-        message: `${getPlayerName(
+        message: `${formatAddress(
           currentPlayerSigner.address
         )} drew a Chance card`,
         details: { cardType: "chance", signature },
@@ -516,7 +496,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.error("Error drawing chance card:", error);
       throw error;
     }
-  }, [gameAddress, currentPlayerSigner, addGameLog, getPlayerName]);
+  }, [gameAddress, currentPlayerSigner, addGameLog]);
 
   const drawCommunityChestCard = useCallback(async (): Promise<void> => {
     if (!gameAddress || !currentPlayerSigner) {
@@ -543,7 +523,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       addGameLog({
         type: "card",
         playerId: currentPlayerSigner.address,
-        message: `${getPlayerName(
+        message: `${formatAddress(
           currentPlayerSigner.address
         )} drew a Community Chest card`,
         details: { cardType: "community-chest", signature },
@@ -554,7 +534,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.error("Error drawing community chest card:", error);
       throw error;
     }
-  }, [gameAddress, currentPlayerSigner, addGameLog, getPlayerName]);
+  }, [gameAddress, currentPlayerSigner, addGameLog]);
 
   const payJailFine = useCallback(async (): Promise<void> => {
     if (!gameAddress || !currentPlayerSigner) {
@@ -562,33 +542,32 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
 
     try {
-      // TODO: Implement payJailFine instruction call
-      // const instruction = await sdk.payJailFineIx({
-      //   rpc: createSolanaRpc("http://127.0.0.1:8899"),
-      //   gameAddress,
-      //   player: currentPlayerSigner,
-      // });
-      //
-      // const signature = await buildAndSendTransaction(
-      //   createSolanaRpc("http://127.0.0.1:8899"),
-      //   [instruction],
-      //   currentPlayerSigner
-      // );
+      const instruction = await sdk.payJailFineIx({
+        rpc: createSolanaRpc("http://127.0.0.1:8899"),
+        gameAddress,
+        player: currentPlayerSigner,
+      });
+
+      const signature = await buildAndSendTransaction(
+        createSolanaRpc("http://127.0.0.1:8899"),
+        [instruction],
+        currentPlayerSigner
+      );
 
       addGameLog({
         type: "jail",
         playerId: currentPlayerSigner.address,
-        message: `${getPlayerName(
+        message: `${formatAddress(
           currentPlayerSigner.address
         )} paid jail fine and was released`,
       });
 
-      console.log("TODO: Implement payJailFine");
+      console.log("[payJailFine] tx", signature);
     } catch (error) {
       console.error("Error paying jail fine:", error);
       throw error;
     }
-  }, [gameAddress, currentPlayerSigner, addGameLog, getPlayerName]);
+  }, [gameAddress, currentPlayerSigner, addGameLog]);
 
   const buildHouse = useCallback(
     async (position: number): Promise<void> => {
@@ -616,7 +595,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         addGameLog({
           type: "building",
           playerId: currentPlayerSigner.address,
-          message: `${getPlayerName(
+          message: `${formatAddress(
             currentPlayerSigner.address
           )} built a house on ${propertyData?.name || "property"}`,
           details: { position, buildingType: "house" },
@@ -626,7 +605,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [gameAddress, currentPlayerSigner, addGameLog, getPlayerName]
+    [gameAddress, currentPlayerSigner, addGameLog]
   );
 
   const buildHotel = useCallback(
@@ -655,7 +634,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         addGameLog({
           type: "building",
           playerId: currentPlayerSigner.address,
-          message: `${getPlayerName(
+          message: `${formatAddress(
             currentPlayerSigner.address
           )} built a hotel on ${propertyData?.name || "property"}`,
           details: { position, buildingType: "hotel" },
@@ -665,7 +644,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [gameAddress, currentPlayerSigner, addGameLog, getPlayerName]
+    [gameAddress, currentPlayerSigner, addGameLog]
   );
 
   const payMevTax = useCallback(async (): Promise<void> => {
@@ -693,7 +672,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       addGameLog({
         type: "move",
         playerId: currentPlayerSigner.address,
-        message: `${getPlayerName(
+        message: `${formatAddress(
           currentPlayerSigner.address
         )} paid MEV tax of $${MEV_TAX_AMOUNT}`,
         details: { taxType: "mev", amount: MEV_TAX_AMOUNT, signature },
@@ -702,7 +681,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.error("Error paying MEV tax:", error);
       throw error;
     }
-  }, [gameAddress, currentPlayerSigner, addGameLog, getPlayerName]);
+  }, [gameAddress, currentPlayerSigner, addGameLog]);
 
   const payPriorityFeeTax = useCallback(async (): Promise<void> => {
     if (!gameAddress || !currentPlayerSigner) {
@@ -729,7 +708,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       addGameLog({
         type: "move",
         playerId: currentPlayerSigner.address,
-        message: `${getPlayerName(
+        message: `${formatAddress(
           currentPlayerSigner.address
         )} paid Priority Fee tax of $${PRIORITY_FEE_TAX_AMOUNT}`,
         details: {
@@ -742,21 +721,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.error("Error paying Priority Fee tax:", error);
       throw error;
     }
-  }, [gameAddress, currentPlayerSigner, addGameLog, getPlayerName]);
+  }, [gameAddress, currentPlayerSigner, addGameLog]);
 
   useEffect(() => {
-    async function handleAction(
-      gameAddress: Address,
-      player: PlayerAccount,
-      currentPlayerSigner: KeyPairSigner<string>
-    ) {
+    async function handleAction(player: PlayerAccount) {
       console.log("Auto-handling player action for player:", player.wallet);
-
-      // Only handle actions if it's the current player's turn
-      if (!isCurrentPlayerTurn()) {
-        console.log("Not current player's turn, skipping auto-actions");
-        return;
-      }
 
       // Priority 1: Handle bankruptcy check first (most critical)
       if (player.needsBankruptcyCheck) {
@@ -765,7 +734,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         addGameLog({
           type: "bankruptcy",
           playerId: player.wallet,
-          message: `${getPlayerName(player.wallet)} is checking for bankruptcy`,
+          message: `${formatAddress(player.wallet)} is checking for bankruptcy`,
         });
         return;
       }
@@ -950,7 +919,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         addGameLog({
           type: "dice",
           playerId: player.wallet,
-          message: `${getPlayerName(
+          message: `${formatAddress(
             player.wallet
           )} rolled doubles and gets another turn!`,
           details: { doublesCount: player.doublesCount },
@@ -972,14 +941,13 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       });
     }
 
-    // Only trigger handleAction if we have all required data and it's the current player's turn
     if (
       gameAddress &&
       currentPlayerState &&
       currentPlayerSigner &&
       isCurrentPlayerTurn()
     ) {
-      handleAction(gameAddress, currentPlayerState, currentPlayerSigner);
+      handleAction(currentPlayerState);
     }
   }, [
     currentPlayerState,
@@ -989,7 +957,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     payRent,
     isCurrentPlayerTurn,
     addGameLog,
-    getPlayerName,
   ]);
 
   useEffect(() => {
@@ -1063,9 +1030,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     setCardDrawType,
 
     // Game logs
-    gameLogs,
-    addGameLog,
-    clearGameLogs,
+    // gameLogs,
+    // addGameLog,
+    // clearGameLogs,
 
     // events
     cardDrawEvents,
@@ -1080,7 +1047,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     isCurrentPlayerTurn,
     canRollDice,
     canPlayerAct,
-    getPlayerName,
     // demo
     demoDices,
     setDemoDices,

@@ -9,7 +9,6 @@ import {
   UtilitySpace,
   TaxSpace,
 } from "@/components/board-spaces";
-// import { monopolyData, PropertyData, boardSpaces } from "@/data/monopoly-data";
 import {
   getBoardRowData,
   isChanceSpace,
@@ -42,12 +41,7 @@ interface MonopolyBoardProps {
   onRotateCounterClockwise: () => void;
 }
 
-const GameBoard: React.FC<MonopolyBoardProps> = ({
-  boardRotation,
-  // onRotateClockwise,
-  // onRotateCounterClockwise,
-  //   gameManager,
-}) => {
+const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
   const [isLoading, setIsLoading] = useState<string | null>(null);
 
   const {
@@ -55,13 +49,6 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
     players,
     properties,
     currentPlayerState,
-    gameLoading,
-    gameError,
-    // UI state from provider
-    selectedProperty,
-    setSelectedProperty,
-    isPropertyDialogOpen,
-    setIsPropertyDialogOpen,
     isCardDrawModalOpen,
     setIsCardDrawModalOpen,
     cardDrawType,
@@ -71,12 +58,8 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({
     buyProperty,
     skipProperty,
     drawChanceCard,
-    drawCommunityChestCard,
-    buildHouse,
-    buildHotel,
     // Utilities
     getPropertyByPosition,
-    getPlayerName,
     isCurrentPlayerTurn,
   } = useGameContext();
 

@@ -5,8 +5,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const formatAddress = (addr: string) =>
-  `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+export const formatAddress = (addr: string, length: number = 6) =>
+  `${addr.slice(0, length)}...${addr.slice(-length)}`;
 
 export function formatPrice(
   price: number,

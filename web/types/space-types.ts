@@ -1,5 +1,11 @@
-import { ColorGroup, PropertySpace, RailroadSpace, TaxSpace } from "@/configs/board-data";
+import {
+  ColorGroup,
+  PropertySpace,
+  RailroadSpace,
+  TaxSpace,
+} from "@/configs/board-data";
 import { PropertyAccount } from "@/types/schema";
+import type { Address } from "@solana/kit";
 
 // Base interface for common space properties
 export interface BaseSpaceProps {
@@ -32,7 +38,6 @@ export interface BaseSpaceProps {
 
 // export type PropertySpaceProps = BaseSpaceProps & PropertySpace;
 
-
 // export interface RailroadSpaceProps extends BaseSpaceProps {
 //   name: string;
 //   price: number | string;
@@ -41,7 +46,6 @@ export interface BaseSpaceProps {
 //   railroadRent?: [string, string, string, string]; // Rent for 1, 2, 3, 4 railroads
 //   mortgageValue?: string;
 // }
-
 
 // Beach space specific props (if used)
 // export interface BeachSpaceProps extends BaseSpaceProps {
@@ -70,7 +74,7 @@ export interface BaseSpaceProps {
 
 // Community Chest space specific props
 // export interface CommunityChestSpaceProps extends BaseSpaceProps {
-  // No additional props needed
+// No additional props needed
 // }
 
 // Tax space specific props
@@ -107,4 +111,73 @@ export interface CardData {
   description: string;
   action: string;
   value: number;
+}
+
+export interface GameLogEntry {
+  id: string;
+  timestamp: number;
+  type:
+    | "move"
+    | "purchase"
+    | "rent"
+    | "card"
+    | "jail"
+    | "bankruptcy"
+    | "turn"
+    | "dice"
+    | "building"
+    | "trade"
+    | "game"
+    | "skip"
+    | "join";
+  playerId: Address;
+  playerName?: string;
+  message: string;
+  details?: {
+    // Property-related
+    propertyName?: string;
+    position?: number;
+    price?: number;
+
+    // payRent
+    owner?: Address;
+
+    // Card-related
+    cardType?: "chance" | "community-chest";
+    cardTitle?: string;
+    cardDescription?: string;
+    cardIndex?: number;
+    effectType?: number;
+    amount?: number;
+
+    // Trade-related
+    tradeId?: string;
+    targetPlayer?: Address;
+    targetPlayerName?: string;
+    offeredProperties?: number[];
+    requestedProperties?: number[];
+    offeredMoney?: number;
+    requestedMoney?: number;
+
+    // Movement-related
+    fromPosition?: number;
+    toPosition?: number;
+    diceRoll?: [number, number];
+    doublesCount?: number;
+    passedGo?: boolean;
+
+    // Jail-related
+    jailReason?: "doubles" | "go_to_jail" | "card";
+    fineAmount?: number;
+
+    // Building-related
+    buildingType?: "house" | "hotel";
+
+    // Tax-related
+    taxType?: string;
+
+    // Other
+    signature?: string;
+    error?: string;
+  };
 }

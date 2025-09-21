@@ -158,3 +158,11 @@ export const PropertyActions: React.FC<PropertyActionsProps> = ({
     </div>
   );
 };
+
+
+export const PlayerActions = () => {
+  return (
+    <>
+    </>
+  )
+}

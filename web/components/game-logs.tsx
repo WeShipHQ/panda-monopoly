@@ -1,214 +1,219 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { ScrollArea } from "./ui/scroll-area";
-import { GameLogEntry, useGameContext } from "./game-provider";
+import {
+  generateLogMessage,
+  LOG_TYPE_ICONS,
+  getRelativeTime,
+} from "@/lib/log-utils";
+import { cn } from "@/lib/utils";
+import { GameLogEntry } from "@/types/space-types";
+import { useGameLogs } from "@/hooks/useGameLogs";
 
-interface GameLogsProps {}
+interface GameLogsProps {
+  maxHeight?: string;
+  showTimestamps?: boolean;
+  showIcons?: boolean;
+  autoScroll?: boolean;
+}
 
-export const GameLogs: React.FC<GameLogsProps> = () => {
-  const { gameLogs } = useGameContext();
+export const GameLogs: React.FC<GameLogsProps> = ({
+  maxHeight = "h-40",
+  showTimestamps = false,
+  showIcons = true,
+  autoScroll = true,
+}) => {
+  const { gameLogs } = useGameLogs();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (autoScroll && scrollAreaRef.current) {
+      const scrollContainer = scrollAreaRef.current.querySelector(
+        "[data-radix-scroll-area-viewport]"
+      );
+      if (scrollContainer) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      }
+    }
+  }, [gameLogs, autoScroll]);
+
+  if (gameLogs.length === 0) {
+    return (
+      <ScrollArea className={cn(maxHeight, "w-full rounded-md border")}>
+        <div className="p-4 text-center text-muted-foreground text-sm">
+          No game events yet...
+        </div>
+      </ScrollArea>
+    );
+  }
+
   return (
-    <ScrollArea className="h-40 w-[320px] rounded-md border">
-      <div className="p-4">
+    <ScrollArea
+      ref={scrollAreaRef}
+      className={cn(maxHeight, "w-full max-w-xs")}
+    >
+      <div className="p-3 space-y-1">
         {gameLogs.map((log, index) => (
-          <GameLogItem key={index} log={log} />
+          <GameLogItem
+            key={log.id || index}
+            log={log}
+            showTimestamp={showTimestamps}
+            showIcon={showIcons}
+          />
         ))}
       </div>
     </ScrollArea>
   );
 };
 
-function GameLogItem({ log }: { log: GameLogEntry }) {
+interface GameLogItemProps {
+  log: GameLogEntry;
+  showTimestamp?: boolean;
+  showIcon?: boolean;
+}
+
+function GameLogItem({
+  log,
+  showTimestamp = false,
+  showIcon = true,
+}: GameLogItemProps) {
+  const message = generateLogMessage(log);
+  const icon = showIcon ? LOG_TYPE_ICONS[log.type] || "📝" : null;
+  const timestamp = showTimestamp ? getRelativeTime(log.timestamp) : null;
+
+  const getLogTypeColor = (type: GameLogEntry["type"]): string => {
+    switch (type) {
+      case "join":
+        return "text-green-600";
+      case "purchase":
+        return "text-blue-600";
+      case "rent":
+        return "text-orange-600";
+      case "card":
+        return "text-purple-600";
+      case "jail":
+        return "text-red-600";
+      case "building":
+        return "text-emerald-600";
+      case "trade":
+        return "text-indigo-600";
+      case "bankruptcy":
+        return "text-red-700";
+      case "game":
+        return "text-yellow-600";
+      case "dice":
+        return "text-gray-600";
+      case "move":
+        return "text-gray-700";
+      case "turn":
+        return "text-gray-500";
+      case "skip":
+        return "text-gray-500";
+      default:
+        return "text-gray-600";
+    }
+  };
+
   return (
-    <div className="text-xs text-black flex items-center justify-center gap-1">
-      items
-      {/* Show avatars of all mentioned players */}
-      {/* {mentionedPlayers.slice(0, 2).map((player, pIndex) => (
-        <img
-          key={pIndex}
-          src={player.avatar}
-          alt={`${player.name} avatar`}
-          className="w-4 h-4 object-contain flex-shrink-0"
-        />
-      ))}
-      <span>
-        {[].map((part, partIndex) => {
-          if (part.startsWith("**") && part.endsWith("**")) {
-            // Bold player name
-            return (
-              <span key={partIndex} className="font-bold">
-                {part.slice(2, -2)}
-              </span>
-            );
-          } else if (part.startsWith("##") && part.endsWith("##")) {
-            // Colored property name
-            const propertyName = part.slice(2, -2);
-            return (
-              <span
-                key={partIndex}
-                className={`font-semibold ${getPropertyColor(propertyName)}`}
-              >
-                {propertyName}
-              </span>
-            );
-          } else {
-            // Normal text
-            return <span key={partIndex}>{part}</span>;
-          }
-        })}
-      </span> */}
+    <div className="flex items-start gap-2 text-xs leading-relaxed">
+      {icon && (
+        <span
+          className="text-sm flex-shrink-0 mt-0.5"
+          role="img"
+          aria-label={log.type}
+        >
+          {icon}
+        </span>
+      )}
+      <div className="flex-1 min-w-0">
+        {/* <span className={cn("font-medium", getLogTypeColor(log.type))}> */}
+        <span className={cn("font-medium")}>{message}</span>
+        {timestamp && (
+          <span className="text-muted-foreground ml-2 text-xs">
+            {timestamp}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
 
-// {/* Game Log Section - Responsive */}
-//               <div className="flex-1 w-full max-w-xs sm:max-w-sm md:max-w-md flex items-center justify-center">
-//                 <div className="h-12 sm:h-16 md:h-20 lg:h-24 overflow-y-auto w-full">
-//                   <div className="space-y-2 text-center">
-//                     {gameState.gameLog && gameState.gameLog.length > 0 ? (
-//                       gameState.gameLog
-//                         .slice(-8)
-//                         .reverse()
-//                         .map((log, index) => {
-//                           // Find all player names mentioned in the log
-//                           const mentionedPlayers = gameState.players.filter(
-//                             (player) => log.includes(player.name)
-//                           );
+interface EnhancedGameLogsProps extends GameLogsProps {
+  filterTypes?: GameLogEntry["type"][];
+  title?: string;
+}
 
-//                           // Find property mentioned in the log and get its color
-//                           const propertyMatch = boardSpaces.find((space) =>
-//                             log.includes(space.name)
-//                           );
+export const EnhancedGameLogs: React.FC<EnhancedGameLogsProps> = ({
+  filterTypes,
+  title = "Game Events",
+  ...props
+}) => {
+  const { gameLogs } = useGameLogs();
 
-//                           // Create formatted log with bold player names and colored property names
-//                           let formattedLog = log;
+  const filteredLogs = filterTypes
+    ? gameLogs.filter((log) => filterTypes.includes(log.type))
+    : gameLogs;
 
-//                           // Replace all mentioned player names with bold markers
-//                           mentionedPlayers.forEach((player) => {
-//                             const regex = new RegExp(
-//                               `\\b${player.name}\\b`,
-//                               "g"
-//                             );
-//                             formattedLog = formattedLog.replace(
-//                               regex,
-//                               `**${player.name}**`
-//                             );
-//                           });
+  return (
+    <div className="space-y-2">
+      {title && (
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      )}
+      <GameLogsWithFilteredData logs={filteredLogs} {...props} />
+    </div>
+  );
+};
 
-//                           // Replace property name with colored version if found
-//                           if (propertyMatch && propertyMatch.name) {
-//                             const regex = new RegExp(
-//                               `\\b${propertyMatch.name}\\b`,
-//                               "g"
-//                             );
-//                             formattedLog = formattedLog.replace(
-//                               regex,
-//                               `##${propertyMatch.name}##`
-//                             );
-//                           }
+interface GameLogsWithFilteredDataProps extends GameLogsProps {
+  logs: GameLogEntry[];
+}
 
-//                           // Split the log by markers to separate bold, colored, and normal text
-//                           const parts = formattedLog.split(
-//                             /(\*\*[^*]+\*\*|##[^#]+##)/
-//                           );
+const GameLogsWithFilteredData: React.FC<GameLogsWithFilteredDataProps> = ({
+  logs,
+  maxHeight = "h-40",
+  showTimestamps = false,
+  showIcons = true,
+  autoScroll = true,
+}) => {
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-//                           // Get property color class based on the actual data
-//                           const getPropertyColor = (propertyName: string) => {
-//                             const unifiedProperty = unifiedPropertyData.find(
-//                               (p) => p.name === propertyName
-//                             );
-//                             if (unifiedProperty && unifiedProperty.colorClass) {
-//                               // Map actual colorClass to text color
-//                               switch (unifiedProperty.colorClass) {
-//                                 case "bg-[#8b4513]":
-//                                   return "text-amber-800"; // Brown
-//                                 case "bg-[#aae0fa]":
-//                                   return "text-sky-400"; // Light Blue
-//                                 case "bg-[#d93a96]":
-//                                   return "text-pink-600"; // Pink/Magenta
-//                                 case "bg-[#ffa500]":
-//                                   return "text-orange-500"; // Orange
-//                                 case "bg-[#ff0000]":
-//                                   return "text-red-600"; // Red
-//                                 case "bg-[#ffff00]":
-//                                   return "text-yellow-500"; // Yellow
-//                                 case "bg-[#00ff00]":
-//                                   return "text-green-500"; // Green
-//                                 case "bg-[#0000ff]":
-//                                   return "text-blue-600"; // Dark Blue
-//                                 case "bg-blue-200":
-//                                   return "text-blue-400"; // Railroad/Utility
-//                                 case "bg-white":
-//                                   return "text-gray-600"; // Utility/Special
-//                                 default:
-//                                   return "text-gray-800";
-//                               }
-//                             }
-//                             return "text-gray-800";
-//                           };
+  useEffect(() => {
+    if (autoScroll && scrollAreaRef.current) {
+      const scrollContainer = scrollAreaRef.current.querySelector(
+        "[data-radix-scroll-area-viewport]"
+      );
+      if (scrollContainer) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      }
+    }
+  }, [logs, autoScroll]);
 
-//                           return (
-//                             <div
-//                               key={index}
-//                               className="text-xs text-black flex items-center justify-center gap-1"
-//                             >
-//                               {/* Show avatars of all mentioned players */}
-//                               {mentionedPlayers
-//                                 .slice(0, 2)
-//                                 .map((player, pIndex) => (
-//                                   <img
-//                                     key={pIndex}
-//                                     src={player.avatar}
-//                                     alt={`${player.name} avatar`}
-//                                     className="w-4 h-4 object-contain flex-shrink-0"
-//                                   />
-//                                 ))}
-//                               <span>
-//                                 {parts.map((part, partIndex) => {
-//                                   if (
-//                                     part.startsWith("**") &&
-//                                     part.endsWith("**")
-//                                   ) {
-//                                     // Bold player name
-//                                     return (
-//                                       <span
-//                                         key={partIndex}
-//                                         className="font-bold"
-//                                       >
-//                                         {part.slice(2, -2)}
-//                                       </span>
-//                                     );
-//                                   } else if (
-//                                     part.startsWith("##") &&
-//                                     part.endsWith("##")
-//                                   ) {
-//                                     // Colored property name
-//                                     const propertyName = part.slice(2, -2);
-//                                     return (
-//                                       <span
-//                                         key={partIndex}
-//                                         className={`font-semibold ${getPropertyColor(
-//                                           propertyName
-//                                         )}`}
-//                                       >
-//                                         {propertyName}
-//                                       </span>
-//                                     );
-//                                   } else {
-//                                     // Normal text
-//                                     return <span key={partIndex}>{part}</span>;
-//                                   }
-//                                 })}
-//                               </span>
-//                             </div>
-//                           );
-//                         })
-//                     ) : (
-//                       <div className="text-xs text-black/70 italic">
-//                         no game events yet...
-//                       </div>
-//                     )}
-//                   </div>
-//                 </div>
-//               </div>
+  if (logs.length === 0) {
+    return (
+      <ScrollArea className={cn(maxHeight, "w-full rounded-md border")}>
+        <div className="p-4 text-center text-muted-foreground text-sm">
+          No events to display...
+        </div>
+      </ScrollArea>
+    );
+  }
+
+  return (
+    <ScrollArea
+      ref={scrollAreaRef}
+      className={cn(maxHeight, "w-full rounded-md border")}
+    >
+      <div className="p-3 space-y-1">
+        {logs.map((log, index) => (
+          <GameLogItem
+            key={log.id || index}
+            log={log}
+            showTimestamp={showTimestamps}
+            showIcon={showIcons}
+          />
+        ))}
+      </div>
+    </ScrollArea>
+  );
+};
