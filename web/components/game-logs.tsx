@@ -10,6 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import { GameLogEntry } from "@/types/space-types";
 import { useGameLogs } from "@/hooks/useGameLogs";
+import { useGameContext } from "./game-provider";
 
 interface GameLogsProps {
   maxHeight?: string;
@@ -149,20 +150,13 @@ export const EnhancedGameLogs: React.FC<EnhancedGameLogsProps> = ({
   title = "Game Events",
   ...props
 }) => {
-  const { gameLogs } = useGameLogs();
+  const { gameLogs } = useGameContext();
 
   const filteredLogs = filterTypes
     ? gameLogs.filter((log) => filterTypes.includes(log.type))
     : gameLogs;
 
-  return (
-    <div className="space-y-2">
-      {title && (
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      )}
-      <GameLogsWithFilteredData logs={filteredLogs} {...props} />
-    </div>
-  );
+  return <GameLogsWithFilteredData logs={filteredLogs} {...props} />;
 };
 
 interface GameLogsWithFilteredDataProps extends GameLogsProps {
@@ -202,7 +196,7 @@ const GameLogsWithFilteredData: React.FC<GameLogsWithFilteredDataProps> = ({
   return (
     <ScrollArea
       ref={scrollAreaRef}
-      className={cn(maxHeight, "w-full rounded-md border")}
+      className={cn(maxHeight, "w-full max-w-xs")}
     >
       <div className="p-3 space-y-1">
         {logs.map((log, index) => (

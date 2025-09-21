@@ -3,8 +3,6 @@ import {
   PropertyPopover,
   RailroadPopover,
   UtilityPopover,
-  TaxPopover,
-  SpecialPopover,
 } from "./space-popovers";
 import { isSome } from "@solana/kit";
 import { cn, formatPrice, generatePlayerIcon } from "@/lib/utils";
@@ -215,7 +213,7 @@ export const RailroadSpace: React.FC<RailroadSpaceProps> = ({
 
   const children = (
     <div
-      className={`relative bg-[#fafaf8] text-center border border-black ${
+      className={`relative bg-board-space text-center border border-black ${
         isVertical ? "vertical-space" : ""
       } cursor-pointer`}
     >
@@ -235,7 +233,7 @@ export const RailroadSpace: React.FC<RailroadSpaceProps> = ({
             rotate === "top" ? "pb-6 pt-1" : "pb-1"
           } font-normal text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem]`}
         >
-          ${price}
+          {formatPrice(Number(price))}
         </div>
       </div>
 

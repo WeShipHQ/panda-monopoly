@@ -20,12 +20,13 @@ import {
 } from "@/lib/board-utils";
 
 import { PlayerTokensContainer } from "@/components/player-tokens";
-import { Dice } from "@/components/dice";
+import { Dice, DiceProvider } from "@/components/dice";
 import { CardDrawModal } from "@/components/card-draw-modal";
 import { useGameContext } from "./game-provider";
 import { Card, CardContent } from "./ui/card";
 import {
   BankruptcyAction,
+  PlayerActions,
   PlayerInJailAlert,
   PropertyActions,
 } from "./player-actions";
@@ -33,7 +34,7 @@ import { isSome } from "@solana/kit";
 import { Button } from "./ui/button";
 import { PropertyAccount } from "@/types/schema";
 import { BoardSpace } from "@/configs/board-data";
-import { GameLogs } from "./game-logs";
+import { EnhancedGameLogs, GameLogs } from "./game-logs";
 
 interface MonopolyBoardProps {
   boardRotation: number;
@@ -65,7 +66,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
 
   console.log("current xxx", currentPlayerState);
 
-  const isMyTurn = isCurrentPlayerTurn();
+  // const isMyTurn = isCurrentPlayerTurn();
 
   const handleBuyProperty = async (position: number) => {
     setIsLoading("buyProperty");
@@ -89,16 +90,16 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
     }
   };
 
-  const handleDrawChanceCard = async () => {
-    setIsLoading("chanceCard");
-    try {
-      await drawChanceCard();
-    } catch (error) {
-      console.error("Failed to draw chance card:", error);
-    } finally {
-      setIsLoading(null);
-    }
-  };
+  // const handleDrawChanceCard = async () => {
+  //   setIsLoading("chanceCard");
+  //   try {
+  //     await drawChanceCard();
+  //   } catch (error) {
+  //     console.error("Failed to draw chance card:", error);
+  //   } finally {
+  //     setIsLoading(null);
+  //   }
+  // };
 
   const handleEndTurn = async () => {
     setIsLoading("endTurn");
@@ -206,13 +207,6 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
     );
   }
 
-  const hasPendingActions =
-    currentPlayerState.needsPropertyAction ||
-    currentPlayerState.needsChanceCard ||
-    currentPlayerState.needsCommunityChestCard ||
-    currentPlayerState.needsBankruptcyCheck ||
-    currentPlayerState.needsSpecialSpaceAction;
-
   return (
     <div
       className="h-full w-full monopoly-board overflow-hidden relative"
@@ -253,77 +247,33 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
               className="col-start-3 col-end-13 row-start-3 row-end-13 bg-[#c7e9b5] flex flex-col items-center justify-center 
                            p-1 sm:p-3 md:p-4 gap-1 sm:gap-3 md:gap-4"
             >
-              <div className="flex-shrink-0 transform scale-[0.7] sm:scale-75 md:scale-90 lg:scale-100">
-                <Dice />
-                {currentPlayerState.inJail && (
-                  <PlayerInJailAlert
-                    player={currentPlayerState}
+              <div className="flex-shrink-0 transform scale-[0.7] sm:scale-75 md:scale-90 lg:scale-100 mb-6">
+                <DiceProvider>
+                  <PlayerActions
                     handleEndTurn={handleEndTurn}
-                  />
-                )}
-                {currentPlayerState.needsBankruptcyCheck && (
-                  <BankruptcyAction player={currentPlayerState} />
-                )}
-              </div>
-
-              {/* Property Actions */}
-              {isMyTurn &&
-                currentPlayerState.needsPropertyAction &&
-                isSome(currentPlayerState.pendingPropertyPosition) && (
-                  <PropertyActions
-                    player={currentPlayerState}
-                    position={currentPlayerState.pendingPropertyPosition.value}
-                    isLoading={isLoading}
                     handleBuyProperty={handleBuyProperty}
                     handleSkipProperty={handleSkipProperty}
+                    isLoading={isLoading}
                   />
-                )}
-
-              {isMyTurn && currentPlayerState.needsChanceCard && (
-                <Button
-                  size="sm"
-                  onClick={handleDrawChanceCard}
-                  disabled={isLoading === "chanceCard"}
-                >
-                  {isLoading === "chanceCard"
-                    ? "Drawing..."
-                    : "Draw Chance Card"}
-                </Button>
-              )}
-
-              {isMyTurn && currentPlayerState.needsCommunityChestCard && (
-                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg space-y-2">
-                  <div className="text-sm font-medium text-purple-800">
-                    Draw Community Chest Card
-                  </div>
-                  <div className="text-xs text-purple-600">
-                    You landed on a Community Chest space
-                  </div>
-                  <Button
-                    size="sm"
-                    // onClick={() => handleOpenCardModal("community-chest")}
-                    disabled={isLoading === "communityChestCard"}
-                    className="w-full"
-                    variant="outline"
-                  >
-                    {isLoading === "communityChestCard"
-                      ? "Drawing..."
-                      : "Draw Community Chest Card"}
-                  </Button>
-                </div>
-              )}
-
-              {!hasPendingActions && currentPlayerState.hasRolledDice && (
-                <Button
-                  onClick={handleEndTurn}
-                  disabled={isLoading === "endTurn"}
-                >
-                  {isLoading === "endTurn" ? "Ending Turn..." : "End Turn"}
-                </Button>
-              )}
+                </DiceProvider>
+              </div>
 
               {/* game-logs */}
-              <GameLogs />
+              <EnhancedGameLogs
+                filterTypes={[
+                  "move",
+                  // "turn",
+                  "skip",
+                  "purchase",
+                  "rent",
+                  "card",
+                  "jail",
+                  "building",
+                  "trade",
+                  "bankruptcy",
+                  "game",
+                ]}
+              />
             </div>
 
             {/* Corner Spaces */}

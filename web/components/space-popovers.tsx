@@ -313,16 +313,25 @@ export const RailroadPopover: React.FC<RailroadPopoverProps> = ({
               </div>
             )}
 
-            {/* <Separator className="my-3" />
+            <Separator className="my-3" />
 
-            {propertyData.mortgageValue && (
+            {propertyData.price && (
+              <div className="flex justify-between text-sm">
+                <span>Price</span>
+                <span className="font-medium">
+                  {formatPrice(propertyData.price || 0)}
+                </span>
+              </div>
+            )}
+
+            {/* {propertyData.mortgageValue && (
               <div className="flex justify-between text-sm">
                 <span>Mortgage value</span>
                 <span className="font-medium">
                   {formatPrice(propertyData.mortgageValue || 0)}
                 </span>
               </div>
-            )} */}
+            )}  */}
 
             {!!owner && (
               <>

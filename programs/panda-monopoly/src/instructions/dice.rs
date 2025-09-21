@@ -406,8 +406,8 @@ fn handle_special_space(player_state: &mut PlayerState, position: u8) -> Result<
         }
         FREE_PARKING_POSITION => {
             // Free parking - no action
-            player_state.needs_special_space_action = true;
-            player_state.pending_special_space_position = Some(position);
+            // player_state.needs_special_space_action = true;
+            // player_state.pending_special_space_position = Some(position);
         }
         _ => {}
     }

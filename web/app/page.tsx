@@ -181,6 +181,7 @@ export function NewGame() {
     try {
       const playerA = await createSignerFromKeyPair(await fakePlayerA());
       window.localStorage.removeItem("assignedPlayers");
+      window.localStorage.removeItem("gameLogs");
       setIsCreatingGame(true);
       const rpc = createSolanaRpc("http://127.0.0.1:8899");
 

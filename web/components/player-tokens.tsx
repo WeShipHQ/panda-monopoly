@@ -4,18 +4,6 @@ import { generatePlayerIcon } from "@/lib/utils";
 import { PlayerAccount } from "@/types/schema";
 import React from "react";
 
-// export interface Player {
-//   id: number;
-//   name: string;
-//   color: string;
-//   avatar: string; // Path to player avatar image
-//   position: number;
-//   money: number;
-//   properties: number[];
-//   inJail: boolean;
-//   jailTurns: number;
-// }
-
 interface PlayerTokenProps {
   player: PlayerAccount;
   position: number;

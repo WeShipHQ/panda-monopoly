@@ -76,7 +76,7 @@ interface GameContextType {
   setCardDrawType: (type: "chance" | "community-chest" | null) => void;
 
   // Game logs
-  // gameLogs: GameLogEntry[];
+  gameLogs: GameLogEntry[];
   // addGameLog: (log: Omit<GameLogEntry, "id" | "timestamp">) => void;
   // clearGameLogs: () => void;
 
@@ -128,31 +128,13 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   >(null);
 
   // Game logs
-  // const [gameLogs, setGameLogs] = useState<GameLogEntry[]>([]);
-  const { addGameLog } = useGameLogs();
+  const { gameLogs, addGameLog } = useGameLogs();
 
   // events
   const [cardDrawEvents, setCardDrawEvents] = useState<GameEvent[]>([]);
   const [latestCardDraw, setLatestCardDraw] = useState<GameEvent | null>(null);
 
   const [demoDices, setDemoDices] = useState<number[] | null>(null);
-
-  // const addGameLog = useCallback(
-  //   (entry: Omit<GameLogEntry, "id" | "timestamp">) => {
-  //     const newLog: GameLogEntry = {
-  //       ...entry,
-  //       id: crypto.randomUUID(),
-  //       timestamp: Date.now(),
-  //     };
-
-  //     setGameLogs((prev) => [...prev, newLog].slice(-100)); // Keep last 100 entries
-  //   },
-  //   []
-  // );
-
-  // const clearGameLogs = useCallback(() => {
-  //   setGameLogs([]);
-  // }, []);
 
   const addCardDrawEvent = useCallback(
     (newEvent: GameEvent) => {
@@ -1030,7 +1012,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     setCardDrawType,
 
     // Game logs
-    // gameLogs,
+    gameLogs,
     // addGameLog,
     // clearGameLogs,
 

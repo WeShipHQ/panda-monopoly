@@ -5,7 +5,6 @@ import { SoundControl } from "@/components/sound-control";
 import { playSound } from "@/lib/soundUtil";
 import { useGameContext } from "./game-provider";
 import { formatAddress, formatPrice, generatePlayerIcon } from "@/lib/utils";
-import { Button } from "./ui/button";
 
 interface RightPanelProps {
   boardRotation: number;
@@ -66,14 +65,12 @@ export const RightPanel: React.FC<RightPanelProps> = ({
       </div> */}
 
       {/* Players List */}
-      <div
-      // className="flex-1 p-3 lg:p-4 bg-white rounded-lg shadow overflow-y-auto"
-      >
+      <div>
         <div className="space-y-2 lg:space-y-3">
           {players.map((player) => (
             <div
               key={player.address}
-              className="transition-colors border-l-4"
+              className="transition-colors border-l-8"
               style={
                 player.wallet === currentPlayerAddress
                   ? { borderColor: generatePlayerIcon(player.wallet).color }

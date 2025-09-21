@@ -3,8 +3,9 @@ import { useGameContext } from "./game-provider";
 import { useMemo } from "react";
 import { isSome } from "@solana/kit";
 import { Button } from "./ui/button";
-import { formatPrice } from "@/lib/utils";
-import { getTypedSpaceData } from "@/lib/board-utils";
+import { formatAddress, formatPrice } from "@/lib/utils";
+import { getBoardSpaceData } from "@/lib/board-utils";
+import { DicesOnly, useDiceContext } from "./dice";
 
 interface PlayerTokenProps {
   player: PlayerState;
@@ -62,7 +63,7 @@ export const PropertyActions: React.FC<PropertyActionsProps> = ({
   const { getPropertyByPosition } = useGameContext();
 
   const pendingPropertyInfo = useMemo(() => {
-    const propertyData = getTypedSpaceData(position, "property");
+    const propertyData = getBoardSpaceData(position);
     const propertyAccount = getPropertyByPosition(position);
 
     return {
@@ -73,7 +74,7 @@ export const PropertyActions: React.FC<PropertyActionsProps> = ({
         propertyAccount?.owner &&
         isSome(propertyAccount.owner) &&
         propertyAccount.owner.value === player.wallet,
-    };
+    } as any;
   }, [player, getPropertyByPosition, position]);
 
   return (
@@ -159,10 +160,112 @@ export const PropertyActions: React.FC<PropertyActionsProps> = ({
   );
 };
 
+export const PlayerActions = ({
+  handleBuyProperty,
+  handleSkipProperty,
+  handleEndTurn,
+  isLoading,
+}: {
+  handleBuyProperty: (position: number) => void;
+  handleSkipProperty: (position: number) => void;
+  handleEndTurn: () => void;
+  isLoading: string | null;
+}) => {
+  const { canRoll, isRolling, handleRollDice } = useDiceContext();
+  const {
+    currentPlayerState,
+    isCurrentPlayerTurn,
+    setCardDrawType,
+    setIsCardDrawModalOpen,
+  } = useGameContext();
 
-export const PlayerActions = () => {
+  if (!currentPlayerState) {
+    return null;
+  }
+
+  const isMyTurn = isCurrentPlayerTurn();
+
+  const hasPendingActions =
+    currentPlayerState.needsPropertyAction ||
+    currentPlayerState.needsChanceCard ||
+    currentPlayerState.needsCommunityChestCard ||
+    currentPlayerState.needsBankruptcyCheck ||
+    currentPlayerState.needsSpecialSpaceAction;
+
   return (
-    <>
-    </>
-  )
-}
+    <div className="flex flex-col items-center">
+      <DicesOnly />
+      <div className="flex items-center gap-2 mt-8 mb-4">
+        {!hasPendingActions && !currentPlayerState.hasRolledDice && (
+          <Button
+            disabled={!canRoll || isRolling}
+            onClick={handleRollDice}
+            size="sm"
+            loading={isRolling}
+          >
+            Roll dice
+          </Button>
+        )}
+
+        {currentPlayerState?.inJail && (
+          <PlayerInJailAlert
+            player={currentPlayerState}
+            handleEndTurn={handleEndTurn}
+          />
+        )}
+        {currentPlayerState?.needsBankruptcyCheck && (
+          <BankruptcyAction player={currentPlayerState} />
+        )}
+
+        {/* Property Actions */}
+        {isMyTurn &&
+          currentPlayerState.needsPropertyAction &&
+          isSome(currentPlayerState.pendingPropertyPosition) && (
+            <PropertyActions
+              player={currentPlayerState}
+              position={currentPlayerState.pendingPropertyPosition.value}
+              isLoading={isLoading}
+              handleBuyProperty={handleBuyProperty}
+              handleSkipProperty={handleSkipProperty}
+            />
+          )}
+
+        {isMyTurn && currentPlayerState.needsChanceCard && (
+          <Button
+            size="sm"
+            onClick={() => {
+              setCardDrawType("chance");
+              setIsCardDrawModalOpen(true);
+            }}
+            disabled={isLoading === "chanceCard"}
+          >
+            {isLoading === "chanceCard" ? "Drawing..." : "Draw Chance Card"}
+          </Button>
+        )}
+
+        {isMyTurn && currentPlayerState.needsCommunityChestCard && (
+          <>
+            <Button
+              size="sm"
+              onClick={() => {
+                setCardDrawType("community-chest");
+                setIsCardDrawModalOpen(true);
+              }}
+            >
+              Draw card
+            </Button>
+          </>
+        )}
+
+        {!hasPendingActions && currentPlayerState.hasRolledDice && (
+          <Button onClick={handleEndTurn} disabled={isLoading === "endTurn"}>
+            {isLoading === "endTurn" ? "Ending Turn..." : "End Turn"}
+          </Button>
+        )}
+      </div>
+      <h4 className="text-sm font-medium text-purple-800">
+        {formatAddress(currentPlayerState.wallet)} is playing
+      </h4>
+    </div>
+  );
+};

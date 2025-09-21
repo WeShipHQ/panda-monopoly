@@ -4,18 +4,34 @@ import { useState, useCallback, useEffect } from "react";
 export function useGameLogs() {
   const STORAGE_KEY = "gameLogs";
 
-  const [gameLogs, setGameLogs] = useState<GameLogEntry[]>(() => {
+  const [gameLogs, setGameLogs] = useState<GameLogEntry[]>([]);
+
+  const loadLogs = useCallback(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? (JSON.parse(stored) as GameLogEntry[]) : [];
+      const logs = stored ? (JSON.parse(stored) as GameLogEntry[]) : [];
+      setGameLogs(logs);
+      return logs;
     } catch {
+      setGameLogs([]);
       return [];
     }
-  });
+  }, [STORAGE_KEY]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(gameLogs));
-  }, [gameLogs]);
+    loadLogs();
+  }, [loadLogs]);
+
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY) {
+        loadLogs();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [STORAGE_KEY, loadLogs]);
 
   const addGameLog = useCallback(
     (entry: Omit<GameLogEntry, "id" | "timestamp">) => {
@@ -25,18 +41,19 @@ export function useGameLogs() {
         timestamp: Date.now(),
       };
 
-      setGameLogs((prev) => {
-        const updated = [...prev, newLog].slice(-100);
-        return updated;
+      setGameLogs((currentLogs) => {
+        const updatedLogs = [...currentLogs, newLog].slice(-100);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLogs));
+        return updatedLogs;
       });
     },
-    []
+    [STORAGE_KEY]
   );
 
   const clearLogs = useCallback(() => {
-    setGameLogs([]);
     localStorage.removeItem(STORAGE_KEY);
-  }, []);
+    setGameLogs([]);
+  }, [STORAGE_KEY]);
 
-  return { gameLogs, addGameLog, clearLogs };
+  return { gameLogs, addGameLog, clearLogs, refreshLogs: loadLogs };
 }
