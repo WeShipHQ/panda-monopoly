@@ -7,10 +7,16 @@ import {
 } from "@solana/kit";
 import { ChanceCardDrawn, CommunityChestCardDrawn } from "./generated";
 
+export interface CreatePlatformParams {
+  rpc: Rpc<GetAccountInfoApi>;
+  creator: TransactionSigner;
+  platformId: Address;
+}
+
 export interface CreateGameParams {
   rpc: Rpc<GetAccountInfoApi>;
   creator: TransactionSigner;
-  gameId: number;
+  platformId: Address;
 }
 
 export interface CreateGameIxs {

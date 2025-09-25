@@ -1,6 +1,6 @@
 // Test constants matching the program constants
 export const TEST_CONSTANTS = {
-  MAX_PLAYERS: 6,
+  MAX_PLAYERS: 4,
   MIN_PLAYERS: 2,
   BOARD_SIZE: 40,
   STARTING_MONEY: 1500,
@@ -12,13 +12,13 @@ export const TEST_CONSTANTS = {
   JAIL_POSITION: 10,
   GO_POSITION: 0,
   GO_TO_JAIL_POSITION: 30,
-  FREE_PARKING_POSITION: 20
+  FREE_PARKING_POSITION: 20,
 };
 
 export const GAME_STATUS = {
   WAITING_FOR_PLAYERS: { waitingForPlayers: {} },
   IN_PROGRESS: { inProgress: {} },
-  FINISHED: { finished: {} }
+  FINISHED: { finished: {} },
 };
 
 export const PROPERTY_POSITIONS = {
@@ -27,5 +27,5 @@ export const PROPERTY_POSITIONS = {
   READING_RAILROAD: 5,
   ORIENTAL_AVENUE: 6,
   ELECTRIC_COMPANY: 12,
-  BOARDWALK: 39
+  BOARDWALK: 39,
 };

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { RightPanel } from "@/components/right-panel";
-import { LeftSidebar } from "@/components/left-sidebar";
 import GameBoard from "@/components/game-board";
 
 import { Card, CardContent } from "@/components/ui/card";

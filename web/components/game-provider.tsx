@@ -77,8 +77,6 @@ interface GameContextType {
 
   // Game logs
   gameLogs: GameLogEntry[];
-  // addGameLog: (log: Omit<GameLogEntry, "id" | "timestamp">) => void;
-  // clearGameLogs: () => void;
 
   // Utility functions
   getPropertyByPosition: (position: number) => PropertyAccount | null;

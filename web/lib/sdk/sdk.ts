@@ -32,6 +32,9 @@ import {
   getCommunityChestCardDrawnCodec,
   getChanceCardDrawnCodec,
   getTestDiceHandlerInstructionAsync,
+  getCreatePlatformConfigInstructionAsync,
+  fetchPlatformConfig,
+  GAME_STATE_DISCRIMINATOR,
   // getTestDiceHandlerInstructionAsync,
 } from "./generated";
 import {
@@ -60,8 +63,14 @@ import {
   PayPriorityFeeTaxParams,
   DeclinePropertyParams,
   GameEvent,
+  CreatePlatformParams,
 } from "./types";
-import { getGamePDA, getPlayerStatePDA, getPropertyStatePDA } from "./pda";
+import {
+  getGamePDA,
+  getPlatformPDA,
+  getPlayerStatePDA,
+  getPropertyStatePDA,
+} from "./pda";
 import {
   Account,
   Address,
@@ -81,6 +90,8 @@ import {
   none,
   isAddress,
   Decoder,
+  GetProgramAccountsApi,
+  VariableSizeDecoder,
 } from "@solana/kit";
 import {
   CHANCE_CARD_DRAWN_EVENT_DISCRIMINATOR,
@@ -88,13 +99,33 @@ import {
 } from "./utils";
 
 class MonopolyGameSDK {
+  async createPlatformIx(params: CreatePlatformParams): Promise<any> {
+    const [configPda] = await getPlatformPDA(params.platformId);
+
+    const instruction = await getCreatePlatformConfigInstructionAsync({
+      admin: params.creator,
+      config: configPda,
+      platformId: params.platformId,
+      feeBasisPoints: 100,
+      feeVault: params.creator.address,
+    });
+
+    return {
+      instruction,
+      configAddress: configPda,
+    };
+  }
   /**
    * Create a new monopoly game
    */
   async createGameIx(params: CreateGameParams): Promise<CreateGameIxs> {
+    const [configPda] = await getPlatformPDA(params.platformId);
+
+    const configAccount = await fetchPlatformConfig(params.rpc, configPda);
+
     const [gameAccountPDA] = await getGamePDA(
-      params.gameId,
-      params.creator.address
+      configAccount.data.id,
+      Number(configAccount.data.nextGameId)
     );
 
     const [playerStateAddress] = await getPlayerStatePDA(
@@ -105,7 +136,7 @@ class MonopolyGameSDK {
     const instruction = getInitializeGameInstruction({
       game: gameAccountPDA,
       authority: params.creator,
-      gameId: BigInt(params.gameId),
+      config: configPda,
       playerState: playerStateAddress,
     });
 
@@ -453,6 +484,27 @@ class MonopolyGameSDK {
     }
   }
 
+  async getGameAccounts(
+    rpc: Rpc<SolanaRpcApi>
+  ): Promise<Account<GameState, string> | null> {
+    const discriminator = getBase58Decoder().decode(GAME_STATE_DISCRIMINATOR);
+    const discriminatorFilter: GetProgramAccountsMemcmpFilter = {
+      memcmp: {
+        offset: BigInt(0),
+        // @ts-expect-error
+        bytes: discriminator,
+        encoding: "base58",
+      },
+    };
+
+    return fetchDecodedProgramAccounts(
+      rpc,
+      CHESS_PROGRAM_ADDRESS,
+      [discriminatorFilter, ...filters],
+      getGameAccountDecoder()
+    );
+  }
+
   async getPlayerAccount(
     rpc: Rpc<SolanaRpcApi>,
     gamePDA: Address,
@@ -792,3 +844,26 @@ function parseEvent<T>(
 
 const sdk = new MonopolyGameSDK();
 export { sdk };
+
+export async function fetchDecodedProgramAccounts<T extends object>(
+  rpc: Rpc<GetProgramAccountsApi>,
+  programAddress: Address,
+  filters: GetProgramAccountsMemcmpFilter[],
+  decoder: VariableSizeDecoder<T>
+): Promise<Account<T>[]> {
+  const accountInfos = await rpc
+    .getProgramAccounts(programAddress, {
+      encoding: "base64",
+      filters,
+    })
+    .send();
+  const encoder = getBase64Encoder();
+  const datas = accountInfos.map((x) => encoder.encode(x.account.data[0]));
+  const decoded = datas.map((x) => decoder.decode(x));
+  return decoded.map((data, i) => ({
+    ...accountInfos[i]!.account,
+    address: accountInfos[i]!.pubkey,
+    programAddress: programAddress,
+    data,
+  }));
+}

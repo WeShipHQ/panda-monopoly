@@ -8,19 +8,29 @@ import {
 } from "@solana/kit";
 import { PANDA_MONOPOLY_PROGRAM_ADDRESS } from "./generated";
 
+export async function getPlatformPDA(
+  platformId: Address
+): Promise<ProgramDerivedAddress> {
+  return await getProgramDerivedAddress({
+    programAddress: PANDA_MONOPOLY_PROGRAM_ADDRESS,
+    seeds: ["platform", getAddressEncoder().encode(platformId)],
+  });
+}
+
 /**
  * Get the PDA for a game account
  * Seeds: ["game", authority]
  */
 export async function getGamePDA(
-  gameId: number,
-  authority: Address
+  configId: Address,
+  gameId: number
+  // authority: Address
 ): Promise<ProgramDerivedAddress> {
   return await getProgramDerivedAddress({
     programAddress: PANDA_MONOPOLY_PROGRAM_ADDRESS,
     seeds: [
       "game",
-      getAddressEncoder().encode(authority),
+      getAddressEncoder().encode(configId),
       getU64Encoder().encode(gameId),
     ],
   });

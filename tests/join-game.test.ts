@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { setupTest, TestContext, getPlayerStatePDA } from "./utils/setup";
 import { assertGameState, assertPlayerState } from "./utils/helpers";
 import { TEST_CONSTANTS, GAME_STATUS } from "./utils/constants";
@@ -10,11 +9,12 @@ describe("Join Game", () => {
   beforeEach(async () => {
     ctx = await setupTest(3);
 
-    // Initialize game first
     await ctx.program.methods
       .initializeGame()
       .accountsPartial({
         game: ctx.gameAccount,
+        playerState: ctx.playerAccount,
+        config: ctx.configAccount,
         authority: ctx.authority.publicKey,
         systemProgram: SystemProgram.programId,
       })
@@ -41,7 +41,7 @@ describe("Join Game", () => {
       .rpc();
 
     // Verify game state updated
-    await assertGameState(ctx, GAME_STATUS.WAITING_FOR_PLAYERS, 1);
+    await assertGameState(ctx, GAME_STATUS.WAITING_FOR_PLAYERS, 2);
 
     // Verify player state
     await assertPlayerState(
@@ -53,7 +53,6 @@ describe("Join Game", () => {
   });
 
   it("should allow multiple players to join game", async () => {
-    // Join first player
     const [playerState1] = getPlayerStatePDA(
       ctx.program,
       ctx.gameAccount,
@@ -90,7 +89,7 @@ describe("Join Game", () => {
       .rpc();
 
     // Verify both players joined
-    await assertGameState(ctx, GAME_STATUS.WAITING_FOR_PLAYERS, 2);
+    await assertGameState(ctx, GAME_STATUS.WAITING_FOR_PLAYERS, 3);
     await assertPlayerState(
       ctx,
       0,
