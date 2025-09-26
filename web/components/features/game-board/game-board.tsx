@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   PropertySpace,
   ChanceSpace,
@@ -8,7 +10,7 @@ import {
   RailroadSpace,
   UtilitySpace,
   TaxSpace,
-} from "@/components/board-spaces";
+} from "./board-spaces";
 import {
   getBoardRowData,
   isChanceSpace,
@@ -19,11 +21,10 @@ import {
   isUtilitySpace,
 } from "@/lib/board-utils";
 
-import { PlayerTokensContainer } from "@/components/player-tokens";
-import { Dice, DiceProvider } from "@/components/dice";
-import { CardDrawModal } from "@/components/card-draw-modal";
-import { useGameContext } from "./game-provider";
-import { Card, CardContent } from "./ui/card";
+import { PlayerTokensContainer } from "./player-tokens";
+import { Dice, DiceProvider } from "./dice";
+import { CardDrawModal } from "./card-draw-modal";
+import { useGameContext } from "../../game-provider";
 import {
   BankruptcyAction,
   PlayerActions,
@@ -31,7 +32,6 @@ import {
   PropertyActions,
 } from "./player-actions";
 import { isSome } from "@solana/kit";
-import { Button } from "./ui/button";
 import { PropertyAccount } from "@/types/schema";
 import { BoardSpace } from "@/configs/board-data";
 import { EnhancedGameLogs, GameLogs } from "./game-logs";
@@ -63,10 +63,6 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
     getPropertyByPosition,
     isCurrentPlayerTurn,
   } = useGameContext();
-
-  console.log("current xxx", currentPlayerState);
-
-  // const isMyTurn = isCurrentPlayerTurn();
 
   const handleBuyProperty = async (position: number) => {
     setIsLoading("buyProperty");
@@ -216,18 +212,14 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
         backgroundPosition: "center",
       }}
     >
-      {/* Message Display */}
-      {/* <MessageDisplay message={gameState.currentMessage} /> */}
-
-      {/* Board Container */}
       <div className="h-full w-full flex items-center justify-center p-2 sm:p-4">
         <div
-          className="relative aspect-square bg-[#c7e9b5] border-2 border-black transition-transform duration-500 ease-in-out
+          className="relative aspect-square bg-board-bg transition-transform duration-500 ease-in-out border-3
                      w-full h-full max-w-[min(100vh,100vw)] max-h-[min(100vh,100vw)]
                      lg:max-w-none lg:max-h-none lg:h-full lg:w-auto"
           style={{ transform: `rotate(${boardRotation}deg)` }}
         >
-          <div className="absolute inset-0 grid grid-cols-14 grid-rows-14 gap-[0.1%] p-[0.1%]">
+          <div className="absolute inset-0 grid grid-cols-14 grid-rows-14 pgap-[0.1%] pp-[0.1%]">
             {/* Player Tokens */}
             <PlayerTokensContainer
               players={players}
@@ -278,7 +270,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
 
             {/* Corner Spaces */}
             {/* GO Corner (bottom-right) */}
-            <div className="col-start-13 col-end-15 row-start-13 row-end-15 bg-[#fafaf8] text-center border border-black">
+            <div className="col-start-13 col-end-15 row-start-13 row-end-15 text-center flex items-center justify-center border-t-3 border-l-3 border-black">
               <div className="corner-space transform h-full flex flex-col justify-center items-center">
                 <div className="px-1 text-xs font-bold">
                   COLLECT $200.00 SALARY AS YOU PASS
@@ -291,7 +283,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
             </div>
 
             {/* JAIL Corner (bottom-left) */}
-            <div className="col-start-1 col-end-3 row-start-13 row-end-15 bg-[#fafaf8] text-center flex items-center justify-center border border-black">
+            <div className="col-start-1 col-end-3 row-start-13 row-end-15 text-center flex items-center justify-center border-t-3 border-r-3 border-black">
               <div className="corner-space flex items-center justify-center h-full">
                 <img
                   src="/images/JAIL.png"
@@ -302,7 +294,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
             </div>
 
             {/* FREE PARKING Corner (top-left) */}
-            <div className="col-start-1 col-end-3 row-start-1 row-end-3 bg-[#fafaf8] text-center flex items-center justify-center border border-black">
+            <div className="col-start-1 col-end-3 row-start-1 row-end-3 text-center flex items-center justify-center border-b-3 border-r-3 border-black">
               <div className="corner-space flex flex-col items-center justify-center h-full">
                 <img
                   src="/images/FREEPARKING.png"
@@ -314,7 +306,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
             </div>
 
             {/* GO TO JAIL Corner (top-right) */}
-            <div className="col-start-13 col-end-15 row-start-1 row-end-3 bg-[#fafaf8] text-center flex items-center justify-center border border-black">
+            <div className="col-start-13 col-end-15 row-start-1 row-end-3 text-center flex items-center justify-center border-b-3 border-l-3 border-black">
               <div className="corner-space flex flex-col items-center justify-center h-full">
                 <img
                   src="/images/GOTOJAIL.png"
@@ -326,7 +318,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
             </div>
 
             {/* Bottom Row */}
-            <div className="col-start-3 col-end-13 row-start-13 row-end-15 grid grid-cols-9 grid-rows-1 gap-[0.1%]">
+            <div className="col-start-3 col-end-13 row-start-13 row-end-15 grid grid-cols-9 grid-rows-1 pgap-[0.1%]">
               {getBoardRowData().bottomRow.map((space) =>
                 renderSpace(space, properties)
               )}
@@ -366,96 +358,6 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
           }}
         />
       )}
-
-      {/* Property Dialog */}
-      {/* <PropertyDialog
-        isOpen={
-          currentDialogVisible &&
-          gameState.gamePhase === "property-action" &&
-          gameState.currentAction?.type === "buy-property"
-        }
-        propertyName={
-          gameState.currentAction?.data?.position
-            ? boardSpaces[gameState.currentAction.data.position]?.name ||
-              "Unknown Property"
-            : "Unknown Property"
-        }
-        propertyPrice={gameState.currentAction?.data?.price || 0}
-        playerMoney={currentPlayer.money}
-        position={gameState.currentAction?.data?.position || 0}
-        onBuy={() => {
-          if (gameState.currentAction?.data?.position) {
-            buyProperty(gameState.currentAction.data.position);
-          }
-        }}
-        onSkip={skipProperty}
-        onBuyWithBuilding={(buildingLevel) => {
-          if (gameState.currentAction?.data?.position) {
-            const position = gameState.currentAction.data.position;
-            if (buildingLevel === "house1") {
-              // Buy property with flag cost and immediately build 1 house
-              buyPropertyWithFlag(position, "house1");
-              setTimeout(() => {
-                buildHouses(currentPlayer.id, position, 1);
-              }, 100);
-            } else {
-              // Buy property with flag cost only
-              buyPropertyWithFlag(position, "flag");
-            }
-          }
-        }}
-      /> */}
-
-      {/* Card Draw Modal */}
-      {/* <CardDrawModal
-        isOpen={gameState.cardDrawModal?.isOpen || false}
-        cardType={gameState.cardDrawModal?.cardType || "chance"}
-        onCardDrawn={handleCardDrawn}
-      /> */}
-
-      {/* Jail Dialog */}
-      {/* <JailDialog
-        isOpen={currentPlayer.inJail && gameState.gamePhase === "waiting"}
-        playerName={currentPlayer.name}
-        playerMoney={currentPlayer.money}
-        jailTurns={currentPlayer.jailTurns}
-        hasJailFreeCard={
-          (drawnCards.playerJailCards[currentPlayer.id] || 0) > 0
-        }
-        onPayFine={payJailFine}
-        onUseCard={useJailFreeCard}
-        onRollDice={() => {
-          // The dice component will handle the roll and call handleDiceRoll
-          setCurrentDialogVisible(false);
-        }}
-      /> */}
-
-      {/* Property Details Dialog */}
-      {/* <PropertyDetailsDialog
-        isOpen={detailsDialogOpen}
-        position={selectedSpace || 0}
-        onClose={() => setDetailsDialogOpen(false)}
-      /> */}
-
-      {/* Property Building Dialog */}
-      {/* <PropertyBuildingDialog
-        isOpen={buildingDialogOpen}
-        position={buildingProperty || 0}
-        playerMoney={currentPlayer.money}
-        currentHouses={
-          gameState.propertyBuildings?.[buildingProperty || 0]?.houses || 0
-        }
-        hasHotel={
-          gameState.propertyBuildings?.[buildingProperty || 0]?.hasHotel ||
-          false
-        }
-        onBuildHouses={handleBuildHouses}
-        onBuildHotel={handleBuildHotel}
-        onClose={() => {
-          setBuildingDialogOpen(false);
-          setBuildingProperty(null);
-        }}
-      /> */}
     </div>
   );
 };

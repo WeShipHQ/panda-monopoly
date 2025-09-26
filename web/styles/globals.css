@@ -3,6 +3,20 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Colour */
+
+/* width: 48px;
+height: 24px;
+
+background: #D9E8D6;
+border: 2px solid #000000;
+border-radius: 100px;
+
+/* Inside auto layout */
+/* flex: none;
+order: 0;
+flex-grow: 0; */
+
 @theme inline {
   --color-main: var(--main);
   --color-background: var(--background);
@@ -17,6 +31,8 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+
+  --color-board-bg: #d9e8d6;
 
   --spacing-boxShadowX: 4px;
   --spacing-boxShadowY: 4px;
@@ -174,6 +190,34 @@
     fill: white;
     filter: drop-shadow(0 0 3px gray);
     clip-path: inset(0 -10px -10px -10px);
+  }
+}
+
+@layer components {
+  .game-container {
+    display: grid;
+    grid-template-areas:
+      "center center"
+      "left right";
+    grid-template-columns: repeat(2, calc(50%));
+  }
+
+  @media (min-width: 1024px) {
+    .game-container {
+      display: grid;
+      grid-template-areas:
+        "center right"
+        "left right";
+      grid-template-columns: auto 1fr;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .game-container {
+      display: grid;
+      grid-template-areas: "left center right";
+      grid-template-columns: minmax(15rem, 1fr) auto minmax(15rem, 1fr);
+    }
   }
 }
 

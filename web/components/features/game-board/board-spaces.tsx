@@ -99,7 +99,9 @@ export const PropertySpace: React.FC<PropertySpaceProps> = ({
   const children = (
     <div
       className={cn(
-        "bg-board-space text-center border border-black relative cursor-pointer",
+        "bg-board-space text-center border-x-[1.5px] border-black relative cursor-pointer",
+        { "border-l-[1.5px] border-r-0": position === 1 },
+        { "border-r-[1.5px] border-l-0": position === 9 },
         { "vertical-space": isVertical }
       )}
     >

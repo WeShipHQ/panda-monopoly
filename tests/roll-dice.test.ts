@@ -19,116 +19,118 @@ describe("Roll Dice", () => {
   beforeEach(async () => {
     ctx = await setupTest(1);
 
-    // await ctx.program.methods
-    //   .initializeGame()
-    //   .accountsPartial({
-    //     game: ctx.gameAccount,
-    //     playerState: ctx.playerAccount,
-    //     config: ctx.configAccount,
-    //     authority: ctx.authority.publicKey,
-    //     systemProgram: SystemProgram.programId,
-    //   })
-    //   .signers([ctx.authority])
-    //   .rpc();
+    await ctx.program.methods
+      .initializeGame()
+      .accountsPartial({
+        game: ctx.gameAccount,
+        playerState: ctx.playerAccount,
+        config: ctx.configAccount,
+        authority: ctx.authority.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([ctx.authority])
+      .rpc();
 
-    // for (let i = 0; i < 1; i++) {
-    //   const [playerStateAccount] = getPlayerStatePDA(
-    //     ctx.program,
-    //     ctx.gameAccount,
-    //     ctx.players[i].publicKey
-    //   );
+    for (let i = 0; i < 1; i++) {
+      const [playerStateAccount] = getPlayerStatePDA(
+        ctx.program,
+        ctx.gameAccount,
+        ctx.players[i].publicKey
+      );
 
-    //   await ctx.program.methods
-    //     .joinGame()
-    //     .accountsPartial({
-    //       game: ctx.gameAccount,
-    //       playerState: playerStateAccount,
-    //       player: ctx.players[i].publicKey,
-    //       systemProgram: SystemProgram.programId,
-    //     })
-    //     .signers([ctx.players[i]])
-    //     .rpc();
-    // }
+      await ctx.program.methods
+        .joinGame()
+        .accountsPartial({
+          game: ctx.gameAccount,
+          playerState: playerStateAccount,
+          player: ctx.players[i].publicKey,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([ctx.players[i]])
+        .rpc();
+    }
 
-    // let gameState = await ctx.program.account.gameState.fetch(ctx.gameAccount);
-    // let remainingAccounts = [];
+    let gameState = await ctx.program.account.gameState.fetch(ctx.gameAccount);
+    let remainingAccounts = [];
 
-    // console.log("player count", gameState.players.length);
+    console.log("player count", gameState.players.length);
 
-    // gameState.players.forEach((player) => {
-    //   const [playerPda] = PublicKey.findProgramAddressSync(
-    //     [Buffer.from("player"), ctx.gameAccount.toBuffer(), player.toBuffer()],
-    //     ctx.program.programId
-    //   );
+    gameState.players.forEach((player) => {
+      const [playerPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("player"), ctx.gameAccount.toBuffer(), player.toBuffer()],
+        ctx.program.programId
+      );
 
-    //   remainingAccounts.push({
-    //     pubkey: playerPda,
-    //     isSigner: false,
-    //     isWritable: true,
-    //   });
+      remainingAccounts.push({
+        pubkey: playerPda,
+        isSigner: false,
+        isWritable: true,
+      });
 
-    //   const [playerBufferPda] = PublicKey.findProgramAddressSync(
-    //     [Buffer.from("buffer"), playerPda.toBuffer()],
-    //     ctx.program.programId
-    //   );
+      const [playerBufferPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("buffer"), playerPda.toBuffer()],
+        ctx.program.programId
+      );
 
-    //   remainingAccounts.push({
-    //     pubkey: playerBufferPda,
-    //     isSigner: false,
-    //     isWritable: true,
-    //   });
+      remainingAccounts.push({
+        pubkey: playerBufferPda,
+        isSigner: false,
+        isWritable: true,
+      });
 
-    //   const [delegationRecordPda] = PublicKey.findProgramAddressSync(
-    //     [Buffer.from("delegation"), playerPda.toBuffer()],
-    //     DELEGATION_PROGRAM_ID
-    //   );
-    //   remainingAccounts.push({
-    //     pubkey: delegationRecordPda,
-    //     isSigner: false,
-    //     isWritable: true,
-    //   });
+      const [delegationRecordPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("delegation"), playerPda.toBuffer()],
+        DELEGATION_PROGRAM_ID
+      );
+      remainingAccounts.push({
+        pubkey: delegationRecordPda,
+        isSigner: false,
+        isWritable: true,
+      });
 
-    //   const [delegationMetadataPda] = PublicKey.findProgramAddressSync(
-    //     [Buffer.from("delegation-metadata"), playerPda.toBuffer()],
-    //     DELEGATION_PROGRAM_ID
-    //   );
+      const [delegationMetadataPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("delegation-metadata"), playerPda.toBuffer()],
+        DELEGATION_PROGRAM_ID
+      );
 
-    //   remainingAccounts.push({
-    //     pubkey: delegationMetadataPda,
-    //     isSigner: false,
-    //     isWritable: true,
-    //   });
-    // });
+      remainingAccounts.push({
+        pubkey: delegationMetadataPda,
+        isSigner: false,
+        isWritable: true,
+      });
+    });
 
-    // console.log("remaining accounts", remainingAccounts.length);
+    console.log("remaining accounts", remainingAccounts.length);
 
-    // let tx = await ctx.program.methods
-    //   .startGame()
-    //   .accountsPartial({
-    //     game: ctx.gameAccount,
-    //     authority: ctx.authority.publicKey,
-    //   })
-    //   .preInstructions([
-    //     ComputeBudgetProgram.setComputeUnitLimit({
-    //       units: 1_000_000,
-    //     }),
-    //   ])
-    //   .remainingAccounts(remainingAccounts)
-    //   .signers([ctx.authority])
-    //   .transaction();
+    let tx = await ctx.program.methods
+      .startGame()
+      .accountsPartial({
+        game: ctx.gameAccount,
+        authority: ctx.authority.publicKey,
+      })
+      .preInstructions([
+        ComputeBudgetProgram.setComputeUnitLimit({
+          units: 1_000_000,
+        }),
+      ])
+      .remainingAccounts(remainingAccounts)
+      .signers([ctx.authority])
+      .transaction();
 
-    // tx.feePayer = ctx.provider.wallet.publicKey;
-    // tx.recentBlockhash = (
-    //   await ctx.provider.connection.getLatestBlockhash()
-    // ).blockhash;
-    // tx = await ctx.providerER.wallet.signTransaction(tx);
+    tx.feePayer = ctx.provider.wallet.publicKey;
+    tx.recentBlockhash = (
+      await ctx.provider.connection.getLatestBlockhash()
+    ).blockhash;
+    tx = await ctx.providerER.wallet.signTransaction(tx);
 
-    // const txHash = await ctx.provider.sendAndConfirm(tx, [ctx.authority], {
-    //   skipPreflight: true,
-    //   commitment: "confirmed",
-    // });
+    const txHash = await ctx.provider.sendAndConfirm(tx, [ctx.authority], {
+      skipPreflight: true,
+      commitment: "confirmed",
+    });
 
-    // console.log("Start game tx:", txHash);
+    console.log("Start game tx:", txHash);
+
+    await new Promise((resolve) => setTimeout(resolve, 3000));
   });
 
   it("should allow current player to roll dice", async () => {
@@ -139,6 +141,10 @@ describe("Roll Dice", () => {
       ctx.authority.publicKey
     );
 
+    console.log("playerStateAccount", playerStateAccount.toBase58());
+    console.log("game", ctx.gameAccount.toBase58());
+    console.log("player", ctx.authority.publicKey.toBase58());
+
     const roll = Math.floor(Math.random() * 100) + 1;
     let tx = await ctx.program.methods
       .rollDice([1, 2], roll)
@@ -147,11 +153,14 @@ describe("Roll Dice", () => {
         playerState: playerStateAccount,
         player: ctx.authority.publicKey,
         recentBlockhashes: SYSVAR_RECENT_BLOCKHASHES_PUBKEY,
+        // oracleQueue: new PublicKey(
+        //   "5hBR571xnXppuCPveTrctfTU7tJLSN94nq7kv7FRK5Tc"
+        // ),
       })
       .signers([ctx.authority])
       .transaction();
 
-    tx.feePayer = ctx.provider.wallet.publicKey;
+    tx.feePayer = ctx.providerER.wallet.publicKey;
     tx.recentBlockhash = (
       await ctx.providerER.connection.getLatestBlockhash()
     ).blockhash;

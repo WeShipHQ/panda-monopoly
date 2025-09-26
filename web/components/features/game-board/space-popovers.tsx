@@ -224,6 +224,7 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
                 <Separator className="my-3" />
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Owner:</span>
+                  {/* @ts-expect-error */}
                   <Badge variant={!!owner ? "default" : "secondary"}>
                     {!!owner ? formatAddress(owner) || "Unknown" : "Unowned"}
                   </Badge>
@@ -233,11 +234,13 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
                   <>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Houses:</span>
+                      {/* @ts-expect-error */}
                       <Badge variant="outline">{houses}</Badge>
                     </div>
 
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Hotel:</span>
+                      {/* @ts-expect-error */}
                       <Badge variant={hasHotel ? "default" : "outline"}>
                         {hasHotel ? "Yes" : "No"}
                       </Badge>
@@ -245,6 +248,7 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
 
                     {isMortgaged && (
                       <div className="text-center mt-2">
+                        {/* @ts-expect-error */}
                         <Badge variant="destructive">MORTGAGED</Badge>
                       </div>
                     )}
@@ -339,6 +343,7 @@ export const RailroadPopover: React.FC<RailroadPopoverProps> = ({
 
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Owner:</span>
+                  {/* @ts-expect-error */}
                   <Badge variant={!!owner ? "default" : "secondary"}>
                     {!!owner ? formatAddress(owner) || "Unknown" : "Unowned"}
                   </Badge>
@@ -414,6 +419,7 @@ export const UtilityPopover: React.FC<UtilityPopoverProps> = ({
 
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Owner:</span>
+                  {/* @ts-expect-error */}
                   <Badge variant={owner ? "default" : "secondary"}>
                     {owner ? formatAddress(owner) || "Unknown" : "Unowned"}
                   </Badge>

@@ -1,8 +1,8 @@
 import { PlayerState } from "@/lib/sdk/generated";
-import { useGameContext } from "./game-provider";
+import { useGameContext } from "../../game-provider";
 import { useMemo } from "react";
 import { isSome } from "@solana/kit";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
 import { formatAddress, formatPrice } from "@/lib/utils";
 import { getBoardSpaceData } from "@/lib/board-utils";
 import { DicesOnly, useDiceContext } from "./dice";
@@ -120,7 +120,6 @@ export const PropertyActions: React.FC<PropertyActionsProps> = ({
               </Button>
               <Button
                 size="sm"
-                variant="outline"
                 onClick={() => handleSkipProperty(position)}
                 disabled={isLoading === "endTurn"}
                 className="flex-1"
@@ -201,6 +200,7 @@ export const PlayerActions = ({
             disabled={!canRoll || isRolling}
             onClick={handleRollDice}
             size="sm"
+            // @ts-expect-error
             loading={isRolling}
           >
             Roll dice

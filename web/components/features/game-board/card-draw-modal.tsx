@@ -188,7 +188,7 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent
         className="!max-w-xs aspect-[3/4] w-full bg-transparent border-none shadow-none outline-none p-0"
-        showCloseButton={false}
+        // showCloseButton={false}
       >
         <div
           className="w-full h-full relative transition-transform duration-700 transform cursor-pointer hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/50"

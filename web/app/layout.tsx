@@ -11,13 +11,11 @@ import {
   // Cherry_Bomb_One,
   Space_Grotesk,
 } from "next/font/google";
-import { cn } from "@/lib/utils";
 import "@/styles/globals.css";
 import { Toaster } from "@/components/ui/sonner";
-import NavBar from "@/components/layout/header";
 // import "@/styles/fonts.css";
 // import "@/styles/monopoly.css";
-// import RootProviders from "@/providers";
+import RootProviders from "@/providers";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -53,10 +51,7 @@ export default function RootLayout({
         //   "antialiased font-sans"
         // )}
       >
-        {/* <RootProviders> */}
-        <NavBar />
-        {children}
-        {/* </RootProviders> */}
+        <RootProviders>{children}</RootProviders>
         <Toaster />
       </body>
     </html>

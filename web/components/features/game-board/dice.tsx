@@ -7,10 +7,10 @@ import React, {
   createContext,
   useContext,
 } from "react";
-import { playDiceRollSequence, stopDiceRollSequence } from "../lib/soundUtil";
-import { useGameContext } from "./game-provider";
-import "../styles/dice.css";
-import { Button } from "./ui/button";
+import { playDiceRollSequence, stopDiceRollSequence } from "@/lib/soundUtil";
+import { useGameContext } from "../../game-provider";
+import "../../../styles/dice.css";
+import { Button } from "@/components/ui/button";
 
 interface DiceProps {}
 
@@ -214,7 +214,7 @@ export const Dice: React.FC<DiceProps> = () => {
         disabled={!canRoll || isRolling}
         onClick={handleRollDice}
         size="sm"
-        loading={isRolling}
+        // loading={isRolling}
       >
         Roll dice
       </Button>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { ScrollArea } from "./ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   generateLogMessage,
   LOG_TYPE_ICONS,
@@ -10,7 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import { GameLogEntry } from "@/types/space-types";
 import { useGameLogs } from "@/hooks/useGameLogs";
-import { useGameContext } from "./game-provider";
+import { useGameContext } from "../../game-provider";
 
 interface GameLogsProps {
   maxHeight?: string;
