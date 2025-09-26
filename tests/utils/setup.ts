@@ -160,46 +160,64 @@ export async function setupTest(numPlayers: number = 2): Promise<TestContext> {
     feeVault = wallets.feeVault;
   }
 
-  const platformId = Keypair.generate().publicKey;
+  // const platformId = Keypair.generate().publicKey;
+  const platformId = new PublicKey(
+    "WgiVLsEzAdk4DbmQDyJXMxBNTLvavseop31jtRgtdmc"
+  );
+  console.log("platformId:", platformId.toBase58());
   const feeBasisPoints = 500; // 5%
 
   // init platform
-  const [configAccount] = PublicKey.findProgramAddressSync(
-    [Buffer.from("platform"), platformId.toBuffer()],
-    program.programId
+  // const [configAccount] = PublicKey.findProgramAddressSync(
+  //   [Buffer.from("platform"), platformId.toBuffer()],
+  //   program.programId
+  // );
+  const configAccount = new PublicKey(
+    "9q9q2fe3LJQaFUNtxDaksHG8AMaVEJXGeunsuxLXAWK7"
   );
+  console.log("configAccount:", configAccount.toBase58());
 
-  const tx = await program.methods
-    .createPlatformConfig(platformId, feeBasisPoints, feeVault.publicKey)
-    .accountsPartial({
-      admin: authority.publicKey,
-      config: configAccount,
-      systemProgram: SystemProgram.programId,
-    })
-    .signers([authority])
-    .rpc();
+  // const tx = await program.methods
+  //   .createPlatformConfig(platformId, feeBasisPoints, feeVault.publicKey)
+  //   .accountsPartial({
+  //     admin: authority.publicKey,
+  //     config: configAccount,
+  //     systemProgram: SystemProgram.programId,
+  //   })
+  //   .signers([authority])
+  //   .rpc();
 
-  console.log("Tx init:", tx);
+  // console.log("Tx init:", tx);
 
   const configState = await program.account.platformConfig.fetch(configAccount);
 
-  const [gameAccount, gameBump] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from("game"),
-      platformId.toBuffer(),
-      configState.nextGameId.toArrayLike(Buffer, "le", 8),
-    ],
-    program.programId
+  // const [gameAccount, gameBump] = PublicKey.findProgramAddressSync(
+  //   [
+  //     Buffer.from("game"),
+  //     platformId.toBuffer(),
+  //     configState.nextGameId.toArrayLike(Buffer, "le", 8),
+  //   ],
+  //   program.programId
+  // );
+  const gameAccount = new PublicKey(
+    "5xuJfozAFSHhiMghL6gRuCMEsqrRAvNM3Pnrac4gSNho"
   );
 
-  const [playerAccount] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from("player"),
-      gameAccount.toBuffer(),
-      authority.publicKey.toBuffer(),
-    ],
-    program.programId
+  console.log("gameAccount:", gameAccount.toBase58());
+
+  // const [playerAccount] = PublicKey.findProgramAddressSync(
+  //   [
+  //     Buffer.from("player"),
+  //     gameAccount.toBuffer(),
+  //     authority.publicKey.toBuffer(),
+  //   ],
+  //   program.programId
+  // );
+  const playerAccount = new PublicKey(
+    "6xLCCAfqJbQFZrjtH1xAJVFCmX4czWnzboNjfsbNYY7S"
   );
+
+  console.log("playerAccount:", playerAccount.toBase58());
 
   return {
     program,
@@ -209,7 +227,7 @@ export async function setupTest(numPlayers: number = 2): Promise<TestContext> {
     players,
     gameAccount,
     playerAccount,
-    gameBump,
+    gameBump: 1,
     platformId,
     configAccount,
   };

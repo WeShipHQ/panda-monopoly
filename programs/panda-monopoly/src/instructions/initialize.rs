@@ -4,8 +4,6 @@ use crate::state::*;
 use anchor_lang::prelude::*;
 use ephemeral_rollups_sdk::anchor::delegate;
 use ephemeral_rollups_sdk::cpi::DelegateConfig;
-// use ephemeral_rollups_sdk::cpi::delegate_account;
-// use ephemeral_rollups_sdk::er::commit_accounts;
 
 #[derive(Accounts)]
 pub struct InitializeGame<'info> {
@@ -25,7 +23,7 @@ pub struct InitializeGame<'info> {
     #[account(
         init,
         payer = authority,
-        space = 8 + PlayerState::INIT_SPACE,
+        space = 8 + PlayerState::INIT_SPACE + 64,
         seeds = [b"player", game.key().as_ref(), authority.key().as_ref()],
         bump,
     )]
@@ -127,7 +125,7 @@ pub struct JoinGame<'info> {
     #[account(
         init,
         payer = player,
-        space = 8 + PlayerState::INIT_SPACE,
+        space = 8 + PlayerState::INIT_SPACE + 64,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
@@ -199,27 +197,30 @@ pub struct StartGame<'info> {
 }
 
 pub fn start_game_handler<'c: 'info, 'info>(
-    ctx: Context<'_, '_, 'c, 'info, StartGame>,
+    ctx: Context<'_, '_, 'c, 'info, StartGame<'info>>,
 ) -> Result<()> {
-    let game = &mut ctx.accounts.game;
-    let clock = &ctx.accounts.clock;
+    {
+        let game = &mut ctx.accounts.game;
+        let clock = &ctx.accounts.clock;
 
-    // Change game status to in progress
-    game.game_status = GameStatus::InProgress;
-    game.current_turn = 0; // First player starts
-    game.turn_started_at = clock.unix_timestamp;
+        // Change game status to in progress
+        game.game_status = GameStatus::InProgress;
+        game.current_turn = 0; // First player starts
+        game.turn_started_at = clock.unix_timestamp;
 
-    msg!("Game started! Player {} goes first.", game.players[0]);
-    msg!("Total players in game: {}", game.current_players);
-
-    let remaining_accounts_iter = &mut ctx.remaining_accounts.iter();
-
-    msg!("Remaining accounts: {:?}", remaining_accounts_iter.len());
+        msg!("Game started! Player {} goes first.", game.players[0]);
+        msg!("Total players in game: {}", game.current_players);
+    }
 
     {
         msg!("Start delegate");
 
+        let authority = &ctx.accounts.authority;
+        let owner_program = &ctx.accounts.owner_program;
+        let delegation_program = &ctx.accounts.delegation_program;
         let game = &ctx.accounts.game;
+        let game_key = game.key();
+        let players = &game.players;
 
         game.exit(&crate::ID)?;
         ctx.accounts.delegate_game(
@@ -234,7 +235,53 @@ pub fn start_game_handler<'c: 'info, 'info>(
                 validator: Some(pubkey!("MAS1Dt9qreoRMQ14YQuhg8UTZMMzDdKhmkZMECCzk57")),
             },
         )?;
+
+        let remaining_accounts_iter = &mut ctx.remaining_accounts.iter();
+
+        // delegate player accounts
+        for player_pubkey in players.iter() {
+            let player_account = remaining_accounts_iter
+                .next()
+                .ok_or(GameError::InvalidAccount)?;
+            player_account.exit(&crate::ID)?;
+
+            let player_buffer_account = remaining_accounts_iter
+                .next()
+                .ok_or(GameError::InvalidAccount)?;
+
+            let player_delegation_record_account = remaining_accounts_iter
+                .next()
+                .ok_or(GameError::InvalidAccount)?;
+
+            let player_delegation_metadata_account = remaining_accounts_iter
+                .next()
+                .ok_or(GameError::InvalidAccount)?;
+
+            let del_accounts = ephemeral_rollups_sdk::cpi::DelegateAccounts {
+                payer: &authority.to_account_info(),
+                pda: &player_account.to_account_info(),
+                owner_program: &owner_program.to_account_info(),
+                buffer: player_buffer_account,
+                delegation_record: player_delegation_record_account,
+                delegation_metadata: player_delegation_metadata_account,
+                delegation_program: &delegation_program.to_account_info(),
+                system_program: &ctx.accounts.system_program.to_account_info(),
+            };
+
+            let seeds = &[b"player", game_key.as_ref(), player_pubkey.as_ref()];
+
+            let config = DelegateConfig {
+                commit_frequency_ms: 30_000,
+                validator: Some(pubkey!("MAS1Dt9qreoRMQ14YQuhg8UTZMMzDdKhmkZMECCzk57")),
+            };
+
+            ephemeral_rollups_sdk::cpi::delegate_account(del_accounts, seeds, config)?;
+
+            msg!("Player {} delegated", player_pubkey);
+        }
     }
+
+    msg!("Game started!");
 
     Ok(())
 }

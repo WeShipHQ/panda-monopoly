@@ -1,13 +1,16 @@
-use crate::constants::*;
 use crate::error::GameError;
 use crate::state::*;
+use crate::{constants::*, ID};
 use anchor_lang::prelude::*;
+use ephemeral_vrf_sdk::anchor::vrf;
+use ephemeral_vrf_sdk::instructions::create_request_randomness_ix;
+use ephemeral_vrf_sdk::types::SerializableAccountMeta;
 
+#[vrf]
 #[derive(Accounts)]
 pub struct RollDice<'info> {
     #[account(
         mut,
-        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
@@ -29,9 +32,17 @@ pub struct RollDice<'info> {
     pub recent_blockhashes: UncheckedAccount<'info>,
 
     pub clock: Sysvar<'info, Clock>,
+
+    /// CHECK: The oracle queue
+    #[account(mut, address = ephemeral_vrf_sdk::consts::DEFAULT_QUEUE)]
+    pub oracle_queue: AccountInfo<'info>,
 }
 
-pub fn roll_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> Result<()> {
+pub fn roll_dice_handler(
+    ctx: Context<RollDice>,
+    dice_roll: Option<[u8; 2]>,
+    seed: u8,
+) -> Result<()> {
     let game = &mut ctx.accounts.game;
     let player_state = &mut ctx.accounts.player_state;
     let player_pubkey = ctx.accounts.player.key();
@@ -141,6 +152,33 @@ pub fn roll_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> 
         old_position,
         new_position
     );
+
+    {
+        msg!("Requesting randomness...");
+
+        let ix = create_request_randomness_ix(
+            ephemeral_vrf_sdk::instructions::RequestRandomnessParams {
+                payer: ctx.accounts.player.key(),
+                oracle_queue: ctx.accounts.oracle_queue.key(),
+                callback_program_id: ID,
+                callback_discriminator: crate::instruction::CallbackRollDice::DISCRIMINATOR
+                    .to_vec(),
+                caller_seed: [seed; 32],
+                // Specify any account that is required by the callback
+                accounts_metas: Some(vec![SerializableAccountMeta {
+                    pubkey: ctx.accounts.player.key(),
+                    is_signer: false,
+                    is_writable: true,
+                }]),
+                ..Default::default()
+            },
+        );
+
+        ctx.accounts
+            .invoke_signed_vrf(&ctx.accounts.player.to_account_info(), &ix)?;
+
+        msg!("Randomness request sent with seed: {}", seed);
+    }
 
     Ok(())
 }
@@ -467,6 +505,24 @@ pub fn pay_jail_fine_handler(ctx: Context<PayJailFine>) -> Result<()> {
         player_pubkey,
         JAIL_FINE
     );
+
+    Ok(())
+}
+
+#[derive(Accounts)]
+pub struct CallbackRollDiceCtx<'info> {
+    /// This check ensure that the vrf_program_identity (which is a PDA) is a singer
+    /// enforcing the callback is executed by the VRF program trough CPI
+    #[account(address = ephemeral_vrf_sdk::consts::VRF_PROGRAM_IDENTITY)]
+    pub vrf_program_identity: Signer<'info>,
+
+    #[account(mut)]
+    pub player: Signer<'info>,
+}
+
+pub fn callback_roll_dice(ctx: Context<CallbackRollDiceCtx>, randomness: [u8; 32]) -> Result<()> {
+    let roll = ephemeral_vrf_sdk::rnd::random_u8_with_range(&randomness, 1, 101);
+    msg!("Roll: {}", roll);
 
     Ok(())
 }

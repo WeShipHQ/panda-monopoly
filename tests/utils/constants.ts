@@ -1,3 +1,5 @@
+import { PublicKey } from "@solana/web3.js";
+
 // Test constants matching the program constants
 export const TEST_CONSTANTS = {
   MAX_PLAYERS: 4,
@@ -29,3 +31,8 @@ export const PROPERTY_POSITIONS = {
   ELECTRIC_COMPANY: 12,
   BOARDWALK: 39,
 };
+
+
+export const DELEGATION_PROGRAM_ID = new PublicKey(
+  "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
+);

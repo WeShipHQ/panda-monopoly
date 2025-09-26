@@ -2,7 +2,15 @@ import { expect } from "chai";
 import { setupTest, TestContext, getPlayerStatePDA } from "./utils/setup";
 import { assertGameState } from "./utils/helpers";
 import { TEST_CONSTANTS, GAME_STATUS } from "./utils/constants";
-import { SystemProgram } from "@solana/web3.js";
+import {
+  ComputeBudgetProgram,
+  PublicKey,
+  SystemProgram,
+} from "@solana/web3.js";
+
+export const DELEGATION_PROGRAM_ID = new PublicKey(
+  "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
+);
 
 describe("Start Game", () => {
   let ctx: TestContext;
@@ -44,19 +52,79 @@ describe("Start Game", () => {
 
   it("should successfully start game with minimum players", async () => {
     console.log("game acc", ctx.gameAccount.toBase58());
+
+    let gameState = await ctx.program.account.gameState.fetch(ctx.gameAccount);
+    let remainingAccounts = [];
+
+    console.log("player count", gameState.players.length);
+
+    gameState.players.forEach((player) => {
+      const [playerPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("player"), ctx.gameAccount.toBuffer(), player.toBuffer()],
+        ctx.program.programId
+      );
+      remainingAccounts.push({
+        pubkey: playerPda,
+        isSigner: false,
+        isWritable: true,
+      });
+      console.log(
+        "player seed",
+        JSON.stringify([
+          Buffer.from("player"),
+          ctx.gameAccount.toBuffer(),
+          player.toBuffer(),
+        ])
+      );
+      console.log("player pda", playerPda.toBase58());
+      const [playerBufferPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("buffer"), playerPda.toBuffer()],
+        ctx.program.programId
+      );
+      remainingAccounts.push({
+        pubkey: playerBufferPda,
+        isSigner: false,
+        isWritable: true,
+      });
+      console.log("player buffer pda", playerBufferPda.toBase58());
+
+      const [delegationRecordPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("delegation"), playerPda.toBuffer()],
+        DELEGATION_PROGRAM_ID
+      );
+      remainingAccounts.push({
+        pubkey: delegationRecordPda,
+        isSigner: false,
+        isWritable: true,
+      });
+      console.log("delegation record pda", delegationRecordPda.toBase58());
+
+      const [delegationMetadataPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("delegation-metadata"), playerPda.toBuffer()],
+        DELEGATION_PROGRAM_ID
+      );
+      remainingAccounts.push({
+        pubkey: delegationMetadataPda,
+        isSigner: false,
+        isWritable: true,
+      });
+      console.log("delegation metadata pda", delegationMetadataPda.toBase58());
+    });
+
+    console.log("remaining accounts", remainingAccounts.length);
+
     let tx = await ctx.program.methods
       .startGame()
       .accountsPartial({
         game: ctx.gameAccount,
         authority: ctx.authority.publicKey,
       })
-      // .remainingAccounts(
-      //   ctx.players.map((player) => ({
-      //     pubkey: player.publicKey,
-      //     isSigner: false,
-      //     isWritable: false,
-      //   }))
-      // )
+      .preInstructions([
+        ComputeBudgetProgram.setComputeUnitLimit({
+          units: 1_000_000,
+        }),
+      ])
+      .remainingAccounts(remainingAccounts)
       .signers([ctx.authority])
       .transaction();
 
@@ -81,9 +149,7 @@ describe("Start Game", () => {
       TEST_CONSTANTS.MIN_PLAYERS + 1
     );
 
-    const gameState = await ctx.program.account.gameState.fetch(
-      ctx.gameAccount
-    );
+    gameState = await ctx.program.account.gameState.fetch(ctx.gameAccount);
     expect(gameState.currentTurn).to.equal(0); // First player's turn
   });
 

@@ -19,8 +19,8 @@ local = []
 
 
 [dependencies]
-anchor-lang = {version = "0.31.0", features = ["init-if-needed"]}
-anchor-spl = "0.31.0"
-ephemeral-rollups-sdk = { version = "0.2.5", features = ["anchor"] }
+anchor-lang = {version = "0.31.1", features = ["init-if-needed"]}
+anchor-spl = "0.31.1"
+ephemeral-rollups-sdk = { version = "0.2.4", features = ["anchor"] }
 bytemuck = { version = "1.20.0", features = ["derive", "min_const_generics"] }
-
+ephemeral-vrf-sdk = {version = "0.1.2", features = ["anchor"]}

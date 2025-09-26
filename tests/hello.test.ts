@@ -8,6 +8,7 @@ import {
   SystemProgram,
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
+import { BN } from "bn.js";
 
 const SEED_TEST_PDA = "test-pda"; // 5RgeA5P8bRaynJovch3zQURfJxXL3QK2JYg1YamSvyLb
 
@@ -26,10 +27,10 @@ describe("Hello", () => {
     ),
     anchor.Wallet.local()
   );
-
+  const id = Date.now();
   const program = anchor.workspace.pandaMonopoly as Program<PandaMonopoly>;
   const [pda] = anchor.web3.PublicKey.findProgramAddressSync(
-    [Buffer.from(SEED_TEST_PDA)],
+    [Buffer.from(SEED_TEST_PDA), new BN(id).toArrayLike(Buffer, "le", 8)],
     program.programId
   );
 
@@ -70,7 +71,7 @@ describe("Hello", () => {
   it("Initialize counter on Solana", async () => {
     const start = Date.now();
     const txHash = await program.methods
-      .initialize()
+      .initialize(new BN(id))
       .accounts({
         // @ts-ignore
         counter: pda,
@@ -98,7 +99,7 @@ describe("Hello", () => {
     const start = Date.now();
     let tx = await program.methods
       .delegate()
-      .accounts({
+      .accountsPartial({
         payer: provider.wallet.publicKey,
         pda: pda,
       })
