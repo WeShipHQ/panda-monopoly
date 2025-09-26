@@ -1,16 +1,5 @@
 import type { Metadata } from "next";
-import {
-  // Geist,
-  // Geist_Mono,
-  // JetBrains_Mono,
-  // Instrument_Serif,
-  // Instrument_Sans,
-  // Urbanist,
-  // Bricolage_Grotesque,
-  // Oswald,
-  // Cherry_Bomb_One,
-  Space_Grotesk,
-} from "next/font/google";
+import { Space_Grotesk } from "next/font/google";
 import "@/styles/globals.css";
 import { Toaster } from "@/components/ui/sonner";
 // import "@/styles/fonts.css";
@@ -19,7 +8,7 @@ import RootProviders from "@/providers";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
-  display: "swap", // Better font loading performance
+  display: "swap",
   preload: true,
   variable: "--font-space-grotesk",
 });
@@ -36,21 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={spaceGrotesk.className}
-        // className={cn(
-        //   geistSans.variable,
-        //   geistMono.variable,
-        //   jetBrainsMono.variable,
-        //   instrumentSerif.variable,
-        //   instrumentSans.variable,
-        //   urbanist.variable,
-        //   bricolageGrotesque.variable,
-        //   oswald.variable,
-        //   cherryBombOne.variable,
-        //   "antialiased font-sans"
-        // )}
-      >
+      <body className={spaceGrotesk.className}>
         <RootProviders>{children}</RootProviders>
         <Toaster />
       </body>

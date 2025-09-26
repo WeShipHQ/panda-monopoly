@@ -86,3 +86,145 @@ export const getTypedSpaceData = <T extends BoardSpace["type"]>(
 
   return space as Extract<BoardSpace, { type: T }>;
 };
+
+// New utility functions for border management
+export type BoardSide = "bottom" | "left" | "top" | "right";
+
+export const getBoardSide = (position: number): BoardSide => {
+  if ([1, 2, 3, 4, 5, 6, 7, 8, 9].includes(position)) return "bottom";
+  if ([11, 12, 13, 14, 15, 16, 17, 18, 19].includes(position)) return "left";
+  if ([21, 22, 23, 24, 25, 26, 27, 28, 29].includes(position)) return "top";
+  if ([31, 32, 33, 34, 35, 36, 37, 38, 39].includes(position)) return "right";
+  return "bottom"; // fallback
+};
+
+export const getPositionInRow = (
+  position: number
+): "first" | "middle" | "last" => {
+  const side = getBoardSide(position);
+
+  switch (side) {
+    case "bottom":
+      if (position === 9) return "first";
+      if (position === 1) return "last";
+      return "middle";
+    case "left":
+      if (position === 11) return "first";
+      if (position === 19) return "last";
+      return "middle";
+    case "top":
+      if (position === 21) return "first";
+      if (position === 29) return "last";
+      return "middle";
+    case "right":
+      if (position === 31) return "first";
+      if (position === 39) return "last";
+      return "middle";
+    default:
+      return "middle";
+  }
+};
+
+export const getBorderClasses = (position: number): string => {
+  const side = getBoardSide(position);
+  const positionInRow = getPositionInRow(position);
+
+  const borders: string[] = [];
+
+  switch (side) {
+    case "bottom":
+      borders.push("border-t-2"); // Always top border for bottom row
+      if (positionInRow === "first") {
+        borders.push("border-r-1"); // Right border for first (rightmost) space
+      } else if (positionInRow === "last") {
+        borders.push("border-l-1"); // Left border for last (leftmost) space
+      } else {
+        borders.push("border-x-1"); // Left and right borders for middle spaces
+      }
+      break;
+
+    case "left":
+      borders.push("border-r-2"); // Always right border for left row
+      if (positionInRow === "first") {
+        borders.push("border-t-1"); // Bottom border for first (bottom) space
+      } else if (positionInRow === "last") {
+        borders.push("border-b-1"); // Top border for last (top) space
+      } else {
+        borders.push("border-y-1"); // Top and bottom borders for middle spaces
+      }
+      break;
+
+    case "top":
+      borders.push("border-b-2"); // Always bottom border for top row
+      if (positionInRow === "first") {
+        borders.push("border-r-1"); // Left border for first (leftmost) space
+      } else if (positionInRow === "last") {
+        borders.push("border-l-1"); // Right border for last (rightmost) space
+      } else {
+        borders.push("border-x-1"); // Left and right borders for middle spaces
+      }
+      break;
+
+    case "right":
+      borders.push("border-l-2"); // Always left border for right row
+      if (positionInRow === "first") {
+        borders.push("border-b-1"); // Top border for first (top) space
+      } else if (positionInRow === "last") {
+        borders.push("border-t-1"); // Bottom border for last (bottom) space
+      } else {
+        borders.push("border-y-1"); // Top and bottom borders for middle spaces
+      }
+      break;
+  }
+
+  return borders.join(" ") + " border-black";
+};
+
+export const getColorBarClasses = (side: BoardSide): string => {
+  switch (side) {
+    case "bottom":
+      return "absolute top-0 left-0 w-full h-4 border-b-2 border-black";
+    case "left":
+      return "absolute top-0 right-0 h-full w-4 border-l-2 border-black";
+    case "top":
+      return "absolute bottom-0 left-0 w-full h-4 border-t-2 border-black";
+    case "right":
+      return "absolute top-0 left-0 h-full w-4 border-r-2 border-black";
+    default:
+      return "absolute top-0 left-0 w-full h-4 border-b-2 border-black";
+  }
+};
+
+export const getOwnerIndicatorClasses = (side: BoardSide): string => {
+  switch (side) {
+    case "bottom":
+      return "absolute top-0 left-0 w-full h-3";
+    case "left":
+      return "absolute top-0 right-0 h-full w-3";
+    case "top":
+      return "absolute bottom-0 left-0 w-full h-3";
+    case "right":
+      return "absolute top-0 left-0 h-full w-3";
+    default:
+      return "absolute top-0 left-0 w-full h-3";
+  }
+};
+
+export const getTextContainerClasses = (side: BoardSide): string => {
+  const basePadding = "p-1";
+
+  switch (side) {
+    case "bottom":
+      return `flex flex-col justify-between h-full ${basePadding} pt-5`; // Extra padding top for color bar
+    case "left":
+      // For left column: vertical writing mode, left to right
+      return `flex flex-col justify-between size-full ${basePadding} [writing-mode:vertical-rl]`;
+    case "top":
+      return `flex flex-col justify-between size-full ${basePadding} pb-5`; // Extra padding bottom for color bar
+    case "right":
+      // For right column: vertical writing mode, right to left
+      return `flex flex-col justify-between size-full ${basePadding} pl-5 [writing-mode:vertical-lr]`;
+    default:
+      return `flex flex-col justify-between h-full ${basePadding} pt-5`;
+  }
+};

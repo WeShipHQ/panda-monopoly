@@ -18,21 +18,12 @@ import {
   TaxSpace,
   colorMap,
 } from "@/configs/board-data";
+import { getBoardSide } from "@/lib/board-utils";
 
 // Base interface for popover props
 interface BasePopoverProps {
   children: React.ReactNode;
   property?: PropertyAccount | null;
-}
-
-// Tax popover props
-interface TaxPopoverProps extends BasePopoverProps {
-  propertyData: TaxSpace;
-}
-
-// Special space popover props
-interface SpecialPopoverProps extends BasePopoverProps {
-  propertyData: any;
 }
 
 // Helper function to check if property is owned
@@ -59,12 +50,13 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
   const hasHotel = property?.hasHotel || false;
   const isMortgaged = property?.isMortgaged || false;
   const color = colorMap[propertyData.colorGroup];
+  const side = getBoardSide(propertyData.position);
 
   return (
     <Popover>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent
-        side="top"
+        side={side}
         className="p-0 border-0 bg-transparent shadow-lg w-auto"
       >
         <Card className="w-64 bg-white border-2 gap-0 border-black py-0 rounded-none overflow-hidden">
@@ -201,30 +193,11 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
               </div>
             )}
 
-            {propertyData.houseCost && (
-              <div className="flex justify-between text-sm">
-                <span>Hotel cost</span>
-                <span className="font-medium">
-                  {formatPrice(propertyData.houseCost || 0)}
-                </span>
-              </div>
-            )}
-
-            {propertyData.mortgageValue && (
-              <div className="flex justify-between text-sm">
-                <span>Mortgage value</span>
-                <span className="font-medium">
-                  {formatPrice(propertyData.mortgageValue || 0)}
-                </span>
-              </div>
-            )}
-
             {owner && (
               <>
                 <Separator className="my-3" />
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Owner:</span>
-                  {/* @ts-expect-error */}
                   <Badge variant={!!owner ? "default" : "secondary"}>
                     {!!owner ? formatAddress(owner) || "Unknown" : "Unowned"}
                   </Badge>
@@ -234,13 +207,11 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
                   <>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Houses:</span>
-                      {/* @ts-expect-error */}
                       <Badge variant="outline">{houses}</Badge>
                     </div>
 
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Hotel:</span>
-                      {/* @ts-expect-error */}
                       <Badge variant={hasHotel ? "default" : "outline"}>
                         {hasHotel ? "Yes" : "No"}
                       </Badge>
@@ -248,7 +219,6 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
 
                     {isMortgaged && (
                       <div className="text-center mt-2">
-                        {/* @ts-expect-error */}
                         <Badge variant="destructive">MORTGAGED</Badge>
                       </div>
                     )}
@@ -328,22 +298,12 @@ export const RailroadPopover: React.FC<RailroadPopoverProps> = ({
               </div>
             )}
 
-            {/* {propertyData.mortgageValue && (
-              <div className="flex justify-between text-sm">
-                <span>Mortgage value</span>
-                <span className="font-medium">
-                  {formatPrice(propertyData.mortgageValue || 0)}
-                </span>
-              </div>
-            )}  */}
-
             {!!owner && (
               <>
                 <Separator className="my-3" />
 
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Owner:</span>
-                  {/* @ts-expect-error */}
                   <Badge variant={!!owner ? "default" : "secondary"}>
                     {!!owner ? formatAddress(owner) || "Unknown" : "Unowned"}
                   </Badge>
@@ -401,17 +361,6 @@ export const UtilityPopover: React.FC<UtilityPopoverProps> = ({
                 </div>
               </div>
             )}
-            {/* 
-            <Separator className="my-3" />
-
-            {propertyData.mortgageValue && (
-              <div className="flex justify-between text-sm">
-                <span>Mortgage value</span>
-                <span className="font-medium">
-                  M{propertyData.mortgageValue}
-                </span>
-              </div>
-            )} */}
 
             {owner && (
               <>
@@ -419,7 +368,6 @@ export const UtilityPopover: React.FC<UtilityPopoverProps> = ({
 
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Owner:</span>
-                  {/* @ts-expect-error */}
                   <Badge variant={owner ? "default" : "secondary"}>
                     {owner ? formatAddress(owner) || "Unknown" : "Unowned"}
                   </Badge>
@@ -434,6 +382,11 @@ export const UtilityPopover: React.FC<UtilityPopoverProps> = ({
 };
 
 // Tax Popover Component
+interface TaxPopoverProps {
+  children: React.ReactNode;
+  propertyData: TaxSpace;
+}
+
 export const TaxPopover: React.FC<TaxPopoverProps> = ({
   children,
   propertyData,
@@ -456,7 +409,9 @@ export const TaxPopover: React.FC<TaxPopoverProps> = ({
           <CardContent className="p-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span>Tax Amount</span>
-              <span className="font-medium">M{propertyData.taxAmount}</span>
+              <span className="font-medium">
+                {formatPrice(propertyData.taxAmount)}
+              </span>
             </div>
 
             {propertyData.instructions && (
@@ -472,6 +427,10 @@ export const TaxPopover: React.FC<TaxPopoverProps> = ({
 };
 
 // Special Space Popover Component (GO, Jail, Free Parking, etc.)
+interface SpecialPopoverProps extends BasePopoverProps {
+  propertyData: any;
+}
+
 export const SpecialPopover: React.FC<SpecialPopoverProps> = ({
   children,
   propertyData,

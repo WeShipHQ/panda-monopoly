@@ -1,9 +1,6 @@
-import { GameState } from "@/lib/sdk/generated";
 import { sdk } from "@/lib/sdk/sdk";
 import { GameAccount } from "@/types/schema";
 import useSWR from "swr";
-// import { GameAccount } from "@checkmate/sdk";
-// import { useSdk } from "./use-sdk";
 
 interface UseGamesConfig {
   enabled?: boolean;
@@ -27,6 +24,7 @@ export function useGames(config: UseGamesConfig = {}): UseGamesResult {
   const { data, error, isLoading, mutate } = useSWR(
     cacheKey,
     () => {
+      // @ts-expect-error
       return sdk.getGames();
     },
     {

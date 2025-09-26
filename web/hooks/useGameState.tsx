@@ -2,7 +2,6 @@ import { Address } from "@solana/kit";
 import { useGameState as useRealGameState } from "./useGameStatev2";
 import { useFakeGameState } from "./useFakeGameState";
 
-// Configuration flag to switch between real and fake data
 const USE_FAKE_DATA = true; // Set to false when smart contract is ready
 
 interface UseGameStateConfig {

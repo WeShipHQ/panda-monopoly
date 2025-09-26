@@ -36,6 +36,15 @@ import { PropertyAccount } from "@/types/schema";
 import { BoardSpace } from "@/configs/board-data";
 import { EnhancedGameLogs, GameLogs } from "./game-logs";
 
+// import { Button } from "@/components/ui/button"
+// import { Input } from "@/components/ui/input"
+// import { Label } from "@/components/ui/label"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
 interface MonopolyBoardProps {
   boardRotation: number;
   onRotateClockwise: () => void;
@@ -86,17 +95,6 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
     }
   };
 
-  // const handleDrawChanceCard = async () => {
-  //   setIsLoading("chanceCard");
-  //   try {
-  //     await drawChanceCard();
-  //   } catch (error) {
-  //     console.error("Failed to draw chance card:", error);
-  //   } finally {
-  //     setIsLoading(null);
-  //   }
-  // };
-
   const handleEndTurn = async () => {
     setIsLoading("endTurn");
     try {
@@ -111,81 +109,28 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
   const renderSpace = (space: BoardSpace, properties: PropertyAccount[]) => {
     const position = space.position;
     const key = `${space.name}-${position}`;
-    const property = getPropertyByPosition(position);
     const onChainProperty = properties?.find(
       (property) => property.position === position
     );
 
+    const baseProps = {
+      // key,
+      position,
+      onChainProperty,
+    };
+
     if (isPropertySpace(space)) {
-      return (
-        <PropertySpace key={key} onChainProperty={onChainProperty} {...space} />
-      );
+      return <PropertySpace {...baseProps} {...space} key={key} />;
     } else if (isRailroadSpace(space)) {
-      return (
-        <RailroadSpace
-          key={key}
-          // name={space.name}
-          // price={space.price}
-          // rotate={space.rotate}
-          // longName={space.longName}
-          // position={position}
-          property={property}
-          onChainProperty={onChainProperty}
-          {...space}
-        />
-      );
-    }
-    // else if (space.type === "beach") {
-    //   return (
-    //     <BeachSpace
-    //       key={key}
-    //       name={space.name}
-    //       price={space.price}
-    //       rotate={space.rotate}
-    //       longName={space.longName}
-    //       position={position}
-    //       // onClick={handleSpaceClick}
-    //       property={property}
-    //       playerName={playerName}
-    //     />
-    //   );
-    // }
-    else if (isUtilitySpace(space)) {
-      return (
-        <UtilitySpace
-          key={key}
-          property={property}
-          onChainProperty={onChainProperty}
-          {...space}
-        />
-      );
+      return <RailroadSpace {...baseProps} {...space} key={key} />;
+    } else if (isUtilitySpace(space)) {
+      return <UtilitySpace {...baseProps} {...space} key={key} />;
     } else if (isTaxSpace(space)) {
-      return (
-        <TaxSpace
-          key={key}
-          property={property}
-          onChainProperty={onChainProperty}
-          {...space}
-        />
-      );
+      return <TaxSpace {...baseProps} {...space} key={key} />;
     } else if (isChanceSpace(space)) {
-      return (
-        <ChanceSpace
-          key={key}
-          property={property}
-          onChainProperty={onChainProperty}
-          {...space}
-        />
-      );
+      return <ChanceSpace {...baseProps} {...space} key={key} />;
     } else if (isCommunityChestSpace(space)) {
-      return (
-        <CommunityChestSpace
-          key={key}
-          property={property}
-          onChainProperty={onChainProperty}
-          {...space}
-        />
-      );
+      return <CommunityChestSpace {...baseProps} {...space} key={key} />;
     }
 
     return null;
@@ -214,25 +159,17 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
     >
       <div className="h-full w-full flex items-center justify-center p-2 sm:p-4">
         <div
-          className="relative aspect-square bg-board-bg transition-transform duration-500 ease-in-out border-3
+          className="relative aspect-square bg-board-bg transition-transform duration-500 ease-in-out border-2
                      w-full h-full max-w-[min(100vh,100vw)] max-h-[min(100vh,100vw)]
                      lg:max-w-none lg:max-h-none lg:h-full lg:w-auto"
           style={{ transform: `rotate(${boardRotation}deg)` }}
         >
-          <div className="absolute inset-0 grid grid-cols-14 grid-rows-14 pgap-[0.1%] pp-[0.1%]">
+          <div className="absolute inset-0 grid grid-cols-14 grid-rows-14">
             {/* Player Tokens */}
             <PlayerTokensContainer
               players={players}
               boardRotation={boardRotation}
             />
-
-            {/* Property Indicators */}
-            {/* <PropertyIndicatorsContainer
-              propertyOwnership={gameState.propertyOwnership}
-              players={gameState.players}
-              propertyBuildings={gameState.propertyBuildings}
-              mortgagedProperties={gameState.mortgagedProperties}
-            /> */}
 
             {/* Center - Responsive */}
             <div
@@ -254,7 +191,6 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
               <EnhancedGameLogs
                 filterTypes={[
                   "move",
-                  // "turn",
                   "skip",
                   "purchase",
                   "rent",
@@ -270,10 +206,12 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
 
             {/* Corner Spaces */}
             {/* GO Corner (bottom-right) */}
-            <div className="col-start-13 col-end-15 row-start-13 row-end-15 text-center flex items-center justify-center border-t-3 border-l-3 border-black">
-              <div className="corner-space transform h-full flex flex-col justify-center items-center">
-                <div className="px-1 text-xs font-bold">
-                  COLLECT $200.00 SALARY AS YOU PASS
+            <div className="col-start-13 col-end-15 row-start-13 row-end-15 text-center flex items-center justify-center border-t-2 border-l-2 border-black">
+              <div className="corner-space -rotate-45 transform h-full flex flex-col justify-center items-center">
+                <div className="px-1 text-[10px] font-bold">
+                  COLLECT <br />
+                  $200 SALARY
+                  <br /> AS YOU PASS
                 </div>
                 <div className="icon-large text-[#f50c2b] font-bold text-4xl">
                   GO
@@ -283,7 +221,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
             </div>
 
             {/* JAIL Corner (bottom-left) */}
-            <div className="col-start-1 col-end-3 row-start-13 row-end-15 text-center flex items-center justify-center border-t-3 border-r-3 border-black">
+            <div className="col-start-1 col-end-3 row-start-13 row-end-15 text-center flex items-center justify-center border-t-2 border-r-2 border-black">
               <div className="corner-space flex items-center justify-center h-full">
                 <img
                   src="/images/JAIL.png"
@@ -294,7 +232,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
             </div>
 
             {/* FREE PARKING Corner (top-left) */}
-            <div className="col-start-1 col-end-3 row-start-1 row-end-3 text-center flex items-center justify-center border-b-3 border-r-3 border-black">
+            <div className="col-start-1 col-end-3 row-start-1 row-end-3 text-center flex items-center justify-center border-b-2 border-r-2 border-black">
               <div className="corner-space flex flex-col items-center justify-center h-full">
                 <img
                   src="/images/FREEPARKING.png"
@@ -306,7 +244,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
             </div>
 
             {/* GO TO JAIL Corner (top-right) */}
-            <div className="col-start-13 col-end-15 row-start-1 row-end-3 text-center flex items-center justify-center border-b-3 border-l-3 border-black">
+            <div className="col-start-13 col-end-15 row-start-1 row-end-3 text-center flex items-center justify-center border-b-2 border-l-2 border-black">
               <div className="corner-space flex flex-col items-center justify-center h-full">
                 <img
                   src="/images/GOTOJAIL.png"
@@ -318,28 +256,28 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
             </div>
 
             {/* Bottom Row */}
-            <div className="col-start-3 col-end-13 row-start-13 row-end-15 grid grid-cols-9 grid-rows-1 pgap-[0.1%]">
+            <div className="col-start-3 col-end-13 row-start-13 row-end-15 grid grid-cols-9 grid-rows-1 ">
               {getBoardRowData().bottomRow.map((space) =>
                 renderSpace(space, properties)
               )}
             </div>
 
             {/* Left Row */}
-            <div className="col-start-1 col-end-3 row-start-3 row-end-13 grid grid-cols-1 grid-rows-9 gap-[0.1%]">
+            <div className="col-start-1 col-end-3 row-start-3 row-end-13 grid grid-cols-1 grid-rows-9 ">
               {getBoardRowData().leftRow.map((space) =>
                 renderSpace(space, properties)
               )}
             </div>
 
             {/* Top Row */}
-            <div className="col-start-3 col-end-13 row-start-1 row-end-3 grid grid-cols-9 grid-rows-1 gap-[0.1%]">
+            <div className="col-start-3 col-end-13 row-start-1 row-end-3 grid grid-cols-9 grid-rows-1 ">
               {getBoardRowData().topRow.map((space) =>
                 renderSpace(space, properties)
               )}
             </div>
 
             {/* Right Row */}
-            <div className="col-start-13 col-end-15 row-start-3 row-end-13 grid grid-cols-1 grid-rows-9 gap-[0.1%]">
+            <div className="col-start-13 col-end-15 row-start-3 row-end-13 grid grid-cols-1 grid-rows-9 ">
               {getBoardRowData().rightRow.map((space) =>
                 renderSpace(space, properties)
               )}

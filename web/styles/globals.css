@@ -38,6 +38,8 @@ flex-grow: 0; */
   --spacing-boxShadowY: 4px;
   --spacing-reverseBoxShadowX: -4px;
   --spacing-reverseBoxShadowY: -4px;
+  --ring-width-abc: 10px;
+
   --radius-base: 4px;
   --shadow-shadow: var(--shadow);
   --font-weight-base: 500;
