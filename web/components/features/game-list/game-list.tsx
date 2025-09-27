@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 const dummyGames: GameData[] = [
   {
@@ -88,6 +89,7 @@ const FILTER_OPTIONS = [
 ];
 
 export function GameList() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [games] = useState<GameData[]>(dummyGames);
   const [statusFilter, setStatusFilter] = useState<GameStatusFilter>("all");
@@ -101,6 +103,7 @@ export function GameList() {
 
   const handleJoinGame = (gameId: string) => {
     console.log("Joining game:", gameId);
+    router.push(`/game/1234`);
   };
 
   const handleSpectateGame = (gameId: string) => {

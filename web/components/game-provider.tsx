@@ -1,6 +1,5 @@
 "use client";
 
-// import { useGameState } from "@/hooks/useGameStatev2";
 import { useGameState } from "@/hooks/useGameState";
 import { PlayerState } from "@/lib/sdk/generated";
 import { sdk } from "@/lib/sdk/sdk";

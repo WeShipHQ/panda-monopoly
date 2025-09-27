@@ -10,6 +10,8 @@ import {
   generatePlayerIcon,
 } from "@/lib/utils";
 import { useGameContext } from "@/components/game-provider";
+import Link from "next/link";
+import { HomeIcon } from "lucide-react";
 
 export function PlayerList() {
   const { gameState, players, gameLoading } = useGameContext();
@@ -50,7 +52,12 @@ export function PlayerList() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Players</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Players</h2>
+        <Link href="/">
+          <HomeIcon />
+        </Link>
+      </div>
       <div className="space-y-3">
         {players.map((player, index) => {
           const playerInfo = generatePlayerIcon(player.wallet);
