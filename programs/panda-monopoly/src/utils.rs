@@ -129,16 +129,19 @@ pub fn can_sell_evenly_for_player(
     _target_houses: u8,
 ) -> bool {
     let _properties_in_group = get_color_group_properties(color_group);
-    
+
     // For this simplified version, we'll assume even selling is allowed
     // In a full implementation, you'd need to check other properties in the group
     // This would require additional property state lookups
     true
 }
 
-
 // Helper function to generate random card index
-pub fn generate_card_index(recent_blockhashes: &UncheckedAccount, timestamp: i64, deck_size: usize) -> Result<usize> {
+pub fn generate_card_index(
+    recent_blockhashes: &UncheckedAccount,
+    timestamp: i64,
+    deck_size: usize,
+) -> Result<usize> {
     // Get recent blockhash data for randomness
     let data = recent_blockhashes.try_borrow_data()?;
 
@@ -155,12 +158,8 @@ pub fn generate_card_index(recent_blockhashes: &UncheckedAccount, timestamp: i64
     seed_bytes[24..].copy_from_slice(&timestamp_bytes);
 
     // Generate random index
-    let random_value = u32::from_le_bytes([
-        seed_bytes[0],
-        seed_bytes[1],
-        seed_bytes[2],
-        seed_bytes[3],
-    ]);
+    let random_value =
+        u32::from_le_bytes([seed_bytes[0], seed_bytes[1], seed_bytes[2], seed_bytes[3]]);
 
     Ok((random_value as usize) % deck_size)
 }
@@ -168,16 +167,16 @@ pub fn generate_card_index(recent_blockhashes: &UncheckedAccount, timestamp: i64
 // Helper function for generating random seed (similar to dice roll generation)
 pub fn generate_random_seed(recent_blockhashes: &UncheckedAccount, timestamp: i64) -> Result<u64> {
     let recent_blockhashes_data = recent_blockhashes.try_borrow_data()?;
-    
+
     if recent_blockhashes_data.len() < 8 {
         return Err(GameError::RandomnessUnavailable.into());
     }
-    
+
     let mut seed_bytes = [0u8; 8];
     seed_bytes.copy_from_slice(&recent_blockhashes_data[0..8]);
-    
+
     let blockhash_seed = u64::from_le_bytes(seed_bytes);
     let timestamp_seed = timestamp as u64;
-    
+
     Ok(blockhash_seed.wrapping_mul(timestamp_seed))
 }

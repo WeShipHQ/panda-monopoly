@@ -6,8 +6,8 @@ use anchor_lang::prelude::*;
 pub struct EndTurn<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref()],
-        bump,
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
     pub game: Account<'info, GameState>,
@@ -92,10 +92,3 @@ pub fn end_turn_handler(ctx: Context<EndTurn>) -> Result<()> {
 
     Ok(())
 }
-
-// Bankruptcy logic will be handled by PlayerState accounts
-// This function is simplified for now
-// pub fn check_bankruptcy(_game: &mut GameState, _player_index: usize) -> Result<()> {
-//     msg!("Bankruptcy check processed");
-//     Ok(())
-// }

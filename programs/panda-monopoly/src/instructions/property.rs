@@ -9,7 +9,7 @@ use anchor_lang::prelude::*;
 pub struct BuyProperty<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -26,7 +26,7 @@ pub struct BuyProperty<'info> {
         init_if_needed,
         payer = player,
         space = 8 + PropertyState::INIT_SPACE,
-        seeds = [b"property", game.key().as_ref(), &[position]],
+        seeds = [b"property", game.key().as_ref(), position.to_le_bytes().as_ref()],
         bump
     )]
     pub property_state: Account<'info, PropertyState>,
@@ -147,10 +147,10 @@ pub fn buy_property_handler(ctx: Context<BuyProperty>, position: u8) -> Result<(
     // Update timestamps
     game.turn_started_at = clock.unix_timestamp;
 
+    // In the buy_property_handler function, remove or update the msg! that references property_data.name:
     msg!(
-        "Player {} purchased property {} at position {} for ${}",
+        "Player {} purchased property at position {} for ${}",
         player_pubkey,
-        String::from_utf8_lossy(&property_data.name).trim_end_matches('\0'),
         position,
         property_data.price
     );
@@ -164,7 +164,8 @@ pub fn buy_property_handler(ctx: Context<BuyProperty>, position: u8) -> Result<(
 pub struct DeclineProperty<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -176,10 +177,10 @@ pub struct DeclineProperty<'info> {
         bump
     )]
     pub player_state: Account<'info, PlayerState>,
-    
+
     #[account(mut)]
     pub player: Signer<'info>,
-    
+
     pub clock: Sysvar<'info, Clock>,
 }
 
@@ -188,59 +189,61 @@ pub fn decline_property_handler(ctx: Context<DeclineProperty>, position: u8) -> 
     let player_state = &mut ctx.accounts.player_state;
     let player_pubkey = ctx.accounts.player.key();
     let clock = &ctx.accounts.clock;
-    
+
     // Validate it's the player's turn
-    let player_index = game.players.iter()
+    let player_index = game
+        .players
+        .iter()
         .position(|&p| p == player_pubkey)
         .ok_or(GameError::PlayerNotFound)?;
-    
+
     if game.current_turn != player_index as u8 {
         return Err(GameError::NotPlayerTurn.into());
     }
-    
+
     // Validate player is at the property position
     if player_state.position != position {
         return Err(GameError::InvalidPropertyPosition.into());
     }
-    
+
     // Validate player has a pending property action
     if !player_state.needs_property_action {
         return Err(GameError::InvalidSpecialSpaceAction.into());
     }
-    
+
     // Validate the pending property position matches
     if player_state.pending_property_position != Some(position) {
         return Err(GameError::InvalidPropertyPosition.into());
     }
-    
+
     // Validate position is a purchasable property
     if !is_property_purchasable(position) {
         return Err(GameError::PropertyNotPurchasable.into());
     }
-    
+
     // Get property data for logging
-    let property_data = get_property_data(position)
-        .ok_or(GameError::InvalidPropertyPosition)?;
-    
+    let property_data = get_property_data(position).ok_or(GameError::InvalidPropertyPosition)?;
+
     // Clear property action flags
     player_state.needs_property_action = false;
     player_state.pending_property_position = None;
-    
+
     // Allow player to end turn after declining
-    player_state.can_end_turn = true;
-    
+    // player_state.can_end_turn = true;
+
     // Update timestamps
     game.turn_started_at = clock.unix_timestamp;
-    
-    msg!("Player {} declined to purchase property {} at position {} (${}) - property may go to auction", 
-         player_pubkey, 
-         String::from_utf8_lossy(&property_data.name).trim_end_matches('\0'),
-         position, 
-         property_data.price);
-    
+
+    msg!(
+        "Player {} declined to purchase property at position {} (${}) - property may go to auction",
+        player_pubkey,
+        position,
+        property_data.price
+    );
+
     // Note: In a full implementation, this would trigger an auction
     // The auction system would be implemented separately with its own instruction
-    
+
     Ok(())
 }
 
@@ -251,7 +254,8 @@ pub fn decline_property_handler(ctx: Context<DeclineProperty>, position: u8) -> 
 pub struct PayRent<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -273,7 +277,7 @@ pub struct PayRent<'info> {
 
     #[account(
         mut,
-        seeds = [b"property", game.key().as_ref(), &[position]],
+        seeds = [b"property", game.key().as_ref(), position.to_le_bytes().as_ref()],
         bump
     )]
     pub property_state: Account<'info, PropertyState>,
@@ -329,11 +333,8 @@ pub fn pay_rent_handler(ctx: Context<PayRent>, position: u8) -> Result<()> {
     }
 
     // Calculate rent amount
-    let rent_amount = calculate_rent_for_property(
-        &property_state,
-        &owner_state,
-        game.dice_result
-    )?;
+    let rent_amount =
+        calculate_rent_for_property(&property_state, &owner_state, payer_state.last_dice_roll)?;
 
     // Check if payer has enough money
     if payer_state.cash_balance < rent_amount {
@@ -364,6 +365,9 @@ pub fn pay_rent_handler(ctx: Context<PayRent>, position: u8) -> Result<()> {
         .checked_add(rent_amount)
         .ok_or(GameError::ArithmeticOverflow)?;
 
+    // FIXME
+    payer_state.needs_property_action = false;
+
     // Update property rent tracking
     property_state.last_rent_paid = clock.unix_timestamp;
     owner_state.last_rent_collected = clock.unix_timestamp;
@@ -388,7 +392,8 @@ pub fn pay_rent_handler(ctx: Context<PayRent>, position: u8) -> Result<()> {
 pub struct BuildHouse<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -403,7 +408,7 @@ pub struct BuildHouse<'info> {
 
     #[account(
         mut,
-        seeds = [b"property", game.key().as_ref(), &[position]],
+        seeds = [b"property", game.key().as_ref(), position.to_le_bytes().as_ref()],
         bump,
         constraint = property_state.owner == Some(player.key()) @ GameError::PropertyNotOwnedByPlayer,
         constraint = !property_state.is_mortgaged @ GameError::PropertyMortgaged,
@@ -446,7 +451,12 @@ pub fn build_house_handler(ctx: Context<BuildHouse>, position: u8) -> Result<()>
     }
 
     // Check even building rule
-    if !can_build_evenly_for_player(player_state, property_state.color_group, position, property_state.houses + 1) {
+    if !can_build_evenly_for_player(
+        player_state,
+        property_state.color_group,
+        position,
+        property_state.houses + 1,
+    ) {
         return Err(GameError::MustBuildEvenly.into());
     }
 
@@ -496,7 +506,8 @@ pub fn build_house_handler(ctx: Context<BuildHouse>, position: u8) -> Result<()>
 pub struct BuildHotel<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -511,7 +522,7 @@ pub struct BuildHotel<'info> {
 
     #[account(
         mut,
-        seeds = [b"property", game.key().as_ref(), &[position]],
+        seeds = [b"property", game.key().as_ref(), position.to_le_bytes().as_ref()],
         bump,
         constraint = property_state.owner == Some(player.key()) @ GameError::PropertyNotOwnedByPlayer,
         constraint = !property_state.is_mortgaged @ GameError::PropertyMortgaged,
@@ -598,7 +609,8 @@ pub fn build_hotel_handler(ctx: Context<BuildHotel>, position: u8) -> Result<()>
 pub struct SellBuilding<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -613,7 +625,7 @@ pub struct SellBuilding<'info> {
 
     #[account(
         mut,
-        seeds = [b"property", game.key().as_ref(), &[position]],
+        seeds = [b"property", game.key().as_ref(), position.to_le_bytes().as_ref()],
         bump,
         constraint = property_state.owner == Some(player.key()) @ GameError::PropertyNotOwnedByPlayer,
         constraint = property_state.property_type == PropertyType::Street @ GameError::CannotBuildOnPropertyType
@@ -626,7 +638,11 @@ pub struct SellBuilding<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
-pub fn sell_building_handler(ctx: Context<SellBuilding>, position: u8, building_type: BuildingType) -> Result<()> {
+pub fn sell_building_handler(
+    ctx: Context<SellBuilding>,
+    position: u8,
+    building_type: BuildingType,
+) -> Result<()> {
     let game = &mut ctx.accounts.game;
     let player_state = &mut ctx.accounts.player_state;
     let property_state = &mut ctx.accounts.property_state;
@@ -654,7 +670,12 @@ pub fn sell_building_handler(ctx: Context<SellBuilding>, position: u8, building_
             }
 
             // Check even selling rule
-            if !can_sell_evenly_for_player(player_state, property_state.color_group, position, property_state.houses - 1) {
+            if !can_sell_evenly_for_player(
+                player_state,
+                property_state.color_group,
+                position,
+                property_state.houses - 1,
+            ) {
                 return Err(GameError::MustSellEvenly.into());
             }
 
@@ -720,7 +741,8 @@ pub fn sell_building_handler(ctx: Context<SellBuilding>, position: u8, building_
 pub struct MortgageProperty<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -735,7 +757,7 @@ pub struct MortgageProperty<'info> {
 
     #[account(
         mut,
-        seeds = [b"property", game.key().as_ref(), &[position]],
+        seeds = [b"property", game.key().as_ref(), position.to_le_bytes().as_ref()],
         bump,
         constraint = property_state.owner == Some(player.key()) @ GameError::PropertyNotOwnedByPlayer,
         constraint = !property_state.is_mortgaged @ GameError::PropertyAlreadyMortgaged,
@@ -802,7 +824,8 @@ pub fn mortgage_property_handler(ctx: Context<MortgageProperty>, position: u8) -
 pub struct UnmortgageProperty<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.authority.as_ref()],
+        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
@@ -817,7 +840,7 @@ pub struct UnmortgageProperty<'info> {
 
     #[account(
         mut,
-        seeds = [b"property", game.key().as_ref(), &[position]],
+        seeds = [b"property", game.key().as_ref(), position.to_le_bytes().as_ref()],
         bump,
         constraint = property_state.owner == Some(player.key()) @ GameError::PropertyNotOwnedByPlayer,
         constraint = property_state.is_mortgaged @ GameError::PropertyNotMortgaged
@@ -885,4 +908,3 @@ pub fn unmortgage_property_handler(ctx: Context<UnmortgageProperty>, position: u
 
     Ok(())
 }
-

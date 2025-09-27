@@ -302,4 +302,28 @@ pub enum GameError {
 
     #[msg("Property already mortgaged")]
     PropertyAlreadyMortgaged,
+
+    #[msg("Dice roll error")]
+    DiceRollError,
+
+    #[msg("Trade is not pending")]
+    TradeNotPending,
+
+    #[msg("Not the trade target")]
+    NotTradeTarget,
+
+    #[msg("Not the trade proposer")]
+    NotTradeProposer,
+
+    #[msg("Invalid trade type")]
+    InvalidTradeType,
+
+    #[msg("Auction is not active")]
+    AuctionNotActive,
+
+    #[msg("Auction has ended")]
+    AuctionEnded,
+
+    #[msg("Auction is still active")]
+    AuctionStillActive,
 }

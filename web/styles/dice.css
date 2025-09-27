@@ -1,0 +1,263 @@
+.dice-wrapper {
+  position: relative;
+  width: 50px; /* Reduced from 100px to 50px */
+  height: 50px; /* Reduced from 100px to 50px */
+  perspective: 500px; /* Adjusted perspective for smaller size */
+}
+
+.dice-wrapper::before {
+  position: absolute;
+  content: "";
+  width: 70%;
+  height: 10%;
+  top: 90%;
+  left: 15%;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 100%;
+  filter: blur(5px); /* Reduced blur for smaller shadow */
+}
+
+.dice-3d {
+  position: relative;
+  width: 50px; /* Reduced from 100px to 50px */
+  height: 50px; /* Reduced from 100px to 50px */
+  transform-style: preserve-3d;
+  transform: rotate3d(0, 0.9, 0.9, 90deg);
+  transition: 0.5s cubic-bezier(0.42, 1.57, 0.62, 0.86);
+}
+
+.dice-3d.dice-rolling {
+  animation: rotatePerFace 2s cubic-bezier(0.42, 1.57, 0.62, 0.86) infinite;
+}
+
+/* Different animation for second dice */
+.dice-3d.dice-rolling.dice-2 {
+  animation: rotatePerFaceReverse 2s cubic-bezier(0.42, 1.57, 0.62, 0.86) infinite;
+}
+
+.dice-3d.dice-throw {
+  animation: rotateDice 0.7s ease-in reverse, throwDice 1s linear;
+}
+
+/* Different throw animation for second dice */
+.dice-3d.dice-throw.dice-2 {
+  animation: rotateDiceReverse 0.7s ease-in reverse, throwDiceReverse 1s linear;
+}
+
+.dice-face {
+  box-sizing: border-box;
+  position: absolute;
+  width: 50px; /* Reduced from 100px to 50px */
+  height: 50px; /* Reduced from 100px to 50px */
+  background-color: #f6f3f0;
+  border: 1px solid white; /* Reduced border from 2px to 1px */
+  border-radius: 10px; /* Reduced from 20px to 10px */
+  transform-style: preserve-3d;
+  transition: 0.5s;
+}
+
+.dice-face::before {
+  position: absolute;
+  content: "";
+  width: 100%;
+  height: 100%;
+  background-color: white;
+  border-radius: 10px; /* Reduced from 20px to 10px */
+  transform: translateZ(-0.5px); /* Adjusted for smaller size */
+}
+
+.dice-face::after {
+  position: absolute;
+  content: "";
+  width: 10px; /* Reduced from 20px to 10px */
+  height: 10px; /* Reduced from 20px to 10px */
+  top: 50%;
+  left: 50%;
+  margin: -5px 0 0 -5px; /* Adjusted for smaller dots */
+  background-color: #131210;
+  border-radius: 100%;
+  transform: translateZ(0.5px);
+}
+
+/* Face positions - adjusted for smaller size */
+.dice-front {
+  transform: translateZ(25px); /* Reduced from 50px to 25px */
+}
+
+.dice-back {
+  transform: rotateX(180deg) translateZ(25px);
+}
+
+.dice-right {
+  transform: rotateY(90deg) translateZ(25px);
+}
+
+.dice-left {
+  transform: rotateY(-90deg) translateZ(25px);
+}
+
+.dice-top {
+  transform: rotateX(90deg) translateZ(25px);
+}
+
+.dice-bottom {
+  transform: rotateX(-90deg) translateZ(25px);
+}
+
+/* Dice face dots - adjusted for smaller size */
+.dice-front::after {
+  width: 20px; /* Reduced from 40px to 20px */
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  background-color: #f63330;
+}
+
+.dice-top::after {
+  margin: -15px 0 0 -15px; /* Adjusted spacing */
+  box-shadow: 20px 20px #131210; /* Adjusted spacing */
+}
+
+.dice-left::after {
+  margin: -20px 0 0 -20px;
+  box-shadow: 15px 15px #131210, 30px 30px #131210; /* Adjusted spacing */
+}
+
+.dice-right::after {
+  margin: -15px 0 0 -15px;
+  background-color: #f63330;
+  box-shadow: 20px 0px #f63330, 0px 20px #f63330, 20px 20px #f63330; /* Adjusted spacing */
+}
+
+.dice-bottom::after {
+  margin: -18px 0 0 -18px;
+  box-shadow: 13px 13px #131210, 26px 26px #131210, 26px 0px #131210, 0px 26px #131210; /* Adjusted spacing */
+}
+
+.dice-back::after {
+  margin: -20px 0 0 -15px;
+  box-shadow: 20px 0px #131210, 0px 15px #131210, 20px 15px #131210, 0px 30px #131210, 20px 30px #131210; /* Adjusted spacing */
+}
+
+/* Original animations */
+@keyframes rotateDice {
+  30% {
+    transform: rotate3d(1, 1, 1, 0deg);
+  }
+  100% {
+    transform: rotate3d(1, 1, 1, 720deg);
+  }
+}
+
+@keyframes rotatePerFace {
+  16% {
+    transform: rotate3d(-0.1, 0.6, -0.4, 180deg);
+  }
+  32% {
+    transform: rotate3d(-0.85, -0.42, 0.73, 180deg);
+  }
+  48% {
+    transform: rotate3d(-0.8, 0.3, -0.75, 180deg);
+  }
+  64% {
+    transform: rotate3d(0.3, 0.45, 0.9, 180deg);
+  }
+  80% {
+    transform: rotate3d(-0.16, 0.6, 0.18, 180deg);
+  }
+  100% {
+    transform: rotate3d(-0.1, 0.3, -1, 180deg);
+  }
+}
+
+@keyframes throwDice {
+  20% {
+    margin-top: -50px; /* Reduced from -100px */
+  }
+  40% {
+    margin-top: 0px;
+  }
+  60% {
+    margin-top: -15px; /* Reduced from -30px */
+  }
+  80% {
+    margin-top: 0px;
+  }
+  85% {
+    margin-top: -5px; /* Reduced from -10px */
+  }
+  90% {
+    margin-top: 0px;
+  }
+  95% {
+    margin-top: -1.5px; /* Reduced from -3px */
+  }
+  100% {
+    margin-top: 0px;
+  }
+}
+
+/* Reverse animations for second dice */
+@keyframes rotateDiceReverse {
+  30% {
+    transform: rotate3d(-1, -1, -1, 0deg);
+  }
+  100% {
+    transform: rotate3d(-1, -1, -1, 720deg);
+  }
+}
+
+@keyframes rotatePerFaceReverse {
+  16% {
+    transform: rotate3d(0.1, -0.6, 0.4, 180deg);
+  }
+  32% {
+    transform: rotate3d(0.85, 0.42, -0.73, 180deg);
+  }
+  48% {
+    transform: rotate3d(0.8, -0.3, 0.75, 180deg);
+  }
+  64% {
+    transform: rotate3d(-0.3, -0.45, -0.9, 180deg);
+  }
+  80% {
+    transform: rotate3d(0.16, -0.6, -0.18, 180deg);
+  }
+  100% {
+    transform: rotate3d(0.1, -0.3, 1, 180deg);
+  }
+}
+
+@keyframes throwDiceReverse {
+  20% {
+    margin-top: -50px;
+    margin-left: 10px;
+  }
+  40% {
+    margin-top: 0px;
+    margin-left: 0px;
+  }
+  60% {
+    margin-top: -15px;
+    margin-left: -5px;
+  }
+  80% {
+    margin-top: 0px;
+    margin-left: 0px;
+  }
+  85% {
+    margin-top: -5px;
+    margin-left: 2px;
+  }
+  90% {
+    margin-top: 0px;
+    margin-left: 0px;
+  }
+  95% {
+    margin-top: -1.5px;
+    margin-left: -1px;
+  }
+  100% {
+    margin-top: 0px;
+    margin-left: 0px;
+  }
+}
