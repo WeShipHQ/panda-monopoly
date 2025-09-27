@@ -7,12 +7,11 @@ import {
 import { PropertyAccount } from "@/types/schema";
 import type { Address } from "@solana/kit";
 
-// Base interface for common space properties
 export interface BaseSpaceProps {
   position: number;
   rotate?: "left" | "top" | "right";
   onClick?: (position: number) => void;
-  onChainProperty?: PropertyAccount | null; // Unified property prop
+  onChainProperty?: PropertyAccount | null;
 }
 
 export type TaxSpaceProps = BaseSpaceProps & TaxSpace;

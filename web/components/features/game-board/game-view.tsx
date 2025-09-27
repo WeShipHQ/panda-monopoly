@@ -5,7 +5,7 @@ import GameBoard from "./game-board";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useGameContext } from "@/components/game-provider";
+import { useGameContext } from "@/components/providers/game-provider";
 import { useRouter, useSearchParams } from "next/navigation";
 import { address, createSignerFromKeyPair, createSolanaRpc } from "@solana/kit";
 import { fakePlayerA, fakePlayerB } from "@/lib/sdk/utils";

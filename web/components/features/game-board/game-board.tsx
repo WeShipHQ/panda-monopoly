@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   PropertySpace,
   ChanceSpace,
@@ -22,28 +21,13 @@ import {
 } from "@/lib/board-utils";
 
 import { PlayerTokensContainer } from "./player-tokens";
-import { Dice, DiceProvider } from "./dice";
+import { DiceProvider } from "./dice";
 import { CardDrawModal } from "./card-draw-modal";
-import { useGameContext } from "../../game-provider";
-import {
-  BankruptcyAction,
-  PlayerActions,
-  PlayerInJailAlert,
-  PropertyActions,
-} from "./player-actions";
-import { isSome } from "@solana/kit";
+import { useGameContext } from "@/components/providers/game-provider";
+import { PlayerActions } from "./player-actions";
 import { PropertyAccount } from "@/types/schema";
 import { BoardSpace } from "@/configs/board-data";
-import { EnhancedGameLogs, GameLogs } from "./game-logs";
-
-// import { Button } from "@/components/ui/button"
-// import { Input } from "@/components/ui/input"
-// import { Label } from "@/components/ui/label"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { EnhancedGameLogs } from "./game-logs";
 
 interface MonopolyBoardProps {
   boardRotation: number;

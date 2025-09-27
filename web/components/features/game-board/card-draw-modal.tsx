@@ -2,8 +2,7 @@
 
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import React, { useState, useEffect } from "react";
-import { useGameContext } from "@/components/game-provider";
-// import { CardData, surpriseCards, treasureCards } from "@/data/monopoly-data";
+import { useGameContext } from "@/components/providers/game-provider";
 import { cn } from "@/lib/utils";
 import { CardData } from "@/types/space-types";
 import { surpriseCards, treasureCards } from "@/configs/board-data";

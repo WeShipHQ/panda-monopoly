@@ -1,5 +1,6 @@
 "use client";
 
+import envConfig from "@/configs/env";
 import {
   createSolanaRpc,
   createSolanaRpcSubscriptions,
@@ -9,10 +10,6 @@ import {
   SolanaRpcSubscriptionsApi,
 } from "@solana/kit";
 import { createContext, ReactNode, useContext } from "react";
-
-const SOLANA_RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL!;
-const SOLANA_RPC_SUBSCRIPTIONS_URL =
-  process.env.NEXT_PUBLIC_SOLANA_RPC_SUBSCRIPTIONS_URL!;
 
 type Props = Readonly<{
   children: ReactNode;
@@ -37,9 +34,9 @@ export function RpcProvider({ children }: Props) {
   return (
     <RpcContext.Provider
       value={{
-        rpc: createSolanaRpc(SOLANA_RPC_URL),
+        rpc: createSolanaRpc(envConfig.NEXT_PUBLIC_RPC_URL),
         rpcSubscriptions: createSolanaRpcSubscriptions(
-          SOLANA_RPC_SUBSCRIPTIONS_URL
+          envConfig.NEXT_PUBLIC_RPC_SUBSCRIPTIONS_URL
         ),
       }}
     >

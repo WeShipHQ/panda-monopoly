@@ -1,5 +1,5 @@
 import { PlayerState } from "@/lib/sdk/generated";
-import { useGameContext } from "../../game-provider";
+import { useGameContext } from "@/components/providers/game-provider";
 import { useMemo } from "react";
 import { isSome } from "@solana/kit";
 import { Button } from "@/components/ui/button";

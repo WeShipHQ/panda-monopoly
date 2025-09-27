@@ -10,7 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import { GameLogEntry } from "@/types/space-types";
 import { useGameLogs } from "@/hooks/useGameLogs";
-import { useGameContext } from "../../game-provider";
+import { useGameContext } from "@/components/providers/game-provider";
 
 interface GameLogsProps {
   maxHeight?: string;

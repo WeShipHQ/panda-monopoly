@@ -3,10 +3,9 @@ import {
   PropertyPopover,
   RailroadPopover,
   UtilityPopover,
-  TaxPopover,
 } from "./space-popovers";
 import { BaseSpace } from "./base-space";
-import { cn, formatPrice } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
 import {
   colorMap,
   PropertySpace as PropertySpaceType,
@@ -16,9 +15,8 @@ import {
   CommunityChestSpace as CommunityChestSpaceType,
   TaxSpace as TaxSpaceType,
 } from "@/configs/board-data";
-import { getTypedSpaceData, getBoardSide } from "@/lib/board-utils";
+import { getTypedSpaceData } from "@/lib/board-utils";
 import { BaseSpaceProps } from "@/types/space-types";
-import Image from "next/image";
 import { CircleQuestionMarkIcon } from "lucide-react";
 import { TaxIcon } from "@/components/ui/icons";
 

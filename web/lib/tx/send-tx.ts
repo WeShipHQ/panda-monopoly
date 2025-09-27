@@ -15,8 +15,9 @@ import {
   address,
   getTransactionDecoder,
 } from "@solana/kit";
-
 import { buildTransaction, buildTransactionLegacy } from "./build-tx";
+import { WalletWithMetadata } from "@privy-io/react-auth";
+import { signTransactionWithPrivy } from "../privy";
 
 export async function buildAndSendTransaction(
   rpc: Rpc<SolanaRpcApi>,
@@ -185,267 +186,37 @@ function getTxHash(transaction: FullySignedTransaction) {
   return txHash;
 }
 
-// export async function buildAndSendTransactionWithPrivy(
-//   rpc: Rpc<SolanaRpcApi>,
-//   instructions: Instruction[],
-//   wallet: WalletWithMetadata,
-//   lookupTableAddresses?: (Address | string)[],
-//   commitment: Commitment = "confirmed",
-//   er: boolean = false
-// ) {
-//   const tx = await buildTransactionLegacy(
-//     rpc,
-//     instructions,
-//     address(wallet.address),
-//     lookupTableAddresses as Address[],
-//     er
-//   );
+export async function buildAndSendTransactionWithPrivy(
+  rpc: Rpc<SolanaRpcApi>,
+  instructions: Instruction[],
+  wallet: WalletWithMetadata,
+  lookupTableAddresses?: (Address | string)[],
+  commitment: Commitment = "confirmed",
+  er: boolean = false
+) {
+  const tx = await buildTransactionLegacy(
+    rpc,
+    instructions,
+    address(wallet.address),
+    lookupTableAddresses as Address[],
+    er
+  );
 
-//   const serializedTransaction = getBase64EncodedWireTransaction(tx);
+  const serializedTransaction = getBase64EncodedWireTransaction(tx);
 
-//   const signedTxResponse = await signTransactionWithPrivy(
-//     wallet.id!,
-//     serializedTransaction
-//   );
+  const signedTxResponse = await signTransactionWithPrivy(
+    wallet.id!,
+    serializedTransaction
+  );
 
-//   const txBytes = Buffer.from(
-//     signedTxResponse.data.signed_transaction,
-//     "base64"
-//   );
-//   const transaction = getTransactionDecoder().decode(
-//     txBytes
-//   ) as FullySignedTransaction;
+  const txBytes = Buffer.from(
+    signedTxResponse.data.signed_transaction,
+    "base64"
+  );
+  // @ts-expect-error
+  const transaction = getTransactionDecoder().decode(
+    txBytes
+  ) as FullySignedTransaction;
 
-//   return sendTransaction(rpc, transaction, commitment, er);
-// }
-
-// type PollTransactionOptions = {
-//   confirmationStatuses?: Web3TransactionConfirmationStatus[];
-//   // In milliseconds
-//   timeout?: number;
-//   // In milliseconds
-//   interval?: number;
-//   lastValidBlockHeight?: number;
-// };
-
-// async function pollTransactionConfirmation(
-//   connection: Connection,
-//   txtSig: Web3TransactionSignature,
-//   pollOptions: PollTransactionOptions = {}
-// ): Promise<Web3TransactionSignature> {
-//   const {
-//     confirmationStatuses = ["confirmed", "finalized"],
-//     timeout = 60000,
-//     interval = 2000,
-//     lastValidBlockHeight,
-//   } = pollOptions;
-
-//   if (lastValidBlockHeight) {
-//     const currentHeight = await connection.getBlockHeight();
-
-//     if (lastValidBlockHeight - currentHeight > 150) {
-//       throw new Error(
-//         `Provided lastValidBlockHeight (${lastValidBlockHeight}) is more than 150 blocks from the current chain height (${currentHeight})`
-//       );
-//     }
-//   }
-
-//   const startTime = Date.now();
-
-//   while (true) {
-//     if (Date.now() - startTime > timeout) {
-//       throw new Error(
-//         `Transaction ${txtSig} not confirmed within ${timeout}ms`
-//       );
-//     }
-
-//     if (lastValidBlockHeight) {
-//       const currentHeight = await connection.getBlockHeight();
-
-//       if (currentHeight > lastValidBlockHeight) {
-//         const finalStatus = await connection.getSignatureStatus(txtSig);
-//         if (
-//           finalStatus?.value?.confirmationStatus &&
-//           confirmationStatuses.includes(finalStatus.value.confirmationStatus)
-//         ) {
-//           // The tx was confirmed at the boundary
-//           return txtSig;
-//         }
-//         throw new Error(
-//           `Block height has exceeded lastValidBlockHeight for tx ${txtSig}, and it was not found in a confirmed block.`
-//         );
-//       }
-//     }
-
-//     const status = await connection.getSignatureStatus(txtSig);
-
-//     if (status?.value) {
-//       const { confirmationStatus, err } = status.value;
-
-//       if (err) {
-//         throw new Error(
-//           `Transaction ${txtSig} failed on-chain with error: ${JSON.stringify(
-//             err
-//           )}`
-//         );
-//       }
-
-//       // If confirmed or finalized, we can stop
-//       if (
-//         confirmationStatus &&
-//         confirmationStatuses.includes(confirmationStatus)
-//       ) {
-//         return txtSig;
-//       }
-//     }
-
-//     await new Promise((resolve) => setTimeout(resolve, interval));
-//   }
-// }
-
-// interface CreateSmartTransactionOptions {
-//   /** Optional separate fee payer. If not provided, the first signer will be used */
-//   feePayer?: Web3Signer;
-//   /** Maximum priority fee (in microlamports) to pay for the transaction */
-//   priorityFeeCap?: number;
-//   /** Options for serializing legacy transactions:
-//    * - requireAllSignatures: Requires all signatures to be present (default: true)
-//    * - verifySignatures: Verifies provided signatures (default: true)
-//    */
-//   serializeOptions?: Web3SerializeConfig;
-//   commitment?: Commitment;
-// }
-
-// interface SendSmartTransactionOptions extends CreateSmartTransactionOptions {
-//   /** Number of blocks after the current block height that the transaction remains valid */
-//   lastValidBlockHeightOffset?: number;
-//   /** Maximum time in milliseconds to wait for transaction confirmation */
-//   pollTimeoutMs?: number;
-//   /** Time in milliseconds to wait between confirmation status checks */
-//   pollIntervalMs?: number;
-//   /** Time in milliseconds for each polling attempt before retrying transaction */
-//   pollChunkMs?: number;
-// }
-
-// async function broadcastTransaction(
-//   connection: Connection,
-//   transaction: Web3Transaction | Web3VersionedTransaction | Buffer | string,
-//   options: SendSmartTransactionOptions = {}
-// ): Promise<string> {
-//   const {
-//     lastValidBlockHeightOffset = 150,
-//     pollTimeoutMs = 60000,
-//     pollIntervalMs = 2000,
-//     pollChunkMs = 10000,
-//     skipPreflight = false,
-//     preflightCommitment = "confirmed",
-//     maxRetries = 0,
-//   } = options;
-
-//   if (lastValidBlockHeightOffset < 0) {
-//     throw new Error("lastValidBlockHeightOffset must be a positive integer");
-//   }
-
-//   let serializedTx: Buffer;
-//   let recentBlockhash: string | undefined;
-
-//   try {
-//     if (transaction instanceof Web3Transaction) {
-//       serializedTx = transaction.serialize();
-//       recentBlockhash = transaction.recentBlockhash;
-//     } else if (transaction instanceof Web3VersionedTransaction) {
-//       serializedTx = Buffer.from(transaction.serialize());
-//       recentBlockhash = transaction.message.recentBlockhash;
-//     } else if (Buffer.isBuffer(transaction)) {
-//       serializedTx = transaction;
-//       recentBlockhash = undefined; // Cannot extract
-//     } else if (typeof transaction === "string") {
-//       serializedTx = Buffer.from(transaction, "base64");
-//       recentBlockhash = undefined; // Cannot extract
-//     } else {
-//       throw new Error("Unsupported transaction input type.");
-//     }
-
-//     // Fallback to latest blockhash info if none is present
-//     if (!recentBlockhash) {
-//       console.warn(
-//         "No recentBlockhash found in serialized transaction; using latest blockhash info"
-//       );
-//     }
-
-//     const blockhashInfo =
-//       await connection.getLatestBlockhash(preflightCommitment);
-//     const currentBlockHeight = await connection.getBlockHeight();
-//     const lastValidBlockHeight = Math.min(
-//       blockhashInfo.lastValidBlockHeight,
-//       currentBlockHeight + lastValidBlockHeightOffset
-//     );
-
-//     const startTime = Date.now();
-//     let attemptCount = 0;
-//     let signature: string;
-
-//     while (true) {
-//       if (Date.now() - startTime > pollTimeoutMs) {
-//         throw new Error(`Transaction not confirmed after ${pollTimeoutMs}ms`);
-//       }
-
-//       attemptCount++;
-
-//       try {
-//         signature = await connection.sendRawTransaction(serializedTx, {
-//           skipPreflight,
-//           preflightCommitment,
-//           maxRetries,
-//         });
-//       } catch (sendError) {
-//         console.warn(
-//           `sendRawTransaction attempt ${attemptCount} failed: ${sendError}`
-//         );
-//         await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
-//         continue;
-//       }
-
-//       try {
-//         const confirmedSig = await pollTransactionConfirmation(
-//           connection,
-//           signature,
-//           {
-//             timeout: pollChunkMs,
-//             interval: pollIntervalMs,
-//             confirmationStatuses: ["confirmed", "finalized"],
-//             lastValidBlockHeight,
-//           }
-//         );
-//         return confirmedSig;
-//       } catch (pollError: any) {
-//         if (
-//           pollError.message.includes("Block height has exceeded") ||
-//           pollError.message.includes("failed on-chain")
-//         ) {
-//           throw pollError;
-//         }
-
-//         console.warn(
-//           `pollTransactionConfirmation timed out, attempt #${attemptCount}. Retrying...`
-//         );
-
-//         const status = await connection.getSignatureStatus(signature);
-//         if (status?.value?.confirmationStatus && !status.value.err) {
-//           const { confirmationStatus } = status.value;
-//           if (["confirmed", "finalized"].includes(confirmationStatus)) {
-//             console.info(
-//               `Transaction ${signature} was confirmed despite polling failure. Returning successful`
-//             );
-//             return signature;
-//           }
-//         }
-
-//         await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
-//         continue;
-//       }
-//     }
-//   } catch (error) {
-//     throw new Error(`Error broadcasting signed smart transaction: ${error}`);
-//   }
-// }
+  return sendTransaction(rpc, transaction, commitment, er);
+}

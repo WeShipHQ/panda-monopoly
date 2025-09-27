@@ -8,7 +8,7 @@ import React, {
   useContext,
 } from "react";
 import { playDiceRollSequence, stopDiceRollSequence } from "@/lib/soundUtil";
-import { useGameContext } from "../../game-provider";
+import { useGameContext } from "@/components/providers/game-provider";
 import "../../../styles/dice.css";
 import { Button } from "@/components/ui/button";
 

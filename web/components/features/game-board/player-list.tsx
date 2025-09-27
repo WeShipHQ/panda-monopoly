@@ -9,7 +9,7 @@ import {
   formatPrice,
   generatePlayerIcon,
 } from "@/lib/utils";
-import { useGameContext } from "@/components/game-provider";
+import { useGameContext } from "@/components/providers/game-provider";
 import Link from "next/link";
 import { HomeIcon } from "lucide-react";
 

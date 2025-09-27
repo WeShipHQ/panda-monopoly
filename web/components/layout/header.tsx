@@ -22,7 +22,7 @@ const NavBar = () => {
       <nav className="fixed top-4 z-50 w-full px-4">
         <div
           className={cn(
-            `mx-auto flex h-[80px] w-full max-w-full
+            `mx-auto flex h-[80px] w-full container
         items-center justify-between px-6 transition-transform
         duration-300 ease-in-out bg-chart-3 dark:bg-darkBg transform `
           )}
@@ -45,10 +45,10 @@ const NavBar = () => {
                 }}
               >
                 <Image
-                  src="/images/wif.png"
+                  src="/logo.jpg"
                   alt="Ronit Logo"
-                  width={70}
-                  height={70}
+                  width={48}
+                  height={48}
                 />
               </a>
             </h1>
@@ -59,24 +59,12 @@ const NavBar = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center text-base lg:text-lg space-x-6">
             <div className="flex items-center gap-4">
-              {/* <DialogComponent
-                triggerButtonText="Get in Touch!"
-                dialogTitle="Get in Touch"
-                dialogDescription="Please fill out the form below to get in touch with me."
-                inputLabels={{
-                  name: "Name",
-                  email: "Email",
-                  message: "Message",
-                }}
-              /> */}
-              {/* <ThemeSwitcher /> */}
               <ConnectWalletButton />
             </div>
           </div>
 
           {/* Mobile Menu Toggle */}
           <div className="md:hidden flex items-center gap-4">
-            {/* <ThemeSwitcher /> */}
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="p-2 bg-main dark:bg-main transform hover:-rotate-3 transition-transform"

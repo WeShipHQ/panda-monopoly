@@ -20,7 +20,6 @@ import {
 } from "@/configs/board-data";
 import { getBoardSide } from "@/lib/board-utils";
 
-// Base interface for popover props
 interface BasePopoverProps {
   children: React.ReactNode;
   property?: PropertyAccount | null;
@@ -198,7 +197,9 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
                 <Separator className="my-3" />
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Owner:</span>
-                  <Badge variant={!!owner ? "default" : "secondary"}>
+                  <Badge
+                  // variant={!!owner ? "default" : "secondary"}
+                  >
                     {!!owner ? formatAddress(owner) || "Unknown" : "Unowned"}
                   </Badge>
                 </div>
@@ -207,19 +208,19 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
                   <>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Houses:</span>
-                      <Badge variant="outline">{houses}</Badge>
+                      <Badge variant="neutral">{houses}</Badge>
                     </div>
 
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Hotel:</span>
-                      <Badge variant={hasHotel ? "default" : "outline"}>
+                      <Badge variant={hasHotel ? "default" : "neutral"}>
                         {hasHotel ? "Yes" : "No"}
                       </Badge>
                     </div>
 
                     {isMortgaged && (
                       <div className="text-center mt-2">
-                        <Badge variant="destructive">MORTGAGED</Badge>
+                        <Badge variant="neutral">MORTGAGED</Badge>
                       </div>
                     )}
                   </>
@@ -304,7 +305,7 @@ export const RailroadPopover: React.FC<RailroadPopoverProps> = ({
 
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Owner:</span>
-                  <Badge variant={!!owner ? "default" : "secondary"}>
+                  <Badge variant={!!owner ? "default" : "neutral"}>
                     {!!owner ? formatAddress(owner) || "Unknown" : "Unowned"}
                   </Badge>
                 </div>
@@ -368,7 +369,7 @@ export const UtilityPopover: React.FC<UtilityPopoverProps> = ({
 
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Owner:</span>
-                  <Badge variant={owner ? "default" : "secondary"}>
+                  <Badge variant={owner ? "default" : "neutral"}>
                     {owner ? formatAddress(owner) || "Unknown" : "Unowned"}
                   </Badge>
                 </div>

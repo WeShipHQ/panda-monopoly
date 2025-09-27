@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useGameContext } from "@/components/game-provider";
+import { useGameContext } from "@/components/providers/game-provider";
 import {
   boardData,
   colorMap,
