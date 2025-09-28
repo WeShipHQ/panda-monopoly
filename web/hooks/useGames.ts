@@ -1,3 +1,4 @@
+import { useRpcContext } from "@/components/providers/rpc-provider";
 import { sdk } from "@/lib/sdk/sdk";
 import { GameAccount } from "@/types/schema";
 import useSWR from "swr";
@@ -18,14 +19,14 @@ interface UseGamesResult {
 
 export function useGames(config: UseGamesConfig = {}): UseGamesResult {
   const { enabled = true } = config;
+  const { rpc } = useRpcContext();
 
   const cacheKey = enabled ? ["game-list"] : null;
 
   const { data, error, isLoading, mutate } = useSWR(
     cacheKey,
     () => {
-      // @ts-expect-error
-      return sdk.getGames();
+      return sdk.getGameAccounts(rpc);
     },
     {
       revalidateOnFocus: false,

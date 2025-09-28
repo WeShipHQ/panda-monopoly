@@ -64,6 +64,19 @@ export type TestDiceHandlerInstruction<
   TAccountClock extends
     | string
     | AccountMeta<string> = 'SysvarC1ock11111111111111111111111111111111',
+  TAccountOracleQueue extends
+    | string
+    | AccountMeta<string> = 'Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh',
+  TAccountProgramIdentity extends string | AccountMeta<string> = string,
+  TAccountVrfProgram extends
+    | string
+    | AccountMeta<string> = 'Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz',
+  TAccountSlotHashes extends
+    | string
+    | AccountMeta<string> = 'SysvarS1otHashes111111111111111111111111111',
+  TAccountSystemProgram extends
+    | string
+    | AccountMeta<string> = '11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -85,6 +98,21 @@ export type TestDiceHandlerInstruction<
       TAccountClock extends string
         ? ReadonlyAccount<TAccountClock>
         : TAccountClock,
+      TAccountOracleQueue extends string
+        ? WritableAccount<TAccountOracleQueue>
+        : TAccountOracleQueue,
+      TAccountProgramIdentity extends string
+        ? ReadonlyAccount<TAccountProgramIdentity>
+        : TAccountProgramIdentity,
+      TAccountVrfProgram extends string
+        ? ReadonlyAccount<TAccountVrfProgram>
+        : TAccountVrfProgram,
+      TAccountSlotHashes extends string
+        ? ReadonlyAccount<TAccountSlotHashes>
+        : TAccountSlotHashes,
+      TAccountSystemProgram extends string
+        ? ReadonlyAccount<TAccountSystemProgram>
+        : TAccountSystemProgram,
       ...TRemainingAccounts,
     ]
   >;
@@ -131,12 +159,22 @@ export type TestDiceHandlerAsyncInput<
   TAccountPlayer extends string = string,
   TAccountRecentBlockhashes extends string = string,
   TAccountClock extends string = string,
+  TAccountOracleQueue extends string = string,
+  TAccountProgramIdentity extends string = string,
+  TAccountVrfProgram extends string = string,
+  TAccountSlotHashes extends string = string,
+  TAccountSystemProgram extends string = string,
 > = {
   game: Address<TAccountGame>;
   playerState?: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
   recentBlockhashes?: Address<TAccountRecentBlockhashes>;
   clock?: Address<TAccountClock>;
+  oracleQueue?: Address<TAccountOracleQueue>;
+  programIdentity?: Address<TAccountProgramIdentity>;
+  vrfProgram?: Address<TAccountVrfProgram>;
+  slotHashes?: Address<TAccountSlotHashes>;
+  systemProgram?: Address<TAccountSystemProgram>;
   diceRoll: TestDiceHandlerInstructionDataArgs['diceRoll'];
 };
 
@@ -146,6 +184,11 @@ export async function getTestDiceHandlerInstructionAsync<
   TAccountPlayer extends string,
   TAccountRecentBlockhashes extends string,
   TAccountClock extends string,
+  TAccountOracleQueue extends string,
+  TAccountProgramIdentity extends string,
+  TAccountVrfProgram extends string,
+  TAccountSlotHashes extends string,
+  TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
   input: TestDiceHandlerAsyncInput<
@@ -153,7 +196,12 @@ export async function getTestDiceHandlerInstructionAsync<
     TAccountPlayerState,
     TAccountPlayer,
     TAccountRecentBlockhashes,
-    TAccountClock
+    TAccountClock,
+    TAccountOracleQueue,
+    TAccountProgramIdentity,
+    TAccountVrfProgram,
+    TAccountSlotHashes,
+    TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
@@ -163,7 +211,12 @@ export async function getTestDiceHandlerInstructionAsync<
     TAccountPlayerState,
     TAccountPlayer,
     TAccountRecentBlockhashes,
-    TAccountClock
+    TAccountClock,
+    TAccountOracleQueue,
+    TAccountProgramIdentity,
+    TAccountVrfProgram,
+    TAccountSlotHashes,
+    TAccountSystemProgram
   >
 > {
   // Program address.
@@ -180,6 +233,14 @@ export async function getTestDiceHandlerInstructionAsync<
       isWritable: false,
     },
     clock: { value: input.clock ?? null, isWritable: false },
+    oracleQueue: { value: input.oracleQueue ?? null, isWritable: true },
+    programIdentity: {
+      value: input.programIdentity ?? null,
+      isWritable: false,
+    },
+    vrfProgram: { value: input.vrfProgram ?? null, isWritable: false },
+    slotHashes: { value: input.slotHashes ?? null, isWritable: false },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -208,6 +269,32 @@ export async function getTestDiceHandlerInstructionAsync<
     accounts.clock.value =
       'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
   }
+  if (!accounts.oracleQueue.value) {
+    accounts.oracleQueue.value =
+      'Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh' as Address<'Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh'>;
+  }
+  if (!accounts.programIdentity.value) {
+    accounts.programIdentity.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([105, 100, 101, 110, 116, 105, 116, 121])
+        ),
+      ],
+    });
+  }
+  if (!accounts.vrfProgram.value) {
+    accounts.vrfProgram.value =
+      'Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz' as Address<'Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz'>;
+  }
+  if (!accounts.slotHashes.value) {
+    accounts.slotHashes.value =
+      'SysvarS1otHashes111111111111111111111111111' as Address<'SysvarS1otHashes111111111111111111111111111'>;
+  }
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -217,6 +304,11 @@ export async function getTestDiceHandlerInstructionAsync<
       getAccountMeta(accounts.player),
       getAccountMeta(accounts.recentBlockhashes),
       getAccountMeta(accounts.clock),
+      getAccountMeta(accounts.oracleQueue),
+      getAccountMeta(accounts.programIdentity),
+      getAccountMeta(accounts.vrfProgram),
+      getAccountMeta(accounts.slotHashes),
+      getAccountMeta(accounts.systemProgram),
     ],
     data: getTestDiceHandlerInstructionDataEncoder().encode(
       args as TestDiceHandlerInstructionDataArgs
@@ -228,7 +320,12 @@ export async function getTestDiceHandlerInstructionAsync<
     TAccountPlayerState,
     TAccountPlayer,
     TAccountRecentBlockhashes,
-    TAccountClock
+    TAccountClock,
+    TAccountOracleQueue,
+    TAccountProgramIdentity,
+    TAccountVrfProgram,
+    TAccountSlotHashes,
+    TAccountSystemProgram
   >);
 }
 
@@ -238,12 +335,22 @@ export type TestDiceHandlerInput<
   TAccountPlayer extends string = string,
   TAccountRecentBlockhashes extends string = string,
   TAccountClock extends string = string,
+  TAccountOracleQueue extends string = string,
+  TAccountProgramIdentity extends string = string,
+  TAccountVrfProgram extends string = string,
+  TAccountSlotHashes extends string = string,
+  TAccountSystemProgram extends string = string,
 > = {
   game: Address<TAccountGame>;
   playerState: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
   recentBlockhashes?: Address<TAccountRecentBlockhashes>;
   clock?: Address<TAccountClock>;
+  oracleQueue?: Address<TAccountOracleQueue>;
+  programIdentity: Address<TAccountProgramIdentity>;
+  vrfProgram?: Address<TAccountVrfProgram>;
+  slotHashes?: Address<TAccountSlotHashes>;
+  systemProgram?: Address<TAccountSystemProgram>;
   diceRoll: TestDiceHandlerInstructionDataArgs['diceRoll'];
 };
 
@@ -253,6 +360,11 @@ export function getTestDiceHandlerInstruction<
   TAccountPlayer extends string,
   TAccountRecentBlockhashes extends string,
   TAccountClock extends string,
+  TAccountOracleQueue extends string,
+  TAccountProgramIdentity extends string,
+  TAccountVrfProgram extends string,
+  TAccountSlotHashes extends string,
+  TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
   input: TestDiceHandlerInput<
@@ -260,7 +372,12 @@ export function getTestDiceHandlerInstruction<
     TAccountPlayerState,
     TAccountPlayer,
     TAccountRecentBlockhashes,
-    TAccountClock
+    TAccountClock,
+    TAccountOracleQueue,
+    TAccountProgramIdentity,
+    TAccountVrfProgram,
+    TAccountSlotHashes,
+    TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): TestDiceHandlerInstruction<
@@ -269,7 +386,12 @@ export function getTestDiceHandlerInstruction<
   TAccountPlayerState,
   TAccountPlayer,
   TAccountRecentBlockhashes,
-  TAccountClock
+  TAccountClock,
+  TAccountOracleQueue,
+  TAccountProgramIdentity,
+  TAccountVrfProgram,
+  TAccountSlotHashes,
+  TAccountSystemProgram
 > {
   // Program address.
   const programAddress =
@@ -285,6 +407,14 @@ export function getTestDiceHandlerInstruction<
       isWritable: false,
     },
     clock: { value: input.clock ?? null, isWritable: false },
+    oracleQueue: { value: input.oracleQueue ?? null, isWritable: true },
+    programIdentity: {
+      value: input.programIdentity ?? null,
+      isWritable: false,
+    },
+    vrfProgram: { value: input.vrfProgram ?? null, isWritable: false },
+    slotHashes: { value: input.slotHashes ?? null, isWritable: false },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -303,6 +433,22 @@ export function getTestDiceHandlerInstruction<
     accounts.clock.value =
       'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
   }
+  if (!accounts.oracleQueue.value) {
+    accounts.oracleQueue.value =
+      'Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh' as Address<'Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh'>;
+  }
+  if (!accounts.vrfProgram.value) {
+    accounts.vrfProgram.value =
+      'Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz' as Address<'Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz'>;
+  }
+  if (!accounts.slotHashes.value) {
+    accounts.slotHashes.value =
+      'SysvarS1otHashes111111111111111111111111111' as Address<'SysvarS1otHashes111111111111111111111111111'>;
+  }
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -312,6 +458,11 @@ export function getTestDiceHandlerInstruction<
       getAccountMeta(accounts.player),
       getAccountMeta(accounts.recentBlockhashes),
       getAccountMeta(accounts.clock),
+      getAccountMeta(accounts.oracleQueue),
+      getAccountMeta(accounts.programIdentity),
+      getAccountMeta(accounts.vrfProgram),
+      getAccountMeta(accounts.slotHashes),
+      getAccountMeta(accounts.systemProgram),
     ],
     data: getTestDiceHandlerInstructionDataEncoder().encode(
       args as TestDiceHandlerInstructionDataArgs
@@ -323,7 +474,12 @@ export function getTestDiceHandlerInstruction<
     TAccountPlayerState,
     TAccountPlayer,
     TAccountRecentBlockhashes,
-    TAccountClock
+    TAccountClock,
+    TAccountOracleQueue,
+    TAccountProgramIdentity,
+    TAccountVrfProgram,
+    TAccountSlotHashes,
+    TAccountSystemProgram
   >);
 }
 
@@ -338,6 +494,11 @@ export type ParsedTestDiceHandlerInstruction<
     player: TAccountMetas[2];
     recentBlockhashes: TAccountMetas[3];
     clock: TAccountMetas[4];
+    oracleQueue: TAccountMetas[5];
+    programIdentity: TAccountMetas[6];
+    vrfProgram: TAccountMetas[7];
+    slotHashes: TAccountMetas[8];
+    systemProgram: TAccountMetas[9];
   };
   data: TestDiceHandlerInstructionData;
 };
@@ -350,7 +511,7 @@ export function parseTestDiceHandlerInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedTestDiceHandlerInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+  if (instruction.accounts.length < 10) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -368,6 +529,11 @@ export function parseTestDiceHandlerInstruction<
       player: getNextAccount(),
       recentBlockhashes: getNextAccount(),
       clock: getNextAccount(),
+      oracleQueue: getNextAccount(),
+      programIdentity: getNextAccount(),
+      vrfProgram: getNextAccount(),
+      slotHashes: getNextAccount(),
+      systemProgram: getNextAccount(),
     },
     data: getTestDiceHandlerInstructionDataDecoder().decode(instruction.data),
   };

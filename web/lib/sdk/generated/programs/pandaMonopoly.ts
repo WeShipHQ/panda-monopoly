@@ -19,7 +19,9 @@ import {
   type ParsedBuildHotelInstruction,
   type ParsedBuildHouseInstruction,
   type ParsedBuyPropertyInstruction,
+  type ParsedCallbackRollDiceInstruction,
   type ParsedCancelTradeInstruction,
+  type ParsedCloseGameHandlerInstruction,
   type ParsedCollectFreeParkingInstruction,
   type ParsedCreatePlatformConfigInstruction,
   type ParsedCreateTradeInstruction,
@@ -126,7 +128,9 @@ export enum PandaMonopolyInstruction {
   BuildHotel,
   BuildHouse,
   BuyProperty,
+  CallbackRollDice,
   CancelTrade,
+  CloseGameHandler,
   CollectFreeParking,
   CreatePlatformConfig,
   CreateTrade,
@@ -215,12 +219,34 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([129, 76, 217, 160, 252, 234, 19, 238])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.CallbackRollDice;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([124, 66, 91, 59, 175, 107, 208, 120])
       ),
       0
     )
   ) {
     return PandaMonopolyInstruction.CancelTrade;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([171, 148, 141, 45, 42, 192, 182, 21])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.CloseGameHandler;
   }
   if (
     containsBytes(
@@ -499,8 +525,14 @@ export type ParsedPandaMonopolyInstruction<
       instructionType: PandaMonopolyInstruction.BuyProperty;
     } & ParsedBuyPropertyInstruction<TProgram>)
   | ({
+      instructionType: PandaMonopolyInstruction.CallbackRollDice;
+    } & ParsedCallbackRollDiceInstruction<TProgram>)
+  | ({
       instructionType: PandaMonopolyInstruction.CancelTrade;
     } & ParsedCancelTradeInstruction<TProgram>)
+  | ({
+      instructionType: PandaMonopolyInstruction.CloseGameHandler;
+    } & ParsedCloseGameHandlerInstruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.CollectFreeParking;
     } & ParsedCollectFreeParkingInstruction<TProgram>)

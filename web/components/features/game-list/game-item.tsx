@@ -5,12 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Eye } from "lucide-react";
-
-export enum GameStatus {
-  WaitingForPlayers = "WaitingForPlayers",
-  InProgress = "InProgress",
-  Finished = "Finished",
-}
+import { GameAccount } from "@/types/schema";
+import { GameStatus } from "@/lib/sdk/generated";
 
 export interface GameData {
   id: string;
@@ -25,12 +21,18 @@ export interface GameData {
 }
 
 interface GameItemProps {
-  game: GameData;
+  game: GameAccount;
   onJoinGame: (gameId: string) => void;
   onSpectateGame: (gameId: string) => void;
+  joining: boolean;
 }
 
-export function GameItem({ game, onJoinGame, onSpectateGame }: GameItemProps) {
+export function GameItem({
+  game,
+  onJoinGame,
+  onSpectateGame,
+  joining,
+}: GameItemProps) {
   const formatEntryFee = (bankBalance: number) => {
     const sol = bankBalance / 1e9;
     return sol.toFixed(4);
@@ -114,7 +116,7 @@ export function GameItem({ game, onJoinGame, onSpectateGame }: GameItemProps) {
                 <span className="text-white text-xs font-bold">◎</span>
               </div>
               <span className="text-lg font-semibold text-foreground">
-                {formatEntryFee(game.bankBalance)}
+                {formatEntryFee(Number(game.bankBalance))}
               </span>
             </div>
 
@@ -126,8 +128,9 @@ export function GameItem({ game, onJoinGame, onSpectateGame }: GameItemProps) {
           <div className="flex items-center space-x-3">
             {game.gameStatus === GameStatus.WaitingForPlayers && (
               <Button
-                onClick={() => onJoinGame(game.id)}
+                onClick={() => onJoinGame(game.address)}
                 className="bg-green-500 hover:bg-green-600 text-white px-6"
+                loading={joining}
               >
                 Join
               </Button>
@@ -136,7 +139,7 @@ export function GameItem({ game, onJoinGame, onSpectateGame }: GameItemProps) {
             {game.gameStatus === GameStatus.InProgress && (
               <Button
                 variant="neutral"
-                onClick={() => onSpectateGame(game.id)}
+                onClick={() => onSpectateGame(game.address)}
                 className="px-6"
               >
                 <span className="mr-2">IN-PLAY</span>
@@ -146,7 +149,7 @@ export function GameItem({ game, onJoinGame, onSpectateGame }: GameItemProps) {
             {game.gameStatus === GameStatus.Finished && (
               <Button
                 variant="neutral"
-                onClick={() => onSpectateGame(game.id)}
+                onClick={() => onSpectateGame(game.address)}
                 className="px-6"
               >
                 <span className="mr-2">FINISHED</span>
@@ -156,7 +159,7 @@ export function GameItem({ game, onJoinGame, onSpectateGame }: GameItemProps) {
             <Button
               variant="neutral"
               size="icon"
-              onClick={() => onSpectateGame(game.id)}
+              onClick={() => onSpectateGame(game.address)}
               className="w-10 h-10"
             >
               <Eye className="w-4 h-4" />
@@ -172,11 +175,12 @@ export function GameItem({ game, onJoinGame, onSpectateGame }: GameItemProps) {
               </span>
               <span>Game ID: {game.gameId}</span>
               {game.timeLimit && (
-                <span>Time Limit: {game.timeLimit / 60}min</span>
+                <span>Time Limit: {Number(game.timeLimit) / 60}min</span>
               )}
             </div>
             <div>
-              Created: {new Date(game.createdAt * 1000).toLocaleDateString()}
+              Created:{" "}
+              {new Date(Number(game.createdAt) * 1000).toLocaleDateString()}
             </div>
           </div>
         </div>

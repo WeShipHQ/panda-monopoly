@@ -39,6 +39,7 @@ export interface StartGameParams {
   rpc: Rpc<GetAccountInfoApi>;
   authority: TransactionSigner;
   gameAddress: Address;
+  players: Address[];
 }
 
 export interface RollDiceParams {

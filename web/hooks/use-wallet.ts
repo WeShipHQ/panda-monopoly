@@ -6,6 +6,7 @@ import {
   type WalletWithMetadata,
 } from "@privy-io/react-auth";
 import { useConnectedStandardWallets } from "@privy-io/react-auth/solana";
+import { address, TransactionSigner } from "@solana/kit";
 import { useMemo } from "react";
 
 export function useWallet() {
@@ -24,9 +25,11 @@ export function useWallet() {
 
   return {
     wallet: gameWallet,
+    signer: gameWallet ? { address: address(gameWallet.address) } as TransactionSigner : undefined,
     user,
     ...rest,
   } as PrivyInterface & {
     wallet: WalletWithMetadata | undefined;
+    signer?: TransactionSigner;
   };
 }

@@ -1,3 +1,4 @@
+import { useRpcContext } from "@/components/providers/rpc-provider";
 import { sdk } from "@/lib/sdk/sdk";
 import { GameEvent } from "@/lib/sdk/types";
 import { GameAccount, PlayerAccount, PropertyAccount } from "@/types/schema";
@@ -37,7 +38,8 @@ export function useGameState(
   const currentPlayerAddressesRef = useRef<string[]>([]);
   const currentEventSubscriptionRef = useRef<(() => void) | null>(null);
 
-  // Create cache key based on game address
+  const { rpc, rpcSubscriptions } = useRpcContext();
+
   const cacheKey =
     enabled && gameAddress ? ["game-state", gameAddress.toString()] : null;
 
@@ -49,8 +51,6 @@ export function useGameState(
       }
 
       try {
-        const rpc = createSolanaRpc("http://127.0.0.1:8899");
-
         // Step 1: Fetch game account data
         const gameAccount = await sdk.getGameAccount(rpc, gameAddress);
         if (!gameAccount) {
@@ -61,6 +61,8 @@ export function useGameState(
           ...gameAccount.data,
           address: gameAddress,
         };
+
+        console.log("YYY gameData", gameData);
 
         // Step 2: Get player addresses from game data
         const playerAddresses = gameData.players || [];
@@ -264,7 +266,6 @@ export function useGameState(
     };
   }, [cleanupSubscriptions]);
 
-  // Handle game address changes
   useEffect(() => {
     const currentAddress = gameAddress?.toString() || null;
     if (
@@ -284,7 +285,6 @@ export function useGameState(
     );
     const currentAddresses = currentPlayerAddressesRef.current;
 
-    // Check if player list has changed
     const hasChanged =
       newPlayerAddresses.length !== currentAddresses.length ||
       newPlayerAddresses.some((addr) => !currentAddresses.includes(addr));

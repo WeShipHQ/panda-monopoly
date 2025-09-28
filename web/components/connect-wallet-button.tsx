@@ -33,11 +33,14 @@ import { useLogin, useLogout } from "@privy-io/react-auth";
 import { Badge } from "./ui/badge";
 import { toast } from "sonner";
 import { useRpcContext } from "./providers/rpc-provider";
+import { CheckIcon, CopyIcon } from "lucide-react";
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
 export function ConnectWalletButton() {
   const { ready, authenticated, user, wallet } = useWallet();
   const { wallets } = useConnectedStandardWallets();
   const { signAndSendTransaction } = useStandardSignAndSendTransaction();
+  const [copyToClipboard, isCopied] = useCopyToClipboard();
 
   const { rpc } = useRpcContext();
   const { login } = useLogin();
@@ -78,10 +81,15 @@ export function ConnectWalletButton() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          {wallet && (
+            <Button size="icon" onClick={() => copyToClipboard(wallet.address)}>
+              {isCopied ? <CheckIcon /> : <CopyIcon />}
+            </Button>
+          )}
           <Button
             onClick={async () => {
               try {
-                const wallet = wallets[0]; // Replace this with your desired wallet
+                const wallet = wallets[0];
                 if (!wallet) {
                   toast.error("Please connect your wallet first");
                   return;

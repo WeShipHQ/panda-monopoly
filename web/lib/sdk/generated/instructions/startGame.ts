@@ -10,8 +10,10 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
+  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
+  getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
   transformEncoder,
@@ -31,7 +33,11 @@ import {
   type WritableSignerAccount,
 } from '@solana/kit';
 import { PANDA_MONOPOLY_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+import {
+  expectAddress,
+  getAccountMetaFactory,
+  type ResolvedAccount,
+} from '../shared';
 
 export const START_GAME_DISCRIMINATOR = new Uint8Array([
   249, 47, 252, 172, 184, 162, 245, 14,
@@ -43,16 +49,37 @@ export function getStartGameDiscriminatorBytes() {
 
 export type StartGameInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
+  TAccountBufferGame extends string | AccountMeta<string> = string,
+  TAccountDelegationRecordGame extends string | AccountMeta<string> = string,
+  TAccountDelegationMetadataGame extends string | AccountMeta<string> = string,
   TAccountGame extends string | AccountMeta<string> = string,
   TAccountAuthority extends string | AccountMeta<string> = string,
   TAccountClock extends
     | string
     | AccountMeta<string> = 'SysvarC1ock11111111111111111111111111111111',
+  TAccountOwnerProgram extends
+    | string
+    | AccountMeta<string> = '4vucUqMcXN4sgLsgnrXTUC9U7ACZ5DmoRBLbWt4vrnyR',
+  TAccountDelegationProgram extends
+    | string
+    | AccountMeta<string> = 'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh',
+  TAccountSystemProgram extends
+    | string
+    | AccountMeta<string> = '11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
+      TAccountBufferGame extends string
+        ? WritableAccount<TAccountBufferGame>
+        : TAccountBufferGame,
+      TAccountDelegationRecordGame extends string
+        ? WritableAccount<TAccountDelegationRecordGame>
+        : TAccountDelegationRecordGame,
+      TAccountDelegationMetadataGame extends string
+        ? WritableAccount<TAccountDelegationMetadataGame>
+        : TAccountDelegationMetadataGame,
       TAccountGame extends string
         ? WritableAccount<TAccountGame>
         : TAccountGame,
@@ -63,6 +90,15 @@ export type StartGameInstruction<
       TAccountClock extends string
         ? ReadonlyAccount<TAccountClock>
         : TAccountClock,
+      TAccountOwnerProgram extends string
+        ? ReadonlyAccount<TAccountOwnerProgram>
+        : TAccountOwnerProgram,
+      TAccountDelegationProgram extends string
+        ? ReadonlyAccount<TAccountDelegationProgram>
+        : TAccountDelegationProgram,
+      TAccountSystemProgram extends string
+        ? ReadonlyAccount<TAccountSystemProgram>
+        : TAccountSystemProgram,
       ...TRemainingAccounts,
     ]
   >;
@@ -94,29 +130,65 @@ export function getStartGameInstructionDataCodec(): FixedSizeCodec<
   );
 }
 
-export type StartGameInput<
+export type StartGameAsyncInput<
+  TAccountBufferGame extends string = string,
+  TAccountDelegationRecordGame extends string = string,
+  TAccountDelegationMetadataGame extends string = string,
   TAccountGame extends string = string,
   TAccountAuthority extends string = string,
   TAccountClock extends string = string,
+  TAccountOwnerProgram extends string = string,
+  TAccountDelegationProgram extends string = string,
+  TAccountSystemProgram extends string = string,
 > = {
+  bufferGame?: Address<TAccountBufferGame>;
+  delegationRecordGame?: Address<TAccountDelegationRecordGame>;
+  delegationMetadataGame?: Address<TAccountDelegationMetadataGame>;
   game: Address<TAccountGame>;
   authority: TransactionSigner<TAccountAuthority>;
   clock?: Address<TAccountClock>;
+  ownerProgram?: Address<TAccountOwnerProgram>;
+  delegationProgram?: Address<TAccountDelegationProgram>;
+  systemProgram?: Address<TAccountSystemProgram>;
 };
 
-export function getStartGameInstruction<
+export async function getStartGameInstructionAsync<
+  TAccountBufferGame extends string,
+  TAccountDelegationRecordGame extends string,
+  TAccountDelegationMetadataGame extends string,
   TAccountGame extends string,
   TAccountAuthority extends string,
   TAccountClock extends string,
+  TAccountOwnerProgram extends string,
+  TAccountDelegationProgram extends string,
+  TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: StartGameInput<TAccountGame, TAccountAuthority, TAccountClock>,
+  input: StartGameAsyncInput<
+    TAccountBufferGame,
+    TAccountDelegationRecordGame,
+    TAccountDelegationMetadataGame,
+    TAccountGame,
+    TAccountAuthority,
+    TAccountClock,
+    TAccountOwnerProgram,
+    TAccountDelegationProgram,
+    TAccountSystemProgram
+  >,
   config?: { programAddress?: TProgramAddress }
-): StartGameInstruction<
-  TProgramAddress,
-  TAccountGame,
-  TAccountAuthority,
-  TAccountClock
+): Promise<
+  StartGameInstruction<
+    TProgramAddress,
+    TAccountBufferGame,
+    TAccountDelegationRecordGame,
+    TAccountDelegationMetadataGame,
+    TAccountGame,
+    TAccountAuthority,
+    TAccountClock,
+    TAccountOwnerProgram,
+    TAccountDelegationProgram,
+    TAccountSystemProgram
+  >
 > {
   // Program address.
   const programAddress =
@@ -124,9 +196,196 @@ export function getStartGameInstruction<
 
   // Original accounts.
   const originalAccounts = {
+    bufferGame: { value: input.bufferGame ?? null, isWritable: true },
+    delegationRecordGame: {
+      value: input.delegationRecordGame ?? null,
+      isWritable: true,
+    },
+    delegationMetadataGame: {
+      value: input.delegationMetadataGame ?? null,
+      isWritable: true,
+    },
     game: { value: input.game ?? null, isWritable: true },
     authority: { value: input.authority ?? null, isWritable: true },
     clock: { value: input.clock ?? null, isWritable: false },
+    ownerProgram: { value: input.ownerProgram ?? null, isWritable: false },
+    delegationProgram: {
+      value: input.delegationProgram ?? null,
+      isWritable: false,
+    },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+  };
+  const accounts = originalAccounts as Record<
+    keyof typeof originalAccounts,
+    ResolvedAccount
+  >;
+
+  // Resolve default values.
+  if (!accounts.bufferGame.value) {
+    accounts.bufferGame.value = await getProgramDerivedAddress({
+      programAddress:
+        '4vucUqMcXN4sgLsgnrXTUC9U7ACZ5DmoRBLbWt4vrnyR' as Address<'4vucUqMcXN4sgLsgnrXTUC9U7ACZ5DmoRBLbWt4vrnyR'>,
+      seeds: [
+        getBytesEncoder().encode(new Uint8Array([98, 117, 102, 102, 101, 114])),
+        getAddressEncoder().encode(expectAddress(accounts.game.value)),
+      ],
+    });
+  }
+  if (!accounts.delegationRecordGame.value) {
+    accounts.delegationRecordGame.value = await getProgramDerivedAddress({
+      programAddress:
+        'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh' as Address<'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh'>,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([100, 101, 108, 101, 103, 97, 116, 105, 111, 110])
+        ),
+        getAddressEncoder().encode(expectAddress(accounts.game.value)),
+      ],
+    });
+  }
+  if (!accounts.delegationMetadataGame.value) {
+    accounts.delegationMetadataGame.value = await getProgramDerivedAddress({
+      programAddress:
+        'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh' as Address<'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh'>,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([
+            100, 101, 108, 101, 103, 97, 116, 105, 111, 110, 45, 109, 101, 116,
+            97, 100, 97, 116, 97,
+          ])
+        ),
+        getAddressEncoder().encode(expectAddress(accounts.game.value)),
+      ],
+    });
+  }
+  if (!accounts.clock.value) {
+    accounts.clock.value =
+      'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
+  }
+  if (!accounts.ownerProgram.value) {
+    accounts.ownerProgram.value =
+      '4vucUqMcXN4sgLsgnrXTUC9U7ACZ5DmoRBLbWt4vrnyR' as Address<'4vucUqMcXN4sgLsgnrXTUC9U7ACZ5DmoRBLbWt4vrnyR'>;
+  }
+  if (!accounts.delegationProgram.value) {
+    accounts.delegationProgram.value =
+      'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh' as Address<'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh'>;
+  }
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
+
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  return Object.freeze({
+    accounts: [
+      getAccountMeta(accounts.bufferGame),
+      getAccountMeta(accounts.delegationRecordGame),
+      getAccountMeta(accounts.delegationMetadataGame),
+      getAccountMeta(accounts.game),
+      getAccountMeta(accounts.authority),
+      getAccountMeta(accounts.clock),
+      getAccountMeta(accounts.ownerProgram),
+      getAccountMeta(accounts.delegationProgram),
+      getAccountMeta(accounts.systemProgram),
+    ],
+    data: getStartGameInstructionDataEncoder().encode({}),
+    programAddress,
+  } as StartGameInstruction<
+    TProgramAddress,
+    TAccountBufferGame,
+    TAccountDelegationRecordGame,
+    TAccountDelegationMetadataGame,
+    TAccountGame,
+    TAccountAuthority,
+    TAccountClock,
+    TAccountOwnerProgram,
+    TAccountDelegationProgram,
+    TAccountSystemProgram
+  >);
+}
+
+export type StartGameInput<
+  TAccountBufferGame extends string = string,
+  TAccountDelegationRecordGame extends string = string,
+  TAccountDelegationMetadataGame extends string = string,
+  TAccountGame extends string = string,
+  TAccountAuthority extends string = string,
+  TAccountClock extends string = string,
+  TAccountOwnerProgram extends string = string,
+  TAccountDelegationProgram extends string = string,
+  TAccountSystemProgram extends string = string,
+> = {
+  bufferGame: Address<TAccountBufferGame>;
+  delegationRecordGame: Address<TAccountDelegationRecordGame>;
+  delegationMetadataGame: Address<TAccountDelegationMetadataGame>;
+  game: Address<TAccountGame>;
+  authority: TransactionSigner<TAccountAuthority>;
+  clock?: Address<TAccountClock>;
+  ownerProgram?: Address<TAccountOwnerProgram>;
+  delegationProgram?: Address<TAccountDelegationProgram>;
+  systemProgram?: Address<TAccountSystemProgram>;
+};
+
+export function getStartGameInstruction<
+  TAccountBufferGame extends string,
+  TAccountDelegationRecordGame extends string,
+  TAccountDelegationMetadataGame extends string,
+  TAccountGame extends string,
+  TAccountAuthority extends string,
+  TAccountClock extends string,
+  TAccountOwnerProgram extends string,
+  TAccountDelegationProgram extends string,
+  TAccountSystemProgram extends string,
+  TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
+>(
+  input: StartGameInput<
+    TAccountBufferGame,
+    TAccountDelegationRecordGame,
+    TAccountDelegationMetadataGame,
+    TAccountGame,
+    TAccountAuthority,
+    TAccountClock,
+    TAccountOwnerProgram,
+    TAccountDelegationProgram,
+    TAccountSystemProgram
+  >,
+  config?: { programAddress?: TProgramAddress }
+): StartGameInstruction<
+  TProgramAddress,
+  TAccountBufferGame,
+  TAccountDelegationRecordGame,
+  TAccountDelegationMetadataGame,
+  TAccountGame,
+  TAccountAuthority,
+  TAccountClock,
+  TAccountOwnerProgram,
+  TAccountDelegationProgram,
+  TAccountSystemProgram
+> {
+  // Program address.
+  const programAddress =
+    config?.programAddress ?? PANDA_MONOPOLY_PROGRAM_ADDRESS;
+
+  // Original accounts.
+  const originalAccounts = {
+    bufferGame: { value: input.bufferGame ?? null, isWritable: true },
+    delegationRecordGame: {
+      value: input.delegationRecordGame ?? null,
+      isWritable: true,
+    },
+    delegationMetadataGame: {
+      value: input.delegationMetadataGame ?? null,
+      isWritable: true,
+    },
+    game: { value: input.game ?? null, isWritable: true },
+    authority: { value: input.authority ?? null, isWritable: true },
+    clock: { value: input.clock ?? null, isWritable: false },
+    ownerProgram: { value: input.ownerProgram ?? null, isWritable: false },
+    delegationProgram: {
+      value: input.delegationProgram ?? null,
+      isWritable: false,
+    },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -138,21 +397,45 @@ export function getStartGameInstruction<
     accounts.clock.value =
       'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
   }
+  if (!accounts.ownerProgram.value) {
+    accounts.ownerProgram.value =
+      '4vucUqMcXN4sgLsgnrXTUC9U7ACZ5DmoRBLbWt4vrnyR' as Address<'4vucUqMcXN4sgLsgnrXTUC9U7ACZ5DmoRBLbWt4vrnyR'>;
+  }
+  if (!accounts.delegationProgram.value) {
+    accounts.delegationProgram.value =
+      'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh' as Address<'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh'>;
+  }
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
+      getAccountMeta(accounts.bufferGame),
+      getAccountMeta(accounts.delegationRecordGame),
+      getAccountMeta(accounts.delegationMetadataGame),
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.authority),
       getAccountMeta(accounts.clock),
+      getAccountMeta(accounts.ownerProgram),
+      getAccountMeta(accounts.delegationProgram),
+      getAccountMeta(accounts.systemProgram),
     ],
     data: getStartGameInstructionDataEncoder().encode({}),
     programAddress,
   } as StartGameInstruction<
     TProgramAddress,
+    TAccountBufferGame,
+    TAccountDelegationRecordGame,
+    TAccountDelegationMetadataGame,
     TAccountGame,
     TAccountAuthority,
-    TAccountClock
+    TAccountClock,
+    TAccountOwnerProgram,
+    TAccountDelegationProgram,
+    TAccountSystemProgram
   >);
 }
 
@@ -162,9 +445,15 @@ export type ParsedStartGameInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    game: TAccountMetas[0];
-    authority: TAccountMetas[1];
-    clock: TAccountMetas[2];
+    bufferGame: TAccountMetas[0];
+    delegationRecordGame: TAccountMetas[1];
+    delegationMetadataGame: TAccountMetas[2];
+    game: TAccountMetas[3];
+    authority: TAccountMetas[4];
+    clock: TAccountMetas[5];
+    ownerProgram: TAccountMetas[6];
+    delegationProgram: TAccountMetas[7];
+    systemProgram: TAccountMetas[8];
   };
   data: StartGameInstructionData;
 };
@@ -177,7 +466,7 @@ export function parseStartGameInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedStartGameInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 3) {
+  if (instruction.accounts.length < 9) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -190,9 +479,15 @@ export function parseStartGameInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
+      bufferGame: getNextAccount(),
+      delegationRecordGame: getNextAccount(),
+      delegationMetadataGame: getNextAccount(),
       game: getNextAccount(),
       authority: getNextAccount(),
       clock: getNextAccount(),
+      ownerProgram: getNextAccount(),
+      delegationProgram: getNextAccount(),
+      systemProgram: getNextAccount(),
     },
     data: getStartGameInstructionDataDecoder().decode(instruction.data),
   };

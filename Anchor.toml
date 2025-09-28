@@ -18,9 +18,9 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 # test = "pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/roll-dice.test.ts"
-# test = "pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/platform.test.ts"
+test = "pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/platform.test.ts"
 # test = "pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/initialize-game.test.ts"
 # test = "pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/join-game.test.ts"
 # test = "pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/start-game.test.ts"
-test = "pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/roll-dice.test.ts"
+# test = "pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/roll-dice.test.ts"
 # test = "pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/hello.test.ts"

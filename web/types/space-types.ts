@@ -47,7 +47,7 @@ export interface GameLogEntry {
     | "game"
     | "skip"
     | "join";
-  playerId: Address;
+  playerId: string;
   playerName?: string;
   message: string;
   details?: {
@@ -57,7 +57,7 @@ export interface GameLogEntry {
     price?: number;
 
     // payRent
-    owner?: Address;
+    owner?: string;
 
     // Card-related
     cardType?: "chance" | "community-chest";
@@ -69,7 +69,7 @@ export interface GameLogEntry {
 
     // Trade-related
     tradeId?: string;
-    targetPlayer?: Address;
+    targetPlayer?: string;
     targetPlayerName?: string;
     offeredProperties?: number[];
     requestedProperties?: number[];

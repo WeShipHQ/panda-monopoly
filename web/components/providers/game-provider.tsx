@@ -1,19 +1,10 @@
 "use client";
 
 import { useGameState } from "@/hooks/useGameState";
-import { PlayerState } from "@/lib/sdk/generated";
 import { sdk } from "@/lib/sdk/sdk";
-import { fakePlayerA, fakePlayerB } from "@/lib/sdk/utils";
-import { buildAndSendTransaction } from "@/lib/tx";
+import { buildAndSendTransactionWithPrivy } from "@/lib/tx";
 import { GameAccount, PlayerAccount, PropertyAccount } from "@/types/schema";
-import {
-  Address,
-  getAddressFromPublicKey,
-  KeyPairSigner,
-  createSignerFromKeyPair,
-  isSome,
-  createSolanaRpc,
-} from "@solana/kit";
+import { Address, address, TransactionSigner } from "@solana/kit";
 import React, {
   createContext,
   useContext,
@@ -24,26 +15,21 @@ import React, {
   useCallback,
 } from "react";
 import { GameEvent } from "@/lib/sdk/types";
-import {
-  MEV_TAX_POSITION,
-  PRIORITY_FEE_TAX_POSITION,
-  MEV_TAX_AMOUNT,
-  PRIORITY_FEE_TAX_AMOUNT,
-} from "@/lib/constants";
 import { getTypedSpaceData } from "@/lib/board-utils";
 import { GameLogEntry } from "@/types/space-types";
 import { formatAddress } from "@/lib/utils";
 import { useGameLogs } from "@/hooks/useGameLogs";
+import { useRpcContext } from "./rpc-provider";
+import { useWallet } from "@/hooks/use-wallet";
 
 interface GameContextType {
-  // Game identification
   gameAddress: Address | null;
   setGameAddress: (address: Address | null) => void;
 
   // Current player management
-  currentPlayerAddress: Address | null;
-  currentPlayerState: PlayerState | null;
-  currentPlayerSigner: KeyPairSigner<string> | null;
+  currentPlayerAddress: string | null;
+  currentPlayerState: PlayerAccount | null;
+  signer: TransactionSigner | null;
 
   // Game data (from useGameState hook)
   gameState: GameAccount | null;
@@ -54,6 +40,8 @@ interface GameContextType {
   refetch: () => Promise<void>;
 
   // Game actions
+  startGame: () => Promise<void>;
+  joinGame: () => Promise<void>;
   rollDice: (diceRoll?: number[]) => Promise<void>;
   buyProperty: (position: number) => Promise<void>;
   skipProperty: (position: number) => Promise<void>;
@@ -112,10 +100,12 @@ interface GameProviderProps {
 }
 
 export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
-  // Core state
   const [gameAddress, setGameAddress] = useState<Address | null>(null);
-  const [currentPlayerSigner, setCurrentPlayerSigner] =
-    useState<KeyPairSigner<string> | null>(null);
+  const { wallet } = useWallet();
+  const signer =
+    wallet?.address && wallet?.delegated
+      ? ({ address: address(wallet.address) } as TransactionSigner)
+      : null;
 
   // UI state
   const [selectedProperty, setSelectedProperty] = useState<number | null>(null);
@@ -125,7 +115,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     "chance" | "community-chest" | null
   >(null);
 
-  // Game logs
   const { gameLogs, addGameLog } = useGameLogs();
 
   // events
@@ -133,6 +122,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [latestCardDraw, setLatestCardDraw] = useState<GameEvent | null>(null);
 
   const [demoDices, setDemoDices] = useState<number[] | null>(null);
+
+  const { rpc } = useRpcContext();
 
   const addCardDrawEvent = useCallback(
     (newEvent: GameEvent) => {
@@ -230,35 +221,87 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   }, [currentPlayerState, isCurrentPlayerTurn]);
 
   // Game action handlers
+  const startGame = useCallback(async (): Promise<void> => {
+    if (!gameAddress || !gameState || !wallet?.address || !wallet.delegated) {
+      throw new Error("Game address or player signer not available");
+    }
+    if (gameState.players.length < 2) {
+      throw new Error("Game must have at least 2 players");
+    }
+
+    console.log("check signer", signer);
+    try {
+      const instruction = await sdk.startGameIx({
+        rpc,
+        gameAddress,
+        players: gameState?.players.map(address) || [],
+        authority: { address: address(wallet.address) } as TransactionSigner,
+      });
+
+      const signature = await buildAndSendTransactionWithPrivy(
+        rpc,
+        [instruction],
+        wallet
+      );
+
+      console.log("[startGame] tx", signature);
+    } catch (error) {
+      console.error("Error starting game:", error);
+      throw error;
+    }
+  }, [rpc, gameAddress, gameState, wallet, addGameLog]);
+
+  const joinGame = useCallback(async (): Promise<void> => {
+    if (!gameAddress || !wallet?.address || !wallet.delegated) {
+      throw new Error("Game address or player signer not available");
+    }
+
+    try {
+      const { instruction } = await sdk.joinGameIx({
+        rpc,
+        gameAddress,
+        player: { address: address(wallet.address) } as TransactionSigner,
+      });
+
+      const signature = await buildAndSendTransactionWithPrivy(
+        rpc,
+        [instruction],
+        wallet
+      );
+
+      console.log("[joinGame] tx", signature);
+    } catch (error) {
+      console.error("Error joining game:", error);
+      throw error;
+    }
+  }, [rpc, gameAddress, wallet]);
+
   const rollDice = useCallback(
     async (diceRoll?: number[]): Promise<void> => {
-      if (!gameAddress || !currentPlayerSigner) {
+      if (!gameAddress || !wallet?.address || !wallet.delegated) {
         throw new Error("Game address or player signer not available");
       }
 
       try {
-        // await new Promise((resolve) => setTimeout(resolve, 3000));
         const instruction = await sdk.rollDiceIx({
-          rpc: createSolanaRpc("http://127.0.0.1:8899"),
+          rpc,
           gameAddress,
-          player: currentPlayerSigner,
+          player: { address: address(wallet.address) } as TransactionSigner,
           diceRoll: diceRoll || null,
         });
 
-        const signature = await buildAndSendTransaction(
-          createSolanaRpc("http://127.0.0.1:8899"),
+        const signature = await buildAndSendTransactionWithPrivy(
+          rpc,
           [instruction],
-          currentPlayerSigner
+          wallet
         );
 
         console.log("[rollDice] tx", signature);
 
         addGameLog({
           type: "dice",
-          playerId: currentPlayerSigner.address,
-          message: `${formatAddress(
-            currentPlayerSigner.address
-          )} rolled the dice`,
+          playerId: wallet.address,
+          message: `${formatAddress(wallet.address)} rolled the dice`,
           details: {
             diceRoll: diceRoll as [number, number] | undefined,
             signature,
@@ -269,27 +312,27 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [gameAddress, currentPlayerSigner, addGameLog]
+    [gameAddress, wallet, addGameLog]
   );
 
   const buyProperty = useCallback(
     async (position: number): Promise<void> => {
-      if (!gameAddress || !currentPlayerSigner) {
+      if (!gameAddress || !wallet?.address || !wallet.delegated) {
         throw new Error("Game address or player signer not available");
       }
 
       try {
         const instruction = await sdk.buyPropertyIx({
-          rpc: createSolanaRpc("http://127.0.0.1:8899"),
+          rpc,
           gameAddress,
-          player: currentPlayerSigner,
+          player: { address: address(wallet.address) } as TransactionSigner,
           position,
         });
 
-        const signature = await buildAndSendTransaction(
-          createSolanaRpc("http://127.0.0.1:8899"),
+        const signature = await buildAndSendTransactionWithPrivy(
+          rpc,
           [instruction],
-          currentPlayerSigner
+          wallet
         );
 
         console.log("[buyProperty] tx", signature);
@@ -297,8 +340,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         const propertyData = getTypedSpaceData(position, "property");
         addGameLog({
           type: "purchase",
-          playerId: currentPlayerSigner.address,
-          message: `${formatAddress(currentPlayerSigner.address)} bought ${
+          playerId: wallet.address,
+          message: `${formatAddress(wallet.address)} bought ${  
             propertyData?.name || "N/A"
           }`,
           details: {
@@ -313,27 +356,27 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [gameAddress, currentPlayerSigner, addGameLog]
+    [gameAddress, wallet, addGameLog]
   );
 
   const skipProperty = useCallback(
     async (position: number): Promise<void> => {
-      if (!gameAddress || !currentPlayerSigner) {
+      if (!gameAddress || !wallet?.address || !wallet.delegated) {
         throw new Error("Game address or player signer not available");
       }
 
       try {
         const instruction = await sdk.declinePropertyIx({
-          rpc: createSolanaRpc("http://127.0.0.1:8899"),
+          rpc,
           gameAddress,
-          player: currentPlayerSigner,
+          player: { address: address(wallet.address) } as TransactionSigner,
           position,
         });
 
-        const signature = await buildAndSendTransaction(
-          createSolanaRpc("http://127.0.0.1:8899"),
+        const signature = await buildAndSendTransactionWithPrivy(
+          rpc,
           [instruction],
-          currentPlayerSigner
+          wallet
         );
 
         console.log("[skipProperty] tx", signature);
@@ -341,8 +384,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         const propertyData = getTypedSpaceData(position, "property");
         addGameLog({
           type: "skip",
-          playerId: currentPlayerSigner.address,
-          message: `${formatAddress(currentPlayerSigner.address)} skipped ${
+          playerId: wallet.address,
+          message: `${formatAddress(wallet.address)} skipped ${
             propertyData?.name || "property"
           }`,
           details: { position },
@@ -352,30 +395,28 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [gameAddress, currentPlayerSigner, addGameLog]
+    [gameAddress, wallet, addGameLog]
   );
 
   const payRent = useCallback(
-    async (position: number, owner: Address): Promise<void> => {
-      if (!gameAddress || !currentPlayerSigner) {
+    async (position: number, owner: string): Promise<void> => {
+      if (!gameAddress || !wallet?.address || !wallet.delegated) {
         throw new Error("Game address or player signer not available");
       }
 
       try {
-        const rpc = createSolanaRpc("http://127.0.0.1:8899");
-
         const instruction = await sdk.payRentIx({
           rpc,
           gameAddress: gameAddress,
-          player: currentPlayerSigner,
+          player: { address: address(wallet.address) } as TransactionSigner,
           position: position,
-          propertyOwner: owner,
+          propertyOwner: address(owner),
         });
 
-        const signature = await buildAndSendTransaction(
+        const signature = await buildAndSendTransactionWithPrivy(
           rpc,
           [instruction],
-          currentPlayerSigner
+          wallet
         );
 
         console.log("[payRent] tx", signature);
@@ -384,9 +425,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         addGameLog({
           type: "rent",
-          playerId: currentPlayerSigner.address,
+          playerId: wallet.address,
           message: `${formatAddress(
-            currentPlayerSigner.address
+            wallet.address
           )} paid rent to ${formatAddress(owner)}`,
           details: {
             position,
@@ -402,72 +443,64 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [gameAddress, currentPlayerSigner, addGameLog]
+    [gameAddress, wallet, addGameLog]
   );
 
   const endTurn = useCallback(async (): Promise<void> => {
-    if (!gameAddress || !currentPlayerSigner) {
+    if (!gameAddress || !wallet?.address || !wallet.delegated) {
       throw new Error("Game address or player signer not available");
     }
 
     try {
-      const rpc = createSolanaRpc("http://127.0.0.1:8899");
-
       const instruction = await sdk.endTurnIx({
         rpc,
         gameAddress,
-        player: currentPlayerSigner,
+        player: { address: address(wallet.address) } as TransactionSigner,
       });
 
-      const signature = await buildAndSendTransaction(
+      const signature = await buildAndSendTransactionWithPrivy(
         rpc,
         [instruction],
-        currentPlayerSigner
+        wallet
       );
 
       console.log("[endTurn] tx", signature);
 
       addGameLog({
         type: "turn",
-        playerId: currentPlayerSigner.address,
-        message: `${formatAddress(
-          currentPlayerSigner.address
-        )} ended their turn`,
+        playerId: wallet.address,
+        message: `${formatAddress(wallet.address)} ended their turn`,
       });
     } catch (error) {
       console.error("Error ending turn:", error);
       throw error;
     }
-  }, [gameAddress, currentPlayerSigner, addGameLog]);
+  }, [gameAddress, wallet, addGameLog]);
 
   const drawChanceCard = useCallback(async (): Promise<void> => {
-    if (!gameAddress || !currentPlayerSigner) {
+    if (!gameAddress || !wallet?.address || !wallet.delegated) {
       throw new Error("Game address or player signer not available");
     }
 
     try {
-      const rpc = createSolanaRpc("http://127.0.0.1:8899");
-
       const instruction = await sdk.drawChanceCardIx({
         rpc,
         gameAddress: gameAddress,
-        player: currentPlayerSigner,
+        player: { address: address(wallet.address) } as TransactionSigner,
       });
 
-      const signature = await buildAndSendTransaction(
+      const signature = await buildAndSendTransactionWithPrivy(
         rpc,
         [instruction],
-        currentPlayerSigner
+        wallet
       );
 
       console.log("[drawChanceCard] tx", signature);
 
       addGameLog({
         type: "card",
-        playerId: currentPlayerSigner.address,
-        message: `${formatAddress(
-          currentPlayerSigner.address
-        )} drew a Chance card`,
+        playerId: wallet.address,
+        message: `${formatAddress(wallet.address)} drew a Chance card`,
         details: { cardType: "chance", signature },
       });
 
@@ -476,36 +509,32 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.error("Error drawing chance card:", error);
       throw error;
     }
-  }, [gameAddress, currentPlayerSigner, addGameLog]);
+  }, [gameAddress, wallet, addGameLog]);
 
   const drawCommunityChestCard = useCallback(async (): Promise<void> => {
-    if (!gameAddress || !currentPlayerSigner) {
+    if (!gameAddress || !wallet?.address || !wallet.delegated) {
       throw new Error("Game address or player signer not available");
     }
 
     try {
-      const rpc = createSolanaRpc("http://127.0.0.1:8899");
-
       const instruction = await sdk.drawCommunityChestCardIx({
         rpc,
         gameAddress: gameAddress,
-        player: currentPlayerSigner,
+        player: { address: address(wallet.address) } as TransactionSigner,
       });
 
-      const signature = await buildAndSendTransaction(
+      const signature = await buildAndSendTransactionWithPrivy(
         rpc,
         [instruction],
-        currentPlayerSigner
+        wallet
       );
 
       console.log("[drawCommunityChestCard] tx", signature);
 
       addGameLog({
         type: "card",
-        playerId: currentPlayerSigner.address,
-        message: `${formatAddress(
-          currentPlayerSigner.address
-        )} drew a Community Chest card`,
+        playerId: wallet.address,
+        message: `${formatAddress(wallet.address)} drew a Community Chest card`,
         details: { cardType: "community-chest", signature },
       });
 
@@ -514,31 +543,31 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.error("Error drawing community chest card:", error);
       throw error;
     }
-  }, [gameAddress, currentPlayerSigner, addGameLog]);
+  }, [gameAddress, wallet, addGameLog]);
 
   const payJailFine = useCallback(async (): Promise<void> => {
-    if (!gameAddress || !currentPlayerSigner) {
+    if (!gameAddress || !wallet?.address || !wallet.delegated) {
       throw new Error("Game address or player signer not available");
     }
 
     try {
       const instruction = await sdk.payJailFineIx({
-        rpc: createSolanaRpc("http://127.0.0.1:8899"),
+        rpc,
         gameAddress,
-        player: currentPlayerSigner,
+        player: { address: address(wallet.address) } as TransactionSigner,
       });
 
-      const signature = await buildAndSendTransaction(
-        createSolanaRpc("http://127.0.0.1:8899"),
+      const signature = await buildAndSendTransactionWithPrivy(
+        rpc,
         [instruction],
-        currentPlayerSigner
+        wallet
       );
 
       addGameLog({
         type: "jail",
-        playerId: currentPlayerSigner.address,
+        playerId: wallet.address,
         message: `${formatAddress(
-          currentPlayerSigner.address
+          wallet.address
         )} paid jail fine and was released`,
       });
 
@@ -547,26 +576,26 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.error("Error paying jail fine:", error);
       throw error;
     }
-  }, [gameAddress, currentPlayerSigner, addGameLog]);
+  }, [gameAddress, wallet, addGameLog]);
 
   const buildHouse = useCallback(
     async (position: number): Promise<void> => {
-      if (!gameAddress || !currentPlayerSigner) {
+      if (!gameAddress || !wallet?.address || !wallet.delegated) {
         throw new Error("Game address or player signer not available");
       }
 
       try {
         const instruction = await sdk.buildHouseIx({
-          rpc: createSolanaRpc("http://127.0.0.1:8899"),
+          rpc,
           gameAddress,
-          player: currentPlayerSigner,
+          player: { address: address(wallet.address) } as TransactionSigner,
           position,
         });
 
-        const signature = await buildAndSendTransaction(
-          createSolanaRpc("http://127.0.0.1:8899"),
+        const signature = await buildAndSendTransactionWithPrivy(
+          rpc,
           [instruction],
-          currentPlayerSigner
+          wallet
         );
 
         console.log("[buildHouse] tx", signature);
@@ -574,10 +603,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         const propertyData = getTypedSpaceData(position, "property");
         addGameLog({
           type: "building",
-          playerId: currentPlayerSigner.address,
-          message: `${formatAddress(
-            currentPlayerSigner.address
-          )} built a house on ${propertyData?.name || "property"}`,
+          playerId: wallet.address,
+          message: `${formatAddress(wallet.address)} built a house on ${    
+            propertyData?.name || "property"
+          }`,
           details: { position, buildingType: "house" },
         });
       } catch (error) {
@@ -585,27 +614,27 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [gameAddress, currentPlayerSigner, addGameLog]
+    [gameAddress, wallet, addGameLog]
   );
 
   const buildHotel = useCallback(
     async (position: number): Promise<void> => {
-      if (!gameAddress || !currentPlayerSigner) {
+      if (!gameAddress || !wallet?.address || !wallet.delegated) {
         throw new Error("Game address or player signer not available");
       }
 
       try {
         const instruction = await sdk.buildHotelIx({
-          rpc: createSolanaRpc("http://127.0.0.1:8899"),
+          rpc,
           gameAddress,
-          player: currentPlayerSigner,
+          player: { address: address(wallet.address) } as TransactionSigner,
           position,
         });
 
-        const signature = await buildAndSendTransaction(
-          createSolanaRpc("http://127.0.0.1:8899"),
+        const signature = await buildAndSendTransactionWithPrivy(
+          rpc,
           [instruction],
-          currentPlayerSigner
+          wallet
         );
 
         console.log("[buildHotel] tx", signature);
@@ -613,10 +642,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         const propertyData = getTypedSpaceData(position, "property");
         addGameLog({
           type: "building",
-          playerId: currentPlayerSigner.address,
-          message: `${formatAddress(
-            currentPlayerSigner.address
-          )} built a hotel on ${propertyData?.name || "property"}`,
+          playerId: wallet.address,
+          message: `${formatAddress(wallet.address)} built a hotel on ${
+            propertyData?.name || "property"
+          }`,
           details: { position, buildingType: "hotel" },
         });
       } catch (error) {
@@ -624,76 +653,72 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [gameAddress, currentPlayerSigner, addGameLog]
+    [gameAddress, wallet, addGameLog]
   );
 
   const payMevTax = useCallback(async (): Promise<void> => {
-    if (!gameAddress || !currentPlayerSigner) {
+    if (!gameAddress || !wallet?.address || !wallet.delegated) {
       throw new Error("Game address or player signer not available");
     }
 
     try {
-      const rpc = createSolanaRpc("http://127.0.0.1:8899");
-
       const instruction = await sdk.payMevTaxIx({
         rpc,
         gameAddress,
-        player: currentPlayerSigner,
+        player: { address: address(wallet.address) } as TransactionSigner,
       });
 
-      const signature = await buildAndSendTransaction(
+      const signature = await buildAndSendTransactionWithPrivy(
         rpc,
         [instruction],
-        currentPlayerSigner
+        wallet
       );
 
       console.log("[payMevTax] tx", signature);
 
       addGameLog({
         type: "move",
-        playerId: currentPlayerSigner.address,
+        playerId: wallet.address,
         message: `${formatAddress(
-          currentPlayerSigner.address
-        )} paid MEV tax of $${MEV_TAX_AMOUNT}`,
-        details: { taxType: "mev", amount: MEV_TAX_AMOUNT, signature },
+          wallet.address
+        )} paid MEV tax of $${"MEV_TAX_AMOUNT"}`,
+        details: { taxType: "mev", amount: 9999, signature },
       });
     } catch (error) {
       console.error("Error paying MEV tax:", error);
       throw error;
     }
-  }, [gameAddress, currentPlayerSigner, addGameLog]);
+  }, [gameAddress, wallet, addGameLog]);
 
   const payPriorityFeeTax = useCallback(async (): Promise<void> => {
-    if (!gameAddress || !currentPlayerSigner) {
+    if (!gameAddress || !wallet?.address || !wallet.delegated) {
       throw new Error("Game address or player signer not available");
     }
 
     try {
-      const rpc = createSolanaRpc("http://127.0.0.1:8899");
-
       const instruction = await sdk.payPriorityFeeTaxIx({
         rpc,
         gameAddress,
-        player: currentPlayerSigner,
+        player: { address: address(wallet.address) } as TransactionSigner,
       });
 
-      const signature = await buildAndSendTransaction(
+      const signature = await buildAndSendTransactionWithPrivy(
         rpc,
         [instruction],
-        currentPlayerSigner
+        wallet
       );
 
       console.log("[payPriorityFeeTax] tx", signature);
 
       addGameLog({
         type: "move",
-        playerId: currentPlayerSigner.address,
+        playerId: wallet.address,
         message: `${formatAddress(
-          currentPlayerSigner.address
-        )} paid Priority Fee tax of $${PRIORITY_FEE_TAX_AMOUNT}`,
+          wallet.address
+        )} paid Priority Fee tax of $${"PRIORITY_FEE_TAX_AMOUNT"}`,
         details: {
           taxType: "priority_fee",
-          amount: PRIORITY_FEE_TAX_AMOUNT,
+          amount: 9999,
           signature,
         },
       });
@@ -701,7 +726,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.error("Error paying Priority Fee tax:", error);
       throw error;
     }
-  }, [gameAddress, currentPlayerSigner, addGameLog]);
+  }, [gameAddress, wallet, addGameLog]);  
 
   useEffect(() => {
     async function handleAction(player: PlayerAccount) {
@@ -736,11 +761,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       // Priority 4: Handle property actions (after landing on a property)
-      if (
-        player.needsPropertyAction &&
-        isSome(player.pendingPropertyPosition)
-      ) {
-        const pendingPropertyPosition = player.pendingPropertyPosition.value;
+      if (player.needsPropertyAction && player.pendingPropertyPosition) {
+        const pendingPropertyPosition = player.pendingPropertyPosition;
 
         const property = properties.find(
           (prop) => prop.position === pendingPropertyPosition
@@ -755,10 +777,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         }
 
         // If property is owned by another player, auto-pay rent
-        if (isSome(property.owner) && property.owner.value !== player.wallet) {
+        if (!!property.owner && property.owner !== player.wallet) {
           console.log("Auto-paying rent to property owner");
           try {
-            await payRent(pendingPropertyPosition, property.owner.value);
+            await payRent(pendingPropertyPosition, property.owner);
           } catch (error) {
             console.error("Error auto-paying rent:", error);
           }
@@ -766,7 +788,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         }
 
         // If property is unowned, show buy dialog
-        if (!isSome(property.owner)) {
+        if (!!property.owner) {
           console.log("Showing buy property dialog");
           setSelectedProperty(pendingPropertyPosition);
           setIsPropertyDialogOpen(true);
@@ -774,7 +796,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         }
 
         // If property is owned by current player, check for building opportunities
-        if (isSome(property.owner) && property.owner.value === player.wallet) {
+        if (!!property.owner && property.owner === player.wallet) {
           console.log(
             "Player owns this property - checking for building opportunities"
           );
@@ -787,7 +809,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       // Priority 5: Handle special space actions
       const position = player.position;
 
-      if (position === MEV_TAX_POSITION) {
+      if (position === 0) {
         console.log("Player landed on MEV Tax space");
         try {
           await payMevTax();
@@ -797,7 +819,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         return;
       }
 
-      if (position === PRIORITY_FEE_TAX_POSITION) {
+      if (position === 0) {
         console.log("Player landed on Priority Fee Tax space");
         try {
           await payPriorityFeeTax();
@@ -921,43 +943,18 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       });
     }
 
-    if (
-      gameAddress &&
-      currentPlayerState &&
-      currentPlayerSigner &&
-      isCurrentPlayerTurn()
-    ) {
+    if (gameAddress && currentPlayerState && signer && isCurrentPlayerTurn()) {
       handleAction(currentPlayerState);
     }
   }, [
     currentPlayerState,
     gameAddress,
-    currentPlayerSigner,
+    signer,
     properties,
     payRent,
     isCurrentPlayerTurn,
     addGameLog,
   ]);
-
-  useEffect(() => {
-    async function getCurrentPlayer(address: Address) {
-      const playerAKp = await fakePlayerA();
-      const playerAPk = await getAddressFromPublicKey(playerAKp.publicKey);
-      const playerBKp = await fakePlayerB();
-      const playerBPk = await getAddressFromPublicKey(playerBKp.publicKey);
-
-      if (playerAPk === address) {
-        setCurrentPlayerSigner(await createSignerFromKeyPair(playerAKp));
-      }
-      if (playerBPk === address) {
-        setCurrentPlayerSigner(await createSignerFromKeyPair(playerBKp));
-      }
-    }
-
-    if (currentPlayerAddress) {
-      getCurrentPlayer(currentPlayerAddress);
-    }
-  }, [currentPlayerAddress]);
 
   // events
   const clearCardDrawEvents = useCallback(() => {
@@ -977,7 +974,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     // Current player management
     currentPlayerAddress,
     currentPlayerState,
-    currentPlayerSigner,
+    signer,
 
     // Game data
     gameState: gameState || null,
@@ -988,6 +985,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     refetch,
 
     // Game actions
+    startGame,
+    joinGame,
     rollDice,
     buyProperty,
     skipProperty,

@@ -19,7 +19,7 @@ export function useGameLogs() {
   }, [STORAGE_KEY]);
 
   useEffect(() => {
-    loadLogs();
+    // loadLogs();
   }, [loadLogs]);
 
   useEffect(() => {
@@ -35,17 +35,17 @@ export function useGameLogs() {
 
   const addGameLog = useCallback(
     (entry: Omit<GameLogEntry, "id" | "timestamp">) => {
-      const newLog: GameLogEntry = {
-        ...entry,
-        id: crypto.randomUUID(),
-        timestamp: Date.now(),
-      };
+      // const newLog: GameLogEntry = {
+      //   ...entry,
+      //   id: crypto.randomUUID(),
+      //   timestamp: Date.now(),
+      // };
 
-      setGameLogs((currentLogs) => {
-        const updatedLogs = [...currentLogs, newLog].slice(-100);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLogs));
-        return updatedLogs;
-      });
+      // setGameLogs((currentLogs) => {
+      //   const updatedLogs = [...currentLogs, newLog].slice(-100);
+      //   localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLogs));
+      //   return updatedLogs;
+      // });
     },
     [STORAGE_KEY]
   );

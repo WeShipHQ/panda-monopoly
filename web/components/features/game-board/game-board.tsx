@@ -48,6 +48,8 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
     cardDrawType,
     setCardDrawType,
     // Actions
+    startGame,
+    joinGame,
     endTurn,
     buyProperty,
     skipProperty,
@@ -56,6 +58,28 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
     getPropertyByPosition,
     isCurrentPlayerTurn,
   } = useGameContext();
+
+  const handleStartGame = async (_gameAddress: string) => {
+    try {
+      setIsLoading("startGame");
+      startGame();
+    } catch (error) {
+      console.error("Failed to start game:", error);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
+  const handleJoinGame = async (_gameAddress: string) => {
+    try {
+      setIsLoading("joinGame");
+      await joinGame();
+    } catch (error) {
+      console.error("Failed to join game:", error);
+    } finally {
+      setIsLoading(null);
+    }
+  };
 
   const handleBuyProperty = async (position: number) => {
     setIsLoading("buyProperty");
@@ -163,6 +187,8 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
               <div className="flex-shrink-0 transform scale-[0.7] sm:scale-75 md:scale-90 lg:scale-100 mb-6">
                 <DiceProvider>
                   <PlayerActions
+                    handleStartGame={handleStartGame}
+                    handleJoinGame={handleJoinGame}
                     handleEndTurn={handleEndTurn}
                     handleBuyProperty={handleBuyProperty}
                     handleSkipProperty={handleSkipProperty}

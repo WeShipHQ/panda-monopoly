@@ -6,7 +6,7 @@ import GameBoard from "./game-board";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useGameContext } from "@/components/providers/game-provider";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { address, createSignerFromKeyPair, createSolanaRpc } from "@solana/kit";
 import { fakePlayerA, fakePlayerB } from "@/lib/sdk/utils";
 import { sdk } from "@/lib/sdk/sdk";
@@ -15,9 +15,10 @@ import { useGameState } from "@/hooks/useGameStatev2";
 import { GameStatus } from "@/lib/sdk/generated";
 
 export function GameView() {
+  const { address: gameAddress } = useParams<{ address: string }>();
   const [boardRotation, setBoardRotation] = useState(0);
   const [activeTab, setActiveTab] = useState<"players" | "settings">("players");
-  const { gameState } = useGameContext();
+  const { gameState, setGameAddress } = useGameContext();
 
   const rotateBoardClockwise = () => {
     setBoardRotation((prev) => (prev + 90) % 360);
@@ -27,9 +28,15 @@ export function GameView() {
     setBoardRotation((prev) => (prev - 90 + 360) % 360);
   };
 
-  if (!gameState || gameState.gameStatus !== GameStatus.InProgress) {
-    return <NewGame />;
-  }
+  useEffect(() => {
+    if (gameAddress) {
+      setGameAddress(address(gameAddress));
+    }
+  }, [gameAddress]);
+
+  // if (!gameState || gameState.gameStatus !== GameStatus.InProgress) {
+  //   return <NewGame />;
+  // }
 
   // return (
   //   <div className="min-h-screen w-full overflow-hidden">
@@ -163,174 +170,174 @@ export function GameView() {
   );
 }
 
-const gameId = Date.now();
+// const gameId = Date.now();
 
-export function NewGame() {
-  const { gameAddress, setGameAddress } = useGameContext();
-  const [isCreatingGame, setIsCreatingGame] = useState(false);
-  const [isJoiningGame, setIsJoiningGame] = useState(false);
-  const [isStartingGame, setIsStartingGame] = useState(false);
+// export function NewGame() {
+//   const { gameAddress, setGameAddress } = useGameContext();
+//   const [isCreatingGame, setIsCreatingGame] = useState(false);
+//   const [isJoiningGame, setIsJoiningGame] = useState(false);
+//   const [isStartingGame, setIsStartingGame] = useState(false);
 
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const gameAddressParam = searchParams.get("game");
-  const { refetch } = useGameState(
-    gameAddressParam ? address(gameAddressParam) : undefined
-  );
+//   const searchParams = useSearchParams();
+//   const router = useRouter();
+//   const gameAddressParam = searchParams.get("game");
+//   const { refetch } = useGameState(
+//     gameAddressParam ? address(gameAddressParam) : undefined
+//   );
 
-  const handleCreateGame = async () => {
-    try {
-      const playerA = await createSignerFromKeyPair(await fakePlayerA());
-      window.localStorage.removeItem("assignedPlayers");
-      window.localStorage.removeItem("gameLogs");
-      setIsCreatingGame(true);
-      const rpc = createSolanaRpc("http://127.0.0.1:8899");
+//   const handleCreateGame = async () => {
+//     try {
+//       const playerA = await createSignerFromKeyPair(await fakePlayerA());
+//       window.localStorage.removeItem("assignedPlayers");
+//       window.localStorage.removeItem("gameLogs");
+//       setIsCreatingGame(true);
+//       const rpc = createSolanaRpc("http://127.0.0.1:8899");
 
-      const { instruction, gameAccountAddress } = await sdk.createGameIx({
-        rpc,
-        creator: playerA,
-        // @ts-expect-error
-        gameId,
-      });
+//       const { instruction, gameAccountAddress } = await sdk.createGameIx({
+//         rpc,
+//         creator: playerA,
+//         // @ts-expect-error
+//         gameId,
+//       });
 
-      const signature = await buildAndSendTransaction(
-        rpc,
-        [instruction],
-        playerA
-      );
-      console.log("handleCreateGame", signature);
+//       const signature = await buildAndSendTransaction(
+//         rpc,
+//         [instruction],
+//         playerA
+//       );
+//       console.log("handleCreateGame", signature);
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+//       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      const currentParams = new URLSearchParams(searchParams.toString());
-      currentParams.set("game", gameAccountAddress.toString());
-      router.replace(`?${currentParams.toString()}`, { scroll: false });
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsCreatingGame(false);
-    }
-  };
+//       const currentParams = new URLSearchParams(searchParams.toString());
+//       currentParams.set("game", gameAccountAddress.toString());
+//       router.replace(`?${currentParams.toString()}`, { scroll: false });
+//     } catch (error) {
+//       console.error(error);
+//     } finally {
+//       setIsCreatingGame(false);
+//     }
+//   };
 
-  const handleJoinGame = async () => {
-    try {
-      if (!gameAddress) {
-        return;
-      }
+//   const handleJoinGame = async () => {
+//     try {
+//       if (!gameAddress) {
+//         return;
+//       }
 
-      const playerb = await createSignerFromKeyPair(await fakePlayerB());
-      setIsJoiningGame(true);
-      const rpc = createSolanaRpc("http://127.0.0.1:8899");
+//       const playerb = await createSignerFromKeyPair(await fakePlayerB());
+//       setIsJoiningGame(true);
+//       const rpc = createSolanaRpc("http://127.0.0.1:8899");
 
-      console.log("join gameAccountPDA", gameAddress.toString());
+//       console.log("join gameAccountPDA", gameAddress.toString());
 
-      const { instruction } = await sdk.joinGameIx({
-        rpc,
-        gameAddress: gameAddress,
-        player: playerb,
-      });
+//       const { instruction } = await sdk.joinGameIx({
+//         rpc,
+//         gameAddress: gameAddress,
+//         player: playerb,
+//       });
 
-      const signature = await buildAndSendTransaction(
-        rpc,
-        [instruction],
-        playerb
-      );
-      console.log("handleJoinGame", signature);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsJoiningGame(false);
-      refetch();
-    }
-  };
+//       const signature = await buildAndSendTransaction(
+//         rpc,
+//         [instruction],
+//         playerb
+//       );
+//       console.log("handleJoinGame", signature);
+//     } catch (error) {
+//       console.error(error);
+//     } finally {
+//       setIsJoiningGame(false);
+//       refetch();
+//     }
+//   };
 
-  const handleStartGame = async () => {
-    try {
-      if (!gameAddress) {
-        return;
-      }
+//   const handleStartGame = async () => {
+//     try {
+//       if (!gameAddress) {
+//         return;
+//       }
 
-      const playerA = await createSignerFromKeyPair(await fakePlayerA());
-      setIsStartingGame(true);
-      const rpc = createSolanaRpc("http://127.0.0.1:8899");
+//       const playerA = await createSignerFromKeyPair(await fakePlayerA());
+//       setIsStartingGame(true);
+//       const rpc = createSolanaRpc("http://127.0.0.1:8899");
 
-      console.log("start gameAccountPDA", gameAddress.toString());
+//       console.log("start gameAccountPDA", gameAddress.toString());
 
-      const instruction = await sdk.startGameIx({
-        rpc,
-        gameAddress: gameAddress,
-        authority: playerA,
-      });
+//       const instruction = await sdk.startGameIx({
+//         rpc,
+//         gameAddress: gameAddress,
+//         authority: playerA,
+//       });
 
-      const signature = await buildAndSendTransaction(
-        rpc,
-        [instruction],
-        playerA
-      );
-      console.log("handleStartGame", signature);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsStartingGame(false);
-      refetch();
-    }
-  };
+//       const signature = await buildAndSendTransaction(
+//         rpc,
+//         [instruction],
+//         playerA
+//       );
+//       console.log("handleStartGame", signature);
+//     } catch (error) {
+//       console.error(error);
+//     } finally {
+//       setIsStartingGame(false);
+//       refetch();
+//     }
+//   };
 
-  useEffect(() => {
-    if (gameAddressParam) {
-      setGameAddress(address(gameAddressParam));
-    }
-  }, [gameAddressParam]);
+//   useEffect(() => {
+//     if (gameAddressParam) {
+//       setGameAddress(address(gameAddressParam));
+//     }
+//   }, [gameAddressParam]);
 
-  return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardContent className="flex flex-col items-center space-y-6 p-8">
-          {/* Logo */}
-          <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center">
-            <img
-              src="/images/red-figure.png"
-              alt="Poo Town Logo"
-              className="w-16 h-16"
-            />
-          </div>
+//   return (
+//     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+//       <Card className="w-full max-w-md">
+//         <CardContent className="flex flex-col items-center space-y-6 p-8">
+//           {/* Logo */}
+//           <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center">
+//             <img
+//               src="/images/red-figure.png"
+//               alt="Poo Town Logo"
+//               className="w-16 h-16"
+//             />
+//           </div>
 
-          {/* Title */}
-          <h1 className="text-3xl font-bold text-foreground text-center">
-            Poo Town
-          </h1>
+//           {/* Title */}
+//           <h1 className="text-3xl font-bold text-foreground text-center">
+//             Poo Town
+//           </h1>
 
-          {/* Buttons */}
-          <div className="flex flex-col space-y-3 w-full">
-            <Button
-              disabled={isCreatingGame}
-              onClick={handleCreateGame}
-              className="w-full"
-              size="lg"
-            >
-              {isCreatingGame ? "Creating..." : "Create Game"}
-            </Button>
-            <Button
-              disabled={isJoiningGame}
-              className="w-full bg-transparent"
-              //   variant="outline"
-              size="lg"
-              onClick={handleJoinGame}
-            >
-              {isJoiningGame ? "Joining..." : "Join Game"}
-            </Button>
-            <Button
-              disabled={isStartingGame}
-              onClick={handleStartGame}
-              className="w-full"
-              //   variant="secondary"
-              size="lg"
-            >
-              {isStartingGame ? "Starting..." : "Start Game"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+//           {/* Buttons */}
+//           <div className="flex flex-col space-y-3 w-full">
+//             <Button
+//               disabled={isCreatingGame}
+//               onClick={handleCreateGame}
+//               className="w-full"
+//               size="lg"
+//             >
+//               {isCreatingGame ? "Creating..." : "Create Game"}
+//             </Button>
+//             <Button
+//               disabled={isJoiningGame}
+//               className="w-full bg-transparent"
+//               //   variant="outline"
+//               size="lg"
+//               onClick={handleJoinGame}
+//             >
+//               {isJoiningGame ? "Joining..." : "Join Game"}
+//             </Button>
+//             <Button
+//               disabled={isStartingGame}
+//               onClick={handleStartGame}
+//               className="w-full"
+//               //   variant="secondary"
+//               size="lg"
+//             >
+//               {isStartingGame ? "Starting..." : "Start Game"}
+//             </Button>
+//           </div>
+//         </CardContent>
+//       </Card>
+//     </div>
+//   );
+// }

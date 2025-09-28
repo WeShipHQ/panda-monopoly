@@ -35,6 +35,8 @@ import {
   getCreatePlatformConfigInstructionAsync,
   fetchPlatformConfig,
   GAME_STATE_DISCRIMINATOR,
+  PANDA_MONOPOLY_PROGRAM_ADDRESS,
+  getGameStateDecoder,
   // getTestDiceHandlerInstructionAsync,
 } from "./generated";
 import {
@@ -92,11 +94,20 @@ import {
   Decoder,
   GetProgramAccountsApi,
   VariableSizeDecoder,
+  getAddressEncoder,
+  RpcSubscriptions,
+  SolanaRpcSubscriptionsApi,
+  getProgramDerivedAddress,
+  AccountMeta,
+  WritableAccount,
+  AccountRole,
 } from "@solana/kit";
 import {
   CHANCE_CARD_DRAWN_EVENT_DISCRIMINATOR,
   COMMUNITY_CHEST_CARD_DRAWN_EVENT_DISCRIMINATOR,
 } from "./utils";
+import { DELEGATION_PROGRAM_ID, PLATFORM_ID } from "@/configs/constants";
+import { GameAccount, mapGameStateToAccount } from "@/types/schema";
 
 class MonopolyGameSDK {
   async createPlatformIx(params: CreatePlatformParams): Promise<any> {
@@ -170,10 +181,78 @@ class MonopolyGameSDK {
    * Start a game (only game creator can call this)
    */
   async startGameIx(params: StartGameParams): Promise<Instruction> {
-    return getStartGameInstruction({
+    const [bufferGamePda] = await getProgramDerivedAddress({
+      programAddress: PANDA_MONOPOLY_PROGRAM_ADDRESS,
+      seeds: ["buffer", getAddressEncoder().encode(params.gameAddress)],
+    });
+
+    const [delegationRecordGamePda] = await getProgramDerivedAddress({
+      programAddress: DELEGATION_PROGRAM_ID,
+      seeds: ["delegation", getAddressEncoder().encode(params.gameAddress)],
+    });
+
+    const [delegationMetadataGamePda] = await getProgramDerivedAddress({
+      programAddress: DELEGATION_PROGRAM_ID,
+      seeds: [
+        "delegation-metadata",
+        getAddressEncoder().encode(params.gameAddress),
+      ],
+    });
+
+    const ix = getStartGameInstruction({
+      bufferGame: bufferGamePda,
+      delegationRecordGame: delegationRecordGamePda,
+      delegationMetadataGame: delegationMetadataGamePda,
       game: params.gameAddress,
       authority: params.authority,
     });
+
+    const remainingAccounts: WritableAccount[] = [];
+    console.log("params.players", params.players);
+
+    for (const player of params.players) {
+      const [playerPda] = await getPlayerStatePDA(params.gameAddress, player);
+      remainingAccounts.push({
+        address: playerPda,
+        role: AccountRole.WRITABLE,
+      });
+
+      const [bufferGamePda] = await getProgramDerivedAddress({
+        programAddress: PANDA_MONOPOLY_PROGRAM_ADDRESS,
+        seeds: ["buffer", getAddressEncoder().encode(playerPda)],
+      });
+
+      remainingAccounts.push({
+        address: bufferGamePda,
+        role: AccountRole.WRITABLE,
+      });
+
+      const [delegationRecordGamePda] = await getProgramDerivedAddress({
+        programAddress: DELEGATION_PROGRAM_ID,
+        seeds: ["delegation", getAddressEncoder().encode(playerPda)],
+      });
+
+      remainingAccounts.push({
+        address: delegationRecordGamePda,
+        role: AccountRole.WRITABLE,
+      });
+
+      const [delegationMetadataGamePda] = await getProgramDerivedAddress({
+        programAddress: DELEGATION_PROGRAM_ID,
+        seeds: ["delegation-metadata", getAddressEncoder().encode(playerPda)],
+      });
+
+      remainingAccounts.push({
+        address: delegationMetadataGamePda,
+        role: AccountRole.WRITABLE,
+      });
+    }
+
+    ix.accounts.push(...remainingAccounts);
+
+    console.dir(ix, { depth: null });
+
+    return ix;
   }
 
   /**
@@ -186,6 +265,7 @@ class MonopolyGameSDK {
       diceRoll: params.diceRoll
         ? some(params.diceRoll as unknown as ReadonlyUint8Array)
         : none(),
+      seed: Math.floor(Math.random() * 256),
     });
   }
 
@@ -484,9 +564,7 @@ class MonopolyGameSDK {
     }
   }
 
-  async getGameAccounts(
-    rpc: Rpc<SolanaRpcApi>
-  ): Promise<Account<GameState, string> | null> {
+  async getGameAccounts(rpc: Rpc<SolanaRpcApi>): Promise<GameAccount[]> {
     const discriminator = getBase58Decoder().decode(GAME_STATE_DISCRIMINATOR);
     const discriminatorFilter: GetProgramAccountsMemcmpFilter = {
       memcmp: {
@@ -497,11 +575,26 @@ class MonopolyGameSDK {
       },
     };
 
-    return fetchDecodedProgramAccounts(
+    const configFilter: GetProgramAccountsMemcmpFilter = {
+      memcmp: {
+        offset: BigInt(16),
+        // @ts-expect-error
+        bytes: getBase58Decoder().decode(
+          getAddressEncoder().encode(PLATFORM_ID)
+        ),
+        encoding: "base58",
+      },
+    };
+
+    const gameAccount = await fetchDecodedProgramAccounts(
       rpc,
-      CHESS_PROGRAM_ADDRESS,
-      [discriminatorFilter, ...filters],
-      getGameAccountDecoder()
+      PANDA_MONOPOLY_PROGRAM_ADDRESS,
+      [discriminatorFilter, configFilter],
+      getGameStateDecoder()
+    );
+
+    return gameAccount.map((acc) =>
+      mapGameStateToAccount(acc.data, acc.address)
     );
   }
 
@@ -537,20 +630,13 @@ class MonopolyGameSDK {
   }
 
   private async subscribeToAccountInfo(
+    rpc: Rpc<SolanaRpcApi>,
+    rpcSubscriptions: RpcSubscriptions<SolanaRpcSubscriptionsApi>,
     accAddress: Address,
-    onAccountChange: (accountInfo: MaybeEncodedAccount<string> | null) => void,
-    er: boolean = false
+    onAccountChange: (accountInfo: MaybeEncodedAccount<string> | null) => void
+    // er: boolean = false
   ) {
     let ignoreFetch = false;
-
-    // const rpc = er ? this.erRpc : this.rpc;
-    // const rpcSubscriptions = er
-    //   ? this.erRpcSubscriptions
-    //   : this.rpcSubscriptions;
-    const rpc = createSolanaRpc("http://127.0.0.1:8899");
-    const rpcSubscriptions = createSolanaRpcSubscriptions(
-      "ws://127.0.0.1:8900"
-    );
 
     fetchEncodedAccount(rpc, accAddress)
       .then((response) => {
@@ -560,6 +646,7 @@ class MonopolyGameSDK {
         onAccountChange(response);
       })
       .catch((error) => {
+        console.error("Error fetching account:", accAddress, error);
         onAccountChange(null);
       });
 
@@ -601,17 +688,19 @@ class MonopolyGameSDK {
   }
 
   public async subscribeToGameAccount(
+    rpc: Rpc<SolanaRpcApi>,
+    rpcSubscriptions: RpcSubscriptions<SolanaRpcSubscriptionsApi>,
     gameAddress: Address,
-    callback: (gameState: GameState | null) => void,
-    er: boolean = false
+    callback: (gameState: GameState | null) => void
   ) {
-    // Set up a flag to track if we've unsubscribed
     let unsubscribed = false;
     let cleanup: (() => void) | null = null;
 
     if (unsubscribed) return;
 
     cleanup = await this.subscribeToAccountInfo(
+      rpc,
+      rpcSubscriptions,
       gameAddress,
       (encodedAccount) => {
         if (encodedAccount === null) {
@@ -630,8 +719,7 @@ class MonopolyGameSDK {
           console.error("Error decoding game account:", error);
           callback(null);
         }
-      },
-      er
+      }
     );
 
     return () => {
@@ -643,10 +731,11 @@ class MonopolyGameSDK {
   }
 
   public async subscribePlayerStateAccount(
+    rpc: Rpc<SolanaRpcApi>,
+    rpcSubscriptions: RpcSubscriptions<SolanaRpcSubscriptionsApi>,
     gameAddress: Address,
     player: Address,
-    callback: (playerState: PlayerState | null) => void,
-    er: boolean = false
+    callback: (playerState: PlayerState | null) => void
   ) {
     const [playerStateAddress] = await getPlayerStatePDA(gameAddress, player);
 
@@ -656,6 +745,8 @@ class MonopolyGameSDK {
     if (unsubscribed) return;
 
     cleanup = await this.subscribeToAccountInfo(
+      rpc,
+      rpcSubscriptions,
       playerStateAddress,
       (encodedAccount) => {
         if (encodedAccount === null) {
@@ -674,8 +765,7 @@ class MonopolyGameSDK {
           console.error("Error decoding player account:", error);
           callback(null);
         }
-      },
-      er
+      }
     );
 
     return () => {
@@ -687,19 +777,19 @@ class MonopolyGameSDK {
   }
 
   public async subscribeToEvents(
-    onEvent: (event: GameEvent) => void,
-    er: boolean = false
+    // rpc: Rpc<SolanaRpcApi>,
+    rpcSubscriptions: RpcSubscriptions<SolanaRpcSubscriptionsApi>,
+    onEvent: (event: GameEvent) => void
   ) {
-    const rpcSubscriptions = createSolanaRpcSubscriptions(
-      "ws://127.0.0.1:8900"
-    );
-
     const abortController = new AbortController();
 
     const notifications = await rpcSubscriptions
       .logsNotifications(
         {
-          mentions: [address("4vucUqMcXN4sgLsgnrXTUC9U7ACZ5DmoRBLbWt4vrnyR")],
+          mentions: [
+            // address("4vucUqMcXN4sgLsgnrXTUC9U7ACZ5DmoRBLbWt4vrnyR")
+            PANDA_MONOPOLY_PROGRAM_ADDRESS,
+          ],
         },
         { commitment: "confirmed" }
       )
