@@ -53,6 +53,8 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
     endTurn,
     buyProperty,
     skipProperty,
+    payMevTax,
+    payPriorityFeeTax,
     drawChanceCard,
     // Utilities
     getPropertyByPosition,
@@ -111,6 +113,28 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
       await endTurn();
     } catch (error) {
       console.error("Failed to end turn:", error);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
+  const handlePayMevTax = async () => {
+    setIsLoading("tax");
+    try {
+      await payMevTax();
+    } catch (error) {
+      console.error("Failed to pay MEV tax:", error);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
+  const handlePayPriorityFeeTax = async () => {
+    setIsLoading("tax");
+    try {
+      await payPriorityFeeTax();
+    } catch (error) {
+      console.error("Failed to pay priority fee tax:", error);
     } finally {
       setIsLoading(null);
     }
@@ -194,6 +218,8 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
                     handleEndTurn={handleEndTurn}
                     handleBuyProperty={handleBuyProperty}
                     handleSkipProperty={handleSkipProperty}
+                    handlePayMevTax={handlePayMevTax}
+                    handlePayPriorityFeeTax={handlePayPriorityFeeTax}
                     isLoading={isLoading}
                   />
                 </DiceProvider>
@@ -298,7 +324,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
         </div>
       </div>
 
-      {/* {cardDrawType && (
+      {cardDrawType && (
         <CardDrawModal
           isOpen={isCardDrawModalOpen}
           cardType={cardDrawType}
@@ -307,7 +333,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
             setCardDrawType(null);
           }}
         />
-      )} */}
+      )}
     </div>
   );
 };

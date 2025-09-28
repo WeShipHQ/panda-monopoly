@@ -159,7 +159,6 @@ export interface DrawCommunityChestCardParams {
 
 // Tax instruction parameters
 export interface PayMevTaxParams {
-  rpc: Rpc<GetAccountInfoApi>;
   player: TransactionSigner;
   gameAddress: Address;
 }

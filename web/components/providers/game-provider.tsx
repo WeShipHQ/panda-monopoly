@@ -54,6 +54,8 @@ interface GameContextType {
   payJailFine: () => Promise<void>;
   buildHouse: (position: number) => Promise<void>;
   buildHotel: (position: number) => Promise<void>;
+  payMevTax: () => Promise<void>;
+  payPriorityFeeTax: () => Promise<void>;
 
   // UI state management
   selectedProperty: number | null;
@@ -748,7 +750,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
     try {
       const instruction = await sdk.payMevTaxIx({
-        rpc,
         gameAddress,
         player: { address: address(wallet.address) } as TransactionSigner,
       });
@@ -764,14 +765,14 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
       console.log("[payMevTax] tx", signature);
 
-      addGameLog({
-        type: "move",
-        playerId: wallet.address,
-        message: `${formatAddress(
-          wallet.address
-        )} paid MEV tax of $${"MEV_TAX_AMOUNT"}`,
-        details: { taxType: "mev", amount: 9999, signature },
-      });
+      // addGameLog({
+      //   type: "move",
+      //   playerId: wallet.address,
+      //   message: `${formatAddress(
+      //     wallet.address
+      //   )} paid MEV tax of $${"MEV_TAX_AMOUNT"}`,
+      //   details: { taxType: "mev", amount: 9999, signature },
+      // });
     } catch (error) {
       console.error("Error paying MEV tax:", error);
       throw error;
@@ -898,27 +899,27 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       // Priority 5: Handle special space actions
-      const position = player.position;
+      // const position = player.position;
 
-      if (position === 0) {
-        console.log("Player landed on MEV Tax space");
-        try {
-          await payMevTax();
-        } catch (error) {
-          console.error("Failed to pay MEV tax:", error);
-        }
-        return;
-      }
+      // if (position === 0) {
+      //   console.log("Player landed on MEV Tax space");
+      //   try {
+      //     await payMevTax();
+      //   } catch (error) {
+      //     console.error("Failed to pay MEV tax:", error);
+      //   }
+      //   return;
+      // }
 
-      if (position === 0) {
-        console.log("Player landed on Priority Fee Tax space");
-        try {
-          await payPriorityFeeTax();
-        } catch (error) {
-          console.error("Failed to pay Priority Fee tax:", error);
-        }
-        return;
-      }
+      // if (position === 0) {
+      //   console.log("Player landed on Priority Fee Tax space");
+      //   try {
+      //     await payPriorityFeeTax();
+      //   } catch (error) {
+      //     console.error("Failed to pay Priority Fee tax:", error);
+      //   }
+      //   return;
+      // }
 
       // if (
       //   player.needsSpecialSpaceAction &&
@@ -1090,6 +1091,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     payJailFine,
     buildHouse,
     buildHotel,
+    payMevTax,
+    payPriorityFeeTax,
 
     // UI state management
     selectedProperty,

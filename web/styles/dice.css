@@ -26,7 +26,7 @@
   transition: 0.5s cubic-bezier(0.42, 1.57, 0.62, 0.86);
 }
 
-.dice-3d.dice-rolling {
+.dice-3d.dice-rolling.dice-1 {
   animation: rotatePerFace 2s cubic-bezier(0.42, 1.57, 0.62, 0.86) infinite;
 }
 

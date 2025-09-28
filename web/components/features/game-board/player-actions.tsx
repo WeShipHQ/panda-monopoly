@@ -9,6 +9,10 @@ import { DicesOnly, useDiceContext } from "./dice";
 import { GameAccount, PlayerAccount } from "@/types/schema";
 import { useWallet } from "@/hooks/use-wallet";
 import { Badge } from "@/components/ui/badge";
+import {
+  MEV_TAX_POSITION,
+  PRIORITY_FEE_TAX_POSITION,
+} from "@/configs/constants";
 
 interface PlayerTokenProps {
   player: PlayerAccount;
@@ -77,6 +81,10 @@ export const PropertyActions: React.FC<PropertyActionsProps> = ({
         !!propertyAccount?.owner && propertyAccount.owner === player.wallet,
     } as any;
   }, [player, getPropertyByPosition, position]);
+
+  if (position === MEV_TAX_POSITION || position === PRIORITY_FEE_TAX_POSITION) {
+    return <Button>Pay tax</Button>;
+  }
 
   return (
     <div
@@ -166,12 +174,16 @@ export const PlayerActions = ({
   handleBuyProperty,
   handleSkipProperty,
   handleEndTurn,
+  handlePayMevTax,
+  handlePayPriorityFeeTax,
   isLoading,
 }: {
   handleStartGame: (gameAddress: string) => void;
   handleJoinGame: (gameAddress: string) => void;
   handleBuyProperty: (position: number) => void;
   handleSkipProperty: (position: number) => void;
+  handlePayMevTax: () => void;
+  handlePayPriorityFeeTax: () => void;
   handleEndTurn: () => void;
   isLoading: string | null;
 }) => {
@@ -233,21 +245,19 @@ export const PlayerActions = ({
         </div>
       )}
 
-      {isStarted && (
+      {isStarted && isMyTurn && (
         <>
           <div className="flex items-center gap-2 mt-8 mb-4">
-            {isMyTurn &&
-              !hasPendingActions &&
-              !currentPlayerState.hasRolledDice && (
-                <Button
-                  disabled={!canRoll || isRolling}
-                  onClick={handleRollDice}
-                  size="sm"
-                  loading={isRolling}
-                >
-                  Roll dice
-                </Button>
-              )}
+            {!hasPendingActions && !currentPlayerState.hasRolledDice && (
+              <Button
+                disabled={!canRoll || isRolling}
+                onClick={handleRollDice}
+                size="sm"
+                loading={isRolling}
+              >
+                Roll dice
+              </Button>
+            )}
 
             {currentPlayerState?.inJail && (
               <PlayerInJailAlert
@@ -255,13 +265,13 @@ export const PlayerActions = ({
                 handleEndTurn={handleEndTurn}
               />
             )}
+
             {currentPlayerState?.needsBankruptcyCheck && (
               <BankruptcyAction player={currentPlayerState} />
             )}
 
             {/* Property Actions */}
-            {isMyTurn &&
-              currentPlayerState.needsPropertyAction &&
+            {currentPlayerState.needsPropertyAction &&
               currentPlayerState.pendingPropertyPosition && (
                 <PropertyActions
                   player={currentPlayerState}
@@ -270,6 +280,29 @@ export const PlayerActions = ({
                   handleBuyProperty={handleBuyProperty}
                   handleSkipProperty={handleSkipProperty}
                 />
+              )}
+
+            {/* Special Space Actions */}
+            {currentPlayerState.needsSpecialSpaceAction &&
+              currentPlayerState.pendingSpecialSpacePosition ===
+                MEV_TAX_POSITION && (
+                <Button
+                  onClick={() => handlePayMevTax()}
+                  loading={isLoading === "tax"}
+                >
+                  Pay MEV Tax
+                </Button>
+              )}
+
+            {currentPlayerState.needsSpecialSpaceAction &&
+              currentPlayerState.pendingSpecialSpacePosition ===
+                PRIORITY_FEE_TAX_POSITION && (
+                <Button
+                  onClick={() => handlePayPriorityFeeTax()}
+                  loading={isLoading === "tax"}
+                >
+                  Pay Priority Fee Tax
+                </Button>
               )}
 
             {isMyTurn && currentPlayerState.needsChanceCard && (
@@ -308,11 +341,12 @@ export const PlayerActions = ({
               </Button>
             )}
           </div>
-
-          <Badge variant="neutral">
-            {formatAddress(currentPlayerState.wallet)} is playing
-          </Badge>
         </>
+      )}
+      {isStarted && (
+        <Badge variant="neutral">
+          {formatAddress(currentPlayerState.wallet)} is playing
+        </Badge>
       )}
     </div>
   );
