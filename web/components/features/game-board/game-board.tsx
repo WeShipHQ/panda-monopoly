@@ -59,6 +59,8 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
     isCurrentPlayerTurn,
   } = useGameContext();
 
+  console.log("currentPlayerState", currentPlayerState);
+
   const handleStartGame = async (_gameAddress: string) => {
     try {
       setIsLoading("startGame");
@@ -296,7 +298,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
         </div>
       </div>
 
-      {cardDrawType && (
+      {/* {cardDrawType && (
         <CardDrawModal
           isOpen={isCardDrawModalOpen}
           cardType={cardDrawType}
@@ -305,7 +307,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
             setCardDrawType(null);
           }}
         />
-      )}
+      )} */}
     </div>
   );
 };

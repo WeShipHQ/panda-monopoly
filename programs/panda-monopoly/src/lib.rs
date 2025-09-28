@@ -49,6 +49,12 @@ pub mod panda_monopoly {
         instructions::initialize::initialize_game_handler(ctx)
     }
 
+    pub fn reset_game_handler<'c: 'info, 'info>(
+        ctx: Context<'_, '_, 'c, 'info, ResetGame<'info>>,
+    ) -> Result<()> {
+        instructions::initialize::reset_game_handler(ctx)
+    }
+
     pub fn close_game_handler<'c: 'info, 'info>(
         ctx: Context<'_, '_, 'c, 'info, CloseGame<'info>>,
     ) -> Result<()> {

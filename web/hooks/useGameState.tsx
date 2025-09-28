@@ -1,4 +1,5 @@
 import { useRpcContext } from "@/components/providers/rpc-provider";
+import { DELEGATION_PROGRAM_ID } from "@/configs/constants";
 import { GameStatus } from "@/lib/sdk/generated";
 import { sdk } from "@/lib/sdk/sdk";
 import { GameEvent } from "@/lib/sdk/types";
@@ -61,7 +62,15 @@ export function useGameState(
 
       try {
         // Step 1: Fetch game account data
-        const gameState = await sdk.getGameAccount(rpc, gameAddress);
+        let gameState = await sdk.getGameAccount(rpc, gameAddress);
+        if (gameState?.programAddress === DELEGATION_PROGRAM_ID) {
+          try {
+            const erState = await sdk.getGameAccount(erRpc, gameAddress);
+            gameState = erState || gameState;
+          } catch (_error) {
+            // Fallback to regular RPC if enhanced RPC fails
+          }
+        }
         if (!gameState) {
           return { gameData: null, players: [], properties: [] };
         }
@@ -72,6 +81,8 @@ export function useGameState(
         );
 
         // Step 2: Get player addresses from game data
+        const isInProgress = gameData.gameStatus === GameStatus.InProgress;
+
         const playerAddresses = gameData.players || [];
 
         if (playerAddresses.length === 0) {
@@ -82,11 +93,19 @@ export function useGameState(
         const playerPromises = playerAddresses.map(
           async (playerAddress: string) => {
             try {
-              const playerAccount = await sdk.getPlayerAccount(
-                rpc,
+              let playerAccount = await sdk.getPlayerAccount(
+                isInProgress ? erRpc : rpc,
                 gameAddress,
                 address(playerAddress)
               );
+
+              if (!playerAccount) {
+                playerAccount = await sdk.getPlayerAccount(
+                  rpc,
+                  gameAddress,
+                  address(playerAddress)
+                );
+              }
 
               if (!playerAccount) {
                 return null;
@@ -123,7 +142,7 @@ export function useGameState(
         let properties: PropertyAccount[] = [];
         if (uniquePropertyPositions.length > 0) {
           const propertyStates = await sdk.getPropertyStateAccounts(
-            rpc,
+            isInProgress ? erRpc : rpc,
             gameAddress,
             uniquePropertyPositions
           );

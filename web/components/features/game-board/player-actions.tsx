@@ -1,4 +1,4 @@
-import { GameStatus, PlayerState } from "@/lib/sdk/generated";
+import { GameStatus } from "@/lib/sdk/generated";
 import { useGameContext } from "@/components/providers/game-provider";
 import { useMemo } from "react";
 import { isSome } from "@solana/kit";
@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button";
 import { formatAddress, formatPrice } from "@/lib/utils";
 import { getBoardSpaceData } from "@/lib/board-utils";
 import { DicesOnly, useDiceContext } from "./dice";
-import { GameAccount } from "@/types/schema";
+import { GameAccount, PlayerAccount } from "@/types/schema";
 import { useWallet } from "@/hooks/use-wallet";
 import { Badge } from "@/components/ui/badge";
 
 interface PlayerTokenProps {
-  player: PlayerState;
+  player: PlayerAccount;
   handleEndTurn: () => void;
 }
 
@@ -32,7 +32,7 @@ export const PlayerInJailAlert: React.FC<PlayerTokenProps> = ({
 };
 
 interface BankruptcyActionProps {
-  player: PlayerState;
+  player: PlayerAccount;
 }
 
 export const BankruptcyAction: React.FC<BankruptcyActionProps> = ({
@@ -49,7 +49,7 @@ export const BankruptcyAction: React.FC<BankruptcyActionProps> = ({
 };
 
 interface PropertyActionsProps {
-  player: PlayerState;
+  player: PlayerAccount;
   position: number;
   isLoading: string | null;
   handleBuyProperty: (position: number) => void;
@@ -72,11 +72,9 @@ export const PropertyActions: React.FC<PropertyActionsProps> = ({
     return {
       propertyData,
       propertyAccount,
-      isOwned: propertyAccount?.owner && isSome(propertyAccount.owner),
+      isOwned: !!propertyAccount?.owner,
       isOwnedByCurrentPlayer:
-        propertyAccount?.owner &&
-        isSome(propertyAccount.owner) &&
-        propertyAccount.owner.value === player.wallet,
+        !!propertyAccount?.owner && propertyAccount.owner === player.wallet,
     } as any;
   }, [player, getPropertyByPosition, position]);
 
@@ -238,16 +236,18 @@ export const PlayerActions = ({
       {isStarted && (
         <>
           <div className="flex items-center gap-2 mt-8 mb-4">
-            {!hasPendingActions && !currentPlayerState.hasRolledDice && (
-              <Button
-                disabled={!canRoll || isRolling}
-                onClick={handleRollDice}
-                size="sm"
-                loading={isRolling}
-              >
-                Roll dice
-              </Button>
-            )}
+            {isMyTurn &&
+              !hasPendingActions &&
+              !currentPlayerState.hasRolledDice && (
+                <Button
+                  disabled={!canRoll || isRolling}
+                  onClick={handleRollDice}
+                  size="sm"
+                  loading={isRolling}
+                >
+                  Roll dice
+                </Button>
+              )}
 
             {currentPlayerState?.inJail && (
               <PlayerInJailAlert
@@ -262,10 +262,10 @@ export const PlayerActions = ({
             {/* Property Actions */}
             {isMyTurn &&
               currentPlayerState.needsPropertyAction &&
-              isSome(currentPlayerState.pendingPropertyPosition) && (
+              currentPlayerState.pendingPropertyPosition && (
                 <PropertyActions
                   player={currentPlayerState}
-                  position={currentPlayerState.pendingPropertyPosition.value}
+                  position={currentPlayerState.pendingPropertyPosition}
                   isLoading={isLoading}
                   handleBuyProperty={handleBuyProperty}
                   handleSkipProperty={handleSkipProperty}
@@ -309,9 +309,9 @@ export const PlayerActions = ({
             )}
           </div>
 
-          <h4 className="text-sm font-medium text-purple-800">
+          <Badge variant="neutral">
             {formatAddress(currentPlayerState.wallet)} is playing
-          </h4>
+          </Badge>
         </>
       )}
     </div>

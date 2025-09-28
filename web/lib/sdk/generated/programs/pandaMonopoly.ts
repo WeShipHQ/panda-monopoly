@@ -38,6 +38,7 @@ import {
   type ParsedPayPriorityFeeTaxHandlerInstruction,
   type ParsedPayRentInstruction,
   type ParsedRejectTradeInstruction,
+  type ParsedResetGameHandlerInstruction,
   type ParsedRollDiceInstruction,
   type ParsedSellBuildingInstruction,
   type ParsedStartGameInstruction,
@@ -147,6 +148,7 @@ export enum PandaMonopolyInstruction {
   PayPriorityFeeTaxHandler,
   PayRent,
   RejectTrade,
+  ResetGameHandler,
   RollDice,
   SellBuilding,
   StartGame,
@@ -428,6 +430,17 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([205, 29, 157, 88, 253, 101, 84, 100])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.ResetGameHandler;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([27, 140, 230, 215, 37, 178, 226, 114])
       ),
       0
@@ -581,6 +594,9 @@ export type ParsedPandaMonopolyInstruction<
   | ({
       instructionType: PandaMonopolyInstruction.RejectTrade;
     } & ParsedRejectTradeInstruction<TProgram>)
+  | ({
+      instructionType: PandaMonopolyInstruction.ResetGameHandler;
+    } & ParsedResetGameHandlerInstruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.RollDice;
     } & ParsedRollDiceInstruction<TProgram>)

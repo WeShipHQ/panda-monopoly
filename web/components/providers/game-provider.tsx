@@ -41,6 +41,8 @@ interface GameContextType {
 
   // Game actions
   startGame: () => Promise<void>;
+  resetGame: () => Promise<void>;
+  closeGame: () => Promise<void>;
   joinGame: () => Promise<void>;
   rollDice: (diceRoll?: number[]) => Promise<void>;
   buyProperty: (position: number) => Promise<void>;
@@ -123,7 +125,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
   const [demoDices, setDemoDices] = useState<number[] | null>(null);
 
-  const { rpc } = useRpcContext();
+  const { rpc, erRpc } = useRpcContext();
 
   const addCardDrawEvent = useCallback(
     (newEvent: GameEvent) => {
@@ -184,9 +186,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   );
 
   const isCurrentPlayerTurn = useCallback((): boolean => {
-    if (!gameState || !currentPlayerAddress) return false;
-    return gameState.players[gameState.currentTurn] === currentPlayerAddress;
-  }, [gameState, currentPlayerAddress]);
+    if (!gameState || !currentPlayerAddress || !wallet?.address) return false;
+    return gameState.players[gameState.currentTurn] === wallet.address;
+  }, [gameState, currentPlayerAddress, wallet]);
 
   const canRollDice = useCallback((): boolean => {
     if (!currentPlayerState || !isCurrentPlayerTurn()) return false;
@@ -229,10 +231,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       throw new Error("Game must have at least 2 players");
     }
 
-    console.log("check signer", signer);
     try {
       const instruction = await sdk.startGameIx({
-        rpc,
         gameAddress,
         players: gameState?.players.map(address) || [],
         authority: { address: address(wallet.address) } as TransactionSigner,
@@ -250,6 +250,62 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       throw error;
     }
   }, [rpc, gameAddress, gameState, wallet, addGameLog]);
+
+  const resetGame = useCallback(async (): Promise<void> => {
+    if (!gameAddress || !gameState || !wallet?.address || !wallet.delegated) {
+      throw new Error("Game address or player signer not available");
+    }
+
+    try {
+      const instruction = await sdk.resetGameIx({
+        gameAddress,
+        players: gameState?.players.map(address) || [],
+        authority: { address: address(wallet.address) } as TransactionSigner,
+      });
+
+      const signature = await buildAndSendTransactionWithPrivy(
+        erRpc,
+        [instruction],
+        wallet,
+        [],
+        "confirmed",
+        true
+      );
+
+      console.log("[resetGame] tx", signature);
+    } catch (error) {
+      console.error("Error resetting game:", error);
+      throw error;
+    }
+  }, [erRpc, gameAddress, gameState, wallet]);
+
+  const closeGame = useCallback(async (): Promise<void> => {
+    if (!gameAddress || !gameState || !wallet?.address || !wallet.delegated) {
+      throw new Error("Game address or player signer not available");
+    }
+
+    try {
+      const instruction = await sdk.closeGameIx({
+        gameAddress,
+        players: gameState?.players.map(address) || [],
+        authority: { address: address(wallet.address) } as TransactionSigner,
+      });
+
+      const signature = await buildAndSendTransactionWithPrivy(
+        erRpc,
+        [instruction],
+        wallet,
+        [],
+        "confirmed",
+        true
+      );
+
+      console.log("[closeGame] tx", signature);
+    } catch (error) {
+      console.error("Error closing game:", error);
+      throw error;
+    }
+  }, [erRpc, gameAddress, gameState, wallet]);
 
   const joinGame = useCallback(async (): Promise<void> => {
     if (!gameAddress || !wallet?.address || !wallet.delegated) {
@@ -284,16 +340,18 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
       try {
         const instruction = await sdk.rollDiceIx({
-          rpc,
           gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
           diceRoll: diceRoll || null,
         });
 
         const signature = await buildAndSendTransactionWithPrivy(
-          rpc,
+          erRpc,
           [instruction],
-          wallet
+          wallet,
+          [],
+          "confirmed",
+          true
         );
 
         console.log("[rollDice] tx", signature);
@@ -330,9 +388,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         });
 
         const signature = await buildAndSendTransactionWithPrivy(
-          rpc,
+          erRpc,
           [instruction],
-          wallet
+          wallet,
+          [],
+          "confirmed",
+          true
         );
 
         console.log("[buyProperty] tx", signature);
@@ -341,7 +402,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         addGameLog({
           type: "purchase",
           playerId: wallet.address,
-          message: `${formatAddress(wallet.address)} bought ${  
+          message: `${formatAddress(wallet.address)} bought ${
             propertyData?.name || "N/A"
           }`,
           details: {
@@ -374,9 +435,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         });
 
         const signature = await buildAndSendTransactionWithPrivy(
-          rpc,
+          erRpc,
           [instruction],
-          wallet
+          wallet,
+          [],
+          "confirmed",
+          true
         );
 
         console.log("[skipProperty] tx", signature);
@@ -414,9 +478,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         });
 
         const signature = await buildAndSendTransactionWithPrivy(
-          rpc,
+          erRpc,
           [instruction],
-          wallet
+          wallet,
+          [],
+          "confirmed",
+          true
         );
 
         console.log("[payRent] tx", signature);
@@ -459,9 +526,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       });
 
       const signature = await buildAndSendTransactionWithPrivy(
-        rpc,
+        erRpc,
         [instruction],
-        wallet
+        wallet,
+        [],
+        "confirmed",
+        true
       );
 
       console.log("[endTurn] tx", signature);
@@ -484,15 +554,18 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
     try {
       const instruction = await sdk.drawChanceCardIx({
-        rpc,
+        rpc: erRpc,
         gameAddress: gameAddress,
         player: { address: address(wallet.address) } as TransactionSigner,
       });
 
       const signature = await buildAndSendTransactionWithPrivy(
-        rpc,
+        erRpc,
         [instruction],
-        wallet
+        wallet,
+        [],
+        "confirmed",
+        true
       );
 
       console.log("[drawChanceCard] tx", signature);
@@ -524,9 +597,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       });
 
       const signature = await buildAndSendTransactionWithPrivy(
-        rpc,
+        erRpc,
         [instruction],
-        wallet
+        wallet,
+        [],
+        "confirmed",
+        true
       );
 
       console.log("[drawCommunityChestCard] tx", signature);
@@ -558,9 +634,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       });
 
       const signature = await buildAndSendTransactionWithPrivy(
-        rpc,
+        erRpc,
         [instruction],
-        wallet
+        wallet,
+        [],
+        "confirmed",
+        true
       );
 
       addGameLog({
@@ -593,9 +672,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         });
 
         const signature = await buildAndSendTransactionWithPrivy(
-          rpc,
+          erRpc,
           [instruction],
-          wallet
+          wallet,
+          [],
+          "confirmed",
+          true
         );
 
         console.log("[buildHouse] tx", signature);
@@ -604,7 +686,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         addGameLog({
           type: "building",
           playerId: wallet.address,
-          message: `${formatAddress(wallet.address)} built a house on ${    
+          message: `${formatAddress(wallet.address)} built a house on ${
             propertyData?.name || "property"
           }`,
           details: { position, buildingType: "house" },
@@ -632,9 +714,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         });
 
         const signature = await buildAndSendTransactionWithPrivy(
-          rpc,
+          erRpc,
           [instruction],
-          wallet
+          wallet,
+          [],
+          "confirmed",
+          true
         );
 
         console.log("[buildHotel] tx", signature);
@@ -669,9 +754,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       });
 
       const signature = await buildAndSendTransactionWithPrivy(
-        rpc,
+        erRpc,
         [instruction],
-        wallet
+        wallet,
+        [],
+        "confirmed",
+        true
       );
 
       console.log("[payMevTax] tx", signature);
@@ -703,9 +791,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       });
 
       const signature = await buildAndSendTransactionWithPrivy(
-        rpc,
+        erRpc,
         [instruction],
-        wallet
+        wallet,
+        [],
+        "confirmed",
+        true
       );
 
       console.log("[payPriorityFeeTax] tx", signature);
@@ -726,7 +817,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.error("Error paying Priority Fee tax:", error);
       throw error;
     }
-  }, [gameAddress, wallet, addGameLog]);  
+  }, [gameAddress, wallet, addGameLog]);
 
   useEffect(() => {
     async function handleAction(player: PlayerAccount) {
@@ -986,6 +1077,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
     // Game actions
     startGame,
+    resetGame,
+    closeGame,
     joinGame,
     rollDice,
     buyProperty,

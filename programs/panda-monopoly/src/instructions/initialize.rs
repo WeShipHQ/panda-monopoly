@@ -356,3 +356,54 @@ pub fn close_game_handler<'c: 'info, 'info>(
 
     Ok(())
 }
+
+#[derive(Accounts)]
+pub struct ResetGame<'info> {
+    #[account(
+        mut,
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        bump,
+        constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress,
+        constraint = game.current_players >= MIN_PLAYERS @ GameError::MinPlayersNotMet,
+        constraint = authority.key() == game.authority @ GameError::Unauthorized,
+    )]
+    pub game: Account<'info, GameState>,
+
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    pub clock: Sysvar<'info, Clock>,
+}
+
+pub fn reset_game_handler<'c: 'info, 'info>(
+    ctx: Context<'_, '_, 'c, 'info, ResetGame<'info>>,
+) -> Result<()> {
+    {
+        let game = &mut ctx.accounts.game;
+        let clock = &ctx.accounts.clock;
+
+        // Change game status to in progress
+        game.game_status = GameStatus::InProgress;
+        game.current_turn = 0; // First player starts
+        game.turn_started_at = clock.unix_timestamp;
+    }
+
+    {
+        let remaining_accounts_iter = &mut ctx.remaining_accounts.iter();
+        let game = &ctx.accounts.game;
+        let clock = &ctx.accounts.clock;
+
+        for player_pubkey in game.players.iter() {
+            let mut player_account =
+                Account::<PlayerState>::try_from(next_account_info(remaining_accounts_iter)?)?;
+
+            player_account.initialize_player_state(*player_pubkey, game.key(), clock);
+
+            // player_account.exit(ctx.program_id)?;
+        }
+    }
+
+    msg!("Game resetted!");
+
+    Ok(())
+}

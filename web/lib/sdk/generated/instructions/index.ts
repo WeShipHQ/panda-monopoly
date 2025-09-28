@@ -30,6 +30,7 @@ export * from './payMevTaxHandler';
 export * from './payPriorityFeeTaxHandler';
 export * from './payRent';
 export * from './rejectTrade';
+export * from './resetGameHandler';
 export * from './rollDice';
 export * from './sellBuilding';
 export * from './startGame';

@@ -37,6 +37,8 @@ import {
   GAME_STATE_DISCRIMINATOR,
   PANDA_MONOPOLY_PROGRAM_ADDRESS,
   getGameStateDecoder,
+  getResetGameHandlerInstruction,
+  getCloseGameHandlerInstruction,
   // getTestDiceHandlerInstructionAsync,
 } from "./generated";
 import {
@@ -55,7 +57,6 @@ import {
   BuildHouseParams,
   BuildHotelParams,
   SellBuildingParams,
-  CollectGoParams,
   CollectFreeParkingParams,
   GoToJailParams,
   AttendFestivalParams,
@@ -76,7 +77,6 @@ import {
 import {
   Account,
   Address,
-  address,
   getBase58Decoder,
   Rpc,
   SolanaRpcApi,
@@ -84,13 +84,10 @@ import {
   type GetProgramAccountsMemcmpFilter,
   type ReadonlyUint8Array,
   MaybeEncodedAccount,
-  createSolanaRpc,
-  createSolanaRpcSubscriptions,
   fetchEncodedAccount,
   getBase64Encoder,
   some,
   none,
-  isAddress,
   Decoder,
   GetProgramAccountsApi,
   VariableSizeDecoder,
@@ -98,7 +95,6 @@ import {
   RpcSubscriptions,
   SolanaRpcSubscriptionsApi,
   getProgramDerivedAddress,
-  AccountMeta,
   WritableAccount,
   AccountRole,
 } from "@solana/kit";
@@ -208,7 +204,6 @@ class MonopolyGameSDK {
     });
 
     const remainingAccounts: WritableAccount[] = [];
-    console.log("params.players", params.players);
 
     for (const player of params.players) {
       const [playerPda] = await getPlayerStatePDA(params.gameAddress, player);
@@ -250,7 +245,49 @@ class MonopolyGameSDK {
 
     ix.accounts.push(...remainingAccounts);
 
+    return ix;
+  }
+
+  async resetGameIx(params: StartGameParams): Promise<Instruction> {
+    const ix = getResetGameHandlerInstruction({
+      game: params.gameAddress,
+      authority: params.authority,
+    });
+
+    const remainingAccounts: WritableAccount[] = [];
+
+    for (const player of params.players) {
+      const [playerPda] = await getPlayerStatePDA(params.gameAddress, player);
+      remainingAccounts.push({
+        address: playerPda,
+        role: AccountRole.WRITABLE,
+      });
+    }
+
+    ix.accounts.push(...remainingAccounts);
+
     console.dir(ix, { depth: null });
+
+    return ix;
+  }
+
+  async closeGameIx(params: StartGameParams): Promise<Instruction> {
+    const ix = getCloseGameHandlerInstruction({
+      game: params.gameAddress,
+      authority: params.authority,
+    });
+
+    const remainingAccounts: WritableAccount[] = [];
+
+    for (const player of params.players) {
+      const [playerPda] = await getPlayerStatePDA(params.gameAddress, player);
+      remainingAccounts.push({
+        address: playerPda,
+        role: AccountRole.WRITABLE,
+      });
+    }
+
+    ix.accounts.push(...remainingAccounts);
 
     return ix;
   }
@@ -259,6 +296,7 @@ class MonopolyGameSDK {
    * Roll dice for current player - handles movement automatically
    */
   async rollDiceIx(params: RollDiceParams): Promise<Instruction> {
+    console.log("rollDiceIx", params);
     return await getRollDiceInstructionAsync({
       game: params.gameAddress,
       player: params.player,
@@ -273,6 +311,7 @@ class MonopolyGameSDK {
     return await getTestDiceHandlerInstructionAsync({
       game: params.gameAddress,
       player: params.player,
+      // oracleQueue: DEFAULT_EPHEMERAL_QUEUE,
       diceRoll: params.diceRoll
         ? some(params.diceRoll as unknown as ReadonlyUint8Array)
         : none(),
