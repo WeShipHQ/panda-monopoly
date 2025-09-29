@@ -1,57 +1,43 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useGameContext } from "@/components/providers/game-provider";
-import {
-  boardData,
-  colorMap,
-  type BoardSpace,
-  type PropertySpace,
-  type RailroadSpace,
-  type UtilitySpace,
-} from "@/configs/board-data";
+import { colorMap, type BoardSpace } from "@/configs/board-data";
+import { useWallet } from "@/hooks/use-wallet";
+import { getBoardSpaceData } from "@/lib/board-utils";
 
 export function OwnedProperties() {
-  const { gameState, currentPlayerState } = useGameContext();
+  const { wallet } = useWallet();
+  const { properties: allProperties } = useGameContext();
 
-  if (!currentPlayerState || !gameState) {
+  const ownedProperties = allProperties.filter(
+    (property) => property.owner === wallet?.address
+  );
+
+  if (!ownedProperties.length) {
     return (
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">My properties (0)</h2>
         <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-gray-500 text-sm">No properties owned</p>
+          <CardContent>
+            <p className="text-gray-500 text-center text-sm">
+              No properties owned
+            </p>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  const ownedPropertyPositions = Array.from(
-    currentPlayerState.propertiesOwned || new Set()
-  );
-  const ownedProperties = ownedPropertyPositions
-    .map((position) => boardData.find((space) => space.position === position))
-    .filter(
-      (space): space is PropertySpace | RailroadSpace | UtilitySpace =>
-        space !== undefined &&
-        (space.type === "property" ||
-          space.type === "railroad" ||
-          space.type === "utility")
-    );
-
-  const getPropertyIcon = (
-    property: PropertySpace | RailroadSpace | UtilitySpace
-  ) => {
-    if (property.type === "property") {
+  const getPropertyIcon = (propertyData: BoardSpace) => {
+    if (propertyData.type === "property") {
       return (
         <div
           className="w-4 h-4 rounded-sm border border-gray-300"
-          style={{ backgroundColor: colorMap[property.colorGroup] }}
+          style={{ backgroundColor: colorMap[propertyData.colorGroup] }}
         />
       );
-    } else if (property.type === "railroad") {
+    } else if (propertyData.type === "railroad") {
       return (
         <div className="w-4 h-4 rounded-sm bg-black flex items-center justify-center">
           <span className="text-white text-xs font-bold">🚂</span>
@@ -72,46 +58,45 @@ export function OwnedProperties() {
         My properties ({ownedProperties.length})
       </h2>
 
-      <div className="space-y-2">
-        {ownedProperties.length === 0 ? (
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-gray-500 text-sm">No properties owned</p>
-            </CardContent>
-          </Card>
-        ) : (
-          ownedProperties.map((property) => (
+      <div className="space-y-4">
+        {ownedProperties.map((property) => {
+          const propertyData = getBoardSpaceData(property.position);
+          if (!propertyData) {
+            return null;
+          }
+
+          return (
             <Card
               key={property.position}
               className="hover:bg-gray-50 transition-colors py-3"
             >
               <CardContent className="px-3">
-                <div className="flex items-center space-x-3">
-                  {getPropertyIcon(property)}
+                <div className="flex items-center gap-3">
+                  {getPropertyIcon(propertyData)}
                   <div className="flex-1 flex gap-3 min-w-0">
                     <p className="text-sm font-medium truncate">
-                      {property.name}
+                      {propertyData.name}
                     </p>
-                    {property.type === "property" && (
+                    {/* {propertyData.type === "property" && (
                       <div className="flex items-center space-x-2 mt-1">
                         <Badge
                           //   variant="outline"
                           className="text-xs"
                           style={{
-                            borderColor: colorMap[property.colorGroup],
-                            color: colorMap[property.colorGroup],
+                            borderColor: colorMap[propertyData.colorGroup],
+                            color: colorMap[propertyData.colorGroup],
                           }}
                         >
-                          {property.colorGroup}
+                          {propertyData.colorGroup}
                         </Badge>
                       </div>
-                    )}
+                    )} */}
                   </div>
                 </div>
               </CardContent>
             </Card>
-          ))
-        )}
+          );
+        })}
       </div>
     </div>
   );

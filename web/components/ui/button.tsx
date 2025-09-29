@@ -26,7 +26,7 @@ const buttonVariants = cva(
         icon: "size-10",
       },
       loading: {
-        true: "text-transparent",
+        true: "!text-transparent",
       },
     },
     defaultVariants: {

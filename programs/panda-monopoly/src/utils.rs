@@ -180,3 +180,12 @@ pub fn generate_random_seed(recent_blockhashes: &UncheckedAccount, timestamp: i6
 
     Ok(blockhash_seed.wrapping_mul(timestamp_seed))
 }
+
+fn xorshift64star(seed: u64) -> u64 {
+    let mut x = seed;
+    x ^= x << 12;
+    x ^= x >> 25;
+    x ^= x << 27;
+    x = (x as u128 * 0x2545F4914F6CDD1D) as u64;
+    x
+}

@@ -72,6 +72,7 @@ export function getPropertyStateDiscriminatorBytes() {
 export type PropertyState = {
   discriminator: ReadonlyUint8Array;
   position: number;
+  game: Address;
   owner: Option<Address>;
   price: number;
   colorGroup: ColorGroup;
@@ -90,6 +91,7 @@ export type PropertyState = {
 
 export type PropertyStateArgs = {
   position: number;
+  game: Address;
   owner: OptionOrNullable<Address>;
   price: number;
   colorGroup: ColorGroupArgs;
@@ -111,6 +113,7 @@ export function getPropertyStateEncoder(): Encoder<PropertyStateArgs> {
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['position', getU8Encoder()],
+      ['game', getAddressEncoder()],
       ['owner', getOptionEncoder(getAddressEncoder())],
       ['price', getU16Encoder()],
       ['colorGroup', getColorGroupEncoder()],
@@ -134,6 +137,7 @@ export function getPropertyStateDecoder(): Decoder<PropertyState> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['position', getU8Decoder()],
+    ['game', getAddressDecoder()],
     ['owner', getOptionDecoder(getAddressDecoder())],
     ['price', getU16Decoder()],
     ['colorGroup', getColorGroupDecoder()],

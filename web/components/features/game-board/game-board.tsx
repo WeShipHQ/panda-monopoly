@@ -71,12 +71,13 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
     isCurrentPlayerTurn,
   } = useGameContext();
 
-  console.log("currentPlayerState", currentPlayerState);
+  // console.log("currentPlayerState", currentPlayerState);
+  // console.log("properties", properties);
 
   const handleStartGame = async (_gameAddress: string) => {
     try {
       setIsLoading("startGame");
-      startGame();
+      await startGame();
     } catch (error) {
       console.error("Failed to start game:", error);
     } finally {

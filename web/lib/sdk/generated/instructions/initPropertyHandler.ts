@@ -66,9 +66,7 @@ export type InitPropertyHandlerInstruction<
   TAccountSystemProgram extends
     | string
     | AccountMeta<string> = '11111111111111111111111111111111',
-  TAccountDelegationProgram extends
-    | string
-    | AccountMeta<string> = 'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh',
+  TAccountDelegationProgram extends string | AccountMeta<string> = string,
   TAccountOwnerProgram extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
@@ -163,7 +161,7 @@ export type InitPropertyHandlerAsyncInput<
   propertyDelegationMetadataAccount: Address<TAccountPropertyDelegationMetadataAccount>;
   authority: TransactionSigner<TAccountAuthority>;
   systemProgram?: Address<TAccountSystemProgram>;
-  delegationProgram?: Address<TAccountDelegationProgram>;
+  delegationProgram: Address<TAccountDelegationProgram>;
   ownerProgram: Address<TAccountOwnerProgram>;
   gameKey: InitPropertyHandlerInstructionDataArgs['gameKey'];
   position: InitPropertyHandlerInstructionDataArgs['position'];
@@ -256,10 +254,6 @@ export async function getInitPropertyHandlerInstructionAsync<
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
-  if (!accounts.delegationProgram.value) {
-    accounts.delegationProgram.value =
-      'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh' as Address<'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh'>;
-  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -306,7 +300,7 @@ export type InitPropertyHandlerInput<
   propertyDelegationMetadataAccount: Address<TAccountPropertyDelegationMetadataAccount>;
   authority: TransactionSigner<TAccountAuthority>;
   systemProgram?: Address<TAccountSystemProgram>;
-  delegationProgram?: Address<TAccountDelegationProgram>;
+  delegationProgram: Address<TAccountDelegationProgram>;
   ownerProgram: Address<TAccountOwnerProgram>;
   gameKey: InitPropertyHandlerInstructionDataArgs['gameKey'];
   position: InitPropertyHandlerInstructionDataArgs['position'];
@@ -384,10 +378,6 @@ export function getInitPropertyHandlerInstruction<
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
-  if (!accounts.delegationProgram.value) {
-    accounts.delegationProgram.value =
-      'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh' as Address<'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');

@@ -58,14 +58,6 @@ export async function getPropertyStatePDA(
   game: Address,
   position: number
 ): Promise<ProgramDerivedAddress> {
-  console.log(
-    "seed",
-    Array.from([
-      "property",
-      getAddressEncoder().encode(game),
-      getU8Encoder().encode(position),
-    ])
-  );
   return await getProgramDerivedAddress({
     programAddress: PANDA_MONOPOLY_PROGRAM_ADDRESS,
     seeds: [

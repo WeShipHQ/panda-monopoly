@@ -37,7 +37,6 @@ import {
 import { PANDA_MONOPOLY_PROGRAM_ADDRESS } from '../programs';
 import {
   expectAddress,
-  expectSome,
   getAccountMetaFactory,
   type ResolvedAccount,
 } from '../shared';
@@ -57,20 +56,10 @@ export type BuyPropertyInstruction<
   TAccountGame extends string | AccountMeta<string> = string,
   TAccountPlayerState extends string | AccountMeta<string> = string,
   TAccountPropertyState extends string | AccountMeta<string> = string,
-  TAccountPropertyBufferAccount extends string | AccountMeta<string> = string,
-  TAccountPropertyDelegationRecordAccount extends
-    | string
-    | AccountMeta<string> = string,
-  TAccountPropertyDelegationMetadataAccount extends
-    | string
-    | AccountMeta<string> = string,
   TAccountPlayer extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | AccountMeta<string> = '11111111111111111111111111111111',
-  TAccountDelegationProgram extends
-    | string
-    | AccountMeta<string> = 'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh',
   TAccountClock extends
     | string
     | AccountMeta<string> = 'SysvarC1ock11111111111111111111111111111111',
@@ -88,15 +77,6 @@ export type BuyPropertyInstruction<
       TAccountPropertyState extends string
         ? WritableAccount<TAccountPropertyState>
         : TAccountPropertyState,
-      TAccountPropertyBufferAccount extends string
-        ? WritableAccount<TAccountPropertyBufferAccount>
-        : TAccountPropertyBufferAccount,
-      TAccountPropertyDelegationRecordAccount extends string
-        ? WritableAccount<TAccountPropertyDelegationRecordAccount>
-        : TAccountPropertyDelegationRecordAccount,
-      TAccountPropertyDelegationMetadataAccount extends string
-        ? WritableAccount<TAccountPropertyDelegationMetadataAccount>
-        : TAccountPropertyDelegationMetadataAccount,
       TAccountPlayer extends string
         ? WritableSignerAccount<TAccountPlayer> &
             AccountSignerMeta<TAccountPlayer>
@@ -104,9 +84,6 @@ export type BuyPropertyInstruction<
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
-      TAccountDelegationProgram extends string
-        ? ReadonlyAccount<TAccountDelegationProgram>
-        : TAccountDelegationProgram,
       TAccountClock extends string
         ? ReadonlyAccount<TAccountClock>
         : TAccountClock,
@@ -152,23 +129,15 @@ export type BuyPropertyAsyncInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountPropertyState extends string = string,
-  TAccountPropertyBufferAccount extends string = string,
-  TAccountPropertyDelegationRecordAccount extends string = string,
-  TAccountPropertyDelegationMetadataAccount extends string = string,
   TAccountPlayer extends string = string,
   TAccountSystemProgram extends string = string,
-  TAccountDelegationProgram extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
   playerState?: Address<TAccountPlayerState>;
-  propertyState?: Address<TAccountPropertyState>;
-  propertyBufferAccount: Address<TAccountPropertyBufferAccount>;
-  propertyDelegationRecordAccount: Address<TAccountPropertyDelegationRecordAccount>;
-  propertyDelegationMetadataAccount: Address<TAccountPropertyDelegationMetadataAccount>;
+  propertyState: Address<TAccountPropertyState>;
   player: TransactionSigner<TAccountPlayer>;
   systemProgram?: Address<TAccountSystemProgram>;
-  delegationProgram?: Address<TAccountDelegationProgram>;
   clock?: Address<TAccountClock>;
   position: BuyPropertyInstructionDataArgs['position'];
 };
@@ -177,12 +146,8 @@ export async function getBuyPropertyInstructionAsync<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountPropertyState extends string,
-  TAccountPropertyBufferAccount extends string,
-  TAccountPropertyDelegationRecordAccount extends string,
-  TAccountPropertyDelegationMetadataAccount extends string,
   TAccountPlayer extends string,
   TAccountSystemProgram extends string,
-  TAccountDelegationProgram extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
@@ -190,12 +155,8 @@ export async function getBuyPropertyInstructionAsync<
     TAccountGame,
     TAccountPlayerState,
     TAccountPropertyState,
-    TAccountPropertyBufferAccount,
-    TAccountPropertyDelegationRecordAccount,
-    TAccountPropertyDelegationMetadataAccount,
     TAccountPlayer,
     TAccountSystemProgram,
-    TAccountDelegationProgram,
     TAccountClock
   >,
   config?: { programAddress?: TProgramAddress }
@@ -205,12 +166,8 @@ export async function getBuyPropertyInstructionAsync<
     TAccountGame,
     TAccountPlayerState,
     TAccountPropertyState,
-    TAccountPropertyBufferAccount,
-    TAccountPropertyDelegationRecordAccount,
-    TAccountPropertyDelegationMetadataAccount,
     TAccountPlayer,
     TAccountSystemProgram,
-    TAccountDelegationProgram,
     TAccountClock
   >
 > {
@@ -223,24 +180,8 @@ export async function getBuyPropertyInstructionAsync<
     game: { value: input.game ?? null, isWritable: true },
     playerState: { value: input.playerState ?? null, isWritable: true },
     propertyState: { value: input.propertyState ?? null, isWritable: true },
-    propertyBufferAccount: {
-      value: input.propertyBufferAccount ?? null,
-      isWritable: true,
-    },
-    propertyDelegationRecordAccount: {
-      value: input.propertyDelegationRecordAccount ?? null,
-      isWritable: true,
-    },
-    propertyDelegationMetadataAccount: {
-      value: input.propertyDelegationMetadataAccount ?? null,
-      isWritable: true,
-    },
     player: { value: input.player ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    delegationProgram: {
-      value: input.delegationProgram ?? null,
-      isWritable: false,
-    },
     clock: { value: input.clock ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -262,25 +203,9 @@ export async function getBuyPropertyInstructionAsync<
       ],
     });
   }
-  if (!accounts.propertyState.value) {
-    accounts.propertyState.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([112, 114, 111, 112, 101, 114, 116, 121])
-        ),
-        getAddressEncoder().encode(expectAddress(accounts.game.value)),
-        getU8Encoder().encode(expectSome(args.position)),
-      ],
-    });
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
-  if (!accounts.delegationProgram.value) {
-    accounts.delegationProgram.value =
-      'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh' as Address<'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh'>;
   }
   if (!accounts.clock.value) {
     accounts.clock.value =
@@ -293,12 +218,8 @@ export async function getBuyPropertyInstructionAsync<
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.playerState),
       getAccountMeta(accounts.propertyState),
-      getAccountMeta(accounts.propertyBufferAccount),
-      getAccountMeta(accounts.propertyDelegationRecordAccount),
-      getAccountMeta(accounts.propertyDelegationMetadataAccount),
       getAccountMeta(accounts.player),
       getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.delegationProgram),
       getAccountMeta(accounts.clock),
     ],
     data: getBuyPropertyInstructionDataEncoder().encode(
@@ -310,12 +231,8 @@ export async function getBuyPropertyInstructionAsync<
     TAccountGame,
     TAccountPlayerState,
     TAccountPropertyState,
-    TAccountPropertyBufferAccount,
-    TAccountPropertyDelegationRecordAccount,
-    TAccountPropertyDelegationMetadataAccount,
     TAccountPlayer,
     TAccountSystemProgram,
-    TAccountDelegationProgram,
     TAccountClock
   >);
 }
@@ -324,23 +241,15 @@ export type BuyPropertyInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountPropertyState extends string = string,
-  TAccountPropertyBufferAccount extends string = string,
-  TAccountPropertyDelegationRecordAccount extends string = string,
-  TAccountPropertyDelegationMetadataAccount extends string = string,
   TAccountPlayer extends string = string,
   TAccountSystemProgram extends string = string,
-  TAccountDelegationProgram extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
   playerState: Address<TAccountPlayerState>;
   propertyState: Address<TAccountPropertyState>;
-  propertyBufferAccount: Address<TAccountPropertyBufferAccount>;
-  propertyDelegationRecordAccount: Address<TAccountPropertyDelegationRecordAccount>;
-  propertyDelegationMetadataAccount: Address<TAccountPropertyDelegationMetadataAccount>;
   player: TransactionSigner<TAccountPlayer>;
   systemProgram?: Address<TAccountSystemProgram>;
-  delegationProgram?: Address<TAccountDelegationProgram>;
   clock?: Address<TAccountClock>;
   position: BuyPropertyInstructionDataArgs['position'];
 };
@@ -349,12 +258,8 @@ export function getBuyPropertyInstruction<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountPropertyState extends string,
-  TAccountPropertyBufferAccount extends string,
-  TAccountPropertyDelegationRecordAccount extends string,
-  TAccountPropertyDelegationMetadataAccount extends string,
   TAccountPlayer extends string,
   TAccountSystemProgram extends string,
-  TAccountDelegationProgram extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
@@ -362,12 +267,8 @@ export function getBuyPropertyInstruction<
     TAccountGame,
     TAccountPlayerState,
     TAccountPropertyState,
-    TAccountPropertyBufferAccount,
-    TAccountPropertyDelegationRecordAccount,
-    TAccountPropertyDelegationMetadataAccount,
     TAccountPlayer,
     TAccountSystemProgram,
-    TAccountDelegationProgram,
     TAccountClock
   >,
   config?: { programAddress?: TProgramAddress }
@@ -376,12 +277,8 @@ export function getBuyPropertyInstruction<
   TAccountGame,
   TAccountPlayerState,
   TAccountPropertyState,
-  TAccountPropertyBufferAccount,
-  TAccountPropertyDelegationRecordAccount,
-  TAccountPropertyDelegationMetadataAccount,
   TAccountPlayer,
   TAccountSystemProgram,
-  TAccountDelegationProgram,
   TAccountClock
 > {
   // Program address.
@@ -393,24 +290,8 @@ export function getBuyPropertyInstruction<
     game: { value: input.game ?? null, isWritable: true },
     playerState: { value: input.playerState ?? null, isWritable: true },
     propertyState: { value: input.propertyState ?? null, isWritable: true },
-    propertyBufferAccount: {
-      value: input.propertyBufferAccount ?? null,
-      isWritable: true,
-    },
-    propertyDelegationRecordAccount: {
-      value: input.propertyDelegationRecordAccount ?? null,
-      isWritable: true,
-    },
-    propertyDelegationMetadataAccount: {
-      value: input.propertyDelegationMetadataAccount ?? null,
-      isWritable: true,
-    },
     player: { value: input.player ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    delegationProgram: {
-      value: input.delegationProgram ?? null,
-      isWritable: false,
-    },
     clock: { value: input.clock ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -426,10 +307,6 @@ export function getBuyPropertyInstruction<
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
-  if (!accounts.delegationProgram.value) {
-    accounts.delegationProgram.value =
-      'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh' as Address<'DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh'>;
-  }
   if (!accounts.clock.value) {
     accounts.clock.value =
       'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
@@ -441,12 +318,8 @@ export function getBuyPropertyInstruction<
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.playerState),
       getAccountMeta(accounts.propertyState),
-      getAccountMeta(accounts.propertyBufferAccount),
-      getAccountMeta(accounts.propertyDelegationRecordAccount),
-      getAccountMeta(accounts.propertyDelegationMetadataAccount),
       getAccountMeta(accounts.player),
       getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.delegationProgram),
       getAccountMeta(accounts.clock),
     ],
     data: getBuyPropertyInstructionDataEncoder().encode(
@@ -458,12 +331,8 @@ export function getBuyPropertyInstruction<
     TAccountGame,
     TAccountPlayerState,
     TAccountPropertyState,
-    TAccountPropertyBufferAccount,
-    TAccountPropertyDelegationRecordAccount,
-    TAccountPropertyDelegationMetadataAccount,
     TAccountPlayer,
     TAccountSystemProgram,
-    TAccountDelegationProgram,
     TAccountClock
   >);
 }
@@ -477,13 +346,9 @@ export type ParsedBuyPropertyInstruction<
     game: TAccountMetas[0];
     playerState: TAccountMetas[1];
     propertyState: TAccountMetas[2];
-    propertyBufferAccount: TAccountMetas[3];
-    propertyDelegationRecordAccount: TAccountMetas[4];
-    propertyDelegationMetadataAccount: TAccountMetas[5];
-    player: TAccountMetas[6];
-    systemProgram: TAccountMetas[7];
-    delegationProgram: TAccountMetas[8];
-    clock: TAccountMetas[9];
+    player: TAccountMetas[3];
+    systemProgram: TAccountMetas[4];
+    clock: TAccountMetas[5];
   };
   data: BuyPropertyInstructionData;
 };
@@ -496,7 +361,7 @@ export function parseBuyPropertyInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedBuyPropertyInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 10) {
+  if (instruction.accounts.length < 6) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -512,12 +377,8 @@ export function parseBuyPropertyInstruction<
       game: getNextAccount(),
       playerState: getNextAccount(),
       propertyState: getNextAccount(),
-      propertyBufferAccount: getNextAccount(),
-      propertyDelegationRecordAccount: getNextAccount(),
-      propertyDelegationMetadataAccount: getNextAccount(),
       player: getNextAccount(),
       systemProgram: getNextAccount(),
-      delegationProgram: getNextAccount(),
       clock: getNextAccount(),
     },
     data: getBuyPropertyInstructionDataDecoder().decode(instruction.data),

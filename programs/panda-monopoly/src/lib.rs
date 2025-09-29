@@ -55,6 +55,12 @@ pub mod panda_monopoly {
         instructions::initialize::reset_game_handler(ctx)
     }
 
+    pub fn undelegate_game_handler<'c: 'info, 'info>(
+        ctx: Context<'_, '_, 'c, 'info, UndelegateGame<'info>>,
+    ) -> Result<()> {
+        instructions::initialize::undelegate_game_handler(ctx)
+    }
+
     pub fn close_game_handler<'c: 'info, 'info>(
         ctx: Context<'_, '_, 'c, 'info, CloseGame<'info>>,
     ) -> Result<()> {
@@ -72,8 +78,8 @@ pub mod panda_monopoly {
     }
 
     // Dice and movement instructions
-    pub fn roll_dice(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>, seed: u8) -> Result<()> {
-        instructions::dice::roll_dice_handler(ctx, dice_roll, seed)
+    pub fn roll_dice(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> Result<()> {
+        instructions::dice::roll_dice_handler(ctx, dice_roll)
     }
 
     pub fn callback_roll_dice(
@@ -133,6 +139,14 @@ pub mod panda_monopoly {
     // }
 
     // property instructions
+    pub fn init_property_handler(
+        ctx: Context<InitProperty>,
+        game_key: Pubkey,
+        position: u8,
+    ) -> Result<()> {
+        instructions::property::init_property_handler(ctx, game_key, position)
+    }
+
     pub fn buy_property(ctx: Context<BuyProperty>, position: u8) -> Result<()> {
         instructions::property::buy_property_handler(ctx, position)
     }

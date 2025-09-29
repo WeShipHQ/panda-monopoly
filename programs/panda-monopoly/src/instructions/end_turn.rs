@@ -66,7 +66,7 @@ pub fn end_turn_handler(ctx: Context<EndTurn>) -> Result<()> {
     }
 
     // Check if player rolled doubles and should get another turn
-    let is_doubles = player_state.last_dice_roll[0] == player_state.last_dice_roll[1];
+    // let is_doubles = player_state.last_dice_roll[0] == player_state.last_dice_roll[1];
 
     // Reset turn-specific flags
     player_state.has_rolled_dice = false;
@@ -75,20 +75,21 @@ pub fn end_turn_handler(ctx: Context<EndTurn>) -> Result<()> {
     player_state.needs_chance_card = false;
     player_state.needs_community_chest_card = false;
     player_state.needs_bankruptcy_check = false;
+    // Advance to next player
+    player_state.doubles_count = 0; // Reset doubles count
+    let next_turn = (game.current_turn + 1) % game.current_players;
+    game.current_turn = next_turn;
+    game.turn_started_at = clock.unix_timestamp;
 
-    if is_doubles && player_state.doubles_count < 3 && !player_state.in_jail {
-        // Player gets another turn due to doubles
-        msg!("Player {} gets another turn due to doubles!", player_pubkey);
-        game.turn_started_at = clock.unix_timestamp;
-    } else {
-        // Advance to next player
-        player_state.doubles_count = 0; // Reset doubles count
-        let next_turn = (game.current_turn + 1) % game.current_players;
-        game.current_turn = next_turn;
-        game.turn_started_at = clock.unix_timestamp;
+    msg!("Turn ended. Next turn: Player {}", next_turn);
 
-        msg!("Turn ended. Next turn: Player {}", next_turn);
-    }
+    // if is_doubles && player_state.doubles_count < 3 && !player_state.in_jail {
+    //     // Player gets another turn due to doubles
+    //     msg!("Player {} gets another turn due to doubles!", player_pubkey);
+    //     game.turn_started_at = clock.unix_timestamp;
+    // } else {
+
+    // }
 
     Ok(())
 }

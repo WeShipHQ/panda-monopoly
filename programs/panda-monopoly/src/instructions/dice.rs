@@ -1,6 +1,6 @@
+use crate::constants::*;
 use crate::error::GameError;
 use crate::state::*;
-use crate::{constants::*, ID};
 use anchor_lang::prelude::*;
 // use ephemeral_vrf_sdk::anchor::vrf;
 // use ephemeral_vrf_sdk::instructions::create_request_randomness_ix;
@@ -40,14 +40,13 @@ pub struct RollDice<'info> {
 pub fn roll_dice_handler(
     ctx: Context<RollDice>,
     dice_roll: Option<[u8; 2]>,
-    seed: u8,
+    // seed: u8,
 ) -> Result<()> {
     let game = &mut ctx.accounts.game;
     let player_state = &mut ctx.accounts.player_state;
     let player_pubkey = ctx.accounts.player.key();
     let clock = &ctx.accounts.clock;
 
-    // Find player index in game.players vector
     let player_index = game
         .players
         .iter()
@@ -75,7 +74,6 @@ pub fn roll_dice_handler(
     });
 
     // Update player state
-    player_state.has_rolled_dice = true;
     player_state.last_dice_roll = dice_roll;
     game.turn_started_at = clock.unix_timestamp;
 
@@ -87,6 +85,8 @@ pub fn roll_dice_handler(
         // Three doubles in a row sends player to jail
         if player_state.doubles_count >= 3 {
             send_player_to_jail(player_state);
+            player_state.has_rolled_dice = true;
+
             msg!(
                 "Player {} rolled three doubles and goes to jail!",
                 player_pubkey
@@ -103,6 +103,7 @@ pub fn roll_dice_handler(
     } else {
         // Reset doubles count if not doubles
         player_state.doubles_count = 0;
+        player_state.has_rolled_dice = true;
     }
 
     msg!(
@@ -290,23 +291,50 @@ fn generate_dice_roll(recent_blockhashes: &UncheckedAccount, timestamp: i64) -> 
     // Get recent blockhash data for randomness
     let data = recent_blockhashes.try_borrow_data()?;
 
-    // Use a combination of blockhash and timestamp for randomness
-    let mut seed_bytes = [0u8; 32];
+    // Create a more diverse seed by combining multiple entropy sources
+    let mut seed = 0u64;
 
-    // Take first 24 bytes from recent blockhash data
-    if data.len() >= 24 {
-        seed_bytes[..24].copy_from_slice(&data[..24]);
+    // Use blockhash data (take 8 bytes and convert to u64)
+    if data.len() >= 8 {
+        seed ^= u64::from_le_bytes([
+            data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7],
+        ]);
     }
 
-    // Add timestamp to last 8 bytes
-    let timestamp_bytes = timestamp.to_le_bytes();
-    seed_bytes[24..].copy_from_slice(&timestamp_bytes);
+    // Mix in timestamp
+    seed ^= timestamp as u64;
 
-    // Generate two dice values (1-6)
-    let dice1 = ((seed_bytes[0] as u16 + seed_bytes[8] as u16 + seed_bytes[16] as u16) % 6) + 1;
-    let dice2 = ((seed_bytes[1] as u16 + seed_bytes[9] as u16 + seed_bytes[17] as u16) % 6) + 1;
+    // Mix in more blockhash data from different positions if available
+    if data.len() >= 16 {
+        seed ^= u64::from_le_bytes([
+            data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15],
+        ]);
+    }
 
-    Ok([dice1 as u8, dice2 as u8])
+    // Ensure seed is never zero (xorshift doesn't work with 0)
+    if seed == 0 {
+        seed = 0x123456789ABCDEF0u64;
+    }
+
+    // Generate first random number for dice1
+    let rand1 = xorshift64star(seed);
+    // Generate second random number for dice2 (use first result as seed)
+    let rand2 = xorshift64star(rand1);
+
+    // Convert to dice values (1-6)
+    let dice1 = ((rand1 % 6) + 1) as u8;
+    let dice2 = ((rand2 % 6) + 1) as u8;
+
+    Ok([dice1, dice2])
+}
+
+fn xorshift64star(seed: u64) -> u64 {
+    let mut x = seed;
+    x ^= x << 12;
+    x ^= x >> 25;
+    x ^= x << 27;
+    x = (x as u128 * 0x2545F4914F6CDD1D) as u64;
+    x
 }
 
 fn handle_jail_dice_roll(

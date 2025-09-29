@@ -407,8 +407,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
           [initPropertyInstruction],
           wallet
         );
-        console.log("[initPropertyIx] tx", signature1);
-        await new Promise((resolve) => setTimeout(resolve, 500));
 
         const instruction = await sdk.buyPropertyIx({
           gameAddress,

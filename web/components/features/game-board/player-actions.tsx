@@ -59,7 +59,7 @@ interface PropertyActionsProps {
   handleSkipProperty: (position: number) => void;
 }
 
-export const PropertyActions: React.FC<PropertyActionsProps> = ({
+const PropertyActions: React.FC<PropertyActionsProps> = ({
   player,
   position,
   isLoading,
@@ -86,38 +86,20 @@ export const PropertyActions: React.FC<PropertyActionsProps> = ({
   }
 
   return (
-    <div
-    // className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-3"
-    >
-      {/* <div className="text-sm font-medium text-blue-800">
-        Property Action Required
-      </div>
-      <div className="text-xs text-blue-600">
-        You landed on:{" "}
-        <span className="font-medium">
-          {pendingPropertyInfo.propertyData?.name}
-        </span>
-      </div> */}
-
+    <div>
       {/* Unowned Property */}
       {!pendingPropertyInfo.isOwned &&
         pendingPropertyInfo.propertyData?.price && (
           <div className="space-y-2">
-            {/* <div className="text-xs text-blue-600">
-              Price:{" "}
-              <span className="font-medium">
-                ${pendingPropertyInfo.propertyData.price}
-              </span>
-            </div> */}
             <div className="flex gap-2">
               <Button
                 size="sm"
                 onClick={() => handleBuyProperty(position)}
                 disabled={
-                  isLoading === "buyProperty" ||
                   Number(player.cashBalance) <
-                    pendingPropertyInfo.propertyData.price
+                  pendingPropertyInfo.propertyData.price
                 }
+                loading={isLoading === "buyProperty"}
                 className="flex-1"
               >
                 {isLoading === "buyProperty"
@@ -129,12 +111,14 @@ export const PropertyActions: React.FC<PropertyActionsProps> = ({
               <Button
                 size="sm"
                 onClick={() => handleSkipProperty(position)}
-                disabled={isLoading === "endTurn"}
+                loading={isLoading === "endTurn"}
                 className="flex-1"
+                variant="neutral"
               >
                 Skip
               </Button>
             </div>
+            {/* // FIXME need check */}
             {Number(player.cashBalance) <
               pendingPropertyInfo.propertyData.price && (
               <div className="text-xs text-red-600">
@@ -325,7 +309,7 @@ export const PlayerActions = ({
                   setCardDrawType("chance");
                   setIsCardDrawModalOpen(true);
                 }}
-                disabled={isLoading === "chanceCard"}
+                loading={isLoading === "chanceCard"}
               >
                 {isLoading === "chanceCard" ? "Drawing..." : "Draw Chance Card"}
               </Button>
@@ -350,7 +334,7 @@ export const PlayerActions = ({
               !isDouble && (
                 <Button
                   onClick={handleEndTurn}
-                  disabled={isLoading === "endTurn"}
+                  loading={isLoading === "endTurn"}
                 >
                   {isLoading === "endTurn" ? "Ending Turn..." : "End Turn"}
                 </Button>

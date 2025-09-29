@@ -3,9 +3,99 @@ use crate::error::GameError;
 use crate::state::*;
 use crate::utils::*;
 use anchor_lang::prelude::*;
+use ephemeral_rollups_sdk::cpi::DelegateConfig;
 
 #[derive(Accounts)]
-#[instruction(position: u8)]
+#[instruction(game_key: Pubkey, position: u8)]
+pub struct InitProperty<'info> {
+    /// CHECK: Validate by CPI
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + PropertyState::INIT_SPACE,
+        seeds = [b"property", game_key.as_ref(), position.to_le_bytes().as_ref()],
+        bump
+    )]
+    pub property_state: Account<'info, PropertyState>,
+
+    /// CHECK: Validate by CPI
+    #[account(mut)]
+    pub property_buffer_account: UncheckedAccount<'info>,
+
+    /// CHECK: Validate by CPI
+    #[account(mut)]
+    pub property_delegation_record_account: UncheckedAccount<'info>,
+
+    /// CHECK: Validate by CPI
+    #[account(mut)]
+    pub property_delegation_metadata_account: UncheckedAccount<'info>,
+
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
+
+    /// CHECK: Validate by CPI
+    pub delegation_program: UncheckedAccount<'info>,
+
+    /// CHECK: Validate by CPI
+    pub owner_program: UncheckedAccount<'info>,
+}
+
+pub fn init_property_handler(
+    ctx: Context<InitProperty>,
+    game_key: Pubkey,
+    position: u8,
+) -> Result<()> {
+    msg!("Init property {} for game {}", position, game_key);
+    msg!("property: {}", ctx.accounts.property_state.key());
+
+    {
+        let property = &mut ctx.accounts.property_state;
+        property.position = position;
+        property.game = game_key;
+    }
+
+    {
+        let property = &ctx.accounts.property_state;
+        property.exit(&crate::ID)?;
+
+        let del_accounts = ephemeral_rollups_sdk::cpi::DelegateAccounts {
+            payer: &ctx.accounts.authority.to_account_info(),
+            pda: &property.to_account_info(),
+            owner_program: &ctx.accounts.owner_program.to_account_info(),
+            buffer: &ctx.accounts.property_buffer_account.to_account_info(),
+            delegation_record: &ctx
+                .accounts
+                .property_delegation_record_account
+                .to_account_info(),
+            delegation_metadata: &ctx
+                .accounts
+                .property_delegation_metadata_account
+                .to_account_info(),
+            delegation_program: &ctx.accounts.delegation_program.to_account_info(),
+            system_program: &ctx.accounts.system_program.to_account_info(),
+        };
+
+        let pos_seed = property.position.to_le_bytes();
+        let seeds = &[b"property", property.game.as_ref(), pos_seed.as_ref()];
+
+        msg!("seeds: {:?}", seeds);
+
+        let config = DelegateConfig {
+            commit_frequency_ms: 30_000,
+            validator: Some(pubkey!("MAS1Dt9qreoRMQ14YQuhg8UTZMMzDdKhmkZMECCzk57")),
+        };
+
+        ephemeral_rollups_sdk::cpi::delegate_account(del_accounts, seeds, config)?;
+
+        msg!("Property {} delegated");
+    }
+
+    Ok(())
+}
+
+#[derive(Accounts)]
 pub struct BuyProperty<'info> {
     #[account(
         mut,
@@ -23,10 +113,8 @@ pub struct BuyProperty<'info> {
     pub player_state: Account<'info, PlayerState>,
 
     #[account(
-        init_if_needed,
-        payer = player,
-        space = 8 + PropertyState::INIT_SPACE,
-        seeds = [b"property", game.key().as_ref(), position.to_le_bytes().as_ref()],
+        mut,
+        seeds = [b"property", property_state.game.as_ref(), property_state.position.to_le_bytes().as_ref()],
         bump
     )]
     pub property_state: Account<'info, PropertyState>,

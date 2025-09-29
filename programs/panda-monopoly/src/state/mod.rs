@@ -171,6 +171,7 @@ impl PlayerState {
 #[derive(Debug, InitSpace)]
 pub struct PropertyState {
     pub position: u8,                // 1 byte - board position (0-39)
+    pub game: Pubkey,                // 32 bytes - game account
     pub owner: Option<Pubkey>,       // 33 bytes - property owner
     pub price: u16,                  // 2 bytes - purchase price
     pub color_group: ColorGroup,     // 1 byte - property color group

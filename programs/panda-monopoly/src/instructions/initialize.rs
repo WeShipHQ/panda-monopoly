@@ -291,7 +291,7 @@ pub fn start_game_handler<'c: 'info, 'info>(
 
 #[commit]
 #[derive(Accounts)]
-pub struct CloseGame<'info> {
+pub struct UndelegateGame<'info> {
     #[account(
         mut,
         seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
@@ -299,7 +299,6 @@ pub struct CloseGame<'info> {
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress,
         constraint = game.current_players >= MIN_PLAYERS @ GameError::MinPlayersNotMet,
         constraint = authority.key() == game.authority @ GameError::Unauthorized,
-        close = authority
     )]
     pub game: Account<'info, GameState>,
 
@@ -307,8 +306,8 @@ pub struct CloseGame<'info> {
     pub authority: Signer<'info>,
 }
 
-pub fn close_game_handler<'c: 'info, 'info>(
-    ctx: Context<'_, '_, 'c, 'info, CloseGame<'info>>,
+pub fn undelegate_game_handler<'c: 'info, 'info>(
+    ctx: Context<'_, '_, 'c, 'info, UndelegateGame<'info>>,
 ) -> Result<()> {
     {
         let game = &mut ctx.accounts.game;
@@ -349,6 +348,60 @@ pub fn close_game_handler<'c: 'info, 'info>(
             )?;
 
             msg!("Player {} undelegated", player_pubkey);
+        }
+    }
+
+    msg!("Game undelegated!");
+
+    Ok(())
+}
+
+#[derive(Accounts)]
+pub struct CloseGame<'info> {
+    #[account(
+        mut,
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        bump,
+        constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress,
+        constraint = game.current_players >= MIN_PLAYERS @ GameError::MinPlayersNotMet,
+        constraint = authority.key() == game.authority @ GameError::Unauthorized,
+        close = authority
+    )]
+    pub game: Account<'info, GameState>,
+
+    #[account(mut)]
+    pub authority: Signer<'info>,
+}
+
+pub fn close_game_handler<'c: 'info, 'info>(
+    ctx: Context<'_, '_, 'c, 'info, CloseGame<'info>>,
+) -> Result<()> {
+    {
+        msg!("Start close_game_handler");
+
+        let remaining_accounts_iter = &mut ctx.remaining_accounts.iter();
+
+        let game = &ctx.accounts.game;
+        let authority = &ctx.accounts.authority;
+        let players = &game.players;
+        // delegate player accounts
+        for player_pubkey in players.iter() {
+            let player_account = remaining_accounts_iter
+                .next()
+                .ok_or(GameError::InvalidAccount)?;
+
+            let pda_balance_before = player_account.get_lamports();
+
+            msg!(
+                "Player {} balance before: {}",
+                player_pubkey,
+                pda_balance_before
+            );
+
+            player_account.sub_lamports(pda_balance_before)?;
+            authority.add_lamports(pda_balance_before)?;
+
+            msg!("Player {} close", player_pubkey);
         }
     }
 
@@ -393,11 +446,32 @@ pub fn reset_game_handler<'c: 'info, 'info>(
         let game = &ctx.accounts.game;
         let clock = &ctx.accounts.clock;
 
-        for player_pubkey in game.players.iter() {
+        for _player_pubkey in game.players.iter() {
             let mut player_account =
                 Account::<PlayerState>::try_from(next_account_info(remaining_accounts_iter)?)?;
 
-            player_account.initialize_player_state(*player_pubkey, game.key(), clock);
+            // player_account.initialize_player_state(*player_pubkey, game.key(), clock);
+            player_account.cash_balance = STARTING_MONEY as u64;
+            player_account.in_jail = false;
+
+            player_account.jail_turns = 0;
+            player_account.doubles_count = 0;
+            player_account.is_bankrupt = false;
+            player_account.properties_owned = Vec::new();
+            player_account.get_out_of_jail_cards = 0;
+            player_account.net_worth = STARTING_MONEY as u64;
+            player_account.last_rent_collected = clock.unix_timestamp;
+            player_account.festival_boost_turns = 0;
+            player_account.has_rolled_dice = false;
+            player_account.last_dice_roll = [0, 0];
+            player_account.needs_property_action = false;
+            player_account.pending_property_position = None;
+            player_account.needs_chance_card = false;
+            player_account.needs_community_chest_card = false;
+            player_account.needs_bankruptcy_check = false;
+            player_account.needs_special_space_action = false;
+            player_account.pending_special_space_position = None;
+            player_account.card_drawn_at = None;
 
             // player_account.exit(ctx.program_id)?;
         }

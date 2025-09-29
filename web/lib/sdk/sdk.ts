@@ -5,14 +5,12 @@ import {
   getRollDiceInstructionAsync,
   getEndTurnInstruction,
   getPayJailFineInstructionAsync,
-  getBuyPropertyInstructionAsync,
   getMortgagePropertyInstructionAsync,
   getUnmortgagePropertyInstructionAsync,
   getPayRentInstructionAsync,
   getBuildHouseInstructionAsync,
   getBuildHotelInstructionAsync,
   getSellBuildingInstructionAsync,
-  // getCollectGoInstructionAsync,
   getCollectFreeParkingInstructionAsync,
   getGoToJailInstructionAsync,
   getAttendFestivalInstructionAsync,
@@ -268,8 +266,6 @@ class MonopolyGameSDK {
 
     ix.accounts.push(...remainingAccounts);
 
-    console.dir(ix, { depth: null });
-
     return ix;
   }
 
@@ -371,8 +367,6 @@ class MonopolyGameSDK {
       params.position
     );
 
-    console.log("propertyStateAddress", propertyStateAddress.toString());
-
     const [bufferGamePda] = await getProgramDerivedAddress({
       programAddress: PANDA_MONOPOLY_PROGRAM_ADDRESS,
       seeds: ["buffer", getAddressEncoder().encode(propertyStateAddress)],
@@ -419,9 +413,6 @@ class MonopolyGameSDK {
       game: params.gameAddress,
       player: params.player,
       playerState: playerStateAddress,
-      propertyBufferAccount: playerStateAddress,
-      propertyDelegationRecordAccount: playerStateAddress,
-      propertyDelegationMetadataAccount: playerStateAddress,
       propertyState: propertyStateAddress,
       position: params.position,
     });
@@ -913,7 +904,6 @@ class MonopolyGameSDK {
             const trimmed = log.trim();
 
             if (trimmed.startsWith(PROGRAM_DATA)) {
-              console.log("EEE log trimmed", trimmed);
               const base64 = trimmed.slice(PROGRAM_DATA_START_INDEX);
               const buf = Buffer.from(base64, "base64");
 
@@ -979,62 +969,61 @@ const PROGRAM_DATA = "Program data: ";
 const PROGRAM_LOG_START_INDEX = PROGRAM_LOG.length;
 const PROGRAM_DATA_START_INDEX = PROGRAM_DATA.length;
 
-function parseEvent<T>(
-  logs: readonly string[],
-  programIdStr: string,
-  discriminator: Uint8Array,
-  decoder: Decoder<T>
-): T | undefined {
-  const stack: string[] = [];
-  console.log("EEE logAll", logs);
-  for (const log of logs) {
-    // console.log("EEE log", log);
-    const trimmed = log.trim();
+// function parseEvent<T>(
+//   logs: readonly string[],
+//   programIdStr: string,
+//   discriminator: Uint8Array,
+//   decoder: Decoder<T>
+// ): T | undefined {
+//   const stack: string[] = [];
+//   for (const log of logs) {
+//     // console.log("EEE log", log);
+//     const trimmed = log.trim();
 
-    // if (trimmed.startsWith(`Program ${programIdStr} invoke`)) {
-    //   stack.push(programIdStr);
-    //   continue;
-    // }
+//     // if (trimmed.startsWith(`Program ${programIdStr} invoke`)) {
+//     //   stack.push(programIdStr);
+//     //   continue;
+//     // }
 
-    // if (
-    //   trimmed.startsWith(`Program ${programIdStr} success`) ||
-    //   trimmed.startsWith(`Program ${programIdStr} failed`)
-    // ) {
-    //   stack.pop();
-    //   continue;
-    // }
+//     // if (
+//     //   trimmed.startsWith(`Program ${programIdStr} success`) ||
+//     //   trimmed.startsWith(`Program ${programIdStr} failed`)
+//     // ) {
+//     //   stack.pop();
+//     //   continue;
+//     // }
 
-    // if (stack.length === 0 || stack[stack.length - 1] !== programIdStr) {
-    //   continue;
-    // }
+//     // if (stack.length === 0 || stack[stack.length - 1] !== programIdStr) {
+//     //   continue;
+//     // }
 
-    console.log("EEE log trim", trimmed);
+//     console.log("EEE log trim", trimmed);
 
-    if (
-      trimmed.startsWith(PROGRAM_DATA)
-      // || trimmed.startsWith(PROGRAM_LOG)
-    ) {
-      const base64 = trimmed.startsWith(PROGRAM_DATA)
-        ? trimmed.slice(PROGRAM_DATA_START_INDEX)
-        : trimmed.slice(PROGRAM_LOG_START_INDEX);
+//     if (
+//       trimmed.startsWith(PROGRAM_DATA)
+//       // || trimmed.startsWith(PROGRAM_LOG)
+//     ) {
+//       const base64 = trimmed.startsWith(PROGRAM_DATA)
+//         ? trimmed.slice(PROGRAM_DATA_START_INDEX)
+//         : trimmed.slice(PROGRAM_LOG_START_INDEX);
 
-      console.log("EEE log base64", base64);
+//       console.log("EEE log base64", base64);
 
-      const buf = Buffer.from(base64, "base64");
-      console.log(
-        "EEE log buf",
-        buf,
-        buf.subarray(0, 8)
-        // buf.subarray(0, 8).equals(discriminator)
-      );
-      if (buf.length >= 8 && buf.subarray(0, 8).equals(discriminator)) {
-        return decoder.decode(buf.subarray(8));
-      }
-    }
-  }
+//       const buf = Buffer.from(base64, "base64");
+//       console.log(
+//         "EEE log buf",
+//         buf,
+//         buf.subarray(0, 8)
+//         // buf.subarray(0, 8).equals(discriminator)
+//       );
+//       if (buf.length >= 8 && buf.subarray(0, 8).equals(discriminator)) {
+//         return decoder.decode(buf.subarray(8));
+//       }
+//     }
+//   }
 
-  return undefined;
-}
+//   return undefined;
+// }
 
 const sdk = new MonopolyGameSDK();
 export { sdk };
