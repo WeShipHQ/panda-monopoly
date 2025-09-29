@@ -92,6 +92,7 @@ export function useFakeGameState(
   const { enabled = true } = config;
 
   // Mock game data
+  // @ts-expect-error
   const mockGameData: GameAccount = useMemo(
     () => ({
       discriminator: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]),

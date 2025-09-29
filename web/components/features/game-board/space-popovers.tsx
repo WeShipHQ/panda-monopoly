@@ -8,7 +8,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { PropertyAccount } from "@/types/schema";
-import { Address, isSome } from "@solana/kit";
+import { address, Address } from "@solana/kit";
 import { cn, formatAddress, formatPrice } from "@/lib/utils";
 import { HotelIcon, HouseIcon } from "lucide-react";
 import {
@@ -25,13 +25,8 @@ interface BasePopoverProps {
   property?: PropertyAccount | null;
 }
 
-// Helper function to check if property is owned
-const isPropertyOwned = (property?: PropertyAccount | null): boolean => {
-  return !!property && isSome(property.owner);
-};
-
 const getOwner = (property?: PropertyAccount | null): Address | null => {
-  return !!property && isSome(property.owner) ? property.owner.value : null;
+  return !!property && property.owner ? address(property.owner) : null;
 };
 
 // Property popover props

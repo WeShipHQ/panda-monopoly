@@ -145,7 +145,7 @@ export const LOG_MESSAGE_TEMPLATES = {
 
 // Enhanced log message generator
 export const generateLogMessage = (log: GameLogEntry): string => {
-  const playerName = getPlayerDisplayName(log.playerId);
+  const playerName = log.playerId; //getPlayerDisplayName(log.playerId);
   const details = log.details || {};
 
   switch (log.type) {

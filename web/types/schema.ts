@@ -15,7 +15,7 @@ import {
 
 export interface GameAccount {
   address: string;
-  gameId: string;
+  gameId: number | string;
   configId: string;
   authority: string;
   bump: number;

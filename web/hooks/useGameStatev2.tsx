@@ -1,8 +1,15 @@
 import { useRpcContext } from "@/components/providers/rpc-provider";
 import { sdk } from "@/lib/sdk/sdk";
 import { GameEvent } from "@/lib/sdk/types";
-import { GameAccount, PlayerAccount, PropertyAccount } from "@/types/schema";
-import { Address, createSolanaRpc } from "@solana/kit";
+import {
+  GameAccount,
+  mapGameStateToAccount,
+  mapPlayerStateToAccount,
+  mapPropertyStateToAccount,
+  PlayerAccount,
+  PropertyAccount,
+} from "@/types/schema";
+import { address, Address } from "@solana/kit";
 import { useCallback, useEffect, useRef } from "react";
 import useSWR from "swr";
 
@@ -57,12 +64,10 @@ export function useGameState(
           return { gameData: null, players: [], properties: [] };
         }
 
-        const gameData: GameAccount = {
-          ...gameAccount.data,
-          address: gameAddress,
-        };
-
-        console.log("YYY gameData", gameData);
+        const gameData = mapGameStateToAccount(
+          gameAccount.data,
+          gameAccount.address
+        );
 
         // Step 2: Get player addresses from game data
         const playerAddresses = gameData.players || [];
@@ -73,22 +78,22 @@ export function useGameState(
 
         // Step 3: Fetch all player accounts
         const playerPromises = playerAddresses.map(
-          async (playerAddress: Address) => {
+          async (playerAddress: string) => {
             try {
               const playerAccount = await sdk.getPlayerAccount(
                 rpc,
                 gameAddress,
-                playerAddress
+                address(playerAddress)
               );
 
               if (!playerAccount) {
                 return null;
               }
 
-              return {
-                ...playerAccount.data,
-                address: playerAccount.address,
-              } as PlayerAccount;
+              return mapPlayerStateToAccount(
+                playerAccount.data,
+                playerAccount.address
+              );
             } catch (error) {
               console.error(
                 `Error fetching player account for ${playerAddress}:`,
@@ -121,12 +126,8 @@ export function useGameState(
             uniquePropertyPositions
           );
 
-          properties = (propertyStates || []).map(
-            (propertyState) =>
-              ({
-                ...propertyState.data,
-                address: propertyState.address,
-              } as PropertyAccount)
+          properties = (propertyStates || []).map((propertyState) =>
+            mapPropertyStateToAccount(propertyState.data, propertyState.address)
           );
         }
 
@@ -179,6 +180,8 @@ export function useGameState(
 
       // Subscribe to game account changes
       const gameUnsubscribe = await sdk.subscribeToGameAccount(
+        rpc,
+        rpcSubscriptions,
         gameAddress,
         async (gameState) => {
           if (!gameState) return;
@@ -198,8 +201,10 @@ export function useGameState(
         const playerKey = playerAddress.toString();
 
         const playerUnsubscribe = await sdk.subscribePlayerStateAccount(
+          rpc,
+          rpcSubscriptions,
           gameAddress,
-          playerAddress,
+          address(playerAddress),
           async (playerState) => {
             if (!playerState) return;
 
@@ -214,10 +219,13 @@ export function useGameState(
         }
       }
 
-      const eventUnsubscribe = await sdk.subscribeToEvents(async (event) => {
-        console.log(`Event ${event.type} received, refreshing data...`);
-        onCardDrawEvent?.(event);
-      });
+      const eventUnsubscribe = await sdk.subscribeToEvents(
+        rpcSubscriptions,
+        async (event) => {
+          console.log(`Event ${event.type} received, refreshing data...`);
+          onCardDrawEvent?.(event);
+        }
+      );
 
       isSubscribedRef.current = true;
       currentGameAddressRef.current = gameAddress.toString();
