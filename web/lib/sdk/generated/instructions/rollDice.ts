@@ -18,8 +18,6 @@ import {
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
-  getU8Decoder,
-  getU8Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
@@ -92,12 +90,10 @@ export type RollDiceInstruction<
 export type RollDiceInstructionData = {
   discriminator: ReadonlyUint8Array;
   diceRoll: Option<ReadonlyUint8Array>;
-  seed: number;
 };
 
 export type RollDiceInstructionDataArgs = {
   diceRoll: OptionOrNullable<ReadonlyUint8Array>;
-  seed: number;
 };
 
 export function getRollDiceInstructionDataEncoder(): Encoder<RollDiceInstructionDataArgs> {
@@ -105,7 +101,6 @@ export function getRollDiceInstructionDataEncoder(): Encoder<RollDiceInstruction
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['diceRoll', getOptionEncoder(fixEncoderSize(getBytesEncoder(), 2))],
-      ['seed', getU8Encoder()],
     ]),
     (value) => ({ ...value, discriminator: ROLL_DICE_DISCRIMINATOR })
   );
@@ -115,7 +110,6 @@ export function getRollDiceInstructionDataDecoder(): Decoder<RollDiceInstruction
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['diceRoll', getOptionDecoder(fixDecoderSize(getBytesDecoder(), 2))],
-    ['seed', getU8Decoder()],
   ]);
 }
 
@@ -142,7 +136,6 @@ export type RollDiceAsyncInput<
   recentBlockhashes?: Address<TAccountRecentBlockhashes>;
   clock?: Address<TAccountClock>;
   diceRoll: RollDiceInstructionDataArgs['diceRoll'];
-  seed: RollDiceInstructionDataArgs['seed'];
 };
 
 export async function getRollDiceInstructionAsync<
@@ -250,7 +243,6 @@ export type RollDiceInput<
   recentBlockhashes?: Address<TAccountRecentBlockhashes>;
   clock?: Address<TAccountClock>;
   diceRoll: RollDiceInstructionDataArgs['diceRoll'];
-  seed: RollDiceInstructionDataArgs['seed'];
 };
 
 export function getRollDiceInstruction<

@@ -31,6 +31,7 @@ import {
   type ParsedEndTurnInstruction,
   type ParsedGoToJailInstruction,
   type ParsedInitializeGameInstruction,
+  type ParsedInitPropertyHandlerInstruction,
   type ParsedJoinGameInstruction,
   type ParsedMortgagePropertyInstruction,
   type ParsedPayJailFineInstruction,
@@ -43,6 +44,7 @@ import {
   type ParsedSellBuildingInstruction,
   type ParsedStartGameInstruction,
   type ParsedTestDiceHandlerInstruction,
+  type ParsedUndelegateGameHandlerInstruction,
   type ParsedUnmortgagePropertyInstruction,
   type ParsedUpdatePlatformConfigInstruction,
   type ParsedVisitBeachResortInstruction,
@@ -140,6 +142,7 @@ export enum PandaMonopolyInstruction {
   DrawCommunityChestCard,
   EndTurn,
   GoToJail,
+  InitPropertyHandler,
   InitializeGame,
   JoinGame,
   MortgageProperty,
@@ -153,6 +156,7 @@ export enum PandaMonopolyInstruction {
   SellBuilding,
   StartGame,
   TestDiceHandler,
+  UndelegateGameHandler,
   UnmortgageProperty,
   UpdatePlatformConfig,
   VisitBeachResort,
@@ -342,6 +346,17 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([213, 138, 105, 52, 19, 55, 48, 57])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.InitPropertyHandler;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([44, 62, 102, 247, 126, 208, 130, 215])
       ),
       0
@@ -485,6 +500,17 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([86, 199, 172, 9, 232, 51, 195, 189])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.UndelegateGameHandler;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([124, 75, 197, 122, 28, 42, 31, 205])
       ),
       0
@@ -571,6 +597,9 @@ export type ParsedPandaMonopolyInstruction<
       instructionType: PandaMonopolyInstruction.GoToJail;
     } & ParsedGoToJailInstruction<TProgram>)
   | ({
+      instructionType: PandaMonopolyInstruction.InitPropertyHandler;
+    } & ParsedInitPropertyHandlerInstruction<TProgram>)
+  | ({
       instructionType: PandaMonopolyInstruction.InitializeGame;
     } & ParsedInitializeGameInstruction<TProgram>)
   | ({
@@ -609,6 +638,9 @@ export type ParsedPandaMonopolyInstruction<
   | ({
       instructionType: PandaMonopolyInstruction.TestDiceHandler;
     } & ParsedTestDiceHandlerInstruction<TProgram>)
+  | ({
+      instructionType: PandaMonopolyInstruction.UndelegateGameHandler;
+    } & ParsedUndelegateGameHandlerInstruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.UnmortgageProperty;
     } & ParsedUnmortgagePropertyInstruction<TProgram>)

@@ -28,6 +28,14 @@ import { PlayerActions } from "./player-actions";
 import { PropertyAccount } from "@/types/schema";
 import { BoardSpace } from "@/configs/board-data";
 import { EnhancedGameLogs } from "./game-logs";
+import {
+  FreeParkingCorner,
+  GoCorner,
+  GoToJailCorner,
+  JailCorner,
+} from "./corner-spaces";
+import { useWallet } from "@/hooks/use-wallet";
+import { Button } from "@/components/ui/button";
 
 interface MonopolyBoardProps {
   boardRotation: number;
@@ -37,6 +45,8 @@ interface MonopolyBoardProps {
 
 const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
   const [isLoading, setIsLoading] = useState<string | null>(null);
+
+  const { wallet, authenticated } = useWallet();
 
   const {
     gameState,
@@ -211,87 +221,53 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
                            p-1 sm:p-3 md:p-4 gap-1 sm:gap-3 md:gap-4"
             >
               <div className="flex-shrink-0 transform scale-[0.7] sm:scale-75 md:scale-90 lg:scale-100 mb-6">
-                <DiceProvider>
-                  <PlayerActions
-                    handleStartGame={handleStartGame}
-                    handleJoinGame={handleJoinGame}
-                    handleEndTurn={handleEndTurn}
-                    handleBuyProperty={handleBuyProperty}
-                    handleSkipProperty={handleSkipProperty}
-                    handlePayMevTax={handlePayMevTax}
-                    handlePayPriorityFeeTax={handlePayPriorityFeeTax}
-                    isLoading={isLoading}
-                  />
-                </DiceProvider>
+                {wallet && wallet?.delegated ? (
+                  <DiceProvider>
+                    <PlayerActions
+                      handleStartGame={handleStartGame}
+                      handleJoinGame={handleJoinGame}
+                      handleEndTurn={handleEndTurn}
+                      handleBuyProperty={handleBuyProperty}
+                      handleSkipProperty={handleSkipProperty}
+                      handlePayMevTax={handlePayMevTax}
+                      handlePayPriorityFeeTax={handlePayPriorityFeeTax}
+                      isLoading={isLoading}
+                      wallet={wallet}
+                    />
+                  </DiceProvider>
+                ) : (
+                  <>
+                    <Button>Connect Wallet</Button>
+                  </>
+                )}
               </div>
 
               {/* game-logs */}
-              <EnhancedGameLogs
-                filterTypes={[
-                  "move",
-                  "skip",
-                  "purchase",
-                  "rent",
-                  "card",
-                  "jail",
-                  "building",
-                  "trade",
-                  "bankruptcy",
-                  "game",
-                ]}
-              />
-            </div>
-
-            {/* Corner Spaces */}
-            {/* GO Corner (bottom-right) */}
-            <div className="col-start-13 col-end-15 row-start-13 row-end-15 text-center flex items-center justify-center border-t-2 border-l-2 border-black">
-              <div className="corner-space -rotate-45 transform h-full flex flex-col justify-center items-center">
-                <div className="px-1 text-[10px] font-bold">
-                  COLLECT <br />
-                  $200 SALARY
-                  <br /> AS YOU PASS
-                </div>
-                <div className="icon-large text-[#f50c2b] font-bold text-4xl">
-                  GO
-                </div>
-                <div className="absolute top-1 left-1 text-xs">→</div>
-              </div>
-            </div>
-
-            {/* JAIL Corner (bottom-left) */}
-            <div className="col-start-1 col-end-3 row-start-13 row-end-15 text-center flex items-center justify-center border-t-2 border-r-2 border-black">
-              <div className="corner-space flex items-center justify-center h-full">
-                <img
-                  src="/images/JAIL.png"
-                  alt="Jail"
-                  className="w-full h-full object-contain p-1"
+              {authenticated && (
+                <EnhancedGameLogs
+                  filterTypes={[
+                    "move",
+                    "skip",
+                    "purchase",
+                    "rent",
+                    "card",
+                    "jail",
+                    "building",
+                    "trade",
+                    "bankruptcy",
+                    "game",
+                  ]}
                 />
-              </div>
+              )}
             </div>
 
-            {/* FREE PARKING Corner (top-left) */}
-            <div className="col-start-1 col-end-3 row-start-1 row-end-3 text-center flex items-center justify-center border-b-2 border-r-2 border-black">
-              <div className="corner-space flex flex-col items-center justify-center h-full">
-                <img
-                  src="/images/FREEPARKING.png"
-                  alt="Free Parking"
-                  className="w-12 h-12 object-contain"
-                />
-                <div className="text-xs font-bold mt-1">FREE PARKING</div>
-              </div>
-            </div>
+            <GoCorner />
 
-            {/* GO TO JAIL Corner (top-right) */}
-            <div className="col-start-13 col-end-15 row-start-1 row-end-3 text-center flex items-center justify-center border-b-2 border-l-2 border-black">
-              <div className="corner-space flex flex-col items-center justify-center h-full">
-                <img
-                  src="/images/GOTOJAIL.png"
-                  alt="Go To Jail"
-                  className="w-12 h-12 object-contain"
-                />
-                <div className="text-xs font-bold mt-1">GO TO JAIL</div>
-              </div>
-            </div>
+            <JailCorner />
+
+            <FreeParkingCorner />
+
+            <GoToJailCorner />
 
             {/* Bottom Row */}
             <div className="col-start-3 col-end-13 row-start-13 row-end-15 grid grid-cols-9 grid-rows-1 ">

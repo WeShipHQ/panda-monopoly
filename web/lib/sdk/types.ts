@@ -61,7 +61,6 @@ export interface PayJailFineParams {
 
 // Property-related instruction parameters
 export interface BuyPropertyParams {
-  rpc: Rpc<GetAccountInfoApi>;
   player: TransactionSigner;
   gameAddress: Address;
   position: number;

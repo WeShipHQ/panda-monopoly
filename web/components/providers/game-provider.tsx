@@ -203,10 +203,14 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       currentPlayerState.needsSpecialSpaceAction;
 
     // Player can roll dice if they haven't rolled dice yet and are not in jail
+    // FIXME Need test all cases
     return (
-      !currentPlayerState.hasRolledDice &&
-      !currentPlayerState.inJail &&
-      !hasPendingActions
+      (!currentPlayerState.hasRolledDice &&
+        !currentPlayerState.inJail &&
+        !hasPendingActions) ||
+      (currentPlayerState.hasRolledDice &&
+        currentPlayerState.lastDiceRoll[0] ===
+          currentPlayerState.lastDiceRoll[1])
     );
   }, [currentPlayerState, isCurrentPlayerTurn]);
 
@@ -287,7 +291,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
 
     try {
-      const instruction = await sdk.closeGameIx({
+      const [undelegateIx, closeIx] = await sdk.closeGameIx({
         gameAddress,
         players: gameState?.players.map(address) || [],
         authority: { address: address(wallet.address) } as TransactionSigner,
@@ -295,14 +299,24 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
       const signature = await buildAndSendTransactionWithPrivy(
         erRpc,
-        [instruction],
+        [undelegateIx],
         wallet,
         [],
         "confirmed",
         true
       );
 
-      console.log("[closeGame] tx", signature);
+      console.log("[undelegateIx] tx", signature);
+
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
+      const signature1 = await buildAndSendTransactionWithPrivy(
+        rpc,
+        [closeIx],
+        wallet
+      );
+
+      console.log("[closeIx] tx", signature1);
     } catch (error) {
       console.error("Error closing game:", error);
       throw error;
@@ -382,8 +396,21 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       try {
-        const instruction = await sdk.buyPropertyIx({
+        const initPropertyInstruction = await sdk.initPropertyIx({
+          gameAddress,
+          player: { address: address(wallet.address) } as TransactionSigner,
+          position,
+        });
+
+        const signature1 = await buildAndSendTransactionWithPrivy(
           rpc,
+          [initPropertyInstruction],
+          wallet
+        );
+        console.log("[initPropertyIx] tx", signature1);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        const instruction = await sdk.buyPropertyIx({
           gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
           position,

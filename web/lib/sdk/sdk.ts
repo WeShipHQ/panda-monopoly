@@ -39,7 +39,9 @@ import {
   getGameStateDecoder,
   getResetGameHandlerInstruction,
   getCloseGameHandlerInstruction,
-  // getTestDiceHandlerInstructionAsync,
+  getUndelegateGameHandlerInstruction,
+  getBuyPropertyInstruction,
+  getInitPropertyHandlerInstruction,
 } from "./generated";
 import {
   CreateGameIxs,
@@ -271,39 +273,54 @@ class MonopolyGameSDK {
     return ix;
   }
 
-  async closeGameIx(params: StartGameParams): Promise<Instruction> {
-    const ix = getCloseGameHandlerInstruction({
+  async closeGameIx(params: StartGameParams): Promise<Instruction[]> {
+    const ix1 = getUndelegateGameHandlerInstruction({
       game: params.gameAddress,
       authority: params.authority,
     });
 
-    const remainingAccounts: WritableAccount[] = [];
+    const remainingAccounts1: WritableAccount[] = [];
 
     for (const player of params.players) {
       const [playerPda] = await getPlayerStatePDA(params.gameAddress, player);
-      remainingAccounts.push({
+      remainingAccounts1.push({
         address: playerPda,
         role: AccountRole.WRITABLE,
       });
     }
 
-    ix.accounts.push(...remainingAccounts);
+    ix1.accounts.push(...remainingAccounts1);
 
-    return ix;
+    const ix2 = getCloseGameHandlerInstruction({
+      game: params.gameAddress,
+      authority: params.authority,
+    });
+
+    const remainingAccounts2: WritableAccount[] = [];
+
+    for (const player of params.players) {
+      const [playerPda] = await getPlayerStatePDA(params.gameAddress, player);
+      remainingAccounts2.push({
+        address: playerPda,
+        role: AccountRole.WRITABLE,
+      });
+    }
+
+    ix2.accounts.push(...remainingAccounts2);
+
+    return [ix1, ix2];
   }
 
   /**
    * Roll dice for current player - handles movement automatically
    */
   async rollDiceIx(params: RollDiceParams): Promise<Instruction> {
-    console.log("rollDiceIx", params);
     return await getRollDiceInstructionAsync({
       game: params.gameAddress,
       player: params.player,
       diceRoll: params.diceRoll
         ? some(params.diceRoll as unknown as ReadonlyUint8Array)
         : none(),
-      seed: Math.floor(Math.random() * 256),
     });
   }
 
@@ -348,15 +365,63 @@ class MonopolyGameSDK {
   /**
    * Buy a property at the specified position
    */
-  async buyPropertyIx(params: BuyPropertyParams): Promise<Instruction> {
+  async initPropertyIx(params: BuyPropertyParams): Promise<Instruction> {
     const [propertyStateAddress] = await getPropertyStatePDA(
       params.gameAddress,
       params.position
     );
 
-    return await getBuyPropertyInstructionAsync({
+    console.log("propertyStateAddress", propertyStateAddress.toString());
+
+    const [bufferGamePda] = await getProgramDerivedAddress({
+      programAddress: PANDA_MONOPOLY_PROGRAM_ADDRESS,
+      seeds: ["buffer", getAddressEncoder().encode(propertyStateAddress)],
+    });
+
+    const [delegationRecordGamePda] = await getProgramDerivedAddress({
+      programAddress: DELEGATION_PROGRAM_ID,
+      seeds: ["delegation", getAddressEncoder().encode(propertyStateAddress)],
+    });
+
+    const [delegationMetadataGamePda] = await getProgramDerivedAddress({
+      programAddress: DELEGATION_PROGRAM_ID,
+      seeds: [
+        "delegation-metadata",
+        getAddressEncoder().encode(propertyStateAddress),
+      ],
+    });
+
+    return getInitPropertyHandlerInstruction({
+      propertyState: propertyStateAddress,
+      propertyBufferAccount: bufferGamePda,
+      propertyDelegationRecordAccount: delegationRecordGamePda,
+      propertyDelegationMetadataAccount: delegationMetadataGamePda,
+      authority: params.player,
+      ownerProgram: PANDA_MONOPOLY_PROGRAM_ADDRESS,
+      delegationProgram: DELEGATION_PROGRAM_ID,
+      gameKey: params.gameAddress,
+      position: params.position,
+    });
+  }
+
+  async buyPropertyIx(params: BuyPropertyParams): Promise<Instruction> {
+    const [playerStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.player.address
+    );
+
+    const [propertyStateAddress] = await getPropertyStatePDA(
+      params.gameAddress,
+      params.position
+    );
+
+    return getBuyPropertyInstruction({
       game: params.gameAddress,
       player: params.player,
+      playerState: playerStateAddress,
+      propertyBufferAccount: playerStateAddress,
+      propertyDelegationRecordAccount: playerStateAddress,
+      propertyDelegationMetadataAccount: playerStateAddress,
       propertyState: propertyStateAddress,
       position: params.position,
     });

@@ -24,6 +24,7 @@ import {
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
+  type ReadonlyAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
@@ -32,20 +33,26 @@ import {
 import { PANDA_MONOPOLY_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const CLOSE_GAME_HANDLER_DISCRIMINATOR = new Uint8Array([
-  171, 148, 141, 45, 42, 192, 182, 21,
+export const UNDELEGATE_GAME_HANDLER_DISCRIMINATOR = new Uint8Array([
+  86, 199, 172, 9, 232, 51, 195, 189,
 ]);
 
-export function getCloseGameHandlerDiscriminatorBytes() {
+export function getUndelegateGameHandlerDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CLOSE_GAME_HANDLER_DISCRIMINATOR
+    UNDELEGATE_GAME_HANDLER_DISCRIMINATOR
   );
 }
 
-export type CloseGameHandlerInstruction<
+export type UndelegateGameHandlerInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountGame extends string | AccountMeta<string> = string,
   TAccountAuthority extends string | AccountMeta<string> = string,
+  TAccountMagicProgram extends
+    | string
+    | AccountMeta<string> = 'Magic11111111111111111111111111111111111111',
+  TAccountMagicContext extends
+    | string
+    | AccountMeta<string> = 'MagicContext1111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -58,58 +65,80 @@ export type CloseGameHandlerInstruction<
         ? WritableSignerAccount<TAccountAuthority> &
             AccountSignerMeta<TAccountAuthority>
         : TAccountAuthority,
+      TAccountMagicProgram extends string
+        ? ReadonlyAccount<TAccountMagicProgram>
+        : TAccountMagicProgram,
+      TAccountMagicContext extends string
+        ? WritableAccount<TAccountMagicContext>
+        : TAccountMagicContext,
       ...TRemainingAccounts,
     ]
   >;
 
-export type CloseGameHandlerInstructionData = {
+export type UndelegateGameHandlerInstructionData = {
   discriminator: ReadonlyUint8Array;
 };
 
-export type CloseGameHandlerInstructionDataArgs = {};
+export type UndelegateGameHandlerInstructionDataArgs = {};
 
-export function getCloseGameHandlerInstructionDataEncoder(): FixedSizeEncoder<CloseGameHandlerInstructionDataArgs> {
+export function getUndelegateGameHandlerInstructionDataEncoder(): FixedSizeEncoder<UndelegateGameHandlerInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: CLOSE_GAME_HANDLER_DISCRIMINATOR })
+    (value) => ({
+      ...value,
+      discriminator: UNDELEGATE_GAME_HANDLER_DISCRIMINATOR,
+    })
   );
 }
 
-export function getCloseGameHandlerInstructionDataDecoder(): FixedSizeDecoder<CloseGameHandlerInstructionData> {
+export function getUndelegateGameHandlerInstructionDataDecoder(): FixedSizeDecoder<UndelegateGameHandlerInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
-export function getCloseGameHandlerInstructionDataCodec(): FixedSizeCodec<
-  CloseGameHandlerInstructionDataArgs,
-  CloseGameHandlerInstructionData
+export function getUndelegateGameHandlerInstructionDataCodec(): FixedSizeCodec<
+  UndelegateGameHandlerInstructionDataArgs,
+  UndelegateGameHandlerInstructionData
 > {
   return combineCodec(
-    getCloseGameHandlerInstructionDataEncoder(),
-    getCloseGameHandlerInstructionDataDecoder()
+    getUndelegateGameHandlerInstructionDataEncoder(),
+    getUndelegateGameHandlerInstructionDataDecoder()
   );
 }
 
-export type CloseGameHandlerInput<
+export type UndelegateGameHandlerInput<
   TAccountGame extends string = string,
   TAccountAuthority extends string = string,
+  TAccountMagicProgram extends string = string,
+  TAccountMagicContext extends string = string,
 > = {
   game: Address<TAccountGame>;
   authority: TransactionSigner<TAccountAuthority>;
+  magicProgram?: Address<TAccountMagicProgram>;
+  magicContext?: Address<TAccountMagicContext>;
 };
 
-export function getCloseGameHandlerInstruction<
+export function getUndelegateGameHandlerInstruction<
   TAccountGame extends string,
   TAccountAuthority extends string,
+  TAccountMagicProgram extends string,
+  TAccountMagicContext extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: CloseGameHandlerInput<TAccountGame, TAccountAuthority>,
+  input: UndelegateGameHandlerInput<
+    TAccountGame,
+    TAccountAuthority,
+    TAccountMagicProgram,
+    TAccountMagicContext
+  >,
   config?: { programAddress?: TProgramAddress }
-): CloseGameHandlerInstruction<
+): UndelegateGameHandlerInstruction<
   TProgramAddress,
   TAccountGame,
-  TAccountAuthority
+  TAccountAuthority,
+  TAccountMagicProgram,
+  TAccountMagicContext
 > {
   // Program address.
   const programAddress =
@@ -119,28 +148,44 @@ export function getCloseGameHandlerInstruction<
   const originalAccounts = {
     game: { value: input.game ?? null, isWritable: true },
     authority: { value: input.authority ?? null, isWritable: true },
+    magicProgram: { value: input.magicProgram ?? null, isWritable: false },
+    magicContext: { value: input.magicContext ?? null, isWritable: true },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
 
+  // Resolve default values.
+  if (!accounts.magicProgram.value) {
+    accounts.magicProgram.value =
+      'Magic11111111111111111111111111111111111111' as Address<'Magic11111111111111111111111111111111111111'>;
+  }
+  if (!accounts.magicContext.value) {
+    accounts.magicContext.value =
+      'MagicContext1111111111111111111111111111111' as Address<'MagicContext1111111111111111111111111111111'>;
+  }
+
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.authority),
+      getAccountMeta(accounts.magicProgram),
+      getAccountMeta(accounts.magicContext),
     ],
-    data: getCloseGameHandlerInstructionDataEncoder().encode({}),
+    data: getUndelegateGameHandlerInstructionDataEncoder().encode({}),
     programAddress,
-  } as CloseGameHandlerInstruction<
+  } as UndelegateGameHandlerInstruction<
     TProgramAddress,
     TAccountGame,
-    TAccountAuthority
+    TAccountAuthority,
+    TAccountMagicProgram,
+    TAccountMagicContext
   >);
 }
 
-export type ParsedCloseGameHandlerInstruction<
+export type ParsedUndelegateGameHandlerInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -148,19 +193,21 @@ export type ParsedCloseGameHandlerInstruction<
   accounts: {
     game: TAccountMetas[0];
     authority: TAccountMetas[1];
+    magicProgram: TAccountMetas[2];
+    magicContext: TAccountMetas[3];
   };
-  data: CloseGameHandlerInstructionData;
+  data: UndelegateGameHandlerInstructionData;
 };
 
-export function parseCloseGameHandlerInstruction<
+export function parseUndelegateGameHandlerInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
-): ParsedCloseGameHandlerInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 2) {
+): ParsedUndelegateGameHandlerInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -172,7 +219,14 @@ export function parseCloseGameHandlerInstruction<
   };
   return {
     programAddress: instruction.programAddress,
-    accounts: { game: getNextAccount(), authority: getNextAccount() },
-    data: getCloseGameHandlerInstructionDataDecoder().decode(instruction.data),
+    accounts: {
+      game: getNextAccount(),
+      authority: getNextAccount(),
+      magicProgram: getNextAccount(),
+      magicContext: getNextAccount(),
+    },
+    data: getUndelegateGameHandlerInstructionDataDecoder().decode(
+      instruction.data
+    ),
   };
 }

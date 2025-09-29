@@ -120,6 +120,7 @@ export async function sendTransaction(
       ) {
         throw error;
       }
+      console.log("log1", error);
       continue;
     }
   }

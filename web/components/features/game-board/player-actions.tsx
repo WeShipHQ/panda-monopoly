@@ -1,18 +1,17 @@
 import { GameStatus } from "@/lib/sdk/generated";
 import { useGameContext } from "@/components/providers/game-provider";
 import { useMemo } from "react";
-import { isSome } from "@solana/kit";
 import { Button } from "@/components/ui/button";
 import { formatAddress, formatPrice } from "@/lib/utils";
 import { getBoardSpaceData } from "@/lib/board-utils";
 import { DicesOnly, useDiceContext } from "./dice";
-import { GameAccount, PlayerAccount } from "@/types/schema";
-import { useWallet } from "@/hooks/use-wallet";
+import { PlayerAccount } from "@/types/schema";
 import { Badge } from "@/components/ui/badge";
 import {
   MEV_TAX_POSITION,
   PRIORITY_FEE_TAX_POSITION,
 } from "@/configs/constants";
+import { WalletWithMetadata } from "@privy-io/react-auth";
 
 interface PlayerTokenProps {
   player: PlayerAccount;
@@ -169,6 +168,7 @@ export const PropertyActions: React.FC<PropertyActionsProps> = ({
 };
 
 export const PlayerActions = ({
+  wallet,
   handleStartGame,
   handleJoinGame,
   handleBuyProperty,
@@ -178,6 +178,7 @@ export const PlayerActions = ({
   handlePayPriorityFeeTax,
   isLoading,
 }: {
+  wallet: WalletWithMetadata;
   handleStartGame: (gameAddress: string) => void;
   handleJoinGame: (gameAddress: string) => void;
   handleBuyProperty: (position: number) => void;
@@ -187,7 +188,6 @@ export const PlayerActions = ({
   handleEndTurn: () => void;
   isLoading: string | null;
 }) => {
-  const { wallet } = useWallet();
   const { canRoll, isRolling, handleRollDice } = useDiceContext();
   const {
     gameState: game,
@@ -203,8 +203,8 @@ export const PlayerActions = ({
 
   const isStarted = game.gameStatus === GameStatus.InProgress;
   // const isEnded = game?.gameStatus  === GameStatus.Finished;
-  const isCreator = game.authority === wallet?.address;
-  const isInGame = wallet?.address && game.players.includes(wallet.address);
+  const isCreator = game.authority === wallet.address;
+  const isInGame = wallet.address && game.players.includes(wallet.address);
 
   const isMyTurn = isCurrentPlayerTurn();
 
@@ -215,6 +215,10 @@ export const PlayerActions = ({
     currentPlayerState.needsBankruptcyCheck ||
     currentPlayerState.needsSpecialSpaceAction;
 
+  const isDouble =
+    currentPlayerState.hasRolledDice &&
+    currentPlayerState.lastDiceRoll[0] === currentPlayerState.lastDiceRoll[1];
+
   return (
     <div className="flex flex-col items-center">
       <DicesOnly />
@@ -222,15 +226,23 @@ export const PlayerActions = ({
       {!isStarted && (
         <div className="flex items-center gap-2 mt-8 mb-4">
           {isCreator && (
-            <Button
-              onClick={() => handleStartGame(game.address)}
-              loading={isLoading === "startGame"}
-            >
-              Start game
-            </Button>
+            <div className="flex flex-col gap-4 items-center">
+              <Button
+                onClick={() => handleStartGame(game.address)}
+                loading={isLoading === "startGame"}
+                disabled={game.players.length < 2}
+              >
+                Start game
+              </Button>
+              {game.players.length < 2 && (
+                <Badge variant="neutral">
+                  At least 2 players are required to start the game
+                </Badge>
+              )}
+            </div>
           )}
 
-          {!!wallet?.delegated && !isCreator && !isInGame && (
+          {!isCreator && !isInGame && (
             <Button
               onClick={() => handleJoinGame(game.address)}
               loading={isLoading === "joinGame"}
@@ -239,8 +251,8 @@ export const PlayerActions = ({
             </Button>
           )}
 
-          {!!wallet?.delegated && !isCreator && isInGame && (
-            <Badge>Waiting for host to start game</Badge>
+          {!isCreator && isInGame && (
+            <Badge variant="neutral">Waiting for host to start game</Badge>
           )}
         </div>
       )}
@@ -248,16 +260,17 @@ export const PlayerActions = ({
       {isStarted && isMyTurn && (
         <>
           <div className="flex items-center gap-2 mt-8 mb-4">
-            {!hasPendingActions && !currentPlayerState.hasRolledDice && (
-              <Button
-                disabled={!canRoll || isRolling}
-                onClick={handleRollDice}
-                size="sm"
-                loading={isRolling}
-              >
-                Roll dice
-              </Button>
-            )}
+            {!hasPendingActions &&
+              (!currentPlayerState.hasRolledDice || isDouble) && (
+                <Button
+                  disabled={!canRoll || isRolling}
+                  onClick={handleRollDice}
+                  size="sm"
+                  loading={isRolling}
+                >
+                  Roll dice
+                </Button>
+              )}
 
             {currentPlayerState?.inJail && (
               <PlayerInJailAlert
@@ -332,14 +345,16 @@ export const PlayerActions = ({
               </>
             )}
 
-            {!hasPendingActions && currentPlayerState.hasRolledDice && (
-              <Button
-                onClick={handleEndTurn}
-                disabled={isLoading === "endTurn"}
-              >
-                {isLoading === "endTurn" ? "Ending Turn..." : "End Turn"}
-              </Button>
-            )}
+            {!hasPendingActions &&
+              currentPlayerState.hasRolledDice &&
+              !isDouble && (
+                <Button
+                  onClick={handleEndTurn}
+                  disabled={isLoading === "endTurn"}
+                >
+                  {isLoading === "endTurn" ? "Ending Turn..." : "End Turn"}
+                </Button>
+              )}
           </div>
         </>
       )}
