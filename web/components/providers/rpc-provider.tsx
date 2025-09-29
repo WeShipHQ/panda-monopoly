@@ -18,6 +18,8 @@ type Props = Readonly<{
 interface RpcContextType {
   rpc: Rpc<SolanaRpcApi>;
   rpcSubscriptions: RpcSubscriptions<SolanaRpcSubscriptionsApi>;
+  erRpc: Rpc<SolanaRpcApi>;
+  erRpcSubscriptions: RpcSubscriptions<SolanaRpcSubscriptionsApi>;
 }
 
 export const RpcContext = createContext<RpcContextType | undefined>(undefined);
@@ -37,6 +39,10 @@ export function RpcProvider({ children }: Props) {
         rpc: createSolanaRpc(envConfig.NEXT_PUBLIC_RPC_URL),
         rpcSubscriptions: createSolanaRpcSubscriptions(
           envConfig.NEXT_PUBLIC_RPC_SUBSCRIPTIONS_URL
+        ),
+        erRpc: createSolanaRpc(envConfig.NEXT_PUBLIC_ER_RPC_URL),
+        erRpcSubscriptions: createSolanaRpcSubscriptions(
+          envConfig.NEXT_PUBLIC_ER_RPC_SUBSCRIPTIONS_URL
         ),
       }}
     >

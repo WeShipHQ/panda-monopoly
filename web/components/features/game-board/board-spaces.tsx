@@ -52,9 +52,6 @@ export const PropertySpace: React.FC<PropertySpaceProps> = ({
   );
 
   const propertyData = getTypedSpaceData(position, "property");
-  if (position === 1) {
-    console.log("propertyData", propertyData);
-  }
   if (!propertyData) return content;
 
   return (

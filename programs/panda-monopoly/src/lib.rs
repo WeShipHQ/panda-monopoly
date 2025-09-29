@@ -7,9 +7,7 @@ pub mod utils;
 
 use anchor_lang::prelude::*;
 // use ephemeral_rollups_sdk::anchor::ephemeral;
-use ephemeral_rollups_sdk::anchor::{commit, delegate, ephemeral};
-use ephemeral_rollups_sdk::cpi::DelegateConfig;
-use ephemeral_rollups_sdk::ephem::{commit_accounts, commit_and_undelegate_accounts};
+use ephemeral_rollups_sdk::anchor::ephemeral;
 
 pub use constants::*;
 pub use instructions::*;
@@ -17,8 +15,6 @@ pub use state::*;
 pub use utils::*;
 
 declare_id!("4vucUqMcXN4sgLsgnrXTUC9U7ACZ5DmoRBLbWt4vrnyR");
-
-pub const TEST_PDA_SEED: &[u8] = b"test-pda";
 
 #[program]
 #[ephemeral]
@@ -51,6 +47,18 @@ pub mod panda_monopoly {
     // Game management instructions
     pub fn initialize_game(ctx: Context<InitializeGame>) -> Result<()> {
         instructions::initialize::initialize_game_handler(ctx)
+    }
+
+    pub fn reset_game_handler<'c: 'info, 'info>(
+        ctx: Context<'_, '_, 'c, 'info, ResetGame<'info>>,
+    ) -> Result<()> {
+        instructions::initialize::reset_game_handler(ctx)
+    }
+
+    pub fn close_game_handler<'c: 'info, 'info>(
+        ctx: Context<'_, '_, 'c, 'info, CloseGame<'info>>,
+    ) -> Result<()> {
+        instructions::initialize::close_game_handler(ctx)
     }
 
     pub fn join_game(ctx: Context<JoinGame>) -> Result<()> {
@@ -204,108 +212,4 @@ pub mod panda_monopoly {
     // pub fn end_auction(ctx: Context<EndAuction>) -> Result<()> {
     //     instructions::auction::end_auction_handler(ctx)
     // }
-
-    // demo
-
-    pub fn initialize(ctx: Context<Initialize>, id: u64) -> Result<()> {
-        let counter = &mut ctx.accounts.counter;
-        counter.id = id;
-        counter.count = 0;
-        msg!("PDA {} count: {}", counter.key(), counter.count);
-        Ok(())
-    }
-
-    /// Increment the counter.
-    pub fn increment(ctx: Context<Increment>) -> Result<()> {
-        let counter = &mut ctx.accounts.counter;
-        counter.count += 1;
-        if counter.count > 1000 {
-            counter.count = 0;
-        }
-        msg!("PDA {} count: {}", counter.key(), counter.count);
-        Ok(())
-    }
-
-    /// Increment and read account
-    pub fn increment_with_account(ctx: Context<IncrementWithAccount>) -> Result<()> {
-        let counter = &mut ctx.accounts.counter;
-        counter.count += 1;
-        if counter.count > 1000 {
-            counter.count = 0;
-        }
-        msg!("PDA {} count: {}", counter.key(), counter.count);
-        msg!("External account {}", ctx.accounts.external.key());
-        Ok(())
-    }
-
-    /// Delegate the account to the delegation program
-    pub fn delegate(ctx: Context<DelegateInput>) -> Result<()> {
-        {
-            let counter = &mut ctx.accounts.pda;
-            counter.count += 1;
-        }
-
-        {
-            let counter = &ctx.accounts.pda;
-
-            counter.exit(&crate::ID)?;
-            ctx.accounts.delegate_pda(
-                &ctx.accounts.payer,
-                &[TEST_PDA_SEED, &counter.id.to_le_bytes()],
-                DelegateConfig {
-                    commit_frequency_ms: 30_000,
-                    validator: Some(pubkey!("mAGicPQYBMvcYveUZA5F5UNNwyHvfYh5xkLS2Fr1mev")), // Set delegating ER validator
-                                                                                             // MAS1Dt9qreoRMQ14YQuhg8UTZMMzDdKhmkZMECCzk57 // Asia ER validator
-                                                                                             // MEUGGrYPxKk17hCr7wpT6s8dtNokZj5U2L57vjYMS8e // EU ER validator
-                                                                                             // MUS3hc9TCw4cGC12vHNoYcCGzJG1txjgQLZWVoeNHNd // US ER validator
-                                                                                             // mAGicPQYBMvcYveUZA5F5UNNwyHvfYh5xkLS2Fr1mev // Local ER validator
-                }, // DelegateConfig::default(),
-            )?;
-
-            msg!("PDA {} count: {}", counter.key(), counter.count);
-        }
-
-        Ok(())
-    }
-}
-
-#[derive(Accounts)]
-#[instruction(id: u64)]
-pub struct Initialize<'info> {
-    #[account(init_if_needed, payer = user, space = 8 + 80, seeds = [TEST_PDA_SEED, id.to_le_bytes().as_ref()], bump)]
-    pub counter: Account<'info, Counter>,
-    #[account(mut)]
-    pub user: Signer<'info>,
-    pub system_program: Program<'info, System>,
-}
-
-#[delegate]
-#[derive(Accounts)]
-pub struct DelegateInput<'info> {
-    pub payer: Signer<'info>,
-    /// CHECK The pda to delegate
-    // #[account(mut, del)]
-    #[account(mut, del, seeds = [TEST_PDA_SEED, &pda.id.to_le_bytes()], bump)]
-    pub pda: Box<Account<'info, Counter>>,
-}
-
-/// Account for the increment instruction.
-#[derive(Accounts)]
-pub struct Increment<'info> {
-    #[account(mut, seeds = [TEST_PDA_SEED, &counter.id.to_le_bytes()], bump)]
-    pub counter: Account<'info, Counter>,
-}
-
-#[derive(Accounts)]
-pub struct IncrementWithAccount<'info> {
-    #[account(mut, seeds = [TEST_PDA_SEED, &counter.id.to_le_bytes()], bump)]
-    pub counter: Account<'info, Counter>,
-    /// CHECK The account to read
-    pub external: AccountInfo<'info>,
-}
-
-#[account]
-pub struct Counter {
-    pub count: u64,
-    pub id: u64,
 }

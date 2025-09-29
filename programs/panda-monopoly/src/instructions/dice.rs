@@ -2,11 +2,11 @@ use crate::error::GameError;
 use crate::state::*;
 use crate::{constants::*, ID};
 use anchor_lang::prelude::*;
-use ephemeral_vrf_sdk::anchor::vrf;
-use ephemeral_vrf_sdk::instructions::create_request_randomness_ix;
-use ephemeral_vrf_sdk::types::SerializableAccountMeta;
+// use ephemeral_vrf_sdk::anchor::vrf;
+// use ephemeral_vrf_sdk::instructions::create_request_randomness_ix;
+// use ephemeral_vrf_sdk::types::SerializableAccountMeta;
 
-#[vrf]
+// #[vrf]
 #[derive(Accounts)]
 pub struct RollDice<'info> {
     #[account(
@@ -32,10 +32,9 @@ pub struct RollDice<'info> {
     pub recent_blockhashes: UncheckedAccount<'info>,
 
     pub clock: Sysvar<'info, Clock>,
-
-    /// CHECK: The oracle queue
-    #[account(mut, address = ephemeral_vrf_sdk::consts::DEFAULT_QUEUE)]
-    pub oracle_queue: AccountInfo<'info>,
+    // /// CHECK: The oracle queue
+    // #[account(mut, address = ephemeral_vrf_sdk::consts::DEFAULT_EPHEMERAL_QUEUE)]
+    // pub oracle_queue: AccountInfo<'info>,
 }
 
 pub fn roll_dice_handler(
@@ -153,32 +152,32 @@ pub fn roll_dice_handler(
         new_position
     );
 
-    {
-        msg!("Requesting randomness...");
+    // {
+    //     msg!("Requesting randomness...");
 
-        let ix = create_request_randomness_ix(
-            ephemeral_vrf_sdk::instructions::RequestRandomnessParams {
-                payer: ctx.accounts.player.key(),
-                oracle_queue: ctx.accounts.oracle_queue.key(),
-                callback_program_id: ID,
-                callback_discriminator: crate::instruction::CallbackRollDice::DISCRIMINATOR
-                    .to_vec(),
-                caller_seed: [seed; 32],
-                // Specify any account that is required by the callback
-                accounts_metas: Some(vec![SerializableAccountMeta {
-                    pubkey: ctx.accounts.player.key(),
-                    is_signer: false,
-                    is_writable: true,
-                }]),
-                ..Default::default()
-            },
-        );
+    //     let ix = create_request_randomness_ix(
+    //         ephemeral_vrf_sdk::instructions::RequestRandomnessParams {
+    //             payer: ctx.accounts.player.key(),
+    //             oracle_queue: ctx.accounts.oracle_queue.key(),
+    //             callback_program_id: ID,
+    //             callback_discriminator: crate::instruction::CallbackRollDice::DISCRIMINATOR
+    //                 .to_vec(),
+    //             caller_seed: [seed; 32],
+    //             // Specify any account that is required by the callback
+    //             accounts_metas: Some(vec![SerializableAccountMeta {
+    //                 pubkey: ctx.accounts.player.key(),
+    //                 is_signer: false,
+    //                 is_writable: true,
+    //             }]),
+    //             ..Default::default()
+    //         },
+    //     );
 
-        ctx.accounts
-            .invoke_signed_vrf(&ctx.accounts.player.to_account_info(), &ix)?;
+    //     ctx.accounts
+    //         .invoke_signed_vrf(&ctx.accounts.player.to_account_info(), &ix)?;
 
-        msg!("Randomness request sent with seed: {}", seed);
-    }
+    //     msg!("Randomness request sent with seed: {}", seed);
+    // }
 
     Ok(())
 }

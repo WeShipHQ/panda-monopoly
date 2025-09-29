@@ -1,9 +1,10 @@
-import { Slot } from "@radix-ui/react-slot";
+import { Slot, Slottable } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { Spinner } from "./spinner";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center cursor-pointer whitespace-nowrap rounded-base text-sm font-base ring-offset-white transition-all gap-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
@@ -24,6 +25,9 @@ const buttonVariants = cva(
         lg: "h-11 px-8",
         icon: "size-10",
       },
+      loading: {
+        true: "text-transparent",
+      },
     },
     defaultVariants: {
       variant: "default",
@@ -33,23 +37,33 @@ const buttonVariants = cva(
 );
 
 function Button({
+  children,
   className,
   variant,
   size,
+  disabled,
   asChild = false,
+  loading = false,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
+    loading?: boolean;
   }) {
   const Comp = asChild ? Slot : "button";
 
   return (
     <Comp
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size, className, loading }))}
+      disabled={disabled || loading}
       {...props}
-    />
+    >
+      {loading && (
+        <Spinner variant="bars" className={cn("!text-foreground absolute")} />
+      )}
+      <Slottable>{children}</Slottable>
+    </Comp>
   );
 }
 

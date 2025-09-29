@@ -120,7 +120,7 @@ export const PlayerToken: React.FC<PlayerTokenProps> = ({
       }}
     >
       <img
-        src={generatePlayerIcon(player.wallet)?.avatar || ""}
+        src="/images/blue-figure.png"
         alt={`${player.wallet} token`}
         className="w-full h-full object-contain drop-shadow-lg"
         style={{

@@ -7,33 +7,33 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeftRight, Plus, Eye } from "lucide-react";
 import { formatAddress, generatePlayerIcon } from "@/lib/utils";
 
-// Mock trade data - replace with actual data from your game context
+// @ts-expect-error
 const mockTrades = [
-  {
-    id: "1",
-    fromPlayer: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
-    toPlayer: "9yQNf4xQx1KjFz8CjxqVjg2HwFpwH6wGvEcx85i9FpEr",
-    status: "pending", // pending, accepted, rejected, completed
-    items: {
-      properties: ["BONK Avenue", "WIF Lane"],
-      cash: 500,
-    },
-    counterOffer: null,
-  },
-  {
-    id: "2",
-    fromPlayer: "5aAiVXKdTAp67g9QeHXUHjuRhbvCqtMXGGiGYA5C2TVG",
-    toPlayer: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
-    status: "active",
-    items: {
-      properties: ["JUP Street"],
-      cash: 200,
-    },
-    counterOffer: {
-      properties: ["RAY Boulevard"],
-      cash: 100,
-    },
-  },
+  // {
+  //   id: "1",
+  //   fromPlayer: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+  //   toPlayer: "9yQNf4xQx1KjFz8CjxqVjg2HwFpwH6wGvEcx85i9FpEr",
+  //   status: "pending", // pending, accepted, rejected, completed
+  //   items: {
+  //     properties: ["BONK Avenue", "WIF Lane"],
+  //     cash: 500,
+  //   },
+  //   counterOffer: null,
+  // },
+  // {
+  //   id: "2",
+  //   fromPlayer: "5aAiVXKdTAp67g9QeHXUHjuRhbvCqtMXGGiGYA5C2TVG",
+  //   toPlayer: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+  //   status: "active",
+  //   items: {
+  //     properties: ["JUP Street"],
+  //     cash: 200,
+  //   },
+  //   counterOffer: {
+  //     properties: ["RAY Boulevard"],
+  //     cash: 100,
+  //   },
+  // },
 ];
 
 export function TradeItems() {
@@ -55,6 +55,7 @@ export function TradeItems() {
             </CardContent>
           </Card>
         ) : (
+          // @ts-expect-error
           mockTrades.map((trade) => {
             const fromPlayerInfo = generatePlayerIcon(trade.fromPlayer);
             const toPlayerInfo = generatePlayerIcon(trade.toPlayer);

@@ -1,14 +1,20 @@
-import { PlayerState } from "@/lib/sdk/generated";
+import { GameStatus } from "@/lib/sdk/generated";
 import { useGameContext } from "@/components/providers/game-provider";
 import { useMemo } from "react";
-import { isSome } from "@solana/kit";
 import { Button } from "@/components/ui/button";
 import { formatAddress, formatPrice } from "@/lib/utils";
 import { getBoardSpaceData } from "@/lib/board-utils";
 import { DicesOnly, useDiceContext } from "./dice";
+import { PlayerAccount } from "@/types/schema";
+import { Badge } from "@/components/ui/badge";
+import {
+  MEV_TAX_POSITION,
+  PRIORITY_FEE_TAX_POSITION,
+} from "@/configs/constants";
+import { WalletWithMetadata } from "@privy-io/react-auth";
 
 interface PlayerTokenProps {
-  player: PlayerState;
+  player: PlayerAccount;
   handleEndTurn: () => void;
 }
 
@@ -29,7 +35,7 @@ export const PlayerInJailAlert: React.FC<PlayerTokenProps> = ({
 };
 
 interface BankruptcyActionProps {
-  player: PlayerState;
+  player: PlayerAccount;
 }
 
 export const BankruptcyAction: React.FC<BankruptcyActionProps> = ({
@@ -46,7 +52,7 @@ export const BankruptcyAction: React.FC<BankruptcyActionProps> = ({
 };
 
 interface PropertyActionsProps {
-  player: PlayerState;
+  player: PlayerAccount;
   position: number;
   isLoading: string | null;
   handleBuyProperty: (position: number) => void;
@@ -69,13 +75,15 @@ export const PropertyActions: React.FC<PropertyActionsProps> = ({
     return {
       propertyData,
       propertyAccount,
-      isOwned: propertyAccount?.owner && isSome(propertyAccount.owner),
+      isOwned: !!propertyAccount?.owner,
       isOwnedByCurrentPlayer:
-        propertyAccount?.owner &&
-        isSome(propertyAccount.owner) &&
-        propertyAccount.owner.value === player.wallet,
+        !!propertyAccount?.owner && propertyAccount.owner === player.wallet,
     } as any;
   }, [player, getPropertyByPosition, position]);
+
+  if (position === MEV_TAX_POSITION || position === PRIORITY_FEE_TAX_POSITION) {
+    return <Button>Pay tax</Button>;
+  }
 
   return (
     <div
@@ -160,27 +168,43 @@ export const PropertyActions: React.FC<PropertyActionsProps> = ({
 };
 
 export const PlayerActions = ({
+  wallet,
+  handleStartGame,
+  handleJoinGame,
   handleBuyProperty,
   handleSkipProperty,
   handleEndTurn,
+  handlePayMevTax,
+  handlePayPriorityFeeTax,
   isLoading,
 }: {
+  wallet: WalletWithMetadata;
+  handleStartGame: (gameAddress: string) => void;
+  handleJoinGame: (gameAddress: string) => void;
   handleBuyProperty: (position: number) => void;
   handleSkipProperty: (position: number) => void;
+  handlePayMevTax: () => void;
+  handlePayPriorityFeeTax: () => void;
   handleEndTurn: () => void;
   isLoading: string | null;
 }) => {
   const { canRoll, isRolling, handleRollDice } = useDiceContext();
   const {
+    gameState: game,
     currentPlayerState,
     isCurrentPlayerTurn,
     setCardDrawType,
     setIsCardDrawModalOpen,
   } = useGameContext();
 
-  if (!currentPlayerState) {
+  if (!currentPlayerState || !game) {
     return null;
   }
+
+  const isStarted = game.gameStatus === GameStatus.InProgress;
+  // const isEnded = game?.gameStatus  === GameStatus.Finished;
+  const isCreator = game.authority === wallet.address;
+  const isInGame = wallet.address && game.players.includes(wallet.address);
 
   const isMyTurn = isCurrentPlayerTurn();
 
@@ -191,81 +215,154 @@ export const PlayerActions = ({
     currentPlayerState.needsBankruptcyCheck ||
     currentPlayerState.needsSpecialSpaceAction;
 
+  const isDouble =
+    currentPlayerState.hasRolledDice &&
+    currentPlayerState.lastDiceRoll[0] === currentPlayerState.lastDiceRoll[1];
+
   return (
     <div className="flex flex-col items-center">
       <DicesOnly />
-      <div className="flex items-center gap-2 mt-8 mb-4">
-        {!hasPendingActions && !currentPlayerState.hasRolledDice && (
-          <Button
-            disabled={!canRoll || isRolling}
-            onClick={handleRollDice}
-            size="sm"
-            // @ts-expect-error
-            loading={isRolling}
-          >
-            Roll dice
-          </Button>
-        )}
 
-        {currentPlayerState?.inJail && (
-          <PlayerInJailAlert
-            player={currentPlayerState}
-            handleEndTurn={handleEndTurn}
-          />
-        )}
-        {currentPlayerState?.needsBankruptcyCheck && (
-          <BankruptcyAction player={currentPlayerState} />
-        )}
-
-        {/* Property Actions */}
-        {isMyTurn &&
-          currentPlayerState.needsPropertyAction &&
-          isSome(currentPlayerState.pendingPropertyPosition) && (
-            <PropertyActions
-              player={currentPlayerState}
-              position={currentPlayerState.pendingPropertyPosition.value}
-              isLoading={isLoading}
-              handleBuyProperty={handleBuyProperty}
-              handleSkipProperty={handleSkipProperty}
-            />
+      {!isStarted && (
+        <div className="flex items-center gap-2 mt-8 mb-4">
+          {isCreator && (
+            <div className="flex flex-col gap-4 items-center">
+              <Button
+                onClick={() => handleStartGame(game.address)}
+                loading={isLoading === "startGame"}
+                disabled={game.players.length < 2}
+              >
+                Start game
+              </Button>
+              {game.players.length < 2 && (
+                <Badge variant="neutral">
+                  At least 2 players are required to start the game
+                </Badge>
+              )}
+            </div>
           )}
 
-        {isMyTurn && currentPlayerState.needsChanceCard && (
-          <Button
-            size="sm"
-            onClick={() => {
-              setCardDrawType("chance");
-              setIsCardDrawModalOpen(true);
-            }}
-            disabled={isLoading === "chanceCard"}
-          >
-            {isLoading === "chanceCard" ? "Drawing..." : "Draw Chance Card"}
-          </Button>
-        )}
-
-        {isMyTurn && currentPlayerState.needsCommunityChestCard && (
-          <>
+          {!isCreator && !isInGame && (
             <Button
-              size="sm"
-              onClick={() => {
-                setCardDrawType("community-chest");
-                setIsCardDrawModalOpen(true);
-              }}
+              onClick={() => handleJoinGame(game.address)}
+              loading={isLoading === "joinGame"}
             >
-              Draw card
+              Join game
             </Button>
-          </>
-        )}
+          )}
 
-        {!hasPendingActions && currentPlayerState.hasRolledDice && (
-          <Button onClick={handleEndTurn} disabled={isLoading === "endTurn"}>
-            {isLoading === "endTurn" ? "Ending Turn..." : "End Turn"}
-          </Button>
-        )}
-      </div>
-      <h4 className="text-sm font-medium text-purple-800">
-        {formatAddress(currentPlayerState.wallet)} is playing
-      </h4>
+          {!isCreator && isInGame && (
+            <Badge variant="neutral">Waiting for host to start game</Badge>
+          )}
+        </div>
+      )}
+
+      {isStarted && isMyTurn && (
+        <>
+          <div className="flex items-center gap-2 mt-8 mb-4">
+            {!hasPendingActions &&
+              (!currentPlayerState.hasRolledDice || isDouble) && (
+                <Button
+                  disabled={!canRoll || isRolling}
+                  onClick={handleRollDice}
+                  size="sm"
+                  loading={isRolling}
+                >
+                  Roll dice
+                </Button>
+              )}
+
+            {currentPlayerState?.inJail && (
+              <PlayerInJailAlert
+                player={currentPlayerState}
+                handleEndTurn={handleEndTurn}
+              />
+            )}
+
+            {currentPlayerState?.needsBankruptcyCheck && (
+              <BankruptcyAction player={currentPlayerState} />
+            )}
+
+            {/* Property Actions */}
+            {currentPlayerState.needsPropertyAction &&
+              currentPlayerState.pendingPropertyPosition && (
+                <PropertyActions
+                  player={currentPlayerState}
+                  position={currentPlayerState.pendingPropertyPosition}
+                  isLoading={isLoading}
+                  handleBuyProperty={handleBuyProperty}
+                  handleSkipProperty={handleSkipProperty}
+                />
+              )}
+
+            {/* Special Space Actions */}
+            {currentPlayerState.needsSpecialSpaceAction &&
+              currentPlayerState.pendingSpecialSpacePosition ===
+                MEV_TAX_POSITION && (
+                <Button
+                  onClick={() => handlePayMevTax()}
+                  loading={isLoading === "tax"}
+                >
+                  Pay MEV Tax
+                </Button>
+              )}
+
+            {currentPlayerState.needsSpecialSpaceAction &&
+              currentPlayerState.pendingSpecialSpacePosition ===
+                PRIORITY_FEE_TAX_POSITION && (
+                <Button
+                  onClick={() => handlePayPriorityFeeTax()}
+                  loading={isLoading === "tax"}
+                >
+                  Pay Priority Fee Tax
+                </Button>
+              )}
+
+            {isMyTurn && currentPlayerState.needsChanceCard && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setCardDrawType("chance");
+                  setIsCardDrawModalOpen(true);
+                }}
+                disabled={isLoading === "chanceCard"}
+              >
+                {isLoading === "chanceCard" ? "Drawing..." : "Draw Chance Card"}
+              </Button>
+            )}
+
+            {isMyTurn && currentPlayerState.needsCommunityChestCard && (
+              <>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setCardDrawType("community-chest");
+                    setIsCardDrawModalOpen(true);
+                  }}
+                >
+                  Draw card
+                </Button>
+              </>
+            )}
+
+            {!hasPendingActions &&
+              currentPlayerState.hasRolledDice &&
+              !isDouble && (
+                <Button
+                  onClick={handleEndTurn}
+                  disabled={isLoading === "endTurn"}
+                >
+                  {isLoading === "endTurn" ? "Ending Turn..." : "End Turn"}
+                </Button>
+              )}
+          </div>
+        </>
+      )}
+      {isStarted && (
+        <Badge variant="neutral">
+          {formatAddress(currentPlayerState.wallet)} is playing
+        </Badge>
+      )}
     </div>
   );
 };

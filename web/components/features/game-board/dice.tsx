@@ -263,10 +263,10 @@ export const DiceProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Reset dice rotations and start rolling animation
     if (dice1Ref.current) {
-      dice1Ref.current.style.transform = "rotate3d(0, 0.9, 0.9, 90deg)";
+      dice1Ref.current.style.transform = "rotate3d(0, 0.9, 0.9, 60deg)";
     }
     if (dice2Ref.current) {
-      dice2Ref.current.style.transform = "rotate3d(0, 0.9, 0.9, 90deg)";
+      dice2Ref.current.style.transform = "rotate3d(0, 0.9, 0.9, 120deg)";
     }
 
     // Call Solana program to roll dice
@@ -401,7 +401,7 @@ export const DicesOnly: React.FC = () => {
         <div className="dice-wrapper">
           <div
             ref={dice1Ref}
-            className={`dice-3d ${isRolling ? "dice-rolling" : ""} ${
+            className={`dice-3d dice-1 ${isRolling ? "dice-rolling" : ""} ${
               isThrowAnimation ? "dice-throw" : ""
             }`}
           >

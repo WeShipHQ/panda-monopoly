@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { ConnectWalletButton } from "../connect-wallet-button";
+import Link from "next/link";
 
 const scrolltoHash = function (element_id: string) {
   const element = document.getElementById(element_id);
@@ -37,20 +38,14 @@ const NavBar = () => {
     text-black dark:text-white transform -rotate-2 hover:rotate-0 transition-transform
     duration-300 min-w-[80px] xs:min-w-[100px] lg:text-5xl"
             >
-              <a
-                href="#home"
-                onClick={(e) => {
-                  e.preventDefault();
-                  scrolltoHash("home");
-                }}
-              >
+              <Link href="/">
                 <Image
                   src="/logo.jpg"
                   alt="Ronit Logo"
                   width={48}
                   height={48}
                 />
-              </a>
+              </Link>
             </h1>
 
             <NavLinks />
@@ -113,16 +108,14 @@ const NavBar = () => {
 
 function NavLinks() {
   const links = [
-    { href: "/lobby", label: "Lobby" },
+    { href: "/", label: "Lobby" },
     { href: "/leaderboard", label: "Leaderboard" },
-    // { href: "#projects", label: "Projects" },
-    // { href: "https://dev.to/ronitjadhav", label: "Blogs" },
   ];
 
   return (
     <>
       {links.map((link) => (
-        <a
+        <Link
           key={link.href}
           href={link.href}
           target={link.href.startsWith("http") ? "_blank" : "_self"}
@@ -133,18 +126,15 @@ function NavLinks() {
             border: "2px solid transparent",
             borderRadius: "0px",
           }}
-          onClick={(e) => {
-            if (link.href.startsWith("#")) {
-              e.preventDefault();
-              scrolltoHash(link.href.substring(1));
-            }
-          }}
+          // onClick={(e) => {
+          //   if (link.href.startsWith("#")) {
+          //     e.preventDefault();
+          //     scrolltoHash(link.href.substring(1));
+          //   }
+          // }}
         >
           {link.label}
-          {/* {link.href.startsWith("http") && (
-            <FontAwesomeIcon icon={faExternalLinkAlt} className="ml-2" />
-          )} */}
-        </a>
+        </Link>
       ))}
     </>
   );

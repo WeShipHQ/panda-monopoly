@@ -38,6 +38,7 @@ export const SOUND_CONFIG = {
 const soundMap = {
   // Dice rolling sounds
   "dice-roll": "/sounds/dice-roll.mp3",
+  "dice-short": "/sounds/dice-short.mp3",
   "dice-land": "/sounds/dice-land.mp3",
 
   // UI interaction sounds
@@ -119,9 +120,9 @@ export function playDiceRollSequence() {
 
   // Play dice roll sound and store reference
   currentDiceRollAudio = playSound(
-    "dice-roll",
-    SOUND_CONFIG.volumes.diceRoll,
-    SOUND_CONFIG.durations.diceRoll
+    "dice-short"
+    // SOUND_CONFIG.volumes.diceRoll,
+    // SOUND_CONFIG.durations.diceRoll
   );
 
   // Play landing sound after configured delay

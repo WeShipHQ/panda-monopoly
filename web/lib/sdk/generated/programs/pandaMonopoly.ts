@@ -19,7 +19,9 @@ import {
   type ParsedBuildHotelInstruction,
   type ParsedBuildHouseInstruction,
   type ParsedBuyPropertyInstruction,
+  type ParsedCallbackRollDiceInstruction,
   type ParsedCancelTradeInstruction,
+  type ParsedCloseGameHandlerInstruction,
   type ParsedCollectFreeParkingInstruction,
   type ParsedCreatePlatformConfigInstruction,
   type ParsedCreateTradeInstruction,
@@ -29,6 +31,7 @@ import {
   type ParsedEndTurnInstruction,
   type ParsedGoToJailInstruction,
   type ParsedInitializeGameInstruction,
+  type ParsedInitPropertyHandlerInstruction,
   type ParsedJoinGameInstruction,
   type ParsedMortgagePropertyInstruction,
   type ParsedPayJailFineInstruction,
@@ -36,10 +39,12 @@ import {
   type ParsedPayPriorityFeeTaxHandlerInstruction,
   type ParsedPayRentInstruction,
   type ParsedRejectTradeInstruction,
+  type ParsedResetGameHandlerInstruction,
   type ParsedRollDiceInstruction,
   type ParsedSellBuildingInstruction,
   type ParsedStartGameInstruction,
   type ParsedTestDiceHandlerInstruction,
+  type ParsedUndelegateGameHandlerInstruction,
   type ParsedUnmortgagePropertyInstruction,
   type ParsedUpdatePlatformConfigInstruction,
   type ParsedVisitBeachResortInstruction,
@@ -126,7 +131,9 @@ export enum PandaMonopolyInstruction {
   BuildHotel,
   BuildHouse,
   BuyProperty,
+  CallbackRollDice,
   CancelTrade,
+  CloseGameHandler,
   CollectFreeParking,
   CreatePlatformConfig,
   CreateTrade,
@@ -135,6 +142,7 @@ export enum PandaMonopolyInstruction {
   DrawCommunityChestCard,
   EndTurn,
   GoToJail,
+  InitPropertyHandler,
   InitializeGame,
   JoinGame,
   MortgageProperty,
@@ -143,10 +151,12 @@ export enum PandaMonopolyInstruction {
   PayPriorityFeeTaxHandler,
   PayRent,
   RejectTrade,
+  ResetGameHandler,
   RollDice,
   SellBuilding,
   StartGame,
   TestDiceHandler,
+  UndelegateGameHandler,
   UnmortgageProperty,
   UpdatePlatformConfig,
   VisitBeachResort,
@@ -215,12 +225,34 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([129, 76, 217, 160, 252, 234, 19, 238])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.CallbackRollDice;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([124, 66, 91, 59, 175, 107, 208, 120])
       ),
       0
     )
   ) {
     return PandaMonopolyInstruction.CancelTrade;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([171, 148, 141, 45, 42, 192, 182, 21])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.CloseGameHandler;
   }
   if (
     containsBytes(
@@ -314,6 +346,17 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([213, 138, 105, 52, 19, 55, 48, 57])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.InitPropertyHandler;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([44, 62, 102, 247, 126, 208, 130, 215])
       ),
       0
@@ -402,6 +445,17 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([205, 29, 157, 88, 253, 101, 84, 100])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.ResetGameHandler;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([27, 140, 230, 215, 37, 178, 226, 114])
       ),
       0
@@ -441,6 +495,17 @@ export function identifyPandaMonopolyInstruction(
     )
   ) {
     return PandaMonopolyInstruction.TestDiceHandler;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([86, 199, 172, 9, 232, 51, 195, 189])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.UndelegateGameHandler;
   }
   if (
     containsBytes(
@@ -499,8 +564,14 @@ export type ParsedPandaMonopolyInstruction<
       instructionType: PandaMonopolyInstruction.BuyProperty;
     } & ParsedBuyPropertyInstruction<TProgram>)
   | ({
+      instructionType: PandaMonopolyInstruction.CallbackRollDice;
+    } & ParsedCallbackRollDiceInstruction<TProgram>)
+  | ({
       instructionType: PandaMonopolyInstruction.CancelTrade;
     } & ParsedCancelTradeInstruction<TProgram>)
+  | ({
+      instructionType: PandaMonopolyInstruction.CloseGameHandler;
+    } & ParsedCloseGameHandlerInstruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.CollectFreeParking;
     } & ParsedCollectFreeParkingInstruction<TProgram>)
@@ -526,6 +597,9 @@ export type ParsedPandaMonopolyInstruction<
       instructionType: PandaMonopolyInstruction.GoToJail;
     } & ParsedGoToJailInstruction<TProgram>)
   | ({
+      instructionType: PandaMonopolyInstruction.InitPropertyHandler;
+    } & ParsedInitPropertyHandlerInstruction<TProgram>)
+  | ({
       instructionType: PandaMonopolyInstruction.InitializeGame;
     } & ParsedInitializeGameInstruction<TProgram>)
   | ({
@@ -550,6 +624,9 @@ export type ParsedPandaMonopolyInstruction<
       instructionType: PandaMonopolyInstruction.RejectTrade;
     } & ParsedRejectTradeInstruction<TProgram>)
   | ({
+      instructionType: PandaMonopolyInstruction.ResetGameHandler;
+    } & ParsedResetGameHandlerInstruction<TProgram>)
+  | ({
       instructionType: PandaMonopolyInstruction.RollDice;
     } & ParsedRollDiceInstruction<TProgram>)
   | ({
@@ -561,6 +638,9 @@ export type ParsedPandaMonopolyInstruction<
   | ({
       instructionType: PandaMonopolyInstruction.TestDiceHandler;
     } & ParsedTestDiceHandlerInstruction<TProgram>)
+  | ({
+      instructionType: PandaMonopolyInstruction.UndelegateGameHandler;
+    } & ParsedUndelegateGameHandlerInstruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.UnmortgageProperty;
     } & ParsedUnmortgagePropertyInstruction<TProgram>)

@@ -36,13 +36,12 @@ export interface JoinGameIxs {
 }
 
 export interface StartGameParams {
-  rpc: Rpc<GetAccountInfoApi>;
   authority: TransactionSigner;
   gameAddress: Address;
+  players: Address[];
 }
 
 export interface RollDiceParams {
-  rpc: Rpc<GetAccountInfoApi>;
   player: TransactionSigner;
   gameAddress: Address;
   diceRoll: number[] | null;
@@ -62,7 +61,6 @@ export interface PayJailFineParams {
 
 // Property-related instruction parameters
 export interface BuyPropertyParams {
-  rpc: Rpc<GetAccountInfoApi>;
   player: TransactionSigner;
   gameAddress: Address;
   position: number;
@@ -160,7 +158,6 @@ export interface DrawCommunityChestCardParams {
 
 // Tax instruction parameters
 export interface PayMevTaxParams {
-  rpc: Rpc<GetAccountInfoApi>;
   player: TransactionSigner;
   gameAddress: Address;
 }
