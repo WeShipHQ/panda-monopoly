@@ -94,7 +94,7 @@ export function ConnectWalletButton() {
               {isCopied ? <CheckIcon /> : <CopyIcon />}
             </Button>
           )}
-          <Button
+          {/* <Button
             onClick={async () => {
               try {
                 const wallet = wallets[0];
@@ -147,7 +147,7 @@ export function ConnectWalletButton() {
             }}
           >
             Send test tx
-          </Button>
+          </Button> */}
         </>
       ) : (
         <Button size="lg" disabled={disableLogin} onClick={() => login()}>

@@ -327,9 +327,9 @@ function CreateGameButton() {
   };
 
   return (
-    <Button 
-      onClick={handleCreateGame} 
-      loading={loading} 
+    <Button
+      onClick={handleCreateGame}
+      loading={loading}
       className="gap-2 w-full sm:w-auto"
     >
       <Plus className="w-4 h-4" />
