@@ -246,8 +246,9 @@ export const PlayerActions = ({
       {isStarted && isMyTurn && (
         <>
           <div className="flex items-center gap-2 mt-8 mb-4">
-            {!hasPendingActions &&
-              (!currentPlayerState.hasRolledDice || isDouble) && (
+            {/* {!hasPendingActions &&
+              (!currentPlayerState.hasRolledDice || isDouble) &&
+              !currentPlayerState.inJail && (
                 <Button
                   disabled={!canRoll || isRolling}
                   onClick={handleRollDice}
@@ -256,14 +257,29 @@ export const PlayerActions = ({
                 >
                   Roll dice
                 </Button>
-              )}
+              )} */}
 
-            {currentPlayerState?.inJail && (
+            {((!hasPendingActions && !currentPlayerState.hasRolledDice) ||
+              (!hasPendingActions &&
+                currentPlayerState.hasRolledDice &&
+                isDouble &&
+                !currentPlayerState.inJail)) && (
+              <Button
+                disabled={!canRoll || isRolling}
+                onClick={handleRollDice}
+                size="sm"
+                loading={isRolling}
+              >
+                Roll dice
+              </Button>
+            )}
+
+            {/* {currentPlayerState?.inJail && (
               <PlayerInJailAlert
                 player={currentPlayerState}
                 handleEndTurn={handleEndTurn}
               />
-            )}
+            )} */}
 
             {currentPlayerState?.needsBankruptcyCheck && (
               <BankruptcyAction player={currentPlayerState} />
@@ -331,16 +347,15 @@ export const PlayerActions = ({
               </>
             )}
 
-            {!hasPendingActions &&
+            {((!hasPendingActions &&
               currentPlayerState.hasRolledDice &&
-              !isDouble && (
-                <Button
-                  onClick={handleEndTurn}
-                  loading={isLoading === "endTurn"}
-                >
-                  {isLoading === "endTurn" ? "Ending Turn..." : "End Turn"}
-                </Button>
-              )}
+              !isDouble) ||
+              (currentPlayerState.hasRolledDice &&
+                currentPlayerState.inJail)) && (
+              <Button onClick={handleEndTurn} loading={isLoading === "endTurn"}>
+                {isLoading === "endTurn" ? "Ending Turn..." : "End Turn"}
+              </Button>
+            )}
           </div>
         </>
       )}
