@@ -177,3 +177,37 @@ export type GameEvent =
       type: "CommunityChestCardDrawn";
       data: CommunityChestCardDrawn;
     };
+
+// Trade-related instruction parameters
+export interface CreateTradeParams {
+  rpc: Rpc<GetAccountInfoApi>;
+  proposer: TransactionSigner;
+  receiver: Address;
+  gameAddress: Address;
+  tradeType: number; // TradeType enum
+  proposerMoney: number;
+  receiverMoney: number;
+  proposerProperty?: number;
+  receiverProperty?: number;
+}
+
+export interface AcceptTradeParams {
+  rpc: Rpc<GetAccountInfoApi>;
+  receiver: TransactionSigner;
+  gameAddress: Address;
+  proposer: Address;
+}
+
+export interface RejectTradeParams {
+  rpc: Rpc<GetAccountInfoApi>;
+  receiver: TransactionSigner;
+  gameAddress: Address;
+  proposer: Address;
+}
+
+export interface CancelTradeParams {
+  rpc: Rpc<GetAccountInfoApi>;
+  proposer: TransactionSigner;
+  gameAddress: Address;
+  receiver: Address;
+}

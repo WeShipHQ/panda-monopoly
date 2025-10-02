@@ -67,3 +67,21 @@ export async function getPropertyStatePDA(
     ],
   });
 }
+
+/**
+ * Get the PDA for a trade state account
+ * Seeds: ["trade", game, proposer]
+ */
+export async function getTradeStatePDA(
+  game: Address,
+  proposer: Address
+): Promise<ProgramDerivedAddress> {
+  return await getProgramDerivedAddress({
+    programAddress: PANDA_MONOPOLY_PROGRAM_ADDRESS,
+    seeds: [
+      "trade",
+      getAddressEncoder().encode(game),
+      getAddressEncoder().encode(proposer),
+    ],
+  });
+}

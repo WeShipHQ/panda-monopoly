@@ -69,6 +69,7 @@ export interface GameLogEntry {
 
     // Trade-related
     tradeId?: string;
+    action?: string;
     targetPlayer?: string;
     targetPlayerName?: string;
     offeredProperties?: number[];
