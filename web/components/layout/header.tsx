@@ -23,7 +23,7 @@ const NavBar = () => {
       <nav className="fixed top-4 z-50 w-full px-4">
         <div
           className={cn(
-            `mx-auto flex h-[80px] w-full container
+            `mx-auto flex h-[80px] max-w-6xl w-full container
         items-center justify-between px-6 transition-transform
         duration-300 ease-in-out bg-chart-3 dark:bg-darkBg transform `
           )}
