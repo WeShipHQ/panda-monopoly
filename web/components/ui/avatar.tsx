@@ -5,6 +5,7 @@ import * as AvatarPrimitive from "@radix-ui/react-avatar"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { getRandomAvatarByAddress } from "@/lib/avatar-utils"
 
 function Avatar({
   className,
@@ -24,12 +25,18 @@ function Avatar({
 
 function AvatarImage({
   className,
+  walletAddress,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+}: React.ComponentProps<typeof AvatarPrimitive.Image> & {
+  walletAddress?: string;
+}) {
+  const avatarSrc = walletAddress ? getRandomAvatarByAddress(walletAddress) : undefined;
+  
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"
       className={cn("aspect-square size-full", className)}
+      src={avatarSrc}
       {...props}
     />
   )
@@ -37,8 +44,14 @@ function AvatarImage({
 
 function AvatarFallback({
   className,
+  walletAddress,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Fallback>) {
+}: React.ComponentProps<typeof AvatarPrimitive.Fallback> & {
+  walletAddress?: string;
+}) {
+  // Generate fallback text from wallet address (first 2 characters)
+  const fallbackText = walletAddress ? walletAddress.slice(0, 2).toUpperCase() : "??";
+  
   return (
     <AvatarPrimitive.Fallback
       data-slot="avatar-fallback"
@@ -47,7 +60,9 @@ function AvatarFallback({
         className,
       )}
       {...props}
-    />
+    >
+      {fallbackText}
+    </AvatarPrimitive.Fallback>
   )
 }
 
