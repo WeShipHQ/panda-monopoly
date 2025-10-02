@@ -69,11 +69,11 @@ export function GameItem({
     for (let i = 0; i < players.length; i++) {
       const player = players[i];
       avatars.push(
-        <Avatar key={player} className="w-12 h-12 border-2 border-white">
+        <Avatar key={player} className="w-10 h-10 sm:w-12 sm:h-12 border-2 border-white">
           <AvatarImage
-            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${player}`}
+            walletAddress={player}
           />
-          <AvatarFallback className="bg-blue-500 text-white">
+          <AvatarFallback walletAddress={player} className="bg-blue-500 text-white text-xs sm:text-sm">
             {player.slice(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
@@ -84,9 +84,9 @@ export function GameItem({
       avatars.push(
         <Avatar
           key={`empty-${i}`}
-          className="w-12 h-12 border-2 border-gray-300 bg-gray-100"
+          className="w-10 h-10 sm:w-12 sm:h-12 border-2 border-gray-300 bg-gray-100"
         >
-          <AvatarFallback className="bg-gray-200 text-gray-400">
+          <AvatarFallback className="bg-gray-200 text-gray-400 text-xs sm:text-sm">
             ?
           </AvatarFallback>
         </Avatar>
@@ -98,38 +98,41 @@ export function GameItem({
 
   return (
     <Card className="hover:shadow-lg transition-shadow bg-chart-3">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           {/* Left side - Player avatars and game info */}
-          <div className="flex items-center space-x-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 flex-1">
             {/* Player avatars */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-3">
               <div className="flex -space-x-2">
                 {getPlayerAvatars(game.players, game.maxPlayers)}
               </div>
-              <span className="text-sm ml-4">VS</span>
+              <span className="text-sm font-medium">VS</span>
             </div>
 
-            {/* Entry fee */}
-            <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">◎</span>
+            {/* Entry fee and status */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              {/* Entry fee */}
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">◎</span>
+                </div>
+                <span className="text-base sm:text-lg font-semibold text-foreground">
+                  {formatEntryFee(Number(game.bankBalance))}
+                </span>
               </div>
-              <span className="text-lg font-semibold text-foreground">
-                {formatEntryFee(Number(game.bankBalance))}
-              </span>
-            </div>
 
-            {/* Game status */}
-            {getGameStatusBadge(game.gameStatus)}
+              {/* Game status */}
+              {getGameStatusBadge(game.gameStatus)}
+            </div>
           </div>
 
           {/* Right side - Action buttons */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {game.gameStatus === GameStatus.WaitingForPlayers && (
               <Button
                 onClick={() => onJoinGame(game.address)}
-                className="bg-green-500 hover:bg-green-600 text-white px-6"
+                className="bg-green-500 hover:bg-green-600 text-white px-4 sm:px-6 flex-1 sm:flex-none"
                 loading={joining}
               >
                 Join
@@ -140,9 +143,10 @@ export function GameItem({
               <Button
                 variant="neutral"
                 onClick={() => onSpectateGame(game.address)}
-                className="px-6"
+                className="px-4 sm:px-6 flex-1 sm:flex-none"
               >
-                <span className="mr-2">IN-PLAY</span>
+                <span className="hidden sm:inline mr-2">IN-PLAY</span>
+                <span className="sm:hidden">PLAY</span>
               </Button>
             )}
 
@@ -150,9 +154,10 @@ export function GameItem({
               <Button
                 variant="neutral"
                 onClick={() => onSpectateGame(game.address)}
-                className="px-6"
+                className="px-4 sm:px-6 flex-1 sm:flex-none"
               >
-                <span className="mr-2">FINISHED</span>
+                <span className="hidden sm:inline mr-2">FINISHED</span>
+                <span className="sm:hidden">DONE</span>
               </Button>
             )}
 
@@ -160,7 +165,7 @@ export function GameItem({
               variant="neutral"
               size="icon"
               onClick={() => onSpectateGame(game.address)}
-              className="w-10 h-10"
+              className="w-10 h-10 flex-shrink-0"
             >
               <Eye className="w-4 h-4" />
             </Button>
@@ -168,14 +173,18 @@ export function GameItem({
         </div>
 
         <div className="mt-4 pt-4 border-t border-border">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center space-x-4">
-              <span>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 text-sm">
+            <div className="flex flex-row xs:items-center gap-2 xs:gap-4">
+              <span className="font-medium">
                 Players: {game.currentPlayers}/{game.maxPlayers}
               </span>
-              <span>Game ID: {game.gameId}</span>
+              <span className="text-muted-foreground">
+                Game ID: {game.gameId}
+              </span>
               {game.timeLimit && (
-                <span>Time Limit: {Number(game.timeLimit) / 60}min</span>
+                <span className="text-muted-foreground">
+                  Time Limit: {Number(game.timeLimit) / 60}min
+                </span>
               )}
             </div>
             <div>

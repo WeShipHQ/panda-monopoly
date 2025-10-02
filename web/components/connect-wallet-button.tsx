@@ -30,17 +30,21 @@ import { LogoutIcon, WalletIcon } from "@/components/ui/icons";
 import { useWallet } from "@/hooks/use-wallet";
 import { formatAddress } from "@/lib/utils";
 import { useLogin, useLogout } from "@privy-io/react-auth";
-import { Badge } from "./ui/badge";
 import { toast } from "sonner";
 import { useRpcContext } from "./providers/rpc-provider";
-import { CheckIcon, CopyIcon } from "lucide-react";
+import { CheckIcon, CopyIcon, Download } from "lucide-react";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
+import {
+  useExportWallet,
+} from "@privy-io/react-auth/solana";
 
 export function ConnectWalletButton() {
   const { ready, authenticated, user, wallet } = useWallet();
+
   const { wallets } = useConnectedStandardWallets();
   const { signAndSendTransaction } = useStandardSignAndSendTransaction();
   const [copyToClipboard, isCopied] = useCopyToClipboard();
+  const { exportWallet } = useExportWallet();
 
   const { rpc } = useRpcContext();
   const { login } = useLogin();
@@ -54,19 +58,19 @@ export function ConnectWalletButton() {
         <>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button className="w-40">
+              <Button >
+              <Avatar className="rounded-lg size-6">
+                <AvatarImage
+                  walletAddress={wallet?.address || user?.wallet?.address}
+                  alt="User Avatar"
+                />
+              </Avatar>
                 {wallet
                   ? formatAddress(wallet.address)
                   : user?.wallet?.address
                   ? formatAddress(user?.wallet?.address)
                   : "--"}
-                {/* <Avatar className="rounded-lg">
-                <AvatarImage
-                  src="https://github.com/shadcn.png"
-                  alt="@shadcn"
-                />
-                <AvatarFallback>CN</AvatarFallback>
-              </Avatar> */}
+                
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -75,6 +79,10 @@ export function ConnectWalletButton() {
               align="end"
               side="bottom"
             >
+               <DropdownMenuItem onClick={() => (exportWallet())}>
+                <Download />
+                <DropdownMenuShortcut>Export Wallet</DropdownMenuShortcut>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => logout()}>
                 <LogoutIcon />
                 <DropdownMenuShortcut>Disconnect</DropdownMenuShortcut>
@@ -151,14 +159,17 @@ export function ConnectWalletButton() {
   );
 }
 
-function UserMenu({ onDisconnect }: { onDisconnect: () => void }) {
+function UserMenu({ onDisconnect, walletAddress }: { onDisconnect: () => void; walletAddress?: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button>
           <Avatar className="rounded-lg">
-            <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-            <AvatarFallback>CN</AvatarFallback>
+            <AvatarImage 
+              walletAddress={walletAddress}
+              alt="User Avatar" 
+            />
+            <AvatarFallback walletAddress={walletAddress} />
           </Avatar>
         </button>
       </DropdownMenuTrigger>

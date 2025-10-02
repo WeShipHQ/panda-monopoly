@@ -1,8 +1,9 @@
 "use client";
 
-import { generatePlayerIcon } from "@/lib/utils";
 import { PlayerAccount } from "@/types/schema";
 import React from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getRandomAvatarByAddress } from "@/lib/avatar-utils";
 
 interface PlayerTokenProps {
   player: PlayerAccount;
@@ -111,22 +112,39 @@ export const PlayerToken: React.FC<PlayerTokenProps> = ({
 
   return (
     <div
-      className="absolute w-8 h-8 transition-all duration-300 ease-in-out flex items-center justify-center"
+      className="absolute w-10 h-10 transition-all duration-300 ease-in-out flex items-center justify-center"
       style={{
         left: tokenPos.left,
         top: tokenPos.top,
         transform: `translate(-50%, -50%) rotate(${-boardRotation}deg)`,
-        // zIndex: 1000 + player.id, // High z-index to ensure visibility above board elements
+        zIndex: 1000 + player.wallet, // High z-index to ensure visibility above board elements
       }}
     >
-      <img
-        src="/images/blue-figure.png"
-        alt={`${player.wallet} token`}
-        className="w-full h-full object-contain drop-shadow-lg"
-        style={{
-          filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
-        }}
-      />
+      {/* Location-like shape with avatar */}
+      <div className="relative w-full h-full">
+        {/* Outer ring for location effect */}
+        <div className="absolute inset-0 rounded-full bg-white/20 border-2 border-white/40 shadow-lg"></div>
+        
+        {/* Inner avatar container */}
+        <div className="absolute inset-1 rounded-full overflow-hidden bg-white shadow-md">
+          <Avatar className="w-full h-full">
+            <AvatarImage
+              walletAddress={player.wallet}
+              alt={`${player.wallet} token`}
+              className="w-full h-full object-cover"
+            />
+            <AvatarFallback
+              walletAddress={player.wallet}
+              className="w-full h-full text-xs font-bold bg-gradient-to-br from-blue-400 to-purple-500 text-white"
+            >
+              {player.wallet.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </div>
+        
+        {/* Glow effect */}
+        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400/20 to-purple-500/20 blur-sm"></div>
+      </div>
     </div>
   );
 };
