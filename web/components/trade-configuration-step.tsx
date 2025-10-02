@@ -1,12 +1,14 @@
 // Trade configuration step component  
 "use client";
 
-import { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
 import { useGameContext } from "@/components/providers/game-provider";
+import { boardData, colorMap } from "@/configs/board-data";
 import type { PlayerAccount, TradeOffer, PropertyAccount } from "@/types/schema";
 
 interface TradeConfigurationStepProps {
@@ -20,10 +22,9 @@ interface TradeConfigurationStepProps {
   canCreateTrade: boolean;
 }
 
-// Simple format function for SOL amounts
-const formatSolAmount = (amount: string): string => {
-  const numAmount = parseFloat(amount) / 1000000000; // Convert lamports to SOL
-  return numAmount.toFixed(3);
+// Formatting money values as currency
+const formatCurrency = (amount: string | number): string => {
+  return `$${amount}`;
 };
 
 // Helper to get property color group name
@@ -54,7 +55,6 @@ export function TradeConfigurationStep({
   canCreateTrade,
 }: TradeConfigurationStepProps) {
   const { properties } = useGameContext();
-  const [activeTab, setActiveTab] = useState<"money" | "properties">("money");
   
   // Get properties owned by each player
   const currentPlayerProperties = properties.filter(
@@ -65,11 +65,16 @@ export function TradeConfigurationStep({
     prop => prop.owner === selectedPlayer.wallet
   );
 
-  const handleMoneyChange = (
-    value: string,
+  // Memoize the money change handler to prevent re-rendering during dragging
+  const handleMoneyChange = useCallback((
+    value: number[],
     type: "initiator" | "target"
   ) => {
-    const numValue = value === "" ? "0" : value;
+    // Round to integer since we're dealing with dollars
+    // Make sure we have at least one value in the array and it's a valid number
+    const sliderValue = value && value.length > 0 ? value[0] : 0;
+    const numValue = Math.max(0, Math.round(sliderValue)).toString();
+    
     if (type === "initiator") {
       onInitiatorOfferChange({
         ...initiatorOffer,
@@ -81,9 +86,10 @@ export function TradeConfigurationStep({
         money: numValue,
       });
     }
-  };
+  }, [initiatorOffer, targetOffer, onInitiatorOfferChange, onTargetOfferChange]);
 
-  const handlePropertyToggle = (
+  // Memoize property toggle handler for better performance
+  const handlePropertyToggle = useCallback((
     propertyPosition: number,
     checked: boolean,
     type: "initiator" | "target"
@@ -91,7 +97,7 @@ export function TradeConfigurationStep({
     if (type === "initiator") {
       const newProperties = checked
         ? [...initiatorOffer.properties, propertyPosition]
-        : initiatorOffer.properties.filter(p => p !== propertyPosition);
+        : initiatorOffer.properties.filter((p: number) => p !== propertyPosition);
       
       onInitiatorOfferChange({
         ...initiatorOffer,
@@ -100,16 +106,16 @@ export function TradeConfigurationStep({
     } else {
       const newProperties = checked
         ? [...targetOffer.properties, propertyPosition]
-        : targetOffer.properties.filter(p => p !== propertyPosition);
+        : targetOffer.properties.filter((p: number) => p !== propertyPosition);
       
       onTargetOfferChange({
         ...targetOffer,
         properties: newProperties,
       });
     }
-  };
+  }, [initiatorOffer, targetOffer, onInitiatorOfferChange, onTargetOfferChange]);
 
-  const PlayerOfferCard = ({
+  const PlayerOfferCard = React.memo(({
     player,
     isCurrentPlayer,
     offer,
@@ -121,224 +127,174 @@ export function TradeConfigurationStep({
     isCurrentPlayer: boolean;
     offer: TradeOffer;
     playerProperties: PropertyAccount[];
-    onMoneyChange: (value: string) => void;
+    onMoneyChange: (value: number[]) => void;
     onPropertyToggle: (position: number, checked: boolean) => void;
-  }) => (
-    <Card className="flex-1">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2">
+  }) => {
+    // Use raw dollar amount (not lamports/SOL) for slider
+    const maxDollars = parseInt(player.cashBalance) || 0;
+    // Convert offer money to number for slider and ensure it's a valid number
+    const currentValue = Math.min(parseInt(offer.money) || 0, maxDollars);
+    
+    // Local state for real-time slider updates without re-rendering parent
+    const [tempValue, setTempValue] = useState(currentValue);
+    
+    // Đồng bộ giá trị từ props khi offer thay đổi từ bên ngoài
+    React.useEffect(() => {
+      setTempValue(currentValue);
+    }, [currentValue]);
+    
+    return (
+      <div className="flex-1 flex flex-col">
+        {/* Player Info */}
+        <div className="flex items-center gap-2 mb-4 p-2 rounded-md bg-primary/5 border border-primary/20">
           <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-primary/10 text-primary text-sm">
+            <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">
               {player.wallet.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div>
             <div className="text-sm font-medium">
-              {isCurrentPlayer ? "You" : `${player.wallet.slice(0, 8)}...`}
+              {isCurrentPlayer ? "You" : `${player.wallet.slice(0, 6)}...`}
             </div>
             <div className="text-xs text-muted-foreground">
-              Balance: {formatSolAmount(player.cashBalance)} SOL
+              Balance: <span className="text-emerald-600 font-medium">${player.cashBalance}</span>
             </div>
           </div>
-          {isCurrentPlayer && (
-            <Badge className="ml-auto text-xs">You</Badge>
-          )}
-        </CardTitle>
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {/* Simple tab navigation */}
-        <div className="flex border-b">
-          <button
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "money"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-            onClick={() => setActiveTab("money")}
-          >
-            Money
-          </button>
-          <button
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "properties"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-            onClick={() => setActiveTab("properties")}
-          >
-            Properties
-          </button>
         </div>
         
-        {activeTab === "money" && (
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium">SOL Amount</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  placeholder="0.000"
-                  value={offer.money === "0" ? "" : offer.money}
-                  onChange={(e) => onMoneyChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-md pr-12 focus:outline-none focus:ring-2 focus:ring-primary"
-                  min="0"
-                  step="0.001"
-                  max={formatSolAmount(player.cashBalance)}
-                />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  SOL
-                </div>
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                Available: {formatSolAmount(player.cashBalance)} SOL
-              </div>
+        {/* Money slider with value bubble */}
+        <div className="mb-6 relative py-4">
+          <div className="flex justify-between text-xs text-muted-foreground mb-2">
+            <span>0</span>
+            <span>${maxDollars}</span>
+          </div>
+          <div className="relative">
+            <Slider 
+              defaultValue={[0]} 
+              min={0}
+              max={maxDollars} 
+              step={1}
+              value={[tempValue]}
+              onValueChange={(val) => setTempValue(val[0])}  // chỉ update local state
+              onValueCommit={(val) => onMoneyChange(val)}    // chỉ gửi khi thả slider
+              aria-label="Money amount"
+              className="cursor-pointer"
+            />
+            {/* Current value bubble - use fixed positioning for smoother dragging */}
+            <div 
+              className="absolute top-[-22px] bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-full font-medium shadow-md z-10 border border-emerald-400/30"
+              style={{ 
+                left: `${maxDollars > 0 ? Math.min(100, (tempValue / maxDollars) * 100) : 0}%`,
+                transform: "translateX(-50%)",
+                willChange: "left" // Hint to browser to optimize this property
+              }}
+            >
+              <span className="flex items-center gap-1">
+                <span className="text-emerald-100">$</span>
+                <span className="text-white font-bold">{tempValue}</span>
+              </span>
             </div>
           </div>
-        )}
+        </div>
         
-        {activeTab === "properties" && (
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium">Select Properties to Trade</label>
-              <div className="max-h-40 overflow-y-auto space-y-2 mt-2">
-                {playerProperties.length === 0 ? (
-                  <div className="text-sm text-muted-foreground text-center py-4">
-                    No properties owned
-                  </div>
-                ) : (
-                  playerProperties.map((property) => (
-                    <div key={property.position} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`property-${property.position}-${isCurrentPlayer ? 'current' : 'target'}`}
-                        checked={offer.properties.includes(property.position)}
-                        onChange={(e) =>
-                          onPropertyToggle(property.position, e.target.checked)
-                        }
-                        className="rounded border-border"
-                      />
-                      <label
-                        htmlFor={`property-${property.position}-${isCurrentPlayer ? 'current' : 'target'}`}
-                        className="flex-1 text-sm cursor-pointer"
-                      >
-                        <div className="flex justify-between items-center">
-                          <span>Position {property.position}</span>
-                          <Badge className="text-xs">
-                            {getColorGroupName(property.colorGroup)}
-                          </Badge>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Price: ${property.price}
-                          {property.houses > 0 && ` • ${property.houses} houses`}
-                          {property.hasHotel && " • Hotel"}
-                          {property.isMortgaged && " • Mortgaged"}
-                        </div>
-                      </label>
+        {/* Properties list - simplified */}
+        <div>
+          {playerProperties.length > 0 && (
+            <div className="space-y-1 max-h-40 overflow-y-auto">
+              {playerProperties.map((property) => {
+                // Get full property name from board data
+                const propertyData = boardData.find(b => b.position === property.position);
+                const propertyName = propertyData?.name || `Property ${property.position}`;
+                
+                // Handle color group safely - using type check first
+                let colorHex = null;
+                if (propertyData && 'type' in propertyData && propertyData.type === 'property') {
+                  // Now we can safely access colorGroup on PropertySpace
+                  const propertySpace = propertyData as any;  // Using any for simplicity
+                  if (propertySpace.colorGroup) {
+                    const colorGroupKey = propertySpace.colorGroup.toLowerCase() as keyof typeof colorMap;
+                    colorHex = colorMap[colorGroupKey] || null;
+                  }
+                }
+                
+                const isSelected = offer.properties.includes(property.position);
+                
+                return (
+                  <div 
+                    key={property.position} 
+                    onClick={() => onPropertyToggle(
+                      property.position, 
+                      !offer.properties.includes(property.position)
+                    )}
+                    className={`flex items-center justify-between p-2.5 rounded-md cursor-pointer text-xs transition-colors duration-200 ${
+                      isSelected 
+                        ? 'bg-emerald-500/10 border border-emerald-500/30 shadow-sm' 
+                        : 'bg-secondary/20 hover:bg-secondary/30 border border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {/* Color indicator */}
+                      {colorHex && (
+                        <div 
+                          className="w-3 h-3 rounded-sm flex-shrink-0" 
+                          style={{ backgroundColor: colorHex }}
+                        />
+                      )}
+                      <div className={`w-4 h-4 rounded-sm flex items-center justify-center transition-colors ${isSelected ? 'bg-emerald-500 text-white' : 'border border-gray-400/40'}`}>
+                        {isSelected && <span className="text-[8px]">✓</span>}
+                      </div>
+                      <span className={`${isSelected ? 'font-medium text-gray-900 dark:text-gray-100' : ''} truncate max-w-[120px]`}>{propertyName}</span>
                     </div>
-                  ))
-                )}
-              </div>
+                    <span className={`${isSelected ? 'text-emerald-600 font-medium' : 'text-muted-foreground'}`}>${property.price}</span>
+                  </div>
+                );
+              })}
             </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
+          )}
+        </div>
+      </div>
+    );
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="text-sm text-muted-foreground">
-        Configure what each player will trade. At least one player must offer something.
+    <div className="bg-background py-2 flex flex-col">
+      {/* Title with simplified UI */}
+      <div className="flex justify-between items-center mb-5 pb-2 ">
+        <div className="font-medium text-base text-primary">Trade Offer</div>
       </div>
       
-      {/* Trade offers */}
-      <div className="flex gap-4">
+      {/* Trade offers in simplified layout */}
+      <div className="grid grid-cols-2 gap-6">
         <PlayerOfferCard
           player={currentPlayer}
           isCurrentPlayer={true}
           offer={initiatorOffer}
           playerProperties={currentPlayerProperties}
-          onMoneyChange={(value) => handleMoneyChange(value, "initiator")}
-          onPropertyToggle={(position, checked) => 
-            handlePropertyToggle(position, checked, "initiator")
-          }
+          onMoneyChange={useCallback((value) => handleMoneyChange(value, "initiator"), [handleMoneyChange])}
+          onPropertyToggle={useCallback((position, checked) => 
+            handlePropertyToggle(position, checked, "initiator"), [handlePropertyToggle])}
         />
-        
-        <div className="flex items-center justify-center px-4">
-          <div className="text-2xl">⇄</div>
-        </div>
         
         <PlayerOfferCard
           player={selectedPlayer}
           isCurrentPlayer={false}
           offer={targetOffer}
           playerProperties={selectedPlayerProperties}
-          onMoneyChange={(value) => handleMoneyChange(value, "target")}
-          onPropertyToggle={(position, checked) => 
-            handlePropertyToggle(position, checked, "target")
-          }
+          onMoneyChange={useCallback((value) => handleMoneyChange(value, "target"), [handleMoneyChange])}
+          onPropertyToggle={useCallback((position, checked) => 
+            handlePropertyToggle(position, checked, "target"), [handlePropertyToggle])}
         />
       </div>
 
-      {/* Trade summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Trade Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <div className="font-medium text-sm mb-2">You will give:</div>
-              <div className="space-y-1">
-                {initiatorOffer.money !== "0" && (
-                  <div className="text-sm">💰 {initiatorOffer.money} SOL</div>
-                )}
-                {initiatorOffer.properties.map(position => {
-                  const property = properties.find(p => p.position === position);
-                  return property ? (
-                    <div key={position} className="text-sm">
-                      🏠 Position {position} ({getColorGroupName(property.colorGroup)})
-                    </div>
-                  ) : null;
-                })}
-                {initiatorOffer.money === "0" && initiatorOffer.properties.length === 0 && (
-                  <div className="text-sm text-muted-foreground">Nothing</div>
-                )}
-              </div>
-            </div>
-            
-            <div>
-              <div className="font-medium text-sm mb-2">You will receive:</div>
-              <div className="space-y-1">
-                {targetOffer.money !== "0" && (
-                  <div className="text-sm">💰 {targetOffer.money} SOL</div>
-                )}
-                {targetOffer.properties.map(position => {
-                  const property = properties.find(p => p.position === position);
-                  return property ? (
-                    <div key={position} className="text-sm">
-                      🏠 Position {position} ({getColorGroupName(property.colorGroup)})
-                    </div>
-                  ) : null;
-                })}
-                {targetOffer.money === "0" && targetOffer.properties.length === 0 && (
-                  <div className="text-sm text-muted-foreground">Nothing</div>
-                )}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Action button */}
-      <div className="flex justify-end">
+      <div className="flex justify-center mt-6">
         <Button
           onClick={onCreateTrade}
           disabled={!canCreateTrade}
-          className="min-w-[120px]"
+          variant="default"
+          className={`px-8 py-2.5 text-sm font-medium transition-all ${canCreateTrade ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg' : 'opacity-70'}`}
         >
-          Create Trade
+          Send Trade
         </Button>
       </div>
     </div>

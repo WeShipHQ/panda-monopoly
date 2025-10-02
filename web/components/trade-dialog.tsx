@@ -88,24 +88,32 @@ export function TradeDialog({ isOpen, onClose }: TradeDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center gap-2">
+      <DialogContent className="max-w-md overflow-y-auto p-6 bg-background border-none rounded-lg shadow-xl">
+        <DialogHeader className="pb-3 border-b border-black dark:border-gray-800">
+          <div className="flex items-center gap-2 justify-between">
             {currentStep === "trade-configuration" && (
               <Button
                 variant="default"
-                size="sm"
+                size="icon"
                 onClick={handleBack}
-                className="p-1 h-8 w-8"
+                className="h-8 w-8 rounded-full bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900 dark:hover:bg-emerald-800 text-emerald-600 dark:text-emerald-300"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
-            <DialogTitle>
+            <DialogTitle className="text-base font-semibold flex-grow text-gray-900 dark:text-gray-100">
               {currentStep === "player-selection"
-                ? "Select Player to Trade With"
-                : `Trade with ${selectedPlayer?.wallet.slice(0, 8)}...`}
+                ? "Select Trading Partner"
+                : "Trade Properties & Money"}
             </DialogTitle>
+            <Button
+              variant="default"
+              size="icon"
+              onClick={handleClose}
+              className="h-8 w-8 rounded-full bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-300"
+            >
+              <span className="text-lg">×</span>
+            </Button>
           </div>
         </DialogHeader>
 

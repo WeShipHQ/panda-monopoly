@@ -175,7 +175,7 @@ export function TradeItems() {
                         <div className="text-xs">
                           <span className="font-medium">Offers:</span>
                           {trade.initiatorOffer.money !== "0" && (
-                            <span className="ml-1">💰 {trade.initiatorOffer.money} SOL</span>
+                            <span className="ml-1">💰 ${trade.initiatorOffer.money}</span>
                           )}
                           {trade.initiatorOffer.properties.length > 0 && (
                             <span className="ml-1">🏠 {trade.initiatorOffer.properties.length} properties</span>
@@ -187,7 +187,7 @@ export function TradeItems() {
                         <div className="text-xs">
                           <span className="font-medium">Wants:</span>
                           {trade.targetOffer.money !== "0" && (
-                            <span className="ml-1">💰 {trade.targetOffer.money} SOL</span>
+                            <span className="ml-1">💰 ${trade.targetOffer.money}</span>
                           )}
                           {trade.targetOffer.properties.length > 0 && (
                             <span className="ml-1">🏠 {trade.targetOffer.properties.length} properties</span>

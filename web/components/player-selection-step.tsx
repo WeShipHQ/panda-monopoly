@@ -27,9 +27,9 @@ export function PlayerSelectionStep({
 }: PlayerSelectionStepProps) {
   if (players.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="text-muted-foreground mb-2">No other players available</div>
-        <div className="text-sm text-muted-foreground">
+      <div className="flex flex-col items-center justify-center py-8 text-center">
+        <div className="text-muted-foreground mb-1">No other players available</div>
+        <div className="text-xs text-muted-foreground">
           Wait for more players to join the game
         </div>
       </div>
@@ -37,43 +37,37 @@ export function PlayerSelectionStep({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="text-sm text-muted-foreground mb-4">
-        Select a player to create a trade with:
-      </div>
-      
-      <div className="grid gap-3">
+    <div className="py-2">
+      <div className="grid gap-2">
         {players.map((player) => (
           <div
             key={player.wallet}
-            className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+            className="flex items-center justify-between p-3.5 rounded-md  dark:hover:bg-emerald-900/10 transition-colors cursor-pointer border border-gray-100/50 dark:border-gray-800/20"
+            onClick={() => !player.isBankrupt && onPlayerSelect(player)}
           >
             <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-primary/10 text-primary font-medium">
+              <Avatar className="h-12 w-12">
+                <AvatarFallback className="bg-emerald-600 text-white font-bold">
                   {player.wallet.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               
               <div>
-                <div className="font-medium">
-                  {player.wallet.slice(0, 8)}...{player.wallet.slice(-4)}
+                <div className="font-medium text-gray-900 dark:text-gray-100">
+                  {player.wallet.slice(0, 6)}...
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  Balance: {formatSolAmount(player.cashBalance)} SOL
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Properties: {player.propertiesOwned.length}
-                  {player.isBankrupt && " • Bankrupt"}
-                  {player.inJail && " • In Jail"}
+                <div className="flex flex-col text-xs mt-0.5 space-y-0.5">
+                  <div className="text-emerald-600 dark:text-emerald-400 font-medium">${player.cashBalance} cash</div>
+                  <div className="text-emerald-600 dark:text-emerald-400">{player.propertiesOwned.length} properties</div>
                 </div>
               </div>
             </div>
 
             <Button
-              onClick={() => onPlayerSelect(player)}
+              variant="default"
               disabled={player.isBankrupt}
-              className="min-w-[100px]"
+              size="sm"
+              className={`h-9 px-4 rounded-md ${player.isBankrupt ? 'bg-red-200 text-red-800' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
             >
               {player.isBankrupt ? "Bankrupt" : "Select"}
             </Button>
