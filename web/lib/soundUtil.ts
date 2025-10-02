@@ -26,8 +26,8 @@ export const SOUND_CONFIG = {
     buttonClick: 0.5,
     buttonHover: 0.2,
     propertyBuy: 0.8,
-    moneyReceive: 0.5,
-    moneyPay: 0.6,
+    moneyReceive: 0.7,
+    moneyPay: 0.7,
     jail: 0.7,
     win: 1.0,
     lose: 0.8,
@@ -160,19 +160,33 @@ export function playThemeChangeSound() {
 }
 
 // Property interaction sounds
-export function playPropertySound(action: "buy" | "rent" | "mortgage") {
+export function playPropertySound(action: "buy" | "rent" | "mortgage" | "pay" | "receive") {
+  console.log(`🔊 Playing property sound: ${action}`);
+  
   switch (action) {
     case "buy":
+      console.log("🏠 Playing property purchase sound");
       playSound(
         "property-buy",
-        SOUND_CONFIG.volumes.propertyBuy,
+        SOUND_CONFIG.volumes.propertyBuy * 1.3, // Even louder for better feedback
         SOUND_CONFIG.durations.propertyBuy
       );
+      
+      setTimeout(() => {
+        console.log("💰 Playing money sound after property purchase");
+        playSound("money-pay", SOUND_CONFIG.volumes.moneyPay);
+      }, 300); // Slightly longer delay for better distinction
       break;
     case "rent":
       playSound("money-pay", SOUND_CONFIG.volumes.moneyPay);
       break;
     case "mortgage":
+      playSound("money-receive", SOUND_CONFIG.volumes.moneyReceive);
+      break;
+    case "pay":
+      playSound("money-pay", SOUND_CONFIG.volumes.moneyPay);
+      break;
+    case "receive":
       playSound("money-receive", SOUND_CONFIG.volumes.moneyReceive);
       break;
   }

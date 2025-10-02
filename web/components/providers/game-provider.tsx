@@ -21,6 +21,8 @@ import { formatAddress } from "@/lib/utils";
 import { useGameLogs } from "@/hooks/useGameLogs";
 import { useRpcContext } from "./rpc-provider";
 import { useWallet } from "@/hooks/use-wallet";
+import useGameSounds from "@/hooks/useGameSounds";
+import { playPropertySound, playSound, SOUND_CONFIG } from "@/lib/soundUtil";
 
 interface GameContextType {
   gameAddress: Address | null;
@@ -160,6 +162,19 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   } = useGameState(gameAddress, {
     onCardDrawEvent: addCardDrawEvent,
   });
+
+  // Keep track of previous game state for sound effects
+  const [previousGameState, setPreviousGameState] = useState<GameAccount | null>(null);
+  
+  // Update previous game state when current state changes
+  useEffect(() => {
+    if (gameState) {
+      setPreviousGameState(gameState);
+    }
+  }, [gameState]);
+
+  // Initialize game sounds
+  useGameSounds(gameState, previousGameState);
 
   const currentPlayerAddress = useMemo(() => {
     return gameState?.players?.[gameState?.currentTurn] || null;
@@ -394,7 +409,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       if (!gameAddress || !wallet?.address || !wallet.delegated) {
         throw new Error("Game address or player signer not available");
       }
-
+      
       try {
         const initPropertyInstruction = await sdk.initPropertyIx({
           gameAddress,
@@ -425,7 +440,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[buyProperty] tx", signature);
 
+        playPropertySound('buy');
+        
         const propertyData = getTypedSpaceData(position, "property");
+        
         addGameLog({
           type: "purchase",
           playerId: wallet.address,
@@ -514,7 +532,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         );
 
         console.log("[payRent] tx", signature);
-
+        
+        // Play sound when paying rent
+        console.log("🏠💰 Playing rent payment sound");
+        playPropertySound('pay');
+        
         const propertyData = getTypedSpaceData(position, "property");
 
         addGameLog({
