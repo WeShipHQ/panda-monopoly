@@ -5,7 +5,7 @@ import {
   Instruction,
   GetAccountInfoApi,
 } from "@solana/kit";
-import { ChanceCardDrawn, CommunityChestCardDrawn } from "./generated";
+import { BuildingType, ChanceCardDrawn, CommunityChestCardDrawn } from "./generated";
 
 export interface CreatePlatformParams {
   rpc: Rpc<GetAccountInfoApi>;
@@ -115,7 +115,7 @@ export interface SellBuildingParams {
   player: TransactionSigner;
   gameAddress: Address;
   position: number;
-  buildingType: number;
+  buildingType: BuildingType;
 }
 
 // Special space instruction parameters

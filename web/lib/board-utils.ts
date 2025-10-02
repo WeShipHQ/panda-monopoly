@@ -298,7 +298,7 @@ export const calculateRentForProperty = (
   }
 };
 
-const hasColorGroupMonopoly = (
+export const hasColorGroupMonopoly = (
   ownerState: PlayerAccount,
   colorGroup: ColorGroup,
   allProperties: PropertyAccount[]

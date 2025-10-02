@@ -36,11 +36,7 @@ pub struct RollDice<'info> {
     // pub oracle_queue: AccountInfo<'info>,
 }
 
-pub fn roll_dice_handler(
-    ctx: Context<RollDice>,
-    dice_roll: Option<[u8; 2]>,
-    // seed: u8,
-) -> Result<()> {
+pub fn roll_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> Result<()> {
     let game = &mut ctx.accounts.game;
     let player_state = &mut ctx.accounts.player_state;
     let player_pubkey = ctx.accounts.player.key();
@@ -64,7 +60,7 @@ pub fn roll_dice_handler(
 
     // Check if player is in jail
     if player_state.in_jail {
-        return handle_jail_dice_roll(game, player_state, clock);
+        return handle_jail_dice_roll(game, player_state, clock, &ctx.accounts.recent_blockhashes);
     }
 
     // Generate secure random dice roll using recent blockhash
@@ -152,33 +148,6 @@ pub fn roll_dice_handler(
         new_position
     );
 
-    // {
-    //     msg!("Requesting randomness...");
-
-    //     let ix = create_request_randomness_ix(
-    //         ephemeral_vrf_sdk::instructions::RequestRandomnessParams {
-    //             payer: ctx.accounts.player.key(),
-    //             oracle_queue: ctx.accounts.oracle_queue.key(),
-    //             callback_program_id: ID,
-    //             callback_discriminator: crate::instruction::CallbackRollDice::DISCRIMINATOR
-    //                 .to_vec(),
-    //             caller_seed: [seed; 32],
-    //             // Specify any account that is required by the callback
-    //             accounts_metas: Some(vec![SerializableAccountMeta {
-    //                 pubkey: ctx.accounts.player.key(),
-    //                 is_signer: false,
-    //                 is_writable: true,
-    //             }]),
-    //             ..Default::default()
-    //         },
-    //     );
-
-    //     ctx.accounts
-    //         .invoke_signed_vrf(&ctx.accounts.player.to_account_info(), &ix)?;
-
-    //     msg!("Randomness request sent with seed: {}", seed);
-    // }
-
     Ok(())
 }
 
@@ -206,9 +175,9 @@ pub fn test_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> 
     }
 
     // Check if player is in jail
-    if player_state.in_jail {
-        return handle_jail_dice_roll(game, player_state, clock);
-    }
+    // if player_state.in_jail {
+    //     return handle_jail_dice_roll(game, player_state, clock);
+    // }
 
     // Generate secure random dice roll using recent blockhash
     let dice_roll = dice_roll.unwrap_or_else(|| {
@@ -300,22 +269,22 @@ fn handle_jail_dice_roll(
     game: &mut GameState,
     player_state: &mut PlayerState,
     clock: &Sysvar<Clock>,
+    recent_blockhashes: &UncheckedAccount,
 ) -> Result<()> {
-    // Player has been in jail, increment jail turns
     player_state.jail_turns += 1;
 
-    // Generate dice roll for jail escape attempt
-    let dice_roll = [1, 1]; // Placeholder - would use same random generation
+    let dice_roll = generate_dice_roll(recent_blockhashes, clock.unix_timestamp)?;
     player_state.last_dice_roll = dice_roll;
     player_state.has_rolled_dice = true;
 
     let is_doubles = dice_roll[0] == dice_roll[1];
+    let mut player_escaped = false;
 
     if is_doubles {
-        // Doubles gets player out of jail
         player_state.in_jail = false;
         player_state.jail_turns = 0;
-        player_state.doubles_count = 1; // Count this as first double
+        player_state.doubles_count = 0;
+        player_escaped = true;
 
         msg!("Player rolled doubles and escaped jail!");
     } else if player_state.jail_turns >= MAX_JAIL_TURNS {
@@ -324,6 +293,7 @@ fn handle_jail_dice_roll(
             player_state.cash_balance -= JAIL_FINE as u64;
             player_state.in_jail = false;
             player_state.jail_turns = 0;
+            player_escaped = true;
 
             msg!("Player paid jail fine and is released!");
         } else {
@@ -331,6 +301,29 @@ fn handle_jail_dice_roll(
         }
     } else {
         msg!("Player remains in jail. Turn {}/3", player_state.jail_turns);
+    }
+
+    if player_escaped {
+        // Calculate movement
+        let dice_sum = dice_roll[0] + dice_roll[1];
+        let old_position = player_state.position;
+        let new_position = (old_position + dice_sum) % BOARD_SIZE;
+
+        if new_position < old_position {
+            player_state.cash_balance += GO_SALARY as u64;
+
+            msg!("Player passed GO and collected ${}", GO_SALARY);
+        }
+
+        player_state.position = new_position;
+
+        handle_space_landing(player_state, new_position)?;
+
+        msg!(
+            "Player escaped jail and moved from {} to {}",
+            old_position,
+            new_position
+        );
     }
 
     game.turn_started_at = clock.unix_timestamp;
@@ -515,9 +508,9 @@ pub fn roll_dice_vrf_handler(
         return Err(GameError::AlreadyRolledDice.into());
     }
 
-    if player_state.in_jail {
-        return handle_jail_dice_roll(game, player_state, clock);
-    }
+    // if player_state.in_jail {
+    //     return handle_jail_dice_roll(game, player_state, clock);
+    // }
 
     // Generate secure random dice roll using recent blockhash
     // let dice_roll = dice_roll.unwrap_or_else(|| {

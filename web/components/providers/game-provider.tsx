@@ -33,6 +33,7 @@ import { useRpcContext } from "./rpc-provider";
 import { useWallet } from "@/hooks/use-wallet";
 import { toast } from "sonner";
 import soundUtil from "@/lib/soundUtil";
+import { BuildingType } from "@/lib/sdk/generated";
 
 interface GameContextType {
   gameAddress: Address | null;
@@ -66,6 +67,7 @@ interface GameContextType {
   payJailFine: () => Promise<void>;
   buildHouse: (position: number) => Promise<void>;
   buildHotel: (position: number) => Promise<void>;
+  sellBuilding: (position: number, buildingType: BuildingType) => Promise<void>;
   payMevTax: () => Promise<void>;
   payPriorityFeeTax: () => Promise<void>;
 
@@ -242,13 +244,21 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     // Player can roll dice if they haven't rolled dice yet and are not in jail
     // FIXME Need test all cases
     return (
-      (!currentPlayerState.hasRolledDice &&
-        !currentPlayerState.inJail &&
-        !hasPendingActions) ||
+      (!hasPendingActions && !currentPlayerState.hasRolledDice) ||
       (currentPlayerState.hasRolledDice &&
         currentPlayerState.lastDiceRoll[0] ===
-          currentPlayerState.lastDiceRoll[1])
+          currentPlayerState.lastDiceRoll[1] &&
+        !currentPlayerState.inJail)
     );
+
+    // return (
+    //   (!currentPlayerState.hasRolledDice &&
+    //     !currentPlayerState.inJail &&
+    //     !hasPendingActions) ||
+    //   (currentPlayerState.hasRolledDice &&
+    //     currentPlayerState.lastDiceRoll[0] ===
+    //       currentPlayerState.lastDiceRoll[1])
+    // );
   }, [currentPlayerState, isCurrentPlayerTurn]);
 
   const canPlayerAct = useCallback((): boolean => {
@@ -800,6 +810,50 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         });
       } catch (error) {
         console.error("Error building hotel:", error);
+        throw error;
+      }
+    },
+    [gameAddress, wallet, addGameLog]
+  );
+
+  const sellBuilding = useCallback(
+    async (position: number, buildingType: BuildingType): Promise<void> => {
+      if (!gameAddress || !wallet?.address || !wallet.delegated) {
+        throw new Error("Game address or player signer not available");
+      }
+
+      try {
+        const instruction = await sdk.sellBuildingIx({
+          rpc,
+          gameAddress,
+          player: { address: address(wallet.address) } as TransactionSigner,
+          position,
+          buildingType,
+        });
+
+        const signature = await buildAndSendTransactionWithPrivy(
+          erRpc,
+          [instruction],
+          wallet,
+          [],
+          "confirmed",
+          true
+        );
+
+        console.log("[sellBuilding] tx", signature);
+
+        const propertyData = getTypedSpaceData(position, "property");
+        addGameLog({
+          type: "building",
+          playerId: wallet.address,
+          message: `${formatAddress(
+            wallet.address
+          )} sold a ${buildingType} on ${propertyData?.name || "property"}`,
+          // @ts-expect-error
+          details: { position, buildingType: `sell_${buildingType}` },
+        });
+      } catch (error) {
+        console.error(`Error selling ${buildingType}:`, error);
         throw error;
       }
     },
@@ -1369,6 +1423,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     payJailFine,
     buildHouse,
     buildHotel,
+    sellBuilding,
     payMevTax,
     payPriorityFeeTax,
 
