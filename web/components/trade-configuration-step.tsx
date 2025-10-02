@@ -44,6 +44,24 @@ const getColorGroupName = (colorGroup: any): string => {
   return colorNames[colorGroup] || "Unknown";
 };
 
+// Custom scrollbar styles
+const scrollbarStyles = `
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 20px;
+    border: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.7);
+  }
+`;
+
 export function TradeConfigurationStep({
   selectedPlayer,
   currentPlayer,
@@ -200,20 +218,37 @@ export function TradeConfigurationStep({
         {/* Properties list - simplified */}
         <div>
           {playerProperties.length > 0 && (
-            <div className="space-y-1 max-h-40 overflow-y-auto">
+            <div className="space-y-1 max-h-40 overflow-y-auto custom-scrollbar" 
+                 style={{
+                   scrollbarWidth: 'thin',
+                   scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
+                 }}>
               {playerProperties.map((property) => {
                 // Get full property name from board data
                 const propertyData = boardData.find(b => b.position === property.position);
                 const propertyName = propertyData?.name || `Property ${property.position}`;
                 
-                // Handle color group safely - using type check first
+                // Handle color group for all property types
                 let colorHex = null;
-                if (propertyData && 'type' in propertyData && propertyData.type === 'property') {
-                  // Now we can safely access colorGroup on PropertySpace
-                  const propertySpace = propertyData as any;  // Using any for simplicity
-                  if (propertySpace.colorGroup) {
-                    const colorGroupKey = propertySpace.colorGroup.toLowerCase() as keyof typeof colorMap;
-                    colorHex = colorMap[colorGroupKey] || null;
+                let propertyType = "";
+                
+                if (propertyData && 'type' in propertyData) {
+                  propertyType = propertyData.type;
+                  
+                  if (propertyData.type === 'property') {
+                    // Property with color group
+                    const propertySpace = propertyData as any;
+                    if (propertySpace.colorGroup) {
+                      // Fix: properly handle camelCase colorGroup keys
+                      const colorGroupKey = propertySpace.colorGroup as keyof typeof colorMap;
+                      colorHex = colorMap[colorGroupKey] || null;
+                    }
+                  } else if (propertyData.type === 'railroad') {
+                    // Railroad - use black color
+                    colorHex = '#000000';
+                  } else if (propertyData.type === 'utility') {
+                    // Utility - use a light yellow color
+                    colorHex = '#E8C547';
                   }
                 }
                 
@@ -233,13 +268,23 @@ export function TradeConfigurationStep({
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      {/* Color indicator */}
-                      {colorHex && (
-                        <div 
-                          className="w-3 h-3 rounded-sm flex-shrink-0" 
-                          style={{ backgroundColor: colorHex }}
-                        />
-                      )}
+                      {/* Color indicator with improved visibility */}
+                      <div 
+                        className="w-4 h-4 rounded-sm flex-shrink-0 border border-gray-200 dark:border-gray-700 shadow-sm" 
+                        style={{ 
+                          backgroundColor: colorHex || 'transparent',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        {propertyType === 'railroad' && (
+                          <span className="text-white text-[8px] font-bold">RR</span>
+                        )}
+                        {propertyType === 'utility' && (
+                          <span className="text-[8px] font-bold">⚡</span>
+                        )}
+                      </div>
                       <div className={`w-4 h-4 rounded-sm flex items-center justify-center transition-colors ${isSelected ? 'bg-emerald-500 text-white' : 'border border-gray-400/40'}`}>
                         {isSelected && <span className="text-[8px]">✓</span>}
                       </div>
@@ -258,6 +303,7 @@ export function TradeConfigurationStep({
 
   return (
     <div className="bg-background py-2 flex flex-col">
+      <style>{scrollbarStyles}</style>
       {/* Title with simplified UI */}
       <div className="flex justify-between items-center mb-5 pb-2 ">
         <div className="font-medium text-base text-primary">Trade Offer</div>

@@ -386,7 +386,7 @@ export function TradeDetailsDialog({ isOpen, onClose, trade }: TradeDetailsDialo
                 <Button 
                   onClick={handleCancel} 
                   variant="default"
-                  className="px-8 py-2.5 text-sm font-medium transition-all bg-gray-500 hover:bg-gray-600 text-white shadow-md hover:shadow-lg"
+                  className="px-8 py-2.5 text-sm font-medium transition-all bg-red-500 hover:bg-red-600 text-white shadow-md hover:shadow-lg"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Cancel Trade
