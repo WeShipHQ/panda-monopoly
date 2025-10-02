@@ -162,22 +162,23 @@ export function GameList() {
     return (
       <div className="w-full">
         <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
                 All Games
               </h1>
-              <p className="text-muted-foreground">
+              <p className="text-sm sm:text-base text-muted-foreground">
                 Join a game or spectate ongoing matches
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <CreateGameButton />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="neutral" className="gap-2">
+                  <Button variant="neutral" className="gap-2 w-full sm:w-auto">
                     <Filter className="w-4 h-4" />
-                    {getFilterLabel()}
+                    <span className="hidden xs:inline">{getFilterLabel()}</span>
+                    <span className="xs:hidden">Filter</span>
                     <ChevronDown className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -208,22 +209,23 @@ export function GameList() {
   return (
     <div className="w-full">
       <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
               All Games
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               Join a game or spectate ongoing matches
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <CreateGameButton />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="neutral" className="gap-2">
+                <Button variant="neutral" className="gap-2 w-full sm:w-auto">
                   <Filter className="w-4 h-4" />
-                  {getFilterLabel()}
+                  <span className="hidden xs:inline">{getFilterLabel()}</span>
+                  <span className="xs:hidden">Filter</span>
                   <ChevronDown className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -248,21 +250,23 @@ export function GameList() {
       </div>
 
       {!filteredGames || filteredGames.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-gray-500 text-lg">
+        <div className="text-center py-8 sm:py-12 px-4">
+          <div className="text-gray-500 text-base sm:text-lg">
             {statusFilter === "all"
               ? "No games available"
               : `No ${getFilterLabel().toLowerCase()} games`}
           </div>
-          <p className="text-gray-400 mt-2">
+          <p className="text-gray-400 mt-2 text-sm sm:text-base max-w-md mx-auto">
             {statusFilter === "all"
               ? "Be the first to create a game!"
               : "Try selecting a different filter or create a new game!"}
           </p>
-          <CreateGameButton />
+          <div className="mt-4">
+            <CreateGameButton />
+          </div>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid gap-4 sm:gap-6">
           {filteredGames.map((game) => (
             <GameItem
               key={game.address}
@@ -323,9 +327,14 @@ function CreateGameButton() {
   };
 
   return (
-    <Button onClick={handleCreateGame} loading={loading} className="gap-2">
+    <Button 
+      onClick={handleCreateGame} 
+      loading={loading} 
+      className="gap-2 w-full sm:w-auto"
+    >
       <Plus className="w-4 h-4" />
-      Create Game
+      <span className="hidden xs:inline">Create Game</span>
+      <span className="xs:hidden">Create</span>
     </Button>
   );
 }
