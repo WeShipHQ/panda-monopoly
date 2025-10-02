@@ -33,6 +33,7 @@ import { useRpcContext } from "./rpc-provider";
 import { useWallet } from "@/hooks/use-wallet";
 import { playPropertySound, playSound, SOUND_CONFIG } from "@/lib/soundUtil";
 import { toast } from "sonner";
+import soundUtil from "@/lib/soundUtil";
 
 interface GameContextType {
   gameAddress: Address | null;
@@ -479,6 +480,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
             signature,
           },
         });
+        soundUtil.playPropertySound("buy");
       } catch (error) {
         console.error("Error buying property:", error);
         throw error;
