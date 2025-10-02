@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeftRight, Plus, Eye } from "lucide-react";
-import { formatAddress, generatePlayerIcon } from "@/lib/utils";
+import { formatAddress } from "@/lib/utils";
 
 // @ts-expect-error
 const mockTrades = [
@@ -57,8 +57,6 @@ export function TradeItems() {
         ) : (
           // @ts-expect-error
           mockTrades.map((trade) => {
-            const fromPlayerInfo = generatePlayerIcon(trade.fromPlayer);
-            const toPlayerInfo = generatePlayerIcon(trade.toPlayer);
 
             return (
               <Card key={trade.id} className="relative">
@@ -66,9 +64,12 @@ export function TradeItems() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
                       <Avatar className="w-6 h-6">
-                        <AvatarImage src={fromPlayerInfo.avatar} />
+                        <AvatarImage 
+                          walletAddress={trade.fromPlayer}
+                          alt="From Player"
+                        />
                         <AvatarFallback
-                          style={{ backgroundColor: fromPlayerInfo.color }}
+                          walletAddress={trade.fromPlayer}
                           className="text-white text-xs"
                         >
                           {formatAddress(trade.fromPlayer).slice(0, 2)}
@@ -76,9 +77,12 @@ export function TradeItems() {
                       </Avatar>
                       <ArrowLeftRight className="w-3 h-3 text-gray-400" />
                       <Avatar className="w-6 h-6">
-                        <AvatarImage src={toPlayerInfo.avatar} />
+                        <AvatarImage 
+                          walletAddress={trade.toPlayer}
+                          alt="To Player"
+                        />
                         <AvatarFallback
-                          style={{ backgroundColor: toPlayerInfo.color }}
+                          walletAddress={trade.toPlayer}
                           className="text-white text-xs"
                         >
                           {formatAddress(trade.toPlayer).slice(0, 2)}
