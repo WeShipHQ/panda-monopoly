@@ -11,7 +11,8 @@ import {
   PRIORITY_FEE_TAX_POSITION,
 } from "@/configs/constants";
 import { WalletWithMetadata } from "@privy-io/react-auth";
-import { DiceVisual, DiceController } from "@/components/dices";
+// import { DiceVisual, DiceController } from "@/components/dices";
+import { DicesOnly, useDiceContext } from "./dice";
 
 interface PlayerTokenProps {
   player: PlayerAccount;
@@ -180,6 +181,8 @@ export const PlayerActions = ({
     setIsCardDrawModalOpen,
   } = useGameContext();
 
+  const { canRoll, isRolling, handleRollDice } = useDiceContext();
+
   if (!currentPlayerState || !game) {
     return null;
   }
@@ -204,7 +207,7 @@ export const PlayerActions = ({
 
   return (
     <div className="flex flex-col items-center">
-      <DiceVisual />
+      <DicesOnly />
 
       {!isStarted && (
         <div className="flex items-center gap-2 mt-8 mb-4">
@@ -245,15 +248,14 @@ export const PlayerActions = ({
           <div className="flex items-center gap-2 mt-8 mb-4">
             {!hasPendingActions &&
               (!currentPlayerState.hasRolledDice || isDouble) && (
-                // <Button
-                //   disabled={!canRoll || isRolling}
-                //   onClick={handleRollDice}
-                //   size="sm"
-                //   loading={isRolling}
-                // >
-                //   Roll dice
-                // </Button>
-                <DiceController />
+                <Button
+                  disabled={!canRoll || isRolling}
+                  onClick={handleRollDice}
+                  size="sm"
+                  loading={isRolling}
+                >
+                  Roll dice
+                </Button>
               )}
 
             {currentPlayerState?.inJail && (
@@ -343,7 +345,7 @@ export const PlayerActions = ({
         </>
       )}
       {isStarted && (
-        <Badge variant="neutral">
+        <Badge className={isMyTurn ? "" : "mt-8"} variant="neutral">
           {formatAddress(currentPlayerState.wallet)} is playing
         </Badge>
       )}
