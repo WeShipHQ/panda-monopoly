@@ -25,7 +25,8 @@ export const GameLogs: React.FC<GameLogsProps> = ({
   showIcons = true,
   autoScroll = true,
 }) => {
-  const { gameLogs } = useGameLogs();
+  const { gameAddress } = useGameContext();
+  const { gameLogs } = useGameLogs(gameAddress || undefined);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -150,7 +151,8 @@ export const EnhancedGameLogs: React.FC<EnhancedGameLogsProps> = ({
   title = "Game Events",
   ...props
 }) => {
-  const { gameLogs } = useGameContext();
+  const { gameAddress } = useGameContext();
+  const { gameLogs } = useGameLogs(gameAddress || undefined);
 
   const filteredLogs = filterTypes
     ? gameLogs.filter((log) => filterTypes.includes(log.type))

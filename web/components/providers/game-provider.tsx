@@ -119,7 +119,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     "chance" | "community-chest" | null
   >(null);
 
-  const { gameLogs, addGameLog } = useGameLogs();
+  const { gameLogs, addGameLog } = useGameLogs(gameAddress || undefined);
 
   // events
   const [cardDrawEvents, setCardDrawEvents] = useState<GameEvent[]>([]);
