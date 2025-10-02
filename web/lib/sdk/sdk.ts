@@ -46,6 +46,7 @@ import {
   getCancelTradeInstruction,
   fetchTradeState,
   TradeState,
+  getRollDiceVrfHandlerInstruction,
 } from "./generated";
 import {
   CreateGameIxs,
@@ -82,6 +83,7 @@ import {
   getGamePDA,
   getPlatformPDA,
   getPlayerStatePDA,
+  getProgramIdentityPDA,
   getPropertyStatePDA,
   getTradeStatePDA,
 } from "./pda";
@@ -108,12 +110,18 @@ import {
   getProgramDerivedAddress,
   WritableAccount,
   AccountRole,
+  address,
 } from "@solana/kit";
 import {
   CHANCE_CARD_DRAWN_EVENT_DISCRIMINATOR,
   COMMUNITY_CHEST_CARD_DRAWN_EVENT_DISCRIMINATOR,
 } from "./utils";
-import { DELEGATION_PROGRAM_ID, PLATFORM_ID } from "@/configs/constants";
+import {
+  DEFAULT_EPHEMERAL_QUEUE,
+  DELEGATION_PROGRAM_ID,
+  PLATFORM_ID,
+  VRF_PROGRAM_IDENTITY,
+} from "@/configs/constants";
 import { GameAccount, mapGameStateToAccount } from "@/types/schema";
 
 class MonopolyGameSDK {
@@ -336,6 +344,28 @@ class MonopolyGameSDK {
       game: params.gameAddress,
       player: params.player,
       // oracleQueue: DEFAULT_EPHEMERAL_QUEUE,
+      diceRoll: params.diceRoll
+        ? some(params.diceRoll as unknown as ReadonlyUint8Array)
+        : none(),
+    });
+  }
+
+  async rollDiceVrfIx(params: RollDiceParams): Promise<Instruction> {
+    const [playerStatePda] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.player.address
+    );
+
+    const [programIdentityPda] = await getProgramIdentityPDA();
+    console.log("programIdentityPda", programIdentityPda);
+
+    return await getRollDiceVrfHandlerInstruction({
+      game: params.gameAddress,
+      playerState: playerStatePda,
+      player: params.player,
+      oracleQueue: DEFAULT_EPHEMERAL_QUEUE,
+      programIdentity: programIdentityPda,
+      seed: Math.floor(Math.random() * 6) + 1,
       diceRoll: params.diceRoll
         ? some(params.diceRoll as unknown as ReadonlyUint8Array)
         : none(),

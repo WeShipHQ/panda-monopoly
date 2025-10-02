@@ -23,204 +23,204 @@ const diceRotations = {
   6: [-0.16, 0.6, 0.18],
 };
 
-export const Dice: React.FC<DiceProps> = () => {
-  const [dice1, setDice1] = useState(1);
-  const [dice2, setDice2] = useState(1);
-  const [isRolling, setIsRolling] = useState(false);
-  const [isThrowAnimation, setIsThrowAnimation] = useState(false);
+// export const Dice: React.FC<DiceProps> = () => {
+//   const [dice1, setDice1] = useState(1);
+//   const [dice2, setDice2] = useState(1);
+//   const [isRolling, setIsRolling] = useState(false);
+//   const [isThrowAnimation, setIsThrowAnimation] = useState(false);
 
-  // Refs to control animation
-  const animationFrameRef = useRef<number | null>(null);
-  const isWaitingForResult = useRef(false);
-  const dice1Ref = useRef<HTMLDivElement>(null);
-  const dice2Ref = useRef<HTMLDivElement>(null);
+//   // Refs to control animation
+//   const animationFrameRef = useRef<number | null>(null);
+//   const isWaitingForResult = useRef(false);
+//   const dice1Ref = useRef<HTMLDivElement>(null);
+//   const dice2Ref = useRef<HTMLDivElement>(null);
 
-  const { currentPlayerState, canRollDice, rollDice, demoDices } =
-    useGameContext();
+//   const { currentPlayerState, canRollDice, rollDice, demoDices } =
+//     useGameContext();
 
-  const canRoll = canRollDice();
-  const hasPendingActions =
-    !!currentPlayerState &&
-    (currentPlayerState.needsPropertyAction ||
-      currentPlayerState.needsChanceCard ||
-      currentPlayerState.needsCommunityChestCard ||
-      currentPlayerState.needsBankruptcyCheck ||
-      currentPlayerState.needsSpecialSpaceAction);
+//   const canRoll = canRollDice();
+//   const hasPendingActions =
+//     !!currentPlayerState &&
+//     (currentPlayerState.needsPropertyAction ||
+//       currentPlayerState.needsChanceCard ||
+//       currentPlayerState.needsCommunityChestCard ||
+//       currentPlayerState.needsBankruptcyCheck ||
+//       currentPlayerState.needsSpecialSpaceAction);
 
-  useEffect(() => {
-    console.log("Dice roll data:", currentPlayerState?.lastDiceRoll);
-    if (
-      isWaitingForResult.current &&
-      currentPlayerState?.lastDiceRoll &&
-      currentPlayerState.lastDiceRoll.length >= 2
-    ) {
-      // Extract dice values from the ReadonlyUint8Array
-      const dice1Value = currentPlayerState.lastDiceRoll[0];
-      const dice2Value = currentPlayerState.lastDiceRoll[1];
+//   useEffect(() => {
+//     console.log("Dice roll data:", currentPlayerState?.lastDiceRoll);
+//     if (
+//       isWaitingForResult.current &&
+//       currentPlayerState?.lastDiceRoll &&
+//       currentPlayerState.lastDiceRoll.length >= 2
+//     ) {
+//       // Extract dice values from the ReadonlyUint8Array
+//       const dice1Value = currentPlayerState.lastDiceRoll[0];
+//       const dice2Value = currentPlayerState.lastDiceRoll[1];
 
-      console.log("Received dice values:", dice1Value, dice2Value);
+//       console.log("Received dice values:", dice1Value, dice2Value);
 
-      // Validate dice values are in valid range (1-6)
-      if (
-        dice1Value >= 1 &&
-        dice1Value <= 6 &&
-        dice2Value >= 1 &&
-        dice2Value <= 6
-      ) {
-        // Stop rolling animation
-        setIsRolling(false);
+//       // Validate dice values are in valid range (1-6)
+//       if (
+//         dice1Value >= 1 &&
+//         dice1Value <= 6 &&
+//         dice2Value >= 1 &&
+//         dice2Value <= 6
+//       ) {
+//         // Stop rolling animation
+//         setIsRolling(false);
 
-        // Set final dice values
-        setDice1(dice1Value);
-        setDice2(dice2Value);
+//         // Set final dice values
+//         setDice1(dice1Value);
+//         setDice2(dice2Value);
 
-        // Start throw animation
-        setIsThrowAnimation(true);
+//         // Start throw animation
+//         setIsThrowAnimation(true);
 
-        // Set final rotations
-        if (dice1Ref.current) {
-          const [x, y, z] =
-            diceRotations[dice1Value as keyof typeof diceRotations];
-          dice1Ref.current.style.transform = `rotate3d(${x}, ${y}, ${z}, 180deg)`;
-        }
+//         // Set final rotations
+//         if (dice1Ref.current) {
+//           const [x, y, z] =
+//             diceRotations[dice1Value as keyof typeof diceRotations];
+//           dice1Ref.current.style.transform = `rotate3d(${x}, ${y}, ${z}, 180deg)`;
+//         }
 
-        if (dice2Ref.current) {
-          const [x, y, z] =
-            diceRotations[dice2Value as keyof typeof diceRotations];
-          dice2Ref.current.style.transform = `rotate3d(${x}, ${y}, ${z}, 180deg)`;
-        }
+//         if (dice2Ref.current) {
+//           const [x, y, z] =
+//             diceRotations[dice2Value as keyof typeof diceRotations];
+//           dice2Ref.current.style.transform = `rotate3d(${x}, ${y}, ${z}, 180deg)`;
+//         }
 
-        stopDiceRollSequence();
+//         stopDiceRollSequence();
 
-        // Reset states after animation
-        setTimeout(() => {
-          setIsThrowAnimation(false);
-          isWaitingForResult.current = false;
-        }, 300);
-      }
-    }
-  }, [currentPlayerState?.lastDiceRoll]);
+//         // Reset states after animation
+//         setTimeout(() => {
+//           setIsThrowAnimation(false);
+//           isWaitingForResult.current = false;
+//         }, 300);
+//       }
+//     }
+//   }, [currentPlayerState?.lastDiceRoll]);
 
-  // Cleanup animation on unmount
-  useEffect(() => {
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, []);
+//   // Cleanup animation on unmount
+//   useEffect(() => {
+//     return () => {
+//       if (animationFrameRef.current) {
+//         cancelAnimationFrame(animationFrameRef.current);
+//       }
+//     };
+//   }, []);
 
-  useEffect(() => {
-    if (
-      !isRolling &&
-      currentPlayerState?.lastDiceRoll &&
-      currentPlayerState.lastDiceRoll.length >= 2
-    ) {
-      const dices = Array.from(currentPlayerState.lastDiceRoll);
-      setDice1(dices[0]);
-      setDice2(dices[1]);
-    }
-  }, [currentPlayerState?.lastDiceRoll, isRolling]);
+//   useEffect(() => {
+//     if (
+//       !isRolling &&
+//       currentPlayerState?.lastDiceRoll &&
+//       currentPlayerState.lastDiceRoll.length >= 2
+//     ) {
+//       const dices = Array.from(currentPlayerState.lastDiceRoll);
+//       setDice1(dices[0]);
+//       setDice2(dices[1]);
+//     }
+//   }, [currentPlayerState?.lastDiceRoll, isRolling]);
 
-  const handleRollDice = async () => {
-    if (!canRoll || isRolling) return;
+//   const handleRollDice = async () => {
+//     if (!canRoll || isRolling) return;
 
-    playDiceRollSequence();
-    setIsRolling(true);
-    // Play dice roll sound sequence
-    setIsThrowAnimation(false);
-    isWaitingForResult.current = true;
+//     playDiceRollSequence();
+//     setIsRolling(true);
+//     // Play dice roll sound sequence
+//     setIsThrowAnimation(false);
+//     isWaitingForResult.current = true;
 
-    // Reset dice rotations and start rolling animation
-    if (dice1Ref.current) {
-      dice1Ref.current.style.transform = "rotate3d(0, 0.9, 0.9, 90deg)";
-    }
-    if (dice2Ref.current) {
-      dice2Ref.current.style.transform = "rotate3d(0, 0.9, 0.9, 90deg)";
-    }
+//     // Reset dice rotations and start rolling animation
+//     if (dice1Ref.current) {
+//       dice1Ref.current.style.transform = "rotate3d(0, 0.9, 0.9, 90deg)";
+//     }
+//     if (dice2Ref.current) {
+//       dice2Ref.current.style.transform = "rotate3d(0, 0.9, 0.9, 90deg)";
+//     }
 
-    // Call Solana program to roll dice (this happens in parallel with animation)
-    try {
-      await rollDice(demoDices ? demoDices : undefined);
-    } catch (error) {
-      console.error("Error rolling dice:", error);
-      // Reset state on error
-      stopDiceRollSequence();
-      setIsRolling(false);
-      setIsThrowAnimation(false);
-      isWaitingForResult.current = false;
-      return;
-    }
-  };
+//     // Call Solana program to roll dice (this happens in parallel with animation)
+//     try {
+//       await rollDice(demoDices ? demoDices : undefined);
+//     } catch (error) {
+//       console.error("Error rolling dice:", error);
+//       // Reset state on error
+//       stopDiceRollSequence();
+//       setIsRolling(false);
+//       setIsThrowAnimation(false);
+//       isWaitingForResult.current = false;
+//       return;
+//     }
+//   };
 
-  const getDiceFace = (value: number) => {
-    // This function is no longer needed as we're using CSS for dots
-    return null;
-  };
+//   const getDiceFace = (value: number) => {
+//     // This function is no longer needed as we're using CSS for dots
+//     return null;
+//   };
 
-  const DiceFace = ({
-    value,
-    className,
-  }: {
-    value: number;
-    className: string;
-  }) => (
-    <div className={`dice-face ${className}`}>
-      {/* Dots are now handled by CSS */}
-    </div>
-  );
+//   const DiceFace = ({
+//     value,
+//     className,
+//   }: {
+//     value: number;
+//     className: string;
+//   }) => (
+//     <div className={`dice-face ${className}`}>
+//       {/* Dots are now handled by CSS */}
+//     </div>
+//   );
 
-  if (hasPendingActions) return null;
+//   if (hasPendingActions) return null;
 
-  return (
-    <div className="relative">
-      <div className="absolute -top-[80px] left-1/2 translate-x-[-50%] flex gap-8">
-        {" "}
-        {/* Increased gap from gap-4 to gap-8 for more spacing */}
-        {/* Dice 1 - 3D */}
-        <div className="dice-wrapper">
-          <div
-            ref={dice1Ref}
-            className={`dice-3d ${isRolling ? "dice-rolling" : ""} ${
-              isThrowAnimation ? "dice-throw" : ""
-            }`}
-          >
-            <DiceFace value={dice1} className="dice-front" />
-            <DiceFace value={7 - dice1} className="dice-back" />
-            <DiceFace value={((dice1 + 1) % 6) + 1} className="dice-right" />
-            <DiceFace value={((dice1 + 2) % 6) + 1} className="dice-left" />
-            <DiceFace value={((dice1 + 3) % 6) + 1} className="dice-top" />
-            <DiceFace value={((dice1 + 4) % 6) + 1} className="dice-bottom" />
-          </div>
-        </div>
-        {/* Dice 2 - 3D with different animation */}
-        <div className="dice-wrapper">
-          <div
-            ref={dice2Ref}
-            className={`dice-3d dice-2 ${isRolling ? "dice-rolling" : ""} ${
-              isThrowAnimation ? "dice-throw" : ""
-            }`}
-          >
-            <DiceFace value={dice2} className="dice-front" />
-            <DiceFace value={7 - dice2} className="dice-back" />
-            <DiceFace value={((dice2 + 1) % 6) + 1} className="dice-right" />
-            <DiceFace value={((dice2 + 2) % 6) + 1} className="dice-left" />
-            <DiceFace value={((dice2 + 3) % 6) + 1} className="dice-top" />
-            <DiceFace value={((dice2 + 4) % 6) + 1} className="dice-bottom" />
-          </div>
-        </div>
-      </div>
-      <Button
-        disabled={!canRoll || isRolling}
-        onClick={handleRollDice}
-        size="sm"
-        // loading={isRolling}
-      >
-        Roll dice
-      </Button>
-    </div>
-  );
-};
+//   return (
+//     <div className="relative">
+//       <div className="absolute -top-[80px] left-1/2 translate-x-[-50%] flex gap-8">
+//         {" "}
+//         {/* Increased gap from gap-4 to gap-8 for more spacing */}
+//         {/* Dice 1 - 3D */}
+//         <div className="dice-wrapper">
+//           <div
+//             ref={dice1Ref}
+//             className={`dice-3d ${isRolling ? "dice-rolling" : ""} ${
+//               isThrowAnimation ? "dice-throw" : ""
+//             }`}
+//           >
+//             <DiceFace value={dice1} className="dice-front" />
+//             <DiceFace value={7 - dice1} className="dice-back" />
+//             <DiceFace value={((dice1 + 1) % 6) + 1} className="dice-right" />
+//             <DiceFace value={((dice1 + 2) % 6) + 1} className="dice-left" />
+//             <DiceFace value={((dice1 + 3) % 6) + 1} className="dice-top" />
+//             <DiceFace value={((dice1 + 4) % 6) + 1} className="dice-bottom" />
+//           </div>
+//         </div>
+//         {/* Dice 2 - 3D with different animation */}
+//         <div className="dice-wrapper">
+//           <div
+//             ref={dice2Ref}
+//             className={`dice-3d dice-2 ${isRolling ? "dice-rolling" : ""} ${
+//               isThrowAnimation ? "dice-throw" : ""
+//             }`}
+//           >
+//             <DiceFace value={dice2} className="dice-front" />
+//             <DiceFace value={7 - dice2} className="dice-back" />
+//             <DiceFace value={((dice2 + 1) % 6) + 1} className="dice-right" />
+//             <DiceFace value={((dice2 + 2) % 6) + 1} className="dice-left" />
+//             <DiceFace value={((dice2 + 3) % 6) + 1} className="dice-top" />
+//             <DiceFace value={((dice2 + 4) % 6) + 1} className="dice-bottom" />
+//           </div>
+//         </div>
+//       </div>
+//       <Button
+//         disabled={!canRoll || isRolling}
+//         onClick={handleRollDice}
+//         size="sm"
+//         // loading={isRolling}
+//       >
+//         Roll dice
+//       </Button>
+//     </div>
+//   );
+// };
 
 interface DiceContextType {
   dice1: number;
@@ -255,10 +255,10 @@ export const DiceProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const handleRollDice = async () => {
     if (!canRoll || isRolling) return;
-
+    console.log("DICE start rolling");
     playDiceRollSequence();
     setIsRolling(true);
-    setIsThrowAnimation(false);
+    setIsThrowAnimation(true);
     isWaitingForResult.current = true;
 
     // Reset dice rotations and start rolling animation
@@ -271,7 +271,9 @@ export const DiceProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Call Solana program to roll dice
     try {
+      console.log("DICE call smart contract");
       await rollDice(demoDices ? demoDices : undefined);
+      await new Promise((resolve) => setTimeout(resolve, 6000));
     } catch (error) {
       console.error("Error rolling dice:", error);
       stopDiceRollSequence();
@@ -290,8 +292,7 @@ export const DiceProvider: React.FC<{ children: React.ReactNode }> = ({
     ) {
       const dice1Value = currentPlayerState.lastDiceRoll[0];
       const dice2Value = currentPlayerState.lastDiceRoll[1];
-
-      console.log("Received dice values:", dice1Value, dice2Value);
+      console.log("DICE received dice values", dice1Value, dice2Value);
 
       if (
         dice1Value >= 1 &&
@@ -308,7 +309,7 @@ export const DiceProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // Start throw animation
         setIsThrowAnimation(true);
-
+        console.log("DICE startthrow animation");
         // Set final rotations
         if (dice1Ref.current) {
           const [x, y, z] =
@@ -323,10 +324,12 @@ export const DiceProvider: React.FC<{ children: React.ReactNode }> = ({
         }
 
         stopDiceRollSequence();
+        console.log("DICE stop sound");
 
         // Reset states after animation
         setTimeout(() => {
           setIsThrowAnimation(false);
+          console.log("DICE stop throw animation");
           isWaitingForResult.current = false;
         }, 1000);
       }
@@ -349,6 +352,7 @@ export const DiceProvider: React.FC<{ children: React.ReactNode }> = ({
       currentPlayerState.lastDiceRoll.length >= 2
     ) {
       const dices = Array.from(currentPlayerState.lastDiceRoll);
+      console.log("DICE set dice values dont know why", dices);
       setDice1(dices[0]);
       setDice2(dices[1]);
     }

@@ -186,6 +186,7 @@ pub struct PropertyState {
     pub house_cost: u16,             // 2 bytes - cost to build house
     pub mortgage_value: u16,         // 2 bytes - mortgage value
     pub last_rent_paid: i64,         // 8 bytes - last rent payment time
+    pub init: bool,                  // 1 byte - init status
 }
 
 impl PropertyState {}

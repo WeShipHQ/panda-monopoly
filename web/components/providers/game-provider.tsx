@@ -3,7 +3,13 @@
 import { useGameState } from "@/hooks/useGameState";
 import { sdk } from "@/lib/sdk/sdk";
 import { buildAndSendTransactionWithPrivy } from "@/lib/tx";
-import { GameAccount, PlayerAccount, PropertyAccount, TradeData, TradeOffer } from "@/types/schema";
+import {
+  GameAccount,
+  PlayerAccount,
+  PropertyAccount,
+  TradeData,
+  TradeOffer,
+} from "@/types/schema";
 import { Address, address, TransactionSigner } from "@solana/kit";
 import React, {
   createContext,
@@ -15,13 +21,18 @@ import React, {
   useCallback,
 } from "react";
 import { GameEvent } from "@/lib/sdk/types";
-import { getTypedSpaceData } from "@/lib/board-utils";
+import {
+  getBoardSpaceData,
+  getTypedSpaceData,
+  calculateRentForProperty,
+} from "@/lib/board-utils";
 import { GameLogEntry } from "@/types/space-types";
 import { formatAddress } from "@/lib/utils";
 import { useGameLogs } from "@/hooks/useGameLogs";
 import { useRpcContext } from "./rpc-provider";
 import { useWallet } from "@/hooks/use-wallet";
 import { playPropertySound, playSound, SOUND_CONFIG } from "@/lib/soundUtil";
+import { toast } from "sonner";
 
 interface GameContextType {
   gameAddress: Address | null;
@@ -59,7 +70,11 @@ interface GameContextType {
   payPriorityFeeTax: () => Promise<void>;
 
   // Trade actions
-  createTrade: (targetPlayer: string, initiatorOffer: TradeOffer, targetOffer: TradeOffer) => Promise<void>;
+  createTrade: (
+    targetPlayer: string,
+    initiatorOffer: TradeOffer,
+    targetOffer: TradeOffer
+  ) => Promise<void>;
   acceptTrade: (tradeId: string) => Promise<void>;
   rejectTrade: (tradeId: string) => Promise<void>;
   cancelTrade: (tradeId: string) => Promise<void>;
@@ -135,6 +150,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   // Trade UI state
   const [isTradeDialogOpen, setIsTradeDialogOpen] = useState(false);
   const [activeTrades, setActiveTrades] = useState<TradeData[]>([]);
+
+  // Add these new state variables to track if modals have been shown
+  const [hasShownChanceModal, setHasShownChanceModal] = useState(false);
+  const [hasShownCommunityChestModal, setHasShownCommunityChestModal] =
+    useState(false);
 
   const { gameLogs, addGameLog } = useGameLogs();
 
@@ -375,7 +395,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         const instruction = await sdk.rollDiceIx({
           gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
-          diceRoll: diceRoll || null,
+          diceRoll: diceRoll as any,
         });
 
         const signature = await buildAndSendTransactionWithPrivy(
@@ -875,145 +895,176 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   }, [gameAddress, wallet, addGameLog]);
 
   // Trade action handlers
-  const createTrade = useCallback(async (
-    targetPlayer: string,
-    initiatorOffer: TradeOffer,
-    targetOffer: TradeOffer
-  ): Promise<void> => {
-    if (!gameAddress || !wallet?.address || !wallet.delegated) {
-      console.error("Missing required data for trade creation");
-      return;
+  const createTrade = useCallback(
+    async (
+      targetPlayer: string,
+      initiatorOffer: TradeOffer,
+      targetOffer: TradeOffer
+    ): Promise<void> => {
+      if (!gameAddress || !wallet?.address || !wallet.delegated) {
+        console.error("Missing required data for trade creation");
+        return;
+      }
+
+      try {
+        // For now, just simulate trade creation since we're not implementing actual SDK calls
+        const newTrade: TradeData = {
+          id: `trade_${Date.now()}`,
+          gameAddress: gameAddress,
+          initiator: wallet.address,
+          target: targetPlayer,
+          initiatorOffer,
+          targetOffer,
+          status: 0, // Pending
+          type: 0, // Will be determined based on offers
+          createdAt: Date.now(),
+          expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+        };
+
+        setActiveTrades((prev) => [...prev, newTrade]);
+
+        addGameLog({
+          type: "trade",
+          playerId: wallet.address,
+          message: `${formatAddress(
+            wallet.address
+          )} created a trade with ${formatAddress(targetPlayer)}`,
+          details: {
+            tradeId: newTrade.id,
+            action: "created",
+          },
+        });
+
+        console.log("Trade created:", newTrade);
+      } catch (error) {
+        console.error("Error creating trade:", error);
+        throw error;
+      }
+    },
+    [gameAddress, wallet, addGameLog]
+  );
+
+  const acceptTrade = useCallback(
+    async (tradeId: string): Promise<void> => {
+      if (!wallet?.address || !wallet.delegated) {
+        console.error("Missing required data for trade acceptance");
+        return;
+      }
+
+      try {
+        setActiveTrades((prev) =>
+          prev.map((trade) =>
+            trade.id === tradeId
+              ? { ...trade, status: 1 } // Accepted
+              : trade
+          )
+        );
+
+        addGameLog({
+          type: "trade",
+          playerId: wallet.address,
+          message: `${formatAddress(wallet.address)} accepted a trade`,
+          details: {
+            tradeId,
+            action: "accepted",
+          },
+        });
+
+        console.log("Trade accepted:", tradeId);
+      } catch (error) {
+        console.error("Error accepting trade:", error);
+        throw error;
+      }
+    },
+    [wallet, addGameLog]
+  );
+
+  const rejectTrade = useCallback(
+    async (tradeId: string): Promise<void> => {
+      if (!wallet?.address || !wallet.delegated) {
+        console.error("Missing required data for trade rejection");
+        return;
+      }
+
+      try {
+        setActiveTrades((prev) =>
+          prev.map((trade) =>
+            trade.id === tradeId
+              ? { ...trade, status: 2 } // Rejected
+              : trade
+          )
+        );
+
+        addGameLog({
+          type: "trade",
+          playerId: wallet.address,
+          message: `${formatAddress(wallet.address)} rejected a trade`,
+          details: {
+            tradeId,
+            action: "rejected",
+          },
+        });
+
+        console.log("Trade rejected:", tradeId);
+      } catch (error) {
+        console.error("Error rejecting trade:", error);
+        throw error;
+      }
+    },
+    [wallet, addGameLog]
+  );
+
+  const cancelTrade = useCallback(
+    async (tradeId: string): Promise<void> => {
+      if (!wallet?.address || !wallet.delegated) {
+        console.error("Missing required data for trade cancellation");
+        return;
+      }
+
+      try {
+        setActiveTrades((prev) =>
+          prev.map((trade) =>
+            trade.id === tradeId
+              ? { ...trade, status: 3 } // Cancelled
+              : trade
+          )
+        );
+
+        addGameLog({
+          type: "trade",
+          playerId: wallet.address,
+          message: `${formatAddress(
+            wallet.address
+          )} cancelled their trade offer`,
+          details: {
+            tradeId,
+            action: "cancelled",
+          },
+        });
+
+        console.log("Trade cancelled:", tradeId);
+      } catch (error) {
+        console.error("Error cancelling trade:", error);
+        throw error;
+      }
+    },
+    [gameAddress, wallet, addGameLog]
+  );
+
+  // Reset the modal shown flags when player state changes or when cards are no longer needed
+  useEffect(() => {
+    if (currentPlayerState) {
+      if (!currentPlayerState.needsChanceCard) {
+        setHasShownChanceModal(false);
+      }
+      if (!currentPlayerState.needsCommunityChestCard) {
+        setHasShownCommunityChestModal(false);
+      }
     }
-
-    try {
-      // For now, just simulate trade creation since we're not implementing actual SDK calls
-      const newTrade: TradeData = {
-        id: `trade_${Date.now()}`,
-        gameAddress: gameAddress,
-        initiator: wallet.address,
-        target: targetPlayer,
-        initiatorOffer,
-        targetOffer,
-        status: 0, // Pending
-        type: 0, // Will be determined based on offers
-        createdAt: Date.now(),
-        expiresAt: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
-      };
-
-      setActiveTrades(prev => [...prev, newTrade]);
-
-      addGameLog({
-        type: "trade",
-        playerId: wallet.address,
-        message: `${formatAddress(wallet.address)} created a trade with ${formatAddress(targetPlayer)}`,
-        details: {
-          tradeId: newTrade.id,
-          action: "created",
-        },
-      });
-
-      console.log("Trade created:", newTrade);
-    } catch (error) {
-      console.error("Error creating trade:", error);
-      throw error;
-    }
-  }, [gameAddress, wallet, addGameLog]);
-
-  const acceptTrade = useCallback(async (tradeId: string): Promise<void> => {
-    if (!wallet?.address || !wallet.delegated) {
-      console.error("Missing required data for trade acceptance");
-      return;
-    }
-
-    try {
-      setActiveTrades(prev => 
-        prev.map(trade => 
-          trade.id === tradeId 
-            ? { ...trade, status: 1 } // Accepted
-            : trade
-        )
-      );
-
-      addGameLog({
-        type: "trade",
-        playerId: wallet.address,
-        message: `${formatAddress(wallet.address)} accepted a trade`,
-        details: {
-          tradeId,
-          action: "accepted",
-        },
-      });
-
-      console.log("Trade accepted:", tradeId);
-    } catch (error) {
-      console.error("Error accepting trade:", error);
-      throw error;
-    }
-  }, [wallet, addGameLog]);
-
-  const rejectTrade = useCallback(async (tradeId: string): Promise<void> => {
-    if (!wallet?.address || !wallet.delegated) {
-      console.error("Missing required data for trade rejection");
-      return;
-    }
-
-    try {
-      setActiveTrades(prev => 
-        prev.map(trade => 
-          trade.id === tradeId 
-            ? { ...trade, status: 2 } // Rejected
-            : trade
-        )
-      );
-
-      addGameLog({
-        type: "trade",
-        playerId: wallet.address,
-        message: `${formatAddress(wallet.address)} rejected a trade`,
-        details: {
-          tradeId,
-          action: "rejected",
-        },
-      });
-
-      console.log("Trade rejected:", tradeId);
-    } catch (error) {
-      console.error("Error rejecting trade:", error);
-      throw error;
-    }
-  }, [wallet, addGameLog]);
-
-  const cancelTrade = useCallback(async (tradeId: string): Promise<void> => {
-    if (!wallet?.address || !wallet.delegated) {
-      console.error("Missing required data for trade cancellation");
-      return;
-    }
-
-    try {
-      setActiveTrades(prev => 
-        prev.map(trade => 
-          trade.id === tradeId 
-            ? { ...trade, status: 3 } // Cancelled
-            : trade
-        )
-      );
-
-      addGameLog({
-        type: "trade",
-        playerId: wallet.address,
-        message: `${formatAddress(wallet.address)} cancelled their trade offer`,
-        details: {
-          tradeId,
-          action: "cancelled",
-        },
-      });
-
-      console.log("Trade cancelled:", tradeId);
-    } catch (error) {
-      console.error("Error cancelling trade:", error);
-      throw error;
-    }
-  }, [gameAddress, wallet, addGameLog]);
+  }, [
+    currentPlayerState?.needsChanceCard,
+    currentPlayerState?.needsCommunityChestCard,
+  ]);
 
   useEffect(() => {
     async function handleAction(player: PlayerAccount) {
@@ -1040,12 +1091,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       // Priority 3: Handle dice rolling (if player hasn't rolled yet)
-      if (!player.hasRolledDice && !player.inJail) {
-        console.log("Player needs to roll dice");
-        // Don't auto-roll - let player click the dice button
-        // This is handled by the ActionPanel component
-        return;
-      }
+      // if (!player.hasRolledDice && !player.inJail) {
+      //   console.log("Player needs to roll dice");
+      //   // Don't auto-roll - let player click the dice button
+      //   // This is handled by the ActionPanel component
+      //   return;
+      // }
 
       // Priority 4: Handle property actions (after landing on a property)
       if (player.needsPropertyAction && player.pendingPropertyPosition) {
@@ -1068,6 +1119,35 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
           console.log("Auto-paying rent to property owner");
           try {
             await payRent(pendingPropertyPosition, property.owner);
+
+            const ownerPlayer = getPlayerByAddress(property.owner as Address);
+            if (ownerPlayer) {
+              const rentAmount = calculateRentForProperty(
+                property,
+                ownerPlayer,
+                player.lastDiceRoll as [number, number],
+                properties
+              );
+
+              const propertyData = getBoardSpaceData(property.position);
+              const propertyName = propertyData?.name || "Property";
+
+              toast.info(
+                `${formatAddress(
+                  player.wallet
+                )} paid $${rentAmount} rent to ${formatAddress(
+                  property.owner
+                )} for ${propertyName}`
+              );
+            }
+            // else {
+            //   const propertyData = getBoardSpaceData(property.position);
+            //   toast.info(
+            //     `${formatAddress(player.wallet)} paid rent to ${formatAddress(
+            //       property.owner
+            //     )} for ${propertyData?.name || "Property"}`
+            //   );
+            // }
           } catch (error) {
             console.error("Error auto-paying rent:", error);
           }
@@ -1170,7 +1250,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       // }
 
       // Priority 6: Handle card drawing
-      if (player.needsChanceCard) {
+      if (
+        player.needsChanceCard &&
+        !isCardDrawModalOpen &&
+        !hasShownChanceModal
+      ) {
+        setHasShownChanceModal(true);
         setTimeout(() => {
           console.log("Player needs to draw Chance card");
           setCardDrawType("chance");
@@ -1179,9 +1264,14 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         return;
       }
 
-      if (player.needsCommunityChestCard) {
-        console.log("Player needs to draw Community Chest card");
+      if (
+        player.needsCommunityChestCard &&
+        !isCardDrawModalOpen &&
+        !hasShownCommunityChestModal
+      ) {
+        setHasShownCommunityChestModal(true);
         setTimeout(() => {
+          console.log("Player needs to draw Community Chest card");
           setCardDrawType("community-chest");
           setIsCardDrawModalOpen(true);
         }, 300);
@@ -1231,6 +1321,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
 
     if (gameAddress && currentPlayerState && signer && isCurrentPlayerTurn()) {
+      console.log("-------------------------------");
       handleAction(currentPlayerState);
     }
   }, [
@@ -1241,6 +1332,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     payRent,
     isCurrentPlayerTurn,
     addGameLog,
+    isCardDrawModalOpen,
+    hasShownChanceModal,
+    hasShownCommunityChestModal,
   ]);
 
   // events

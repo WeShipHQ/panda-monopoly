@@ -1,13 +1,14 @@
+import { ColorGroup } from "@/configs/board-data";
 import type {
   GameState,
   PlayerState,
   PropertyState,
   GameStatus,
-  ColorGroup,
   PropertyType,
   TradeStatus,
   TradeType,
 } from "@/lib/sdk/generated";
+import { ColorGroup as GeneratedColorGroup } from "@/lib/sdk/generated";
 import {
   isSome,
   type Address,
@@ -197,6 +198,37 @@ export function mapPlayerStateToAccount(
   };
 }
 
+function mapGeneratedColorGroupToFrontend(
+  colorGroup: GeneratedColorGroup
+): ColorGroup {
+  switch (colorGroup) {
+    case GeneratedColorGroup.Brown:
+      return "brown";
+    case GeneratedColorGroup.LightBlue:
+      return "lightBlue";
+    case GeneratedColorGroup.Pink:
+      return "pink";
+    case GeneratedColorGroup.Orange:
+      return "orange";
+    case GeneratedColorGroup.Red:
+      return "red";
+    case GeneratedColorGroup.Yellow:
+      return "yellow";
+    case GeneratedColorGroup.Green:
+      return "green";
+    case GeneratedColorGroup.DarkBlue:
+      return "darkBlue";
+    // Note: Railroad, Utility, and Special don't have direct mappings in frontend ColorGroup
+    // You may need to handle these cases based on your business logic
+    case GeneratedColorGroup.Railroad:
+    case GeneratedColorGroup.Utility:
+    case GeneratedColorGroup.Special:
+    default:
+      // Fallback to brown for unmapped cases
+      return "brown";
+  }
+}
+
 export function mapPropertyStateToAccount(
   propertyState: PropertyState,
   address: Address
@@ -208,7 +240,7 @@ export function mapPropertyStateToAccount(
       ? addressToString(optionToNullable(propertyState.owner)!)
       : null,
     price: propertyState.price,
-    colorGroup: propertyState.colorGroup,
+    colorGroup: mapGeneratedColorGroupToFrontend(propertyState.colorGroup),
     propertyType: propertyState.propertyType,
     houses: propertyState.houses,
     hasHotel: propertyState.hasHotel,

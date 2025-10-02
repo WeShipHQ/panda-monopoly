@@ -33,6 +33,7 @@ export * from './payRent';
 export * from './rejectTrade';
 export * from './resetGameHandler';
 export * from './rollDice';
+export * from './rollDiceVrfHandler';
 export * from './sellBuilding';
 export * from './startGame';
 export * from './testDiceHandler';
