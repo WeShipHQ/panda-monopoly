@@ -24,10 +24,11 @@ import {
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
+  type ReadonlyAccount,
   type ReadonlySignerAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
-  type WritableSignerAccount,
+  type WritableAccount,
 } from '@solana/kit';
 import { PANDA_MONOPOLY_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
@@ -44,23 +45,32 @@ export function getCallbackRollDiceDiscriminatorBytes() {
 
 export type CallbackRollDiceInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
+  TAccountGame extends string | AccountMeta<string> = string,
+  TAccountPlayerState extends string | AccountMeta<string> = string,
   TAccountVrfProgramIdentity extends
     | string
     | AccountMeta<string> = '9irBy75QS2BN81FUgXuHcjqceJJRuc9oDkAe8TKVvvAw',
-  TAccountPlayer extends string | AccountMeta<string> = string,
+  TAccountClock extends
+    | string
+    | AccountMeta<string> = 'SysvarC1ock11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
+      TAccountGame extends string
+        ? WritableAccount<TAccountGame>
+        : TAccountGame,
+      TAccountPlayerState extends string
+        ? WritableAccount<TAccountPlayerState>
+        : TAccountPlayerState,
       TAccountVrfProgramIdentity extends string
         ? ReadonlySignerAccount<TAccountVrfProgramIdentity> &
             AccountSignerMeta<TAccountVrfProgramIdentity>
         : TAccountVrfProgramIdentity,
-      TAccountPlayer extends string
-        ? WritableSignerAccount<TAccountPlayer> &
-            AccountSignerMeta<TAccountPlayer>
-        : TAccountPlayer,
+      TAccountClock extends string
+        ? ReadonlyAccount<TAccountClock>
+        : TAccountClock,
       ...TRemainingAccounts,
     ]
   >;
@@ -102,29 +112,42 @@ export function getCallbackRollDiceInstructionDataCodec(): FixedSizeCodec<
 }
 
 export type CallbackRollDiceInput<
+  TAccountGame extends string = string,
+  TAccountPlayerState extends string = string,
   TAccountVrfProgramIdentity extends string = string,
-  TAccountPlayer extends string = string,
+  TAccountClock extends string = string,
 > = {
+  game: Address<TAccountGame>;
+  playerState: Address<TAccountPlayerState>;
   /**
    * This check ensure that the vrf_program_identity (which is a PDA) is a singer
    * enforcing the callback is executed by the VRF program trough CPI
    */
   vrfProgramIdentity?: TransactionSigner<TAccountVrfProgramIdentity>;
-  player: TransactionSigner<TAccountPlayer>;
+  clock?: Address<TAccountClock>;
   randomness: CallbackRollDiceInstructionDataArgs['randomness'];
 };
 
 export function getCallbackRollDiceInstruction<
+  TAccountGame extends string,
+  TAccountPlayerState extends string,
   TAccountVrfProgramIdentity extends string,
-  TAccountPlayer extends string,
+  TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: CallbackRollDiceInput<TAccountVrfProgramIdentity, TAccountPlayer>,
+  input: CallbackRollDiceInput<
+    TAccountGame,
+    TAccountPlayerState,
+    TAccountVrfProgramIdentity,
+    TAccountClock
+  >,
   config?: { programAddress?: TProgramAddress }
 ): CallbackRollDiceInstruction<
   TProgramAddress,
+  TAccountGame,
+  TAccountPlayerState,
   TAccountVrfProgramIdentity,
-  TAccountPlayer
+  TAccountClock
 > {
   // Program address.
   const programAddress =
@@ -132,11 +155,13 @@ export function getCallbackRollDiceInstruction<
 
   // Original accounts.
   const originalAccounts = {
+    game: { value: input.game ?? null, isWritable: true },
+    playerState: { value: input.playerState ?? null, isWritable: true },
     vrfProgramIdentity: {
       value: input.vrfProgramIdentity ?? null,
       isWritable: false,
     },
-    player: { value: input.player ?? null, isWritable: true },
+    clock: { value: input.clock ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -151,12 +176,18 @@ export function getCallbackRollDiceInstruction<
     accounts.vrfProgramIdentity.value =
       '9irBy75QS2BN81FUgXuHcjqceJJRuc9oDkAe8TKVvvAw' as Address<'9irBy75QS2BN81FUgXuHcjqceJJRuc9oDkAe8TKVvvAw'>;
   }
+  if (!accounts.clock.value) {
+    accounts.clock.value =
+      'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
+  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
+      getAccountMeta(accounts.game),
+      getAccountMeta(accounts.playerState),
       getAccountMeta(accounts.vrfProgramIdentity),
-      getAccountMeta(accounts.player),
+      getAccountMeta(accounts.clock),
     ],
     data: getCallbackRollDiceInstructionDataEncoder().encode(
       args as CallbackRollDiceInstructionDataArgs
@@ -164,8 +195,10 @@ export function getCallbackRollDiceInstruction<
     programAddress,
   } as CallbackRollDiceInstruction<
     TProgramAddress,
+    TAccountGame,
+    TAccountPlayerState,
     TAccountVrfProgramIdentity,
-    TAccountPlayer
+    TAccountClock
   >);
 }
 
@@ -175,12 +208,14 @@ export type ParsedCallbackRollDiceInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
+    game: TAccountMetas[0];
+    playerState: TAccountMetas[1];
     /**
      * This check ensure that the vrf_program_identity (which is a PDA) is a singer
      * enforcing the callback is executed by the VRF program trough CPI
      */
-    vrfProgramIdentity: TAccountMetas[0];
-    player: TAccountMetas[1];
+    vrfProgramIdentity: TAccountMetas[2];
+    clock: TAccountMetas[3];
   };
   data: CallbackRollDiceInstructionData;
 };
@@ -193,7 +228,7 @@ export function parseCallbackRollDiceInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedCallbackRollDiceInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 2) {
+  if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -206,8 +241,10 @@ export function parseCallbackRollDiceInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
+      game: getNextAccount(),
+      playerState: getNextAccount(),
       vrfProgramIdentity: getNextAccount(),
-      player: getNextAccount(),
+      clock: getNextAccount(),
     },
     data: getCallbackRollDiceInstructionDataDecoder().decode(instruction.data),
   };

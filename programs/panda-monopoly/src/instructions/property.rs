@@ -8,7 +8,6 @@ use ephemeral_rollups_sdk::cpi::DelegateConfig;
 #[derive(Accounts)]
 #[instruction(game_key: Pubkey, position: u8)]
 pub struct InitProperty<'info> {
-    /// CHECK: Validate by CPI
     #[account(
         init,
         payer = authority,
@@ -54,6 +53,7 @@ pub fn init_property_handler(
         let property = &mut ctx.accounts.property_state;
         property.position = position;
         property.game = game_key;
+        property.init = false;
     }
 
     {
@@ -168,9 +168,9 @@ pub fn buy_property_handler(ctx: Context<BuyProperty>, position: u8) -> Result<(
     }
 
     // Initialize property state if needed
-    if property_state.position == 0 {
+    if !property_state.init {
         // Not initialized
-        property_state.position = position;
+        property_state.init = true;
         property_state.price = property_data.price as u16;
         property_state.color_group = match property_data.color_group {
             1 => ColorGroup::Brown,
@@ -531,7 +531,7 @@ pub fn build_house_handler(ctx: Context<BuildHouse>, position: u8) -> Result<()>
     }
 
     // Get property data
-    let property_data = get_property_data(position).ok_or(GameError::InvalidPropertyPosition)?;
+    // let property_data = get_property_data(position).ok_or(GameError::InvalidPropertyPosition)?;
 
     // Check monopoly requirement
     if !has_monopoly_for_player(player_state, property_state.color_group) {

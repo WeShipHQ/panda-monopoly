@@ -19,6 +19,13 @@ export const colorMap: Record<ColorGroup, string> = {
   darkBlue: "#0072BB",
 };
 
+export const playerColors: Record<number, string> = {
+  0: "#ffbf00",
+  1: "#04e17a",
+  2: "#0099ff",
+  3: "#e96bff",
+};
+
 // Color group mappings for Solana-themed properties
 export const colorGroups: Record<ColorGroup, number[]> = {
   brown: [1, 3], // BONK Avenue, WIF Lane
@@ -777,7 +784,7 @@ export const surpriseCards = [
     id: 4,
     title: "Congestion Jam 🚧",
     description:
-      "Network overload! Go back 3 spaces – too many bots in the mempool.",
+      "Network overload! Go back 3 spaces - too many bots in the mempool.",
     action: "move-back",
     value: -3,
   },

@@ -294,8 +294,10 @@ fn execute_chance_card_effect(
 
             // Set flags for handling the new space
             if is_property_purchasable(new_position) {
-                player_state.needs_property_action = true;
-                player_state.pending_property_position = Some(new_position);
+                if !player_state.properties_owned.contains(&new_position) {
+                    player_state.needs_property_action = true;
+                    player_state.pending_property_position = Some(new_position);
+                }
             } else {
                 player_state.needs_special_space_action = true;
                 player_state.pending_special_space_position = Some(new_position);
@@ -336,9 +338,14 @@ fn execute_chance_card_effect(
 
             player_state.position = new_position;
 
-            // Set flags for handling the new space
-            player_state.needs_property_action = true;
-            player_state.pending_property_position = Some(new_position);
+            if !player_state.properties_owned.contains(&new_position) {
+                player_state.needs_property_action = true;
+                player_state.pending_property_position = Some(new_position);
+                msg!(
+                    "Player landed on unowned property at position {}",
+                    new_position
+                );
+            }
         }
         CardEffectType::GoToJail => {
             player_state.position = JAIL_POSITION;

@@ -57,8 +57,8 @@ export const BaseSpace: React.FC<BaseSpaceComponentProps> = ({
       {/* Owner indicator */}
       {ownerMeta && (
         <div
-          className={ownerIndicatorClasses}
-          style={{ backgroundColor: ownerMeta.color }}
+          className={cn(ownerIndicatorClasses)}
+          style={{ backgroundColor: ownerMeta.color || "red" }}
         />
       )}
 

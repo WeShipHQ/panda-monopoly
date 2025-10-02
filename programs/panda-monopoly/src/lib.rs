@@ -82,6 +82,14 @@ pub mod panda_monopoly {
         instructions::dice::roll_dice_handler(ctx, dice_roll)
     }
 
+    pub fn roll_dice_vrf_handler(
+        ctx: Context<RollDiceVrf>,
+        seed: u8,
+        dice_roll: Option<[u8; 2]>,
+    ) -> Result<()> {
+        instructions::dice::roll_dice_vrf_handler(ctx, seed, dice_roll)
+    }
+
     pub fn callback_roll_dice(
         ctx: Context<CallbackRollDiceCtx>,
         randomness: [u8; 32],

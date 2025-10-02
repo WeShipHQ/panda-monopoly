@@ -21,7 +21,8 @@ import {
 } from "@/lib/board-utils";
 
 import { PlayerTokensContainer } from "./player-tokens";
-import { DiceProvider } from "./dice";
+// import { DiceProvider } from "./dice";
+import { DiceProvider } from "@/components/dices";
 import { CardDrawModal } from "./card-draw-modal";
 import { useGameContext } from "@/components/providers/game-provider";
 import { PlayerActions } from "./player-actions";
@@ -150,7 +151,6 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
       setIsLoading(null);
     }
   };
-
   const renderSpace = (space: BoardSpace, properties: PropertyAccount[]) => {
     const position = space.position;
     const key = `${space.name}-${position}`;

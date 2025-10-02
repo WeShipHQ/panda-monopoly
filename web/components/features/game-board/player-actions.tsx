@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { formatAddress, formatPrice } from "@/lib/utils";
 import { getBoardSpaceData } from "@/lib/board-utils";
-import { DicesOnly, useDiceContext } from "./dice";
 import { PlayerAccount } from "@/types/schema";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,6 +11,7 @@ import {
   PRIORITY_FEE_TAX_POSITION,
 } from "@/configs/constants";
 import { WalletWithMetadata } from "@privy-io/react-auth";
+import { DiceVisual, DiceController } from "@/components/dices";
 
 interface PlayerTokenProps {
   player: PlayerAccount;
@@ -172,7 +172,6 @@ export const PlayerActions = ({
   handleEndTurn: () => void;
   isLoading: string | null;
 }) => {
-  const { canRoll, isRolling, handleRollDice } = useDiceContext();
   const {
     gameState: game,
     currentPlayerState,
@@ -205,7 +204,7 @@ export const PlayerActions = ({
 
   return (
     <div className="flex flex-col items-center">
-      <DicesOnly />
+      <DiceVisual />
 
       {!isStarted && (
         <div className="flex items-center gap-2 mt-8 mb-4">
@@ -246,14 +245,15 @@ export const PlayerActions = ({
           <div className="flex items-center gap-2 mt-8 mb-4">
             {!hasPendingActions &&
               (!currentPlayerState.hasRolledDice || isDouble) && (
-                <Button
-                  disabled={!canRoll || isRolling}
-                  onClick={handleRollDice}
-                  size="sm"
-                  loading={isRolling}
-                >
-                  Roll dice
-                </Button>
+                // <Button
+                //   disabled={!canRoll || isRolling}
+                //   onClick={handleRollDice}
+                //   size="sm"
+                //   loading={isRolling}
+                // >
+                //   Roll dice
+                // </Button>
+                <DiceController />
               )}
 
             {currentPlayerState?.inJail && (
