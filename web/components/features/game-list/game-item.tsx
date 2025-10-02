@@ -71,9 +71,9 @@ export function GameItem({
       avatars.push(
         <Avatar key={player} className="w-12 h-12 border-2 border-white">
           <AvatarImage
-            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${player}`}
+            walletAddress={player}
           />
-          <AvatarFallback className="bg-blue-500 text-white">
+          <AvatarFallback walletAddress={player} className="bg-blue-500 text-white">
             {player.slice(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>

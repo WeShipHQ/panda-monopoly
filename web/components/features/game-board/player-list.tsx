@@ -7,7 +7,6 @@ import {
   cn,
   formatAddress,
   formatPrice,
-  generatePlayerIcon,
 } from "@/lib/utils";
 import { useGameContext } from "@/components/providers/game-provider";
 import Link from "next/link";
@@ -22,7 +21,6 @@ interface PlayerItemProps {
 }
 
 function PlayerItem({ player, index, isCurrentTurn, isYou }: PlayerItemProps) {
-  const playerInfo = generatePlayerIcon(player.wallet);
 
   return (
     <Card className={cn("py-3 relative", isCurrentTurn ? "bg-chart-3" : "")}>
@@ -31,11 +29,11 @@ function PlayerItem({ player, index, isCurrentTurn, isYou }: PlayerItemProps) {
           <div className="relative">
             <Avatar className="w-10 h-10">
               <AvatarImage
-                src={playerInfo.avatar}
+                walletAddress={player.wallet}
                 alt={`Player ${index + 1}`}
               />
               <AvatarFallback
-                style={{ backgroundColor: playerInfo.color }}
+                walletAddress={player.wallet}
                 className="text-white font-semibold"
               >
                 {(index + 1).toString()}
