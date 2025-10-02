@@ -32,14 +32,19 @@ import { formatAddress } from "@/lib/utils";
 import { useLogin, useLogout } from "@privy-io/react-auth";
 import { toast } from "sonner";
 import { useRpcContext } from "./providers/rpc-provider";
-import { CheckIcon, CopyIcon } from "lucide-react";
+import { CheckIcon, CopyIcon, Download } from "lucide-react";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
+import {
+  useExportWallet,
+} from "@privy-io/react-auth/solana";
 
 export function ConnectWalletButton() {
   const { ready, authenticated, user, wallet } = useWallet();
+
   const { wallets } = useConnectedStandardWallets();
   const { signAndSendTransaction } = useStandardSignAndSendTransaction();
   const [copyToClipboard, isCopied] = useCopyToClipboard();
+  const { exportWallet } = useExportWallet();
 
   const { rpc } = useRpcContext();
   const { login } = useLogin();
@@ -74,6 +79,10 @@ export function ConnectWalletButton() {
               align="end"
               side="bottom"
             >
+               <DropdownMenuItem onClick={() => (exportWallet())}>
+                <Download />
+                <DropdownMenuShortcut>Export Wallet</DropdownMenuShortcut>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => logout()}>
                 <LogoutIcon />
                 <DropdownMenuShortcut>Disconnect</DropdownMenuShortcut>
