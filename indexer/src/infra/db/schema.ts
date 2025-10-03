@@ -325,6 +325,13 @@ export const auctions = pgTable(
   ]
 )
 
+export const checkpoints = pgTable('checkpoints', {
+  id: text('id').primaryKey(),
+  lastSlot: bigint('last_slot', { mode: 'number' }),
+  lastSignature: text('last_signature'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow()
+})
+
 // ==================== EVENT TABLES ====================
 
 // Chance Card Events
@@ -525,6 +532,7 @@ export const gameEvents = pgTable(
 
 // ==================== TYPES ====================
 
+// Enum Types
 export type GameStatus = InferEnum<typeof gameStatusEnum>
 export type TradeStatus = InferEnum<typeof tradeStatusEnum>
 export type ColorGroup = InferEnum<typeof colorGroupEnum>
@@ -550,6 +558,9 @@ export type NewTrade = typeof trades.$inferInsert
 
 export type Auction = typeof auctions.$inferSelect
 export type NewAuction = typeof auctions.$inferInsert
+
+export type Checkpoint = typeof checkpoints.$inferSelect
+export type NewCheckpoint = typeof checkpoints.$inferInsert
 
 // Event Types
 export type ChanceCardEvent = typeof chanceCardEvents.$inferSelect
