@@ -65,9 +65,6 @@ pub fn end_turn_handler(ctx: Context<EndTurn>) -> Result<()> {
         return Err(GameError::MustDeclareBankruptcy.into());
     }
 
-    // Check if player rolled doubles and should get another turn
-    // let is_doubles = player_state.last_dice_roll[0] == player_state.last_dice_roll[1];
-
     // Reset turn-specific flags
     player_state.has_rolled_dice = false;
     player_state.needs_property_action = false;
@@ -82,14 +79,6 @@ pub fn end_turn_handler(ctx: Context<EndTurn>) -> Result<()> {
     game.turn_started_at = clock.unix_timestamp;
 
     msg!("Turn ended. Next turn: Player {}", next_turn);
-
-    // if is_doubles && player_state.doubles_count < 3 && !player_state.in_jail {
-    //     // Player gets another turn due to doubles
-    //     msg!("Player {} gets another turn due to doubles!", player_pubkey);
-    //     game.turn_started_at = clock.unix_timestamp;
-    // } else {
-
-    // }
 
     Ok(())
 }

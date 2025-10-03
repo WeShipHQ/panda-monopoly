@@ -34,7 +34,7 @@ pub const GO_POSITION: u8 = 0; // Solana Genesis
 pub const JAIL_POSITION: u8 = 10; // Validator Jail
 pub const GO_TO_JAIL_POSITION: u8 = 30; // Go To Validator Jail
 pub const FREE_PARKING_POSITION: u8 = 20; // Free Airdrop Parking
-// pub const BEACH_RESORT_POSITION: u8 = 20; // Replaces Free Parking
+                                          // pub const BEACH_RESORT_POSITION: u8 = 20; // Replaces Free Parking
 pub const FESTIVAL_POSITION: u8 = 10; // Additional special space
 
 // Chance and Community Chest positions (now themed)
@@ -65,7 +65,6 @@ pub const UTILITY_GROUP: [u8; 2] = [12, 28];
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq)]
 pub struct PropertyData {
     pub position: u8,
-    // Remove the name field as requested
     pub price: u64,
     pub rent: [u64; 6], // Base rent, 1 house, 2 houses, 3 houses, 4 houses, hotel
     pub house_cost: u64,
