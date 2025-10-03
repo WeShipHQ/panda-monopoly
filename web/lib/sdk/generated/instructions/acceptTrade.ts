@@ -16,6 +16,8 @@ import {
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
+  getU8Decoder,
+  getU8Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
@@ -52,7 +54,6 @@ export function getAcceptTradeDiscriminatorBytes() {
 export type AcceptTradeInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountGame extends string | AccountMeta<string> = string,
-  TAccountTrade extends string | AccountMeta<string> = string,
   TAccountProposerState extends string | AccountMeta<string> = string,
   TAccountAccepterState extends string | AccountMeta<string> = string,
   TAccountAccepter extends string | AccountMeta<string> = string,
@@ -67,9 +68,6 @@ export type AcceptTradeInstruction<
       TAccountGame extends string
         ? WritableAccount<TAccountGame>
         : TAccountGame,
-      TAccountTrade extends string
-        ? WritableAccount<TAccountTrade>
-        : TAccountTrade,
       TAccountProposerState extends string
         ? WritableAccount<TAccountProposerState>
         : TAccountProposerState,
@@ -87,13 +85,19 @@ export type AcceptTradeInstruction<
     ]
   >;
 
-export type AcceptTradeInstructionData = { discriminator: ReadonlyUint8Array };
+export type AcceptTradeInstructionData = {
+  discriminator: ReadonlyUint8Array;
+  tradeId: number;
+};
 
-export type AcceptTradeInstructionDataArgs = {};
+export type AcceptTradeInstructionDataArgs = { tradeId: number };
 
 export function getAcceptTradeInstructionDataEncoder(): FixedSizeEncoder<AcceptTradeInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['tradeId', getU8Encoder()],
+    ]),
     (value) => ({ ...value, discriminator: ACCEPT_TRADE_DISCRIMINATOR })
   );
 }
@@ -101,6 +105,7 @@ export function getAcceptTradeInstructionDataEncoder(): FixedSizeEncoder<AcceptT
 export function getAcceptTradeInstructionDataDecoder(): FixedSizeDecoder<AcceptTradeInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['tradeId', getU8Decoder()],
   ]);
 }
 
@@ -116,23 +121,21 @@ export function getAcceptTradeInstructionDataCodec(): FixedSizeCodec<
 
 export type AcceptTradeAsyncInput<
   TAccountGame extends string = string,
-  TAccountTrade extends string = string,
   TAccountProposerState extends string = string,
   TAccountAccepterState extends string = string,
   TAccountAccepter extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
-  trade: Address<TAccountTrade>;
   proposerState: Address<TAccountProposerState>;
   accepterState?: Address<TAccountAccepterState>;
   accepter: TransactionSigner<TAccountAccepter>;
   clock?: Address<TAccountClock>;
+  tradeId: AcceptTradeInstructionDataArgs['tradeId'];
 };
 
 export async function getAcceptTradeInstructionAsync<
   TAccountGame extends string,
-  TAccountTrade extends string,
   TAccountProposerState extends string,
   TAccountAccepterState extends string,
   TAccountAccepter extends string,
@@ -141,7 +144,6 @@ export async function getAcceptTradeInstructionAsync<
 >(
   input: AcceptTradeAsyncInput<
     TAccountGame,
-    TAccountTrade,
     TAccountProposerState,
     TAccountAccepterState,
     TAccountAccepter,
@@ -152,7 +154,6 @@ export async function getAcceptTradeInstructionAsync<
   AcceptTradeInstruction<
     TProgramAddress,
     TAccountGame,
-    TAccountTrade,
     TAccountProposerState,
     TAccountAccepterState,
     TAccountAccepter,
@@ -166,7 +167,6 @@ export async function getAcceptTradeInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     game: { value: input.game ?? null, isWritable: true },
-    trade: { value: input.trade ?? null, isWritable: true },
     proposerState: { value: input.proposerState ?? null, isWritable: true },
     accepterState: { value: input.accepterState ?? null, isWritable: true },
     accepter: { value: input.accepter ?? null, isWritable: true },
@@ -176,6 +176,9 @@ export async function getAcceptTradeInstructionAsync<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
+
+  // Original args.
+  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.accepterState.value) {
@@ -197,18 +200,18 @@ export async function getAcceptTradeInstructionAsync<
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.game),
-      getAccountMeta(accounts.trade),
       getAccountMeta(accounts.proposerState),
       getAccountMeta(accounts.accepterState),
       getAccountMeta(accounts.accepter),
       getAccountMeta(accounts.clock),
     ],
-    data: getAcceptTradeInstructionDataEncoder().encode({}),
+    data: getAcceptTradeInstructionDataEncoder().encode(
+      args as AcceptTradeInstructionDataArgs
+    ),
     programAddress,
   } as AcceptTradeInstruction<
     TProgramAddress,
     TAccountGame,
-    TAccountTrade,
     TAccountProposerState,
     TAccountAccepterState,
     TAccountAccepter,
@@ -218,23 +221,21 @@ export async function getAcceptTradeInstructionAsync<
 
 export type AcceptTradeInput<
   TAccountGame extends string = string,
-  TAccountTrade extends string = string,
   TAccountProposerState extends string = string,
   TAccountAccepterState extends string = string,
   TAccountAccepter extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
-  trade: Address<TAccountTrade>;
   proposerState: Address<TAccountProposerState>;
   accepterState: Address<TAccountAccepterState>;
   accepter: TransactionSigner<TAccountAccepter>;
   clock?: Address<TAccountClock>;
+  tradeId: AcceptTradeInstructionDataArgs['tradeId'];
 };
 
 export function getAcceptTradeInstruction<
   TAccountGame extends string,
-  TAccountTrade extends string,
   TAccountProposerState extends string,
   TAccountAccepterState extends string,
   TAccountAccepter extends string,
@@ -243,7 +244,6 @@ export function getAcceptTradeInstruction<
 >(
   input: AcceptTradeInput<
     TAccountGame,
-    TAccountTrade,
     TAccountProposerState,
     TAccountAccepterState,
     TAccountAccepter,
@@ -253,7 +253,6 @@ export function getAcceptTradeInstruction<
 ): AcceptTradeInstruction<
   TProgramAddress,
   TAccountGame,
-  TAccountTrade,
   TAccountProposerState,
   TAccountAccepterState,
   TAccountAccepter,
@@ -266,7 +265,6 @@ export function getAcceptTradeInstruction<
   // Original accounts.
   const originalAccounts = {
     game: { value: input.game ?? null, isWritable: true },
-    trade: { value: input.trade ?? null, isWritable: true },
     proposerState: { value: input.proposerState ?? null, isWritable: true },
     accepterState: { value: input.accepterState ?? null, isWritable: true },
     accepter: { value: input.accepter ?? null, isWritable: true },
@@ -276,6 +274,9 @@ export function getAcceptTradeInstruction<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
+
+  // Original args.
+  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.clock.value) {
@@ -287,18 +288,18 @@ export function getAcceptTradeInstruction<
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.game),
-      getAccountMeta(accounts.trade),
       getAccountMeta(accounts.proposerState),
       getAccountMeta(accounts.accepterState),
       getAccountMeta(accounts.accepter),
       getAccountMeta(accounts.clock),
     ],
-    data: getAcceptTradeInstructionDataEncoder().encode({}),
+    data: getAcceptTradeInstructionDataEncoder().encode(
+      args as AcceptTradeInstructionDataArgs
+    ),
     programAddress,
   } as AcceptTradeInstruction<
     TProgramAddress,
     TAccountGame,
-    TAccountTrade,
     TAccountProposerState,
     TAccountAccepterState,
     TAccountAccepter,
@@ -313,11 +314,10 @@ export type ParsedAcceptTradeInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     game: TAccountMetas[0];
-    trade: TAccountMetas[1];
-    proposerState: TAccountMetas[2];
-    accepterState: TAccountMetas[3];
-    accepter: TAccountMetas[4];
-    clock: TAccountMetas[5];
+    proposerState: TAccountMetas[1];
+    accepterState: TAccountMetas[2];
+    accepter: TAccountMetas[3];
+    clock: TAccountMetas[4];
   };
   data: AcceptTradeInstructionData;
 };
@@ -330,7 +330,7 @@ export function parseAcceptTradeInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedAcceptTradeInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 6) {
+  if (instruction.accounts.length < 5) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -344,7 +344,6 @@ export function parseAcceptTradeInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       game: getNextAccount(),
-      trade: getNextAccount(),
       proposerState: getNextAccount(),
       accepterState: getNextAccount(),
       accepter: getNextAccount(),

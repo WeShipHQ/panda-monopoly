@@ -39,15 +39,17 @@ import {
   type ResolvedAccount,
 } from '../shared';
 
-export const GO_TO_JAIL_DISCRIMINATOR = new Uint8Array([
-  188, 39, 17, 2, 222, 137, 233, 11,
+export const DECLARE_BANKRUPTCY_DISCRIMINATOR = new Uint8Array([
+  119, 207, 255, 228, 104, 178, 50, 132,
 ]);
 
-export function getGoToJailDiscriminatorBytes() {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(GO_TO_JAIL_DISCRIMINATOR);
+export function getDeclareBankruptcyDiscriminatorBytes() {
+  return fixEncoderSize(getBytesEncoder(), 8).encode(
+    DECLARE_BANKRUPTCY_DISCRIMINATOR
+  );
 }
 
-export type GoToJailInstruction<
+export type DeclareBankruptcyInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountGame extends string | AccountMeta<string> = string,
   TAccountPlayerState extends string | AccountMeta<string> = string,
@@ -77,34 +79,36 @@ export type GoToJailInstruction<
     ]
   >;
 
-export type GoToJailInstructionData = { discriminator: ReadonlyUint8Array };
+export type DeclareBankruptcyInstructionData = {
+  discriminator: ReadonlyUint8Array;
+};
 
-export type GoToJailInstructionDataArgs = {};
+export type DeclareBankruptcyInstructionDataArgs = {};
 
-export function getGoToJailInstructionDataEncoder(): FixedSizeEncoder<GoToJailInstructionDataArgs> {
+export function getDeclareBankruptcyInstructionDataEncoder(): FixedSizeEncoder<DeclareBankruptcyInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: GO_TO_JAIL_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: DECLARE_BANKRUPTCY_DISCRIMINATOR })
   );
 }
 
-export function getGoToJailInstructionDataDecoder(): FixedSizeDecoder<GoToJailInstructionData> {
+export function getDeclareBankruptcyInstructionDataDecoder(): FixedSizeDecoder<DeclareBankruptcyInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
-export function getGoToJailInstructionDataCodec(): FixedSizeCodec<
-  GoToJailInstructionDataArgs,
-  GoToJailInstructionData
+export function getDeclareBankruptcyInstructionDataCodec(): FixedSizeCodec<
+  DeclareBankruptcyInstructionDataArgs,
+  DeclareBankruptcyInstructionData
 > {
   return combineCodec(
-    getGoToJailInstructionDataEncoder(),
-    getGoToJailInstructionDataDecoder()
+    getDeclareBankruptcyInstructionDataEncoder(),
+    getDeclareBankruptcyInstructionDataDecoder()
   );
 }
 
-export type GoToJailAsyncInput<
+export type DeclareBankruptcyAsyncInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountPlayer extends string = string,
@@ -116,14 +120,14 @@ export type GoToJailAsyncInput<
   clock?: Address<TAccountClock>;
 };
 
-export async function getGoToJailInstructionAsync<
+export async function getDeclareBankruptcyInstructionAsync<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountPlayer extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: GoToJailAsyncInput<
+  input: DeclareBankruptcyAsyncInput<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
@@ -131,7 +135,7 @@ export async function getGoToJailInstructionAsync<
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
-  GoToJailInstruction<
+  DeclareBankruptcyInstruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
@@ -179,9 +183,9 @@ export async function getGoToJailInstructionAsync<
       getAccountMeta(accounts.player),
       getAccountMeta(accounts.clock),
     ],
-    data: getGoToJailInstructionDataEncoder().encode({}),
+    data: getDeclareBankruptcyInstructionDataEncoder().encode({}),
     programAddress,
-  } as GoToJailInstruction<
+  } as DeclareBankruptcyInstruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
@@ -190,7 +194,7 @@ export async function getGoToJailInstructionAsync<
   >);
 }
 
-export type GoToJailInput<
+export type DeclareBankruptcyInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountPlayer extends string = string,
@@ -202,21 +206,21 @@ export type GoToJailInput<
   clock?: Address<TAccountClock>;
 };
 
-export function getGoToJailInstruction<
+export function getDeclareBankruptcyInstruction<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountPlayer extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: GoToJailInput<
+  input: DeclareBankruptcyInput<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
     TAccountClock
   >,
   config?: { programAddress?: TProgramAddress }
-): GoToJailInstruction<
+): DeclareBankruptcyInstruction<
   TProgramAddress,
   TAccountGame,
   TAccountPlayerState,
@@ -253,9 +257,9 @@ export function getGoToJailInstruction<
       getAccountMeta(accounts.player),
       getAccountMeta(accounts.clock),
     ],
-    data: getGoToJailInstructionDataEncoder().encode({}),
+    data: getDeclareBankruptcyInstructionDataEncoder().encode({}),
     programAddress,
-  } as GoToJailInstruction<
+  } as DeclareBankruptcyInstruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
@@ -264,7 +268,7 @@ export function getGoToJailInstruction<
   >);
 }
 
-export type ParsedGoToJailInstruction<
+export type ParsedDeclareBankruptcyInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -275,17 +279,17 @@ export type ParsedGoToJailInstruction<
     player: TAccountMetas[2];
     clock: TAccountMetas[3];
   };
-  data: GoToJailInstructionData;
+  data: DeclareBankruptcyInstructionData;
 };
 
-export function parseGoToJailInstruction<
+export function parseDeclareBankruptcyInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
-): ParsedGoToJailInstruction<TProgram, TAccountMetas> {
+): ParsedDeclareBankruptcyInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
@@ -304,6 +308,6 @@ export function parseGoToJailInstruction<
       player: getNextAccount(),
       clock: getNextAccount(),
     },
-    data: getGoToJailInstructionDataDecoder().decode(instruction.data),
+    data: getDeclareBankruptcyInstructionDataDecoder().decode(instruction.data),
   };
 }

@@ -154,72 +154,76 @@ export const PANDA_MONOPOLY_ERROR__MUST_DECLARE_BANKRUPTCY = 0x17b3; // 6067
 export const PANDA_MONOPOLY_ERROR__CANNOT_DECLARE_BANKRUPTCY_WITH_ASSETS = 0x17b4; // 6068
 /** BankruptcyAlreadyStarted: Bankruptcy process already started */
 export const PANDA_MONOPOLY_ERROR__BANKRUPTCY_ALREADY_STARTED = 0x17b5; // 6069
+/** BankruptcyNotRequired: Bankruptcy check not required */
+export const PANDA_MONOPOLY_ERROR__BANKRUPTCY_NOT_REQUIRED = 0x17b6; // 6070
 /** Unauthorized: Unauthorized action */
-export const PANDA_MONOPOLY_ERROR__UNAUTHORIZED = 0x17b6; // 6070
+export const PANDA_MONOPOLY_ERROR__UNAUTHORIZED = 0x17b7; // 6071
 /** InvalidAccount: Invalid account provided */
-export const PANDA_MONOPOLY_ERROR__INVALID_ACCOUNT = 0x17b7; // 6071
+export const PANDA_MONOPOLY_ERROR__INVALID_ACCOUNT = 0x17b8; // 6072
 /** AccountAlreadyInitialized: Account already initialized */
-export const PANDA_MONOPOLY_ERROR__ACCOUNT_ALREADY_INITIALIZED = 0x17b8; // 6072
+export const PANDA_MONOPOLY_ERROR__ACCOUNT_ALREADY_INITIALIZED = 0x17b9; // 6073
 /** AccountNotInitialized: Account not initialized */
-export const PANDA_MONOPOLY_ERROR__ACCOUNT_NOT_INITIALIZED = 0x17b9; // 6073
+export const PANDA_MONOPOLY_ERROR__ACCOUNT_NOT_INITIALIZED = 0x17ba; // 6074
 /** InvalidSigner: Invalid signer */
-export const PANDA_MONOPOLY_ERROR__INVALID_SIGNER = 0x17ba; // 6074
+export const PANDA_MONOPOLY_ERROR__INVALID_SIGNER = 0x17bb; // 6075
 /** ArithmeticOverflow: Arithmetic overflow */
-export const PANDA_MONOPOLY_ERROR__ARITHMETIC_OVERFLOW = 0x17bb; // 6075
+export const PANDA_MONOPOLY_ERROR__ARITHMETIC_OVERFLOW = 0x17bc; // 6076
 /** ArithmeticUnderflow: Arithmetic underflow */
-export const PANDA_MONOPOLY_ERROR__ARITHMETIC_UNDERFLOW = 0x17bc; // 6076
+export const PANDA_MONOPOLY_ERROR__ARITHMETIC_UNDERFLOW = 0x17bd; // 6077
 /** DivisionByZero: Division by zero */
-export const PANDA_MONOPOLY_ERROR__DIVISION_BY_ZERO = 0x17bd; // 6077
+export const PANDA_MONOPOLY_ERROR__DIVISION_BY_ZERO = 0x17be; // 6078
 /** InvalidParameter: Invalid parameter */
-export const PANDA_MONOPOLY_ERROR__INVALID_PARAMETER = 0x17be; // 6078
+export const PANDA_MONOPOLY_ERROR__INVALID_PARAMETER = 0x17bf; // 6079
 /** InvalidGameConfiguration: Invalid game configuration */
-export const PANDA_MONOPOLY_ERROR__INVALID_GAME_CONFIGURATION = 0x17bf; // 6079
+export const PANDA_MONOPOLY_ERROR__INVALID_GAME_CONFIGURATION = 0x17c0; // 6080
 /** RandomnessGenerationFailed: Failed to generate random number */
-export const PANDA_MONOPOLY_ERROR__RANDOMNESS_GENERATION_FAILED = 0x17c0; // 6080
+export const PANDA_MONOPOLY_ERROR__RANDOMNESS_GENERATION_FAILED = 0x17c1; // 6081
 /** InvalidRandomnessSource: Invalid randomness source */
-export const PANDA_MONOPOLY_ERROR__INVALID_RANDOMNESS_SOURCE = 0x17c1; // 6081
+export const PANDA_MONOPOLY_ERROR__INVALID_RANDOMNESS_SOURCE = 0x17c2; // 6082
 /** RandomnessUnavailable: Randomness unavailable */
-export const PANDA_MONOPOLY_ERROR__RANDOMNESS_UNAVAILABLE = 0x17c2; // 6082
+export const PANDA_MONOPOLY_ERROR__RANDOMNESS_UNAVAILABLE = 0x17c3; // 6083
 /** InvalidTimestamp: Invalid timestamp */
-export const PANDA_MONOPOLY_ERROR__INVALID_TIMESTAMP = 0x17c3; // 6083
+export const PANDA_MONOPOLY_ERROR__INVALID_TIMESTAMP = 0x17c4; // 6084
 /** ClockNotAvailable: Clock not available */
-export const PANDA_MONOPOLY_ERROR__CLOCK_NOT_AVAILABLE = 0x17c4; // 6084
+export const PANDA_MONOPOLY_ERROR__CLOCK_NOT_AVAILABLE = 0x17c5; // 6085
 /** ActionTimeoutExceeded: Action timeout exceeded */
-export const PANDA_MONOPOLY_ERROR__ACTION_TIMEOUT_EXCEEDED = 0x17c5; // 6085
+export const PANDA_MONOPOLY_ERROR__ACTION_TIMEOUT_EXCEEDED = 0x17c6; // 6086
 /** OperationNotAllowed: Operation not allowed in current game state */
-export const PANDA_MONOPOLY_ERROR__OPERATION_NOT_ALLOWED = 0x17c6; // 6086
+export const PANDA_MONOPOLY_ERROR__OPERATION_NOT_ALLOWED = 0x17c7; // 6087
 /** FeatureNotImplemented: Feature not implemented */
-export const PANDA_MONOPOLY_ERROR__FEATURE_NOT_IMPLEMENTED = 0x17c7; // 6087
+export const PANDA_MONOPOLY_ERROR__FEATURE_NOT_IMPLEMENTED = 0x17c8; // 6088
 /** InternalError: Internal error occurred */
-export const PANDA_MONOPOLY_ERROR__INTERNAL_ERROR = 0x17c8; // 6088
+export const PANDA_MONOPOLY_ERROR__INTERNAL_ERROR = 0x17c9; // 6089
 /** InvalidInputData: Invalid input data */
-export const PANDA_MONOPOLY_ERROR__INVALID_INPUT_DATA = 0x17c9; // 6089
+export const PANDA_MONOPOLY_ERROR__INVALID_INPUT_DATA = 0x17ca; // 6090
 /** ResourceNotAvailable: Resource not available */
-export const PANDA_MONOPOLY_ERROR__RESOURCE_NOT_AVAILABLE = 0x17ca; // 6090
+export const PANDA_MONOPOLY_ERROR__RESOURCE_NOT_AVAILABLE = 0x17cb; // 6091
 /** PropertyNotOwned: Property not owned */
-export const PANDA_MONOPOLY_ERROR__PROPERTY_NOT_OWNED = 0x17cb; // 6091
+export const PANDA_MONOPOLY_ERROR__PROPERTY_NOT_OWNED = 0x17cc; // 6092
 /** InvalidPropertyOwner: Invalid property owner */
-export const PANDA_MONOPOLY_ERROR__INVALID_PROPERTY_OWNER = 0x17cc; // 6092
+export const PANDA_MONOPOLY_ERROR__INVALID_PROPERTY_OWNER = 0x17cd; // 6093
 /** InvalidHouseCount: Invalid house count */
-export const PANDA_MONOPOLY_ERROR__INVALID_HOUSE_COUNT = 0x17cd; // 6093
+export const PANDA_MONOPOLY_ERROR__INVALID_HOUSE_COUNT = 0x17ce; // 6094
 /** PropertyAlreadyMortgaged: Property already mortgaged */
-export const PANDA_MONOPOLY_ERROR__PROPERTY_ALREADY_MORTGAGED = 0x17ce; // 6094
+export const PANDA_MONOPOLY_ERROR__PROPERTY_ALREADY_MORTGAGED = 0x17cf; // 6095
 /** DiceRollError: Dice roll error */
-export const PANDA_MONOPOLY_ERROR__DICE_ROLL_ERROR = 0x17cf; // 6095
+export const PANDA_MONOPOLY_ERROR__DICE_ROLL_ERROR = 0x17d0; // 6096
 /** TradeNotPending: Trade is not pending */
-export const PANDA_MONOPOLY_ERROR__TRADE_NOT_PENDING = 0x17d0; // 6096
+export const PANDA_MONOPOLY_ERROR__TRADE_NOT_PENDING = 0x17d1; // 6097
 /** NotTradeTarget: Not the trade target */
-export const PANDA_MONOPOLY_ERROR__NOT_TRADE_TARGET = 0x17d1; // 6097
+export const PANDA_MONOPOLY_ERROR__NOT_TRADE_TARGET = 0x17d2; // 6098
 /** NotTradeProposer: Not the trade proposer */
-export const PANDA_MONOPOLY_ERROR__NOT_TRADE_PROPOSER = 0x17d2; // 6098
+export const PANDA_MONOPOLY_ERROR__NOT_TRADE_PROPOSER = 0x17d3; // 6099
 /** InvalidTradeType: Invalid trade type */
-export const PANDA_MONOPOLY_ERROR__INVALID_TRADE_TYPE = 0x17d3; // 6099
+export const PANDA_MONOPOLY_ERROR__INVALID_TRADE_TYPE = 0x17d4; // 6100
 /** AuctionNotActive: Auction is not active */
-export const PANDA_MONOPOLY_ERROR__AUCTION_NOT_ACTIVE = 0x17d4; // 6100
+export const PANDA_MONOPOLY_ERROR__AUCTION_NOT_ACTIVE = 0x17d5; // 6101
 /** AuctionEnded: Auction has ended */
-export const PANDA_MONOPOLY_ERROR__AUCTION_ENDED = 0x17d5; // 6101
+export const PANDA_MONOPOLY_ERROR__AUCTION_ENDED = 0x17d6; // 6102
 /** AuctionStillActive: Auction is still active */
-export const PANDA_MONOPOLY_ERROR__AUCTION_STILL_ACTIVE = 0x17d6; // 6102
+export const PANDA_MONOPOLY_ERROR__AUCTION_STILL_ACTIVE = 0x17d7; // 6103
+/** TooManyActiveTrades: Too many active trades */
+export const PANDA_MONOPOLY_ERROR__TOO_MANY_ACTIVE_TRADES = 0x17d8; // 6104
 
 export type PandaMonopolyError =
   | typeof PANDA_MONOPOLY_ERROR__ACCOUNT_ALREADY_INITIALIZED
@@ -237,6 +241,7 @@ export type PandaMonopolyError =
   | typeof PANDA_MONOPOLY_ERROR__AUCTION_NOT_FOUND
   | typeof PANDA_MONOPOLY_ERROR__AUCTION_STILL_ACTIVE
   | typeof PANDA_MONOPOLY_ERROR__BANKRUPTCY_ALREADY_STARTED
+  | typeof PANDA_MONOPOLY_ERROR__BANKRUPTCY_NOT_REQUIRED
   | typeof PANDA_MONOPOLY_ERROR__BID_TOO_LOW
   | typeof PANDA_MONOPOLY_ERROR__CANNOT_BID_ON_OWN_AUCTION
   | typeof PANDA_MONOPOLY_ERROR__CANNOT_BUILD_ON_PROPERTY_TYPE
@@ -317,6 +322,7 @@ export type PandaMonopolyError =
   | typeof PANDA_MONOPOLY_ERROR__RENT_ALREADY_PAID
   | typeof PANDA_MONOPOLY_ERROR__RESOURCE_NOT_AVAILABLE
   | typeof PANDA_MONOPOLY_ERROR__TAX_CALCULATION_ERROR
+  | typeof PANDA_MONOPOLY_ERROR__TOO_MANY_ACTIVE_TRADES
   | typeof PANDA_MONOPOLY_ERROR__TOO_MANY_DOUBLES
   | typeof PANDA_MONOPOLY_ERROR__TRADE_ALREADY_ACCEPTED
   | typeof PANDA_MONOPOLY_ERROR__TRADE_ALREADY_EXISTS
@@ -344,6 +350,7 @@ if (process.env.NODE_ENV !== 'production') {
     [PANDA_MONOPOLY_ERROR__AUCTION_NOT_FOUND]: `Auction not found`,
     [PANDA_MONOPOLY_ERROR__AUCTION_STILL_ACTIVE]: `Auction is still active`,
     [PANDA_MONOPOLY_ERROR__BANKRUPTCY_ALREADY_STARTED]: `Bankruptcy process already started`,
+    [PANDA_MONOPOLY_ERROR__BANKRUPTCY_NOT_REQUIRED]: `Bankruptcy check not required`,
     [PANDA_MONOPOLY_ERROR__BID_TOO_LOW]: `Bid amount too low`,
     [PANDA_MONOPOLY_ERROR__CANNOT_BID_ON_OWN_AUCTION]: `Cannot bid on own auction`,
     [PANDA_MONOPOLY_ERROR__CANNOT_BUILD_ON_PROPERTY_TYPE]: `Cannot build on this property type`,
@@ -424,6 +431,7 @@ if (process.env.NODE_ENV !== 'production') {
     [PANDA_MONOPOLY_ERROR__RENT_ALREADY_PAID]: `Rent already paid`,
     [PANDA_MONOPOLY_ERROR__RESOURCE_NOT_AVAILABLE]: `Resource not available`,
     [PANDA_MONOPOLY_ERROR__TAX_CALCULATION_ERROR]: `Tax amount calculation error`,
+    [PANDA_MONOPOLY_ERROR__TOO_MANY_ACTIVE_TRADES]: `Too many active trades`,
     [PANDA_MONOPOLY_ERROR__TOO_MANY_DOUBLES]: `Player rolled doubles too many times`,
     [PANDA_MONOPOLY_ERROR__TRADE_ALREADY_ACCEPTED]: `Trade already accepted`,
     [PANDA_MONOPOLY_ERROR__TRADE_ALREADY_EXISTS]: `Trade already exists`,

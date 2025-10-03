@@ -254,7 +254,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
               </div>
 
               {/* game-logs */}
-              {authenticated && (
+              {/* {authenticated && (
                 <EnhancedGameLogs
                   filterTypes={[
                     "move",
@@ -269,7 +269,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
                     "game",
                   ]}
                 />
-              )}
+              )} */}
             </div>
 
             <GoCorner />

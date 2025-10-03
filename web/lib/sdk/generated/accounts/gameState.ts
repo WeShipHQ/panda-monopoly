@@ -49,8 +49,12 @@ import {
 import {
   getGameStatusDecoder,
   getGameStatusEncoder,
+  getTradeInfoDecoder,
+  getTradeInfoEncoder,
   type GameStatus,
   type GameStatusArgs,
+  type TradeInfo,
+  type TradeInfoArgs,
 } from '../types';
 
 export const GAME_STATE_DISCRIMINATOR = new Uint8Array([
@@ -80,6 +84,8 @@ export type GameState = {
   timeLimit: Option<bigint>;
   winner: Option<Address>;
   turnStartedAt: bigint;
+  activeTrades: Array<TradeInfo>;
+  nextTradeId: number;
 };
 
 export type GameStateArgs = {
@@ -100,6 +106,8 @@ export type GameStateArgs = {
   timeLimit: OptionOrNullable<number | bigint>;
   winner: OptionOrNullable<Address>;
   turnStartedAt: number | bigint;
+  activeTrades: Array<TradeInfoArgs>;
+  nextTradeId: number;
 };
 
 export function getGameStateEncoder(): Encoder<GameStateArgs> {
@@ -123,6 +131,8 @@ export function getGameStateEncoder(): Encoder<GameStateArgs> {
       ['timeLimit', getOptionEncoder(getI64Encoder())],
       ['winner', getOptionEncoder(getAddressEncoder())],
       ['turnStartedAt', getI64Encoder()],
+      ['activeTrades', getArrayEncoder(getTradeInfoEncoder())],
+      ['nextTradeId', getU8Encoder()],
     ]),
     (value) => ({ ...value, discriminator: GAME_STATE_DISCRIMINATOR })
   );
@@ -148,6 +158,8 @@ export function getGameStateDecoder(): Decoder<GameState> {
     ['timeLimit', getOptionDecoder(getI64Decoder())],
     ['winner', getOptionDecoder(getAddressDecoder())],
     ['turnStartedAt', getI64Decoder()],
+    ['activeTrades', getArrayDecoder(getTradeInfoDecoder())],
+    ['nextTradeId', getU8Decoder()],
   ]);
 }
 

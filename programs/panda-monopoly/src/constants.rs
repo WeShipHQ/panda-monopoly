@@ -27,6 +27,7 @@ pub const TOTAL_HOTELS: u8 = 12;
 // Trading and auction constants
 pub const MAX_PROPERTIES_IN_TRADE: usize = 10;
 pub const TRADE_EXPIRY_SECONDS: i64 = 3600; // 1 hour
+pub const MAX_ACTIVE_TRADES: usize = 20; // Maximum trades stored in GameState vector
 pub const AUCTION_DURATION_SECONDS: i64 = 300; // 5 minutes
 
 // Special space positions
