@@ -34,7 +34,7 @@ import { useWallet } from "@/hooks/use-wallet";
 import { playPropertySound, playSound, SOUND_CONFIG } from "@/lib/soundUtil";
 import { toast } from "sonner";
 import soundUtil from "@/lib/soundUtil";
-import { BuildingType } from "@/lib/sdk/generated";
+import { BuildingType, GameStatus } from "@/lib/sdk/generated";
 
 interface GameContextType {
   gameAddress: Address | null;
@@ -92,7 +92,12 @@ interface GameContextType {
   cardDrawType: "chance" | "community-chest" | null;
   setCardDrawType: (type: "chance" | "community-chest" | null) => void;
 
-  // Trade UI state
+  // ui state
+  isCurrentTurn: boolean;
+  showRollDice: boolean;
+  showEndTurn: boolean;
+  showPayJailFine: boolean;
+
   isTradeDialogOpen: boolean;
   setIsTradeDialogOpen: (open: boolean) => void;
   activeTrades: TradeData[];
@@ -212,7 +217,43 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     return player || null;
   }, [currentPlayerAddress, players]);
 
-  // Utility functions
+  // state
+  const isInProgress =
+    !!gameState && gameState?.gameStatus === GameStatus.InProgress;
+
+  const isCurrentTurn =
+    isInProgress &&
+    !!wallet?.address &&
+    gameState.players[gameState.currentTurn] === wallet.address;
+
+  const showRollDice =
+    isCurrentTurn &&
+    !!currentPlayerState &&
+    !currentPlayerState.hasRolledDice &&
+    !currentPlayerState.needsPropertyAction &&
+    !currentPlayerState.needsChanceCard &&
+    !currentPlayerState.needsCommunityChestCard &&
+    !currentPlayerState.needsSpecialSpaceAction &&
+    !currentPlayerState.needsBankruptcyCheck;
+
+  const showEndTurn =
+    isCurrentTurn &&
+    !!currentPlayerState &&
+    currentPlayerState.hasRolledDice &&
+    !currentPlayerState.needsPropertyAction &&
+    !currentPlayerState.needsChanceCard &&
+    !currentPlayerState.needsCommunityChestCard &&
+    !currentPlayerState.needsSpecialSpaceAction &&
+    !currentPlayerState.needsBankruptcyCheck &&
+    (currentPlayerState.doublesCount === 0 ||
+      // (currentPlayerState.lastDiceRoll[0] !==
+      //   currentPlayerState.lastDiceRoll[1] ||
+      currentPlayerState.inJail);
+
+  const showPayJailFine =
+    isCurrentTurn && !!currentPlayerState && currentPlayerState.inJail;
+  // currentPlayerState.cashBalance >= JAIL_FINE; -> display on UI
+
   const getPropertyByPosition = useCallback(
     (position: number): PropertyAccount | null => {
       return properties.find((prop) => prop.position === position) || null;
@@ -710,7 +751,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
     try {
       const instruction = await sdk.payJailFineIx({
-        rpc,
         gameAddress,
         player: { address: address(wallet.address) } as TransactionSigner,
       });
@@ -1455,6 +1495,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     setIsCardDrawModalOpen,
     cardDrawType,
     setCardDrawType,
+
+    // ui
+    isCurrentTurn,
+    showRollDice,
+    showEndTurn,
+    showPayJailFine,
 
     // Trade UI state
     isTradeDialogOpen,

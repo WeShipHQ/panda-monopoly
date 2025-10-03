@@ -18,3 +18,4 @@ export const PLATFORM_ID = address(
 
 export const MEV_TAX_POSITION = 4;
 export const PRIORITY_FEE_TAX_POSITION = 38;
+export const JAIL_FINE = 50;

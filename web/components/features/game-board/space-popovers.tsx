@@ -7,6 +7,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { PropertyAccount } from "@/types/schema";
 import { address, Address } from "@solana/kit";
 import { cn, formatAddress, formatPrice } from "@/lib/utils";
@@ -29,6 +35,7 @@ import { useWallet } from "@/hooks/use-wallet";
 import { useGameContext } from "@/components/providers/game-provider";
 import { Button } from "@/components/ui/button";
 import { BuildingType } from "@/lib/sdk/generated";
+import { toast } from "sonner";
 
 interface BasePopoverProps {
   children: React.ReactNode;
@@ -68,10 +75,8 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
   const color = colorMap[propertyData.colorGroup];
   const side = getBoardSide(propertyData.position);
 
-  // Check if current player owns this property
   const isOwnedByCurrentPlayer = owner === wallet?.address;
 
-  // Check if current player has monopoly
   const hasMonopoly =
     currentPlayerState && isOwnedByCurrentPlayer
       ? hasColorGroupMonopoly(
@@ -81,10 +86,23 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
         )
       : false;
 
-  // Building management logic
-  const canBuildHouse = hasMonopoly && !hasHotel && houses < 4 && !isMortgaged;
+  const playerBalance = currentPlayerState
+    ? Number(currentPlayerState.cashBalance)
+    : 0;
+  const houseCost = propertyData.houseCost || 0;
+  const hotelCost = propertyData.hotelCost || propertyData.houseCost || 0;
+
+  const hasEnoughForHouse = playerBalance >= houseCost;
+  const hasEnoughForHotel = playerBalance >= hotelCost;
+
+  const canBuildHouse =
+    hasMonopoly && !hasHotel && houses < 4 && !isMortgaged && hasEnoughForHouse;
   const canBuildHotel =
-    hasMonopoly && houses === 4 && !hasHotel && !isMortgaged;
+    hasMonopoly &&
+    houses === 4 &&
+    !hasHotel &&
+    !isMortgaged &&
+    hasEnoughForHotel;
   const canSellHouse = hasMonopoly && houses > 0 && !hasHotel && !isMortgaged;
   const canSellHotel = hasMonopoly && hasHotel && !isMortgaged;
 
@@ -94,8 +112,14 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
     setIsLoading("buildHouse");
     try {
       await buildHouse(propertyData.position);
+      toast("House built successfully! 🏠", {
+        description: `Built a house on ${propertyData.name} for ${formatPrice(houseCost)}`,
+      });
     } catch (error) {
       console.error("Error building house:", error);
+      toast("Failed to build house", {
+        description: "Please try again later",
+      });
     } finally {
       setIsLoading(null);
     }
@@ -107,8 +131,14 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
     setIsLoading("buildHotel");
     try {
       await buildHotel(propertyData.position);
+      toast("Hotel built successfully! 🏨", {
+        description: `Built a hotel on ${propertyData.name} for ${formatPrice(hotelCost)}`,
+      });
     } catch (error) {
       console.error("Error building hotel:", error);
+      toast("Failed to build hotel", {
+        description: "Please try again later",
+      });
     } finally {
       setIsLoading(null);
     }
@@ -123,11 +153,90 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
         `Selling ${buildingType} at position ${propertyData.position}`
       );
       await sellBuilding(propertyData.position, buildingType);
+      
+      const buildingName = buildingType === BuildingType.House ? "house" : "hotel";
+      const sellPrice = buildingType === BuildingType.House 
+        ? Math.floor(houseCost / 2) 
+        : Math.floor(hotelCost / 2);
+      
+      toast(`${buildingName.charAt(0).toUpperCase() + buildingName.slice(1)} sold successfully! 💰`, {
+        description: `Sold ${buildingName} on ${propertyData.name} for ${formatPrice(sellPrice)}`,
+      });
     } catch (error) {
       console.error(`Error selling ${buildingType}:`, error);
+      const buildingName = buildingType === BuildingType.House ? "house" : "hotel";
+      toast(`Failed to sell ${buildingName}`, {
+        description: "Please try again later",
+      });
     } finally {
       setIsLoading(null);
     }
+  };
+
+  const BuildHouseButton = () => {
+    const baseConditions =
+      hasMonopoly && !hasHotel && houses < 4 && !isMortgaged;
+    const isDisabled =
+      !baseConditions || !hasEnoughForHouse || isLoading === "buildHouse";
+
+    const button = (
+      <Button
+        size="sm"
+        disabled={isDisabled}
+        onClick={handleBuildHouse}
+        className="size-8 p-0"
+      >
+        <ChevronUp className="w-3 h-3" />
+      </Button>
+    );
+
+    if (baseConditions && !hasEnoughForHouse) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>{button}</TooltipTrigger>
+            <TooltipContent>
+              <p>Insufficient funds.</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+
+    return button;
+  };
+
+  const BuildHotelButton = () => {
+    const baseConditions =
+      hasMonopoly && houses === 4 && !hasHotel && !isMortgaged;
+    const isDisabled =
+      !baseConditions || !hasEnoughForHotel || isLoading === "buildHotel";
+
+    const button = (
+      <Button
+        size="sm"
+        disabled={isDisabled}
+        onClick={handleBuildHotel}
+        className="size-8 p-0"
+      >
+        <Building2 className="w-3 h-3" />
+      </Button>
+    );
+
+    if (baseConditions && !hasEnoughForHotel) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>{button}</TooltipTrigger>
+            <TooltipContent>
+              <p>Insufficient funds.</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+
+    return button;
   };
 
   return (
@@ -136,6 +245,11 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
       <PopoverContent
         side={side}
         className="p-0 border-0 bg-transparent shadow-lg w-auto"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          // @ts-expect-error
+          event.target.focus();
+        }}
       >
         <Card className="w-64 bg-white border-2 gap-0 border-black py-0 rounded-none overflow-hidden">
           <CardHeader
@@ -290,29 +404,22 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
                         {isOwnedByCurrentPlayer && hasMonopoly && (
                           <>
                             {!hasHotel && (
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  size="sm"
-                                  disabled={
-                                    !canSellHouse || isLoading === "sellhouse"
-                                  }
-                                  onClick={() =>
-                                    handleSellBuilding(BuildingType.House)
-                                  }
-                                  className="h-6 w-6 p-0"
-                                >
-                                  <ChevronDown className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  disabled={
-                                    !canBuildHouse || isLoading === "buildHouse"
-                                  }
-                                  onClick={handleBuildHouse}
-                                  className="h-6 w-6 p-0"
-                                >
-                                  <ChevronUp className="w-3 h-3" />
-                                </Button>
+                              <div className="flex items-center gap-2">
+                                {houses > 0 && (
+                                  <Button
+                                    size="sm"
+                                    disabled={
+                                      !canSellHouse || isLoading === "sellhouse"
+                                    }
+                                    onClick={() =>
+                                      handleSellBuilding(BuildingType.House)
+                                    }
+                                    className="!size-8 p-0"
+                                  >
+                                    <ChevronDown className="w-3 h-3" />
+                                  </Button>
+                                )}
+                                <BuildHouseButton />
                               </div>
                             )}
                           </>
@@ -326,7 +433,7 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
                         <p className="text-base">{hasHotel ? "Yes" : "No"}</p>
 
                         {isOwnedByCurrentPlayer && hasMonopoly && (
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-2">
                             {hasHotel ? (
                               <Button
                                 size="sm"
@@ -336,21 +443,12 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
                                 onClick={() =>
                                   handleSellBuilding(BuildingType.Hotel)
                                 }
-                                className="h-6 w-6 p-0"
+                                className="!size-8 p-0"
                               >
                                 <ChevronDown className="w-3 h-3" />
                               </Button>
                             ) : (
-                              <Button
-                                size="sm"
-                                disabled={
-                                  !canBuildHotel || isLoading === "buildHotel"
-                                }
-                                onClick={handleBuildHotel}
-                                className="h-6 w-6 p-0"
-                              >
-                                <Building2 className="w-3 h-3" />
-                              </Button>
+                              <BuildHotelButton />
                             )}
                           </div>
                         )}
@@ -361,117 +459,6 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
                       <div className="text-center mt-2">
                         <Badge variant="neutral">MORTGAGED</Badge>
                       </div>
-                    )}
-
-                    {/* Monopoly Management Section */}
-                    {isOwnedByCurrentPlayer && hasMonopoly && (
-                      <>
-                        <Separator className="my-3 hidden" />
-                        <div className="space-y-2 hidden">
-                          <div className="text-sm font-medium text-center">
-                            <Badge variant="default" className="bg-green-600">
-                              MONOPOLY
-                            </Badge>
-                          </div>
-
-                          {/* Building Management */}
-                          <div className="space-y-2">
-                            {/* House Management */}
-                            {!hasHotel && (
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <HouseIcon className="w-4 h-4 text-green-600" />
-                                  <span className="text-sm">
-                                    Houses ({houses}/4)
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    size="sm"
-                                    disabled={
-                                      !canSellHouse || isLoading === "sellhouse"
-                                    }
-                                    onClick={() =>
-                                      handleSellBuilding(BuildingType.House)
-                                    }
-                                    className="h-6 w-6 p-0"
-                                  >
-                                    <ChevronDown className="w-3 h-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    disabled={
-                                      !canBuildHouse ||
-                                      isLoading === "buildHouse"
-                                    }
-                                    onClick={handleBuildHouse}
-                                    className="h-6 w-6 p-0"
-                                  >
-                                    <ChevronUp className="w-3 h-3" />
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Hotel Management */}
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <HotelIcon className="w-4 h-4 text-red-600" />
-                                <span className="text-sm">Hotel</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                {hasHotel ? (
-                                  <Button
-                                    size="sm"
-                                    // variant="outline"
-                                    disabled={
-                                      !canSellHotel || isLoading === "sellhotel"
-                                    }
-                                    onClick={() =>
-                                      handleSellBuilding(BuildingType.Hotel)
-                                    }
-                                    className="h-6 w-6 p-0"
-                                  >
-                                    <ChevronDown className="w-3 h-3" />
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    size="sm"
-                                    // variant="outline"
-                                    disabled={
-                                      !canBuildHotel ||
-                                      isLoading === "buildHotel"
-                                    }
-                                    onClick={handleBuildHotel}
-                                    className="h-6 w-6 p-0"
-                                  >
-                                    <Building2 className="w-3 h-3" />
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Property Actions */}
-                          <div className="pt-2">
-                            <Button
-                              size="sm"
-                              // variant="destructive"
-                              className="w-full h-7 text-xs"
-                              disabled={isMortgaged}
-                              onClick={() => {
-                                // TODO: Implement mortgage property functionality
-                                console.log(
-                                  "Mortgage property:",
-                                  propertyData.position
-                                );
-                              }}
-                            >
-                              {isMortgaged ? "Mortgaged" : "Mortgage Property"}
-                            </Button>
-                          </div>
-                        </div>
-                      </>
                     )}
                   </>
                 )}
