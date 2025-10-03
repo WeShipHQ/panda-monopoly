@@ -12,7 +12,7 @@
     "prettier": "prettier --check .",
     "prettier:fix": "prettier --write .",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "npx tsx src/db/migrate.ts",
+    "db:migrate": "npx tsx src/infra/db/migrate.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
   },
@@ -44,6 +44,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/morgan": "^1.9.10",
+    "bottleneck": "^2.19.5",
     "bullmq": "^5.58.9",
     "compression": "^1.8.1",
     "cors": "^2.8.5",

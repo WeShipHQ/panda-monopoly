@@ -5,12 +5,12 @@ import path from 'path'
 
 dotenv.config()
 
-async function main() {
+async function runMigrations() {
   console.log('Running migrations...')
 
   try {
     await migrate(db, {
-      migrationsFolder: path.join(process.cwd(), './src/db/migrations')
+      migrationsFolder: path.join(process.cwd(), './src/infra/db/migrations')
     })
     console.log('Migrations completed successfully')
   } catch (error) {
@@ -18,7 +18,8 @@ async function main() {
     process.exit(1)
   } finally {
     await client.end()
+    process.exit(0)
   }
 }
 
-main()
+runMigrations()

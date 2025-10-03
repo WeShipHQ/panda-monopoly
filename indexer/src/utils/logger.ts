@@ -2,7 +2,7 @@ import env from '#config/env'
 import pino from 'pino'
 
 const createLogger = () => {
-  const logLevel = env.log?.level || (env.isProduction ? 'warn' : 'debug')
+  const logLevel = env.log?.level || (env.isDevelopment ? 'debug' : 'warn')
 
   return pino({
     level: logLevel,
