@@ -7,6 +7,8 @@ import { PublicKey } from '@solana/web3.js'
 export async function runBackfill(programIdStr: string, startBeforeSig?: string) {
   const conn = makeConnection('http')
   const programKey = new PublicKey(programIdStr)
+
+  // Try resume via checkpoints (by last_signature)
   let before: string | undefined = startBeforeSig
 
   while (true) {
@@ -14,12 +16,9 @@ export async function runBackfill(programIdStr: string, startBeforeSig?: string)
     if (batch.length === 0) break
 
     for (const s of batch) {
-      await backfillQueue.add('bf', { signature: s.signature }, opts)
+      await backfillQueue.add('bf', { signature: s.signature }, { ...opts, jobId: s.signature })
     }
 
     before = batch[batch.length - 1].signature
-    logger.info({ count: batch.length }, 'Backfill enqueued batch')
   }
-
-  logger.info('Backfill complete')
 }

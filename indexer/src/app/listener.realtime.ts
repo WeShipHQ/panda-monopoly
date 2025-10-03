@@ -7,9 +7,10 @@ export async function startRealtimeListener() {
   const conn = makeConnection('ws')
   const subId = await conn.onLogs(
     programId,
-    async (logs, ctx) => {
+    async (logs) => {
       const sig = logs.signature
-      await realtimeQueue.add('rt', { signature: sig }, opts)
+      // Idempotency: set jobId = signature to avoid duplicates
+      await realtimeQueue.add('rt', { signature: sig }, { ...opts, jobId: sig })
     },
     'confirmed'
   )
