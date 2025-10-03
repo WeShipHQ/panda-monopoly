@@ -1,6 +1,6 @@
 use crate::error::GameError;
-use crate::state::*;
 use crate::{constants::*, ID};
+use crate::{force_end_turn, send_player_to_jail_and_end_turn, state::*};
 use anchor_lang::prelude::*;
 use ephemeral_vrf_sdk::anchor::vrf;
 use ephemeral_vrf_sdk::instructions::create_request_randomness_ix;
@@ -48,17 +48,14 @@ pub fn roll_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> 
         .position(|&p| p == player_pubkey)
         .ok_or(GameError::PlayerNotFound)?;
 
-    // Verify it's the current player's turn
     if game.current_turn != player_index as u8 {
         return Err(GameError::NotPlayerTurn.into());
     }
 
-    // Check if player has already rolled dice this turn
     if player_state.has_rolled_dice {
         return Err(GameError::AlreadyRolledDice.into());
     }
 
-    // Check if player is in jail
     if player_state.in_jail {
         return handle_jail_dice_roll(game, player_state, clock, &ctx.accounts.recent_blockhashes);
     }
@@ -68,22 +65,21 @@ pub fn roll_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> 
         generate_dice_roll(&ctx.accounts.recent_blockhashes, clock.unix_timestamp).unwrap()
     });
 
-    // Update player state
     player_state.last_dice_roll = dice_roll;
     game.turn_started_at = clock.unix_timestamp;
 
-    // Check for doubles
     let is_doubles = dice_roll[0] == dice_roll[1];
     if is_doubles {
         player_state.doubles_count += 1;
 
         // Three doubles in a row sends player to jail
         if player_state.doubles_count >= 3 {
-            send_player_to_jail(player_state);
-            player_state.has_rolled_dice = true;
+            // send_player_to_jail(player_state);
+            // force_end_turn(game, player_state, clock);
+            send_player_to_jail_and_end_turn(game, player_state, clock);
 
             msg!(
-                "Player {} rolled three doubles and goes to jail!",
+                "Player {} rolled three doubles and goes to jail! Turn ended automatically.",
                 player_pubkey
             );
             return Ok(());
@@ -137,7 +133,7 @@ pub fn roll_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> 
     player_state.position = new_position;
 
     // Process space action based on landing position
-    handle_space_landing(player_state, new_position)?;
+    handle_space_landing(game, player_state, new_position, clock)?;
 
     msg!(
         "Player {} rolled: {} and {} - moved from {} to {}",
@@ -297,10 +293,21 @@ fn handle_jail_dice_roll(
 
             msg!("Player paid jail fine and is released!");
         } else {
-            return Err(GameError::InsufficientFunds.into());
+            // Player can't afford jail fine - declare bankruptcy and end turn
+            player_state.cash_balance = 0;
+            player_state.is_bankrupt = true;
+            player_state.in_jail = false; // Remove from jail since they're bankrupt
+            player_state.jail_turns = 0;
+
+            force_end_turn(game, player_state, clock);
+
+            msg!("Player cannot afford jail fine and is declared bankrupt. Turn ended automatically.");
+            return Ok(());
         }
     } else {
         msg!("Player remains in jail. Turn {}/3", player_state.jail_turns);
+        force_end_turn(game, player_state, clock);
+        return Ok(());
     }
 
     if player_escaped {
@@ -317,7 +324,7 @@ fn handle_jail_dice_roll(
 
         player_state.position = new_position;
 
-        handle_space_landing(player_state, new_position)?;
+        handle_space_landing(game, player_state, new_position, clock)?;
 
         msg!(
             "Player escaped jail and moved from {} to {}",
@@ -330,16 +337,12 @@ fn handle_jail_dice_roll(
     Ok(())
 }
 
-fn send_player_to_jail(player_state: &mut PlayerState) {
-    player_state.position = JAIL_POSITION;
-    player_state.in_jail = true;
-    player_state.jail_turns = 0;
-    player_state.doubles_count = 0;
-}
-
-// Space landing logic will be handled by separate instructions
-// This function is simplified for now
-fn handle_space_landing(player_state: &mut PlayerState, position: u8) -> Result<()> {
+fn handle_space_landing(
+    game: &mut GameState,
+    player_state: &mut PlayerState,
+    position: u8,
+    clock: &Sysvar<Clock>,
+) -> Result<()> {
     let property_data = get_property_data(position);
 
     match property_data {
@@ -357,7 +360,7 @@ fn handle_space_landing(player_state: &mut PlayerState, position: u8) -> Result<
                 }
                 3 => {
                     // Special space
-                    handle_special_space(player_state, position)?;
+                    handle_special_space(game, player_state, position, clock)?;
                 }
                 _ => {}
             }
@@ -368,7 +371,12 @@ fn handle_space_landing(player_state: &mut PlayerState, position: u8) -> Result<
     Ok(())
 }
 
-fn handle_special_space(player_state: &mut PlayerState, position: u8) -> Result<()> {
+fn handle_special_space(
+    game: &mut GameState,
+    player_state: &mut PlayerState,
+    position: u8,
+    clock: &Sysvar<Clock>,
+) -> Result<()> {
     match position {
         GO_POSITION => {
             // Already handled in movement
@@ -377,7 +385,7 @@ fn handle_special_space(player_state: &mut PlayerState, position: u8) -> Result<
             // Just visiting jail, no action needed
         }
         GO_TO_JAIL_POSITION => {
-            send_player_to_jail(player_state);
+            send_player_to_jail_and_end_turn(game, player_state, clock);
         }
         MEV_TAX_POSITION | PRIORITY_FEE_TAX_POSITION => {
             player_state.needs_special_space_action = true;
@@ -391,8 +399,6 @@ fn handle_special_space(player_state: &mut PlayerState, position: u8) -> Result<
         }
         FREE_PARKING_POSITION => {
             // Free parking - no action
-            // player_state.needs_special_space_action = true;
-            // player_state.pending_special_space_position = Some(position);
         }
         _ => {}
     }
@@ -507,15 +513,6 @@ pub fn roll_dice_vrf_handler(
     if player_state.has_rolled_dice {
         return Err(GameError::AlreadyRolledDice.into());
     }
-
-    // if player_state.in_jail {
-    //     return handle_jail_dice_roll(game, player_state, clock);
-    // }
-
-    // Generate secure random dice roll using recent blockhash
-    // let dice_roll = dice_roll.unwrap_or_else(|| {
-    //     generate_dice_roll(&ctx.accounts.recent_blockhashes, clock.unix_timestamp).unwrap()
-    // });
 
     {
         msg!("Requesting randomness...");

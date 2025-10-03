@@ -1,6 +1,9 @@
 use anchor_lang::prelude::*;
 
-use crate::{error::GameError, ColorGroup, PlayerState, PropertyState, PropertyType};
+use crate::{
+    error::GameError, ColorGroup, GameState, PlayerState, PropertyState, PropertyType,
+    JAIL_POSITION,
+};
 
 // Helper function for rent calculation
 pub fn calculate_rent_for_property(
@@ -188,4 +191,74 @@ fn xorshift64star(seed: u64) -> u64 {
     x ^= x << 27;
     x = (x as u128 * 0x2545F4914F6CDD1D) as u64;
     x
+}
+
+// Replace the existing send_player_to_jail function with this enhanced version
+pub fn send_player_to_jail_and_end_turn(
+    game: &mut GameState,
+    player_state: &mut PlayerState,
+    clock: &Sysvar<Clock>,
+) {
+    // Send player to jail
+    player_state.position = JAIL_POSITION;
+    player_state.in_jail = true;
+    player_state.jail_turns = 0;
+    player_state.doubles_count = 0;
+
+    // Clear any pending actions since player is going to jail
+    player_state.needs_property_action = false;
+    player_state.pending_property_position = None;
+    player_state.needs_special_space_action = false;
+    player_state.pending_special_space_position = None;
+    player_state.needs_chance_card = false;
+    player_state.needs_community_chest_card = false;
+
+    // Automatically end turn
+    player_state.has_rolled_dice = false;
+
+    // Advance to next player
+    let next_turn = (game.current_turn + 1) % game.current_players;
+    game.current_turn = next_turn;
+    game.turn_started_at = clock.unix_timestamp;
+
+    msg!(
+        "Player sent to jail and turn ended automatically. Next turn: Player {}",
+        next_turn
+    );
+}
+
+pub fn send_player_to_jail(player_state: &mut PlayerState) {
+    player_state.position = JAIL_POSITION;
+    player_state.in_jail = true;
+    player_state.jail_turns = 0;
+    player_state.doubles_count = 0;
+
+    // Clear any pending actions since player is going to jail
+    player_state.needs_property_action = false;
+    player_state.pending_property_position = None;
+    player_state.needs_special_space_action = false;
+    player_state.pending_special_space_position = None;
+    player_state.needs_chance_card = false;
+    player_state.needs_community_chest_card = false;
+}
+
+pub fn force_end_turn(game: &mut GameState, player_state: &mut PlayerState, clock: &Sysvar<Clock>) {
+    // Reset turn-specific flags
+    player_state.has_rolled_dice = false;
+    player_state.needs_property_action = false;
+    player_state.pending_property_position = None;
+    player_state.needs_chance_card = false;
+    player_state.needs_community_chest_card = false;
+    player_state.needs_special_space_action = false;
+    player_state.pending_special_space_position = None;
+
+    // Reset doubles count when turn ends
+    player_state.doubles_count = 0;
+
+    // Advance to next player
+    let next_turn = (game.current_turn + 1) % game.current_players;
+    game.current_turn = next_turn;
+    game.turn_started_at = clock.unix_timestamp;
+
+    msg!("Turn automatically ended. Next turn: Player {}", next_turn);
 }
