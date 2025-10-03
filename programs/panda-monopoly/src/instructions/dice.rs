@@ -74,8 +74,6 @@ pub fn roll_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> 
 
         // Three doubles in a row sends player to jail
         if player_state.doubles_count >= 3 {
-            // send_player_to_jail(player_state);
-            // force_end_turn(game, player_state, clock);
             send_player_to_jail_and_end_turn(game, player_state, clock);
 
             msg!(
@@ -104,7 +102,6 @@ pub fn roll_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> 
         dice_roll[1]
     );
 
-    // Calculate movement
     let dice_sum = dice_roll[0] + dice_roll[1];
     let old_position = player_state.position;
     let new_position = (old_position + dice_sum) % BOARD_SIZE;
@@ -113,7 +110,6 @@ pub fn roll_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> 
     if new_position < old_position {
         player_state.cash_balance += GO_SALARY as u64;
 
-        // Emit event for frontend
         emit!(PlayerPassedGo {
             player: player_pubkey,
             game: game.key(),
@@ -129,10 +125,8 @@ pub fn roll_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> 
         );
     }
 
-    // Update player position
     player_state.position = new_position;
 
-    // Process space action based on landing position
     handle_space_landing(game, player_state, new_position, clock)?;
 
     msg!(
@@ -350,7 +344,6 @@ fn handle_space_landing(
             match data.property_type {
                 0 | 1 | 2 => {
                     if player_state.properties_owned.contains(&position) {
-                        // Player owns this property - no action needed
                         return Ok(());
                     }
 
@@ -435,14 +428,14 @@ pub fn pay_jail_fine_handler(ctx: Context<PayJailFine>) -> Result<()> {
     let player_pubkey = ctx.accounts.player.key();
     let clock = &ctx.accounts.clock;
 
-    // Verify player is in jail
     if !player_state.in_jail {
         return Err(GameError::PlayerNotInJail.into());
     }
 
     // Check if player has enough money
     if player_state.cash_balance < JAIL_FINE as u64 {
-        return Err(GameError::InsufficientFunds.into());
+        player_state.needs_bankruptcy_check = true;
+        return Ok(());
     }
 
     // Pay fine and release from jail

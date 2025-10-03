@@ -109,10 +109,16 @@ pub mod panda_monopoly {
         instructions::dice::pay_jail_fine_handler(ctx)
     }
 
-    // Special spaces instructions
-    pub fn go_to_jail(ctx: Context<GoToJail>) -> Result<()> {
-        instructions::special_spaces::go_to_jail_handler(ctx)
+    // Bankruptcy instructions
+    pub fn declare_bankruptcy<'c: 'info, 'info>(
+        ctx: Context<'_, '_, 'c, 'info, DeclareBankruptcy<'info>>,
+    ) -> Result<()> {
+        instructions::bankruptcy::declare_bankruptcy_handler(ctx)
     }
+
+    // pub fn go_to_jail(ctx: Context<GoToJail>) -> Result<()> {
+    //     instructions::dice::go_to_jail_handler(ctx)
+    // }
 
     pub fn pay_mev_tax_handler(ctx: Context<PayTax>) -> Result<()> {
         instructions::special_spaces::pay_mev_tax_handler(ctx)
@@ -142,11 +148,7 @@ pub mod panda_monopoly {
         instructions::special_spaces::attend_festival_handler(ctx)
     }
 
-    // pub fn collect_go(ctx: Context<CollectGo>) -> Result<()> {
-    //     instructions::special_spaces::collect_go_handler(ctx)
-    // }
-
-    // property instructions
+    // Property instructions
     pub fn init_property_handler(
         ctx: Context<InitProperty>,
         game_key: Pubkey,
@@ -222,9 +224,9 @@ pub mod panda_monopoly {
         instructions::trading::cancel_trade_handler(ctx)
     }
 
-    // Auction instructions
-    // pub fn start_auction(ctx: Context<StartAuction>, property_position: u8) -> Result<()> {
-    //     instructions::auction::start_auction_handler(ctx, property_position)
+    // Auction instructions (commented out as they're not implemented yet)
+    // pub fn start_auction(ctx: Context<StartAuction>, position: u8) -> Result<()> {
+    //     instructions::auction::start_auction_handler(ctx, position)
     // }
 
     // pub fn place_bid(ctx: Context<PlaceBid>, bid_amount: u64) -> Result<()> {

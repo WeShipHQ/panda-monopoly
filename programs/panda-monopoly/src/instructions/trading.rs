@@ -2,12 +2,114 @@ use crate::constants::*;
 use crate::error::GameError;
 use crate::state::*;
 use anchor_lang::prelude::*;
+use ephemeral_rollups_sdk::cpi::DelegateConfig;
+
+// #[derive(Accounts)]
+// #[instruction(game_key: Pubkey, position: u8)]
+// pub struct InitTrade<'info> {
+//     #[account(
+//         mut,
+//         seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+//         bump = game.bump,
+//         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
+//     )]
+//     pub game: Account<'info, GameState>,
+
+//     // #[account(
+//     //     init,
+//     //     payer = authority,
+//     //     space = 8 + PropertyState::INIT_SPACE,
+//     //     seeds = [b"property", game_key.as_ref(), position.to_le_bytes().as_ref()],
+//     //     bump
+//     // )]
+//     // pub property_state: Account<'info, PropertyState>,
+//     #[account(
+//         init,
+//         payer = proposer,
+//         space = 8 + TradeState::INIT_SPACE,
+//         seeds = [b"trade", game.key().as_ref(), proposer.key().as_ref()],
+//         bump
+//     )]
+//     pub trade: Account<'info, TradeState>,
+
+//     /// CHECK: Validate by CPI
+//     #[account(mut)]
+//     pub trade_buffer_account: UncheckedAccount<'info>,
+
+//     /// CHECK: Validate by CPI
+//     #[account(mut)]
+//     pub trade_delegation_record_account: UncheckedAccount<'info>,
+
+//     /// CHECK: Validate by CPI
+//     #[account(mut)]
+//     pub trade_delegation_metadata_account: UncheckedAccount<'info>,
+
+//     #[account(mut)]
+//     pub proposer: Signer<'info>,
+
+//     pub system_program: Program<'info, System>,
+
+//     /// CHECK: Validate by CPI
+//     pub delegation_program: UncheckedAccount<'info>,
+
+//     /// CHECK: Validate by CPI
+//     pub owner_program: UncheckedAccount<'info>,
+// }
+
+// pub fn init_trade_handler(ctx: Context<InitTrade>, game_key: Pubkey, position: u8) -> Result<()> {
+//     msg!("Init trade {} for game {}", position, game_key);
+//     msg!("property: {}", ctx.accounts.property_state.key());
+
+//     {
+//         let property = &mut ctx.accounts.property_state;
+//         property.position = position;
+//         property.game = game_key;
+//         property.init = false;
+//     }
+
+//     {
+//         let property = &ctx.accounts.property_state;
+//         property.exit(&crate::ID)?;
+
+//         let del_accounts = ephemeral_rollups_sdk::cpi::DelegateAccounts {
+//             payer: &ctx.accounts.authority.to_account_info(),
+//             pda: &property.to_account_info(),
+//             owner_program: &ctx.accounts.owner_program.to_account_info(),
+//             buffer: &ctx.accounts.property_buffer_account.to_account_info(),
+//             delegation_record: &ctx
+//                 .accounts
+//                 .property_delegation_record_account
+//                 .to_account_info(),
+//             delegation_metadata: &ctx
+//                 .accounts
+//                 .property_delegation_metadata_account
+//                 .to_account_info(),
+//             delegation_program: &ctx.accounts.delegation_program.to_account_info(),
+//             system_program: &ctx.accounts.system_program.to_account_info(),
+//         };
+
+//         let pos_seed = property.position.to_le_bytes();
+//         let seeds = &[b"property", property.game.as_ref(), pos_seed.as_ref()];
+
+//         msg!("seeds: {:?}", seeds);
+
+//         let config = DelegateConfig {
+//             commit_frequency_ms: 30_000,
+//             validator: Some(pubkey!("MAS1Dt9qreoRMQ14YQuhg8UTZMMzDdKhmkZMECCzk57")),
+//         };
+
+//         ephemeral_rollups_sdk::cpi::delegate_account(del_accounts, seeds, config)?;
+
+//         msg!("Property {} delegated");
+//     }
+
+//     Ok(())
+// }
 
 #[derive(Accounts)]
 pub struct CreateTrade<'info> {
     #[account(
         mut,
-        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes()],
         seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress

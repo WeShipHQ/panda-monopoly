@@ -110,7 +110,7 @@ pub enum GameError {
     #[msg("Not enough hotels available in bank")]
     NotEnoughHotelsInBank,
 
-    // Dice and Movement Errors
+    // Movement and Dice Errors
     #[msg("Invalid dice roll")]
     InvalidDiceRoll,
 
@@ -173,7 +173,7 @@ pub enum GameError {
     #[msg("Player already highest bidder")]
     AlreadyHighestBidder,
 
-    // Rent and Payment Errors
+    // Rent Errors
     #[msg("No rent owed")]
     NoRentOwed,
 
@@ -222,6 +222,9 @@ pub enum GameError {
 
     #[msg("Bankruptcy process already started")]
     BankruptcyAlreadyStarted,
+
+    #[msg("Bankruptcy check not required")]
+    BankruptcyNotRequired,
 
     // Account and Authorization Errors
     #[msg("Unauthorized action")]
@@ -275,7 +278,7 @@ pub enum GameError {
     #[msg("Action timeout exceeded")]
     ActionTimeoutExceeded,
 
-    // Generic Errors
+    // General Errors
     #[msg("Operation not allowed in current game state")]
     OperationNotAllowed,
 

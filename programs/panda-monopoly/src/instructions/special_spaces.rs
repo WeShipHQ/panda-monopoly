@@ -258,6 +258,7 @@ fn execute_chance_card_effect(
                 if player_state.cash_balance >= deduction {
                     player_state.cash_balance -= deduction;
                 } else {
+                    // FIXME  có cần phải set balance = 0 k?
                     player_state.cash_balance = 0;
                     player_state.needs_bankruptcy_check = true;
                 }
@@ -342,17 +343,6 @@ fn execute_chance_card_effect(
             }
         }
         CardEffectType::GoToJail => {
-            // player_state.position = JAIL_POSITION;
-            // player_state.in_jail = true;
-            // player_state.jail_turns = 0;
-            // player_state.doubles_count = 0;
-
-            // // Clear any pending actions since player is going to jail
-            // player_state.needs_property_action = false;
-            // player_state.pending_property_position = None;
-            // player_state.needs_special_space_action = false;
-            // player_state.pending_special_space_position = None;
-            // Use the function that automatically ends turn
             send_player_to_jail_and_end_turn(game, player_state, clock);
             return Ok(()); // Early return since turn is ended
         }
@@ -422,6 +412,7 @@ fn execute_community_chest_card_effect(
                 if player_state.cash_balance >= deduction {
                     player_state.cash_balance -= deduction;
                 } else {
+                    // FIXME  có cần phải set balance = 0 k?
                     player_state.cash_balance = 0;
                     player_state.needs_bankruptcy_check = true;
                 }
@@ -452,17 +443,6 @@ fn execute_community_chest_card_effect(
             msg!("MoveToNearest effect not implemented for community chest cards");
         }
         CardEffectType::GoToJail => {
-            // player_state.position = JAIL_POSITION;
-            // player_state.in_jail = true;
-            // player_state.jail_turns = 0;
-            // player_state.doubles_count = 0;
-
-            // // Clear any pending actions since player is going to jail
-            // player_state.needs_property_action = false;
-            // player_state.pending_property_position = None;
-            // player_state.needs_special_space_action = false;
-            // player_state.pending_special_space_position = None;
-            // Use the function that automatically ends turn
             send_player_to_jail_and_end_turn(game, player_state, clock);
             return Ok(()); // Early return since turn is ended
         }
@@ -773,81 +753,6 @@ pub fn attend_festival_handler(ctx: Context<AttendFestival>) -> Result<()> {
     Ok(())
 }
 
-// -----------------------------------------------------------------------------
-
-// #[derive(Accounts)]
-// pub struct CollectGo<'info> {
-//     #[account(
-//         mut,
-//         seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
-//         bump = game.bump,
-//         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
-//     )]
-//     pub game: Account<'info, GameState>,
-
-//     #[account(
-//         mut,
-//         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
-//         bump
-//     )]
-//     pub player_state: Account<'info, PlayerState>,
-
-//     #[account(mut)]
-//     pub player: Signer<'info>,
-
-//     pub clock: Sysvar<'info, Clock>,
-// }
-
-// pub fn collect_go_handler(ctx: Context<CollectGo>) -> Result<()> {
-//     let game = &mut ctx.accounts.game;
-//     let player_state = &mut ctx.accounts.player_state;
-//     let player_pubkey = ctx.accounts.player.key();
-//     let clock = &ctx.accounts.clock;
-
-//     // Find player index in game.players vector
-//     let player_index = game
-//         .players
-//         .iter()
-//         .position(|&p| p == player_pubkey)
-//         .ok_or(GameError::PlayerNotFound)?;
-
-//     // Verify it's the current player's turn
-//     if game.current_turn != player_index as u8 {
-//         return Err(GameError::NotPlayerTurn.into());
-//     }
-
-//     // Check if player has rolled dice this turn
-//     if !player_state.has_rolled_dice {
-//         return Err(GameError::HasNotRolledDice.into());
-//     }
-
-//     // Verify player is at GO position
-//     if player_state.position != GO_POSITION {
-//         return Err(GameError::InvalidBoardPosition.into());
-//     }
-
-//     // Collect GO salary
-//     player_state.cash_balance = player_state
-//         .cash_balance
-//         .checked_add(GO_SALARY as u64)
-//         .ok_or(GameError::ArithmeticOverflow)?;
-
-//     // Clear pending special space action
-//     player_state.needs_special_space_action = false;
-//     player_state.pending_special_space_position = None;
-
-//     // Update game timestamp
-//     game.turn_started_at = clock.unix_timestamp;
-
-//     msg!(
-//         "Player {} collected ${} from landing on GO!",
-//         player_pubkey,
-//         GO_SALARY
-//     );
-
-//     Ok(())
-// }
-
 #[derive(Accounts)]
 pub struct PayTax<'info> {
     #[account(
@@ -912,7 +817,7 @@ pub fn pay_mev_tax_handler(ctx: Context<PayTax>) -> Result<()> {
             MEV_TAX
         );
 
-        return Err(GameError::InsufficientFunds.into());
+        return Ok(());
     }
 
     // Update game timestamp
