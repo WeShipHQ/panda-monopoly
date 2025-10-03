@@ -73,6 +73,8 @@ pub fn initialize_game_handler(ctx: Context<InitializeGame>) -> Result<()> {
         game.time_limit = None;
         game.winner = None;
         game.turn_started_at = clock.unix_timestamp;
+        game.active_trades = vec![];
+        game.next_trade_id = 0;
 
         // Initialize player state
         player_state.initialize_player_state(ctx.accounts.authority.key(), game.key(), clock);

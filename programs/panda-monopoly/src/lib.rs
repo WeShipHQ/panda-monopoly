@@ -193,7 +193,7 @@ pub mod panda_monopoly {
         instructions::property::unmortgage_property_handler(ctx, position)
     }
 
-    // Trading instructions
+    // Trading instructions (updated for vector-based approach)
     pub fn create_trade(
         ctx: Context<CreateTrade>,
         trade_type: TradeType,
@@ -212,16 +212,20 @@ pub mod panda_monopoly {
         )
     }
 
-    pub fn accept_trade(ctx: Context<AcceptTrade>) -> Result<()> {
-        instructions::trading::accept_trade_handler(ctx)
+    pub fn accept_trade(ctx: Context<AcceptTrade>, trade_id: u8) -> Result<()> {
+        instructions::trading::accept_trade_handler(ctx, trade_id)
     }
 
-    pub fn reject_trade(ctx: Context<RejectTrade>) -> Result<()> {
-        instructions::trading::reject_trade_handler(ctx)
+    pub fn reject_trade(ctx: Context<RejectTrade>, trade_id: u8) -> Result<()> {
+        instructions::trading::reject_trade_handler(ctx, trade_id)
     }
 
-    pub fn cancel_trade(ctx: Context<CancelTrade>) -> Result<()> {
-        instructions::trading::cancel_trade_handler(ctx)
+    pub fn cancel_trade(ctx: Context<CancelTrade>, trade_id: u8) -> Result<()> {
+        instructions::trading::cancel_trade_handler(ctx, trade_id)
+    }
+
+    pub fn cleanup_expired_trades(ctx: Context<CleanupExpiredTrades>) -> Result<()> {
+        instructions::trading::cleanup_expired_trades_handler(ctx)
     }
 
     // Auction instructions (commented out as they're not implemented yet)

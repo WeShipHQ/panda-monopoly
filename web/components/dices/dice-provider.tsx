@@ -167,7 +167,9 @@ export const DiceProvider: React.FC<DiceProviderProps> = ({ children }) => {
       diceState,
       canRoll,
       handleRollDice,
+      // @ts-expect-error
       dice1Ref,
+      // @ts-expect-error
       dice2Ref,
     }),
     [diceState, canRoll, handleRollDice, dice1Ref, dice2Ref]

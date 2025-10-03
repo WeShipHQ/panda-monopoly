@@ -329,4 +329,7 @@ pub enum GameError {
 
     #[msg("Auction is still active")]
     AuctionStillActive,
+
+    #[msg("Too many active trades")]
+    TooManyActiveTrades,
 }

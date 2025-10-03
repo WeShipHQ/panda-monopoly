@@ -14,11 +14,8 @@ import {
   getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
-  getU8Decoder,
-  getU8Encoder,
   transformEncoder,
   type AccountMeta,
-  type AccountSignerMeta,
   type Address,
   type FixedSizeCodec,
   type FixedSizeDecoder,
@@ -28,27 +25,24 @@ import {
   type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
-  type TransactionSigner,
   type WritableAccount,
-  type WritableSignerAccount,
 } from '@solana/kit';
 import { PANDA_MONOPOLY_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const CANCEL_TRADE_DISCRIMINATOR = new Uint8Array([
-  124, 66, 91, 59, 175, 107, 208, 120,
+export const CLEANUP_EXPIRED_TRADES_DISCRIMINATOR = new Uint8Array([
+  7, 253, 210, 8, 4, 48, 168, 107,
 ]);
 
-export function getCancelTradeDiscriminatorBytes() {
+export function getCleanupExpiredTradesDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CANCEL_TRADE_DISCRIMINATOR
+    CLEANUP_EXPIRED_TRADES_DISCRIMINATOR
   );
 }
 
-export type CancelTradeInstruction<
+export type CleanupExpiredTradesInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountGame extends string | AccountMeta<string> = string,
-  TAccountCanceller extends string | AccountMeta<string> = string,
   TAccountClock extends
     | string
     | AccountMeta<string> = 'SysvarC1ock11111111111111111111111111111111',
@@ -60,10 +54,6 @@ export type CancelTradeInstruction<
       TAccountGame extends string
         ? WritableAccount<TAccountGame>
         : TAccountGame,
-      TAccountCanceller extends string
-        ? WritableSignerAccount<TAccountCanceller> &
-            AccountSignerMeta<TAccountCanceller>
-        : TAccountCanceller,
       TAccountClock extends string
         ? ReadonlyAccount<TAccountClock>
         : TAccountClock,
@@ -71,63 +61,56 @@ export type CancelTradeInstruction<
     ]
   >;
 
-export type CancelTradeInstructionData = {
+export type CleanupExpiredTradesInstructionData = {
   discriminator: ReadonlyUint8Array;
-  tradeId: number;
 };
 
-export type CancelTradeInstructionDataArgs = { tradeId: number };
+export type CleanupExpiredTradesInstructionDataArgs = {};
 
-export function getCancelTradeInstructionDataEncoder(): FixedSizeEncoder<CancelTradeInstructionDataArgs> {
+export function getCleanupExpiredTradesInstructionDataEncoder(): FixedSizeEncoder<CleanupExpiredTradesInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['tradeId', getU8Encoder()],
-    ]),
-    (value) => ({ ...value, discriminator: CANCEL_TRADE_DISCRIMINATOR })
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    (value) => ({
+      ...value,
+      discriminator: CLEANUP_EXPIRED_TRADES_DISCRIMINATOR,
+    })
   );
 }
 
-export function getCancelTradeInstructionDataDecoder(): FixedSizeDecoder<CancelTradeInstructionData> {
+export function getCleanupExpiredTradesInstructionDataDecoder(): FixedSizeDecoder<CleanupExpiredTradesInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['tradeId', getU8Decoder()],
   ]);
 }
 
-export function getCancelTradeInstructionDataCodec(): FixedSizeCodec<
-  CancelTradeInstructionDataArgs,
-  CancelTradeInstructionData
+export function getCleanupExpiredTradesInstructionDataCodec(): FixedSizeCodec<
+  CleanupExpiredTradesInstructionDataArgs,
+  CleanupExpiredTradesInstructionData
 > {
   return combineCodec(
-    getCancelTradeInstructionDataEncoder(),
-    getCancelTradeInstructionDataDecoder()
+    getCleanupExpiredTradesInstructionDataEncoder(),
+    getCleanupExpiredTradesInstructionDataDecoder()
   );
 }
 
-export type CancelTradeInput<
+export type CleanupExpiredTradesInput<
   TAccountGame extends string = string,
-  TAccountCanceller extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
-  canceller: TransactionSigner<TAccountCanceller>;
   clock?: Address<TAccountClock>;
-  tradeId: CancelTradeInstructionDataArgs['tradeId'];
 };
 
-export function getCancelTradeInstruction<
+export function getCleanupExpiredTradesInstruction<
   TAccountGame extends string,
-  TAccountCanceller extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: CancelTradeInput<TAccountGame, TAccountCanceller, TAccountClock>,
+  input: CleanupExpiredTradesInput<TAccountGame, TAccountClock>,
   config?: { programAddress?: TProgramAddress }
-): CancelTradeInstruction<
+): CleanupExpiredTradesInstruction<
   TProgramAddress,
   TAccountGame,
-  TAccountCanceller,
   TAccountClock
 > {
   // Program address.
@@ -137,16 +120,12 @@ export function getCancelTradeInstruction<
   // Original accounts.
   const originalAccounts = {
     game: { value: input.game ?? null, isWritable: true },
-    canceller: { value: input.canceller ?? null, isWritable: true },
     clock: { value: input.clock ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
-
-  // Original args.
-  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.clock.value) {
@@ -156,45 +135,37 @@ export function getCancelTradeInstruction<
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
-    accounts: [
-      getAccountMeta(accounts.game),
-      getAccountMeta(accounts.canceller),
-      getAccountMeta(accounts.clock),
-    ],
-    data: getCancelTradeInstructionDataEncoder().encode(
-      args as CancelTradeInstructionDataArgs
-    ),
+    accounts: [getAccountMeta(accounts.game), getAccountMeta(accounts.clock)],
+    data: getCleanupExpiredTradesInstructionDataEncoder().encode({}),
     programAddress,
-  } as CancelTradeInstruction<
+  } as CleanupExpiredTradesInstruction<
     TProgramAddress,
     TAccountGame,
-    TAccountCanceller,
     TAccountClock
   >);
 }
 
-export type ParsedCancelTradeInstruction<
+export type ParsedCleanupExpiredTradesInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
     game: TAccountMetas[0];
-    canceller: TAccountMetas[1];
-    clock: TAccountMetas[2];
+    clock: TAccountMetas[1];
   };
-  data: CancelTradeInstructionData;
+  data: CleanupExpiredTradesInstructionData;
 };
 
-export function parseCancelTradeInstruction<
+export function parseCleanupExpiredTradesInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
-): ParsedCancelTradeInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 3) {
+): ParsedCleanupExpiredTradesInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 2) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -206,11 +177,9 @@ export function parseCancelTradeInstruction<
   };
   return {
     programAddress: instruction.programAddress,
-    accounts: {
-      game: getNextAccount(),
-      canceller: getNextAccount(),
-      clock: getNextAccount(),
-    },
-    data: getCancelTradeInstructionDataDecoder().decode(instruction.data),
+    accounts: { game: getNextAccount(), clock: getNextAccount() },
+    data: getCleanupExpiredTradesInstructionDataDecoder().decode(
+      instruction.data
+    ),
   };
 }

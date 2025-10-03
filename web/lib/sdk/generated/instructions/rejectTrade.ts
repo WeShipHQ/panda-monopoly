@@ -14,6 +14,8 @@ import {
   getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
+  getU8Decoder,
+  getU8Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
@@ -24,6 +26,7 @@ import {
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
+  type ReadonlyAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
@@ -44,31 +47,43 @@ export function getRejectTradeDiscriminatorBytes() {
 
 export type RejectTradeInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
-  TAccountTrade extends string | AccountMeta<string> = string,
+  TAccountGame extends string | AccountMeta<string> = string,
   TAccountRejecter extends string | AccountMeta<string> = string,
+  TAccountClock extends
+    | string
+    | AccountMeta<string> = 'SysvarC1ock11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
-      TAccountTrade extends string
-        ? WritableAccount<TAccountTrade>
-        : TAccountTrade,
+      TAccountGame extends string
+        ? WritableAccount<TAccountGame>
+        : TAccountGame,
       TAccountRejecter extends string
         ? WritableSignerAccount<TAccountRejecter> &
             AccountSignerMeta<TAccountRejecter>
         : TAccountRejecter,
+      TAccountClock extends string
+        ? ReadonlyAccount<TAccountClock>
+        : TAccountClock,
       ...TRemainingAccounts,
     ]
   >;
 
-export type RejectTradeInstructionData = { discriminator: ReadonlyUint8Array };
+export type RejectTradeInstructionData = {
+  discriminator: ReadonlyUint8Array;
+  tradeId: number;
+};
 
-export type RejectTradeInstructionDataArgs = {};
+export type RejectTradeInstructionDataArgs = { tradeId: number };
 
 export function getRejectTradeInstructionDataEncoder(): FixedSizeEncoder<RejectTradeInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['tradeId', getU8Encoder()],
+    ]),
     (value) => ({ ...value, discriminator: REJECT_TRADE_DISCRIMINATOR })
   );
 }
@@ -76,6 +91,7 @@ export function getRejectTradeInstructionDataEncoder(): FixedSizeEncoder<RejectT
 export function getRejectTradeInstructionDataDecoder(): FixedSizeDecoder<RejectTradeInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['tradeId', getU8Decoder()],
   ]);
 }
 
@@ -90,47 +106,70 @@ export function getRejectTradeInstructionDataCodec(): FixedSizeCodec<
 }
 
 export type RejectTradeInput<
-  TAccountTrade extends string = string,
+  TAccountGame extends string = string,
   TAccountRejecter extends string = string,
+  TAccountClock extends string = string,
 > = {
-  trade: Address<TAccountTrade>;
+  game: Address<TAccountGame>;
   rejecter: TransactionSigner<TAccountRejecter>;
+  clock?: Address<TAccountClock>;
+  tradeId: RejectTradeInstructionDataArgs['tradeId'];
 };
 
 export function getRejectTradeInstruction<
-  TAccountTrade extends string,
+  TAccountGame extends string,
   TAccountRejecter extends string,
+  TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: RejectTradeInput<TAccountTrade, TAccountRejecter>,
+  input: RejectTradeInput<TAccountGame, TAccountRejecter, TAccountClock>,
   config?: { programAddress?: TProgramAddress }
-): RejectTradeInstruction<TProgramAddress, TAccountTrade, TAccountRejecter> {
+): RejectTradeInstruction<
+  TProgramAddress,
+  TAccountGame,
+  TAccountRejecter,
+  TAccountClock
+> {
   // Program address.
   const programAddress =
     config?.programAddress ?? PANDA_MONOPOLY_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
-    trade: { value: input.trade ?? null, isWritable: true },
+    game: { value: input.game ?? null, isWritable: true },
     rejecter: { value: input.rejecter ?? null, isWritable: true },
+    clock: { value: input.clock ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
+  // Resolve default values.
+  if (!accounts.clock.value) {
+    accounts.clock.value =
+      'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
+  }
+
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta(accounts.trade),
+      getAccountMeta(accounts.game),
       getAccountMeta(accounts.rejecter),
+      getAccountMeta(accounts.clock),
     ],
-    data: getRejectTradeInstructionDataEncoder().encode({}),
+    data: getRejectTradeInstructionDataEncoder().encode(
+      args as RejectTradeInstructionDataArgs
+    ),
     programAddress,
   } as RejectTradeInstruction<
     TProgramAddress,
-    TAccountTrade,
-    TAccountRejecter
+    TAccountGame,
+    TAccountRejecter,
+    TAccountClock
   >);
 }
 
@@ -140,8 +179,9 @@ export type ParsedRejectTradeInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    trade: TAccountMetas[0];
+    game: TAccountMetas[0];
     rejecter: TAccountMetas[1];
+    clock: TAccountMetas[2];
   };
   data: RejectTradeInstructionData;
 };
@@ -154,7 +194,7 @@ export function parseRejectTradeInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedRejectTradeInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 2) {
+  if (instruction.accounts.length < 3) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -166,7 +206,11 @@ export function parseRejectTradeInstruction<
   };
   return {
     programAddress: instruction.programAddress,
-    accounts: { trade: getNextAccount(), rejecter: getNextAccount() },
+    accounts: {
+      game: getNextAccount(),
+      rejecter: getNextAccount(),
+      clock: getNextAccount(),
+    },
     data: getRejectTradeInstructionDataDecoder().decode(instruction.data),
   };
 }

@@ -12,7 +12,6 @@ import {
   getBuildHotelInstructionAsync,
   getSellBuildingInstructionAsync,
   getCollectFreeParkingInstructionAsync,
-  getGoToJailInstructionAsync,
   getAttendFestivalInstructionAsync,
   getDrawChanceCardInstructionAsync,
   getDrawCommunityChestCardInstructionAsync,
@@ -47,6 +46,10 @@ import {
   fetchTradeState,
   TradeState,
   getRollDiceVrfHandlerInstruction,
+  getCreateTradeInstruction,
+  getAcceptTradeInstruction,
+  getRejectTradeInstruction,
+  getCancelTradeInstruction,
 } from "./generated";
 import {
   CreateGameIxs,
@@ -357,7 +360,6 @@ class MonopolyGameSDK {
     );
 
     const [programIdentityPda] = await getProgramIdentityPDA();
-    console.log("programIdentityPda", programIdentityPda);
 
     return await getRollDiceVrfHandlerInstruction({
       game: params.gameAddress,
@@ -595,18 +597,6 @@ class MonopolyGameSDK {
     });
   }
 
-  // Special space methods
-
-  /**
-   * Collect GO salary when passing or landing on GO
-   */
-  // async collectGoIx(params: CollectGoParams): Promise<Instruction> {
-  //   return await getCollectGoInstructionAsync({
-  //     game: params.gameAddress,
-  //     player: params.player,
-  //   });
-  // }
-
   /**
    * Collect money from Free Parking
    */
@@ -614,16 +604,6 @@ class MonopolyGameSDK {
     params: CollectFreeParkingParams
   ): Promise<Instruction> {
     return await getCollectFreeParkingInstructionAsync({
-      game: params.gameAddress,
-      player: params.player,
-    });
-  }
-
-  /**
-   * Go to jail (from Go to Jail space or card)
-   */
-  async goToJailIx(params: GoToJailParams): Promise<Instruction> {
-    return await getGoToJailInstructionAsync({
       game: params.gameAddress,
       player: params.player,
     });
@@ -638,8 +618,6 @@ class MonopolyGameSDK {
       player: params.player,
     });
   }
-
-  // Card-related methods
 
   /**
    * Draw a Chance card
@@ -687,17 +665,9 @@ class MonopolyGameSDK {
     });
   }
 
-  // Trade methods
+  // trading
 
-  /**
-   * Create a trade with another player
-   */
-  async createTradeIx(params: CreateTradeParams): Promise<Instruction> {
-    const [tradeStateAddress] = await getTradeStatePDA(
-      params.gameAddress,
-      params.proposer.address
-    );
-
+  async createCreateTradeIx(params: CreateTradeParams): Promise<Instruction> {
     const [proposerStateAddress] = await getPlayerStatePDA(
       params.gameAddress,
       params.proposer.address
@@ -708,9 +678,8 @@ class MonopolyGameSDK {
       params.receiver
     );
 
-    return await getCreateTradeInstructionAsync({
+    return getCreateTradeInstruction({
       game: params.gameAddress,
-      trade: tradeStateAddress,
       proposerState: proposerStateAddress,
       receiverState: receiverStateAddress,
       proposer: params.proposer,
@@ -718,18 +687,19 @@ class MonopolyGameSDK {
       tradeType: params.tradeType,
       proposerMoney: params.proposerMoney,
       receiverMoney: params.receiverMoney,
-      proposerProperty: params.proposerProperty ?? null,
-      receiverProperty: params.receiverProperty ?? null,
+      proposerProperty: params.proposerProperty
+        ? some(params.proposerProperty)
+        : none(),
+      receiverProperty: params.receiverProperty
+        ? some(params.receiverProperty)
+        : none(),
     });
   }
 
-  /**
-   * Accept a trade proposal
-   */
   async acceptTradeIx(params: AcceptTradeParams): Promise<Instruction> {
-    const [tradeStateAddress] = await getTradeStatePDA(
+    const [accepterStateAddress] = await getPlayerStatePDA(
       params.gameAddress,
-      params.proposer
+      params.accepter.address
     );
 
     const [proposerStateAddress] = await getPlayerStatePDA(
@@ -737,47 +707,28 @@ class MonopolyGameSDK {
       params.proposer
     );
 
-    const [receiverStateAddress] = await getPlayerStatePDA(
-      params.gameAddress,
-      params.receiver.address
-    );
-
-    return await getAcceptTradeInstructionAsync({
+    return getAcceptTradeInstruction({
       game: params.gameAddress,
-      trade: tradeStateAddress,
       proposerState: proposerStateAddress,
-      accepterState: receiverStateAddress,
-      accepter: params.receiver,
+      accepterState: accepterStateAddress,
+      accepter: params.accepter,
+      tradeId: params.tradeId,
     });
   }
 
-  /**
-   * Reject a trade proposal
-   */
   async rejectTradeIx(params: RejectTradeParams): Promise<Instruction> {
-    const [tradeStateAddress] = await getTradeStatePDA(
-      params.gameAddress,
-      params.proposer
-    );
-
     return getRejectTradeInstruction({
-      trade: tradeStateAddress,
-      rejecter: params.receiver,
+      game: params.gameAddress,
+      rejecter: params.rejecter,
+      tradeId: params.tradeId,
     });
   }
 
-  /**
-   * Cancel a trade proposal (only proposer can cancel)
-   */
   async cancelTradeIx(params: CancelTradeParams): Promise<Instruction> {
-    const [tradeStateAddress] = await getTradeStatePDA(
-      params.gameAddress,
-      params.proposer.address
-    );
-
     return getCancelTradeInstruction({
-      trade: tradeStateAddress,
-      canceller: params.proposer,
+      game: params.gameAddress,
+      canceller: params.canceller,
+      tradeId: params.tradeId,
     });
   }
 
@@ -1041,7 +992,6 @@ class MonopolyGameSDK {
   }
 
   public async subscribeToEvents(
-    // rpc: Rpc<SolanaRpcApi>,
     rpcSubscriptions: RpcSubscriptions<SolanaRpcSubscriptionsApi>,
     onEvent: (event: GameEvent) => void
   ) {
