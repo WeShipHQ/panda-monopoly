@@ -185,7 +185,7 @@ flex-grow: 0; */
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background min-h-screen text-foreground overscroll-none font-display;
+    @apply bg-background min-h-screen text-foreground overscroll-none font-display bg-[linear-gradient(to_right,#80808033_1px,transparent_1px),linear-gradient(to_bottom,#80808033_1px,transparent_1px)] bg-[size:70px_70px];
   }
 
   .popover-arrow {
@@ -220,6 +220,27 @@ flex-grow: 0; */
       grid-template-areas: "left center right";
       grid-template-columns: minmax(15rem, 1fr) auto minmax(15rem, 1fr);
     }
+  }
+}
+
+@keyframes blink {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes roll {
+  0% {
+    transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+  }
+  50% {
+    transform: rotateX(40deg) rotateY(180deg) rotateZ(320deg);
+  }
+  100% {
+    transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg);
   }
 }
 

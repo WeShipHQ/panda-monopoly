@@ -5,7 +5,7 @@ export default function HomePage() {
   return (
     <PageLayout>
       <div className="min-h-screen flex flex-col gap-6 pt-28">
-          <GameList />
+        <GameList />
       </div>
     </PageLayout>
   );

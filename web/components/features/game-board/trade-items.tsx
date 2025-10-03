@@ -15,30 +15,39 @@ import type { TradeData } from "@/types/schema";
 
 const getTradeStatusText = (status: TradeStatus): string => {
   switch (status) {
-    case 0: return "Pending";
-    case 1: return "Accepted";
-    case 2: return "Rejected";
-    case 3: return "Cancelled";
-    case 4: return "Expired";
-    default: return "Unknown";
+    case 0:
+      return "Pending";
+    case 1:
+      return "Accepted";
+    case 2:
+      return "Rejected";
+    case 3:
+      return "Cancelled";
+    case 4:
+      return "Expired";
+    default:
+      return "Unknown";
   }
 };
 
 const getTradeStatusVariant = (status: TradeStatus): "default" | "neutral" => {
   switch (status) {
-    case 0: return "neutral"; // Pending
-    case 1: return "default"; // Accepted
-    default: return "neutral";
+    case 0:
+      return "neutral"; // Pending
+    case 1:
+      return "default"; // Accepted
+    default:
+      return "neutral";
   }
 };
 
 export function TradeItems() {
-  const { 
-    activeTrades, 
-    isTradeDialogOpen, 
+  const {
+    activeTrades,
+    isTradeDialogOpen,
     setIsTradeDialogOpen,
     currentPlayerState,
-    cancelTrade
+    cancelTrade,
   } = useGameContext();
 
   const [selectedTrade, setSelectedTrade] = useState<TradeData | null>(null);
@@ -53,11 +62,14 @@ export function TradeItems() {
     setIsDetailsDialogOpen(true);
   };
 
-  const handleDeleteTrade = async (trade: TradeData, event: React.MouseEvent) => {
+  const handleDeleteTrade = async (
+    trade: TradeData,
+    event: React.MouseEvent
+  ) => {
     event.stopPropagation(); // Prevent opening details dialog
-    
+
     if (!currentPlayerState) return;
-    
+
     // Only allow canceling if current player is the initiator and trade is pending
     if (trade.initiator === currentPlayerState.wallet && trade.status === 0) {
       try {
@@ -77,8 +89,8 @@ export function TradeItems() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Trades</h2>
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             className="h-8 px-3"
             onClick={handleCreateTrade}
             disabled={!currentPlayerState}
@@ -101,8 +113,8 @@ export function TradeItems() {
               const toPlayerInfo = generatePlayerIcon(trade.target);
 
               return (
-                <Card 
-                  key={trade.id} 
+                <Card
+                  key={trade.id}
                   className="relative cursor-pointer hover:bg-muted/50 transition-colors"
                   onClick={() => handleViewTrade(trade)}
                 >
@@ -136,11 +148,11 @@ export function TradeItems() {
                         >
                           {getTradeStatusText(trade.status)}
                         </Badge>
-                        
+
                         {/* Action buttons */}
                         <div className="flex gap-1">
-                          <Button 
-                            variant="neutral" 
+                          <Button
+                            variant="neutral"
                             className="h-6 px-2 text-xs"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -149,10 +161,10 @@ export function TradeItems() {
                           >
                             <Eye className="w-3 h-3" />
                           </Button>
-                          
+
                           {canDeleteTrade(trade) && (
-                            <Button 
-                              variant="neutral" 
+                            <Button
+                              variant="neutral"
                               className="h-6 px-2 text-xs bg-red-600 hover:bg-red-700 border-red-700 text-white"
                               onClick={(e) => handleDeleteTrade(trade, e)}
                             >
@@ -169,32 +181,48 @@ export function TradeItems() {
                           {formatAddress(trade.initiator)}
                         </span>
                       </div>
-                      
+
                       {/* Trade summary */}
                       <div className="space-y-1">
                         <div className="text-xs">
                           <span className="font-medium">Offers:</span>
                           {trade.initiatorOffer.money !== "0" && (
-                            <span className="ml-1">💰 ${trade.initiatorOffer.money}</span>
+                            <span className="ml-1">
+                              💰 ${trade.initiatorOffer.money}
+                            </span>
                           )}
                           {trade.initiatorOffer.properties.length > 0 && (
-                            <span className="ml-1">🏠 {trade.initiatorOffer.properties.length} properties</span>
+                            <span className="ml-1">
+                              🏠 {trade.initiatorOffer.properties.length}{" "}
+                              properties
+                            </span>
                           )}
-                          {trade.initiatorOffer.money === "0" && trade.initiatorOffer.properties.length === 0 && (
-                            <span className="ml-1 text-muted-foreground">Nothing</span>
-                          )}
+                          {trade.initiatorOffer.money === "0" &&
+                            trade.initiatorOffer.properties.length === 0 && (
+                              <span className="ml-1 text-muted-foreground">
+                                Nothing
+                              </span>
+                            )}
                         </div>
                         <div className="text-xs">
                           <span className="font-medium">Wants:</span>
                           {trade.targetOffer.money !== "0" && (
-                            <span className="ml-1">💰 ${trade.targetOffer.money}</span>
+                            <span className="ml-1">
+                              💰 ${trade.targetOffer.money}
+                            </span>
                           )}
                           {trade.targetOffer.properties.length > 0 && (
-                            <span className="ml-1">🏠 {trade.targetOffer.properties.length} properties</span>
+                            <span className="ml-1">
+                              🏠 {trade.targetOffer.properties.length}{" "}
+                              properties
+                            </span>
                           )}
-                          {trade.targetOffer.money === "0" && trade.targetOffer.properties.length === 0 && (
-                            <span className="ml-1 text-muted-foreground">Nothing</span>
-                          )}
+                          {trade.targetOffer.money === "0" &&
+                            trade.targetOffer.properties.length === 0 && (
+                              <span className="ml-1 text-muted-foreground">
+                                Nothing
+                              </span>
+                            )}
                         </div>
                       </div>
                     </div>
@@ -206,11 +234,11 @@ export function TradeItems() {
         </div>
       </div>
 
-      <TradeDialog 
-        isOpen={isTradeDialogOpen} 
-        onClose={() => setIsTradeDialogOpen(false)} 
+      <TradeDialog
+        isOpen={isTradeDialogOpen}
+        onClose={() => setIsTradeDialogOpen(false)}
       />
-      
+
       <TradeDetailsDialog
         isOpen={isDetailsDialogOpen}
         onClose={() => setIsDetailsDialogOpen(false)}

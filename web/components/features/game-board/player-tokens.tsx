@@ -3,13 +3,14 @@
 import { PlayerAccount } from "@/types/schema";
 import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getRandomAvatarByAddress } from "@/lib/avatar-utils";
+import { cn } from "@/lib/utils";
 
 interface PlayerTokenProps {
   player: PlayerAccount;
   position: number;
   boardRotation: number;
   playersOnSameSpace: PlayerAccount[];
+  isPlaying: boolean;
 }
 
 export const PlayerToken: React.FC<PlayerTokenProps> = ({
@@ -17,6 +18,7 @@ export const PlayerToken: React.FC<PlayerTokenProps> = ({
   position,
   boardRotation,
   playersOnSameSpace,
+  isPlaying,
 }) => {
   // Position token based on board position (40 spaces total)
   const getTokenPosition = (pos: number) => {
@@ -112,7 +114,7 @@ export const PlayerToken: React.FC<PlayerTokenProps> = ({
 
   return (
     <div
-      className="absolute w-10 h-10 transition-all duration-300 ease-in-out flex items-center justify-center"
+      className="absolute w-10 h-10 z-20 transition-all duration-300 ease-in-out flex items-center justify-center"
       style={{
         left: tokenPos.left,
         top: tokenPos.top,
@@ -122,9 +124,13 @@ export const PlayerToken: React.FC<PlayerTokenProps> = ({
     >
       {/* Location-like shape with avatar */}
       <div className="relative w-full h-full">
-        {/* Outer ring for location effect */}
-        <div className="absolute inset-0 rounded-full bg-white/20 border-2 border-white/40 shadow-lg"></div>
-        
+        <div
+          className={cn("absolute inset-0 rounded-full bg-white/20 shadow-lg", {
+            "border-main border-3": isPlaying,
+            "border-white/40 border-2": !isPlaying,
+          })}
+        />
+
         {/* Inner avatar container */}
         <div className="absolute inset-1 rounded-full overflow-hidden bg-white shadow-md">
           <Avatar className="w-full h-full">
@@ -141,7 +147,7 @@ export const PlayerToken: React.FC<PlayerTokenProps> = ({
             </AvatarFallback>
           </Avatar>
         </div>
-        
+
         {/* Glow effect */}
         <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400/20 to-purple-500/20 blur-sm"></div>
       </div>
@@ -152,11 +158,13 @@ export const PlayerToken: React.FC<PlayerTokenProps> = ({
 interface PlayerTokensContainerProps {
   players: PlayerAccount[];
   boardRotation: number;
+  currentPlayer: string;
 }
 
 export const PlayerTokensContainer: React.FC<PlayerTokensContainerProps> = ({
   players,
   boardRotation,
+  currentPlayer,
 }) => {
   return (
     <div
@@ -175,6 +183,7 @@ export const PlayerTokensContainer: React.FC<PlayerTokensContainerProps> = ({
             position={player.position}
             boardRotation={boardRotation}
             playersOnSameSpace={playersOnSameSpace}
+            isPlaying={player.wallet === currentPlayer}
           />
         );
       })}
