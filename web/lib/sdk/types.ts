@@ -5,7 +5,11 @@ import {
   Instruction,
   GetAccountInfoApi,
 } from "@solana/kit";
-import { BuildingType, ChanceCardDrawn, CommunityChestCardDrawn } from "./generated";
+import {
+  BuildingType,
+  ChanceCardDrawn,
+  CommunityChestCardDrawn,
+} from "./generated";
 
 export interface CreatePlatformParams {
   rpc: Rpc<GetAccountInfoApi>;
@@ -54,7 +58,6 @@ export interface EndTurnParams {
 }
 
 export interface PayJailFineParams {
-  rpc: Rpc<GetAccountInfoApi>;
   player: TransactionSigner;
   gameAddress: Address;
 }

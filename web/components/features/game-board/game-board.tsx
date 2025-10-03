@@ -66,10 +66,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
     skipProperty,
     payMevTax,
     payPriorityFeeTax,
-    drawChanceCard,
-    // Utilities
-    getPropertyByPosition,
-    isCurrentPlayerTurn,
+    payJailFine,
   } = useGameContext();
 
   // console.log("currentPlayerState", currentPlayerState);
@@ -151,6 +148,18 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
       setIsLoading(null);
     }
   };
+
+  const handlePayJailFine = async () => {
+    setIsLoading("payJailFine");
+    try {
+      await payJailFine();
+    } catch (error) {
+      console.error("Failed to pay jail fine:", error);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
   const renderSpace = (space: BoardSpace, properties: PropertyAccount[]) => {
     const position = space.position;
     const key = `${space.name}-${position}`;
@@ -232,6 +241,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
                       handleSkipProperty={handleSkipProperty}
                       handlePayMevTax={handlePayMevTax}
                       handlePayPriorityFeeTax={handlePayPriorityFeeTax}
+                      handlePayJailFine={handlePayJailFine}
                       isLoading={isLoading}
                       wallet={wallet}
                     />

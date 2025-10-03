@@ -7,12 +7,20 @@ import { getBoardSpaceData } from "@/lib/board-utils";
 import { PlayerAccount } from "@/types/schema";
 import { Badge } from "@/components/ui/badge";
 import {
+  JAIL_FINE,
   MEV_TAX_POSITION,
   PRIORITY_FEE_TAX_POSITION,
 } from "@/configs/constants";
 import { WalletWithMetadata } from "@privy-io/react-auth";
 // import { DiceVisual, DiceController } from "@/components/dices";
 import { DicesOnly, useDiceContext } from "./dice";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface PlayerTokenProps {
   player: PlayerAccount;
@@ -161,6 +169,7 @@ export const PlayerActions = ({
   handleEndTurn,
   handlePayMevTax,
   handlePayPriorityFeeTax,
+  handlePayJailFine,
   isLoading,
 }: {
   wallet: WalletWithMetadata;
@@ -171,12 +180,16 @@ export const PlayerActions = ({
   handlePayMevTax: () => void;
   handlePayPriorityFeeTax: () => void;
   handleEndTurn: () => void;
+  handlePayJailFine: () => void;
   isLoading: string | null;
 }) => {
   const {
     gameState: game,
     currentPlayerState,
-    isCurrentPlayerTurn,
+    showRollDice,
+    isCurrentTurn,
+    showEndTurn,
+    showPayJailFine,
     setCardDrawType,
     setIsCardDrawModalOpen,
   } = useGameContext();
@@ -192,18 +205,18 @@ export const PlayerActions = ({
   const isCreator = game.authority === wallet.address;
   const isInGame = wallet.address && game.players.includes(wallet.address);
 
-  const isMyTurn = isCurrentPlayerTurn();
+  // const isMyTurn = isCurrentPlayerTurn();
 
-  const hasPendingActions =
-    currentPlayerState.needsPropertyAction ||
-    currentPlayerState.needsChanceCard ||
-    currentPlayerState.needsCommunityChestCard ||
-    currentPlayerState.needsBankruptcyCheck ||
-    currentPlayerState.needsSpecialSpaceAction;
+  // const hasPendingActions =
+  //   currentPlayerState.needsPropertyAction ||
+  //   currentPlayerState.needsChanceCard ||
+  //   currentPlayerState.needsCommunityChestCard ||
+  //   currentPlayerState.needsBankruptcyCheck ||
+  //   currentPlayerState.needsSpecialSpaceAction;
 
-  const isDouble =
-    currentPlayerState.hasRolledDice &&
-    currentPlayerState.lastDiceRoll[0] === currentPlayerState.lastDiceRoll[1];
+  // const isDouble =
+  //   currentPlayerState.hasRolledDice &&
+  //   currentPlayerState.lastDiceRoll[0] === currentPlayerState.lastDiceRoll[1];
 
   return (
     <div className="flex flex-col items-center">
@@ -243,7 +256,7 @@ export const PlayerActions = ({
         </div>
       )}
 
-      {isStarted && isMyTurn && (
+      {isStarted && isCurrentTurn && (
         <>
           <div className="flex items-center gap-2 mt-8 mb-4">
             {/* {!hasPendingActions &&
@@ -259,7 +272,7 @@ export const PlayerActions = ({
                 </Button>
               )} */}
 
-            {((!hasPendingActions && !currentPlayerState.hasRolledDice) ||
+            {/* {((!hasPendingActions && !currentPlayerState.hasRolledDice) ||
               (!hasPendingActions &&
                 currentPlayerState.hasRolledDice &&
                 isDouble &&
@@ -271,6 +284,28 @@ export const PlayerActions = ({
                 loading={isRolling}
               >
                 Roll dice
+              </Button>
+            )} */}
+
+            {showRollDice && (
+              <Button
+                disabled={!canRoll || isRolling}
+                onClick={handleRollDice}
+                size="sm"
+                loading={isRolling}
+              >
+                Roll dice
+              </Button>
+            )}
+
+            {showPayJailFine && (
+              <Button
+                disabled={Number(currentPlayerState.cashBalance) < JAIL_FINE}
+                onClick={handlePayJailFine}
+                size="sm"
+                loading={isLoading === "payJailFine"}
+              >
+                Pay jail fine
               </Button>
             )}
 
@@ -320,7 +355,7 @@ export const PlayerActions = ({
                 </Button>
               )}
 
-            {isMyTurn && currentPlayerState.needsChanceCard && (
+            {isCurrentTurn && currentPlayerState.needsChanceCard && (
               <Button
                 size="sm"
                 onClick={() => {
@@ -333,7 +368,7 @@ export const PlayerActions = ({
               </Button>
             )}
 
-            {isMyTurn && currentPlayerState.needsCommunityChestCard && (
+            {isCurrentTurn && currentPlayerState.needsCommunityChestCard && (
               <>
                 <Button
                   size="sm"
@@ -347,11 +382,17 @@ export const PlayerActions = ({
               </>
             )}
 
-            {((!hasPendingActions &&
+            {/* {((!hasPendingActions &&
               currentPlayerState.hasRolledDice &&
               !isDouble) ||
               (currentPlayerState.hasRolledDice &&
                 currentPlayerState.inJail)) && (
+              <Button onClick={handleEndTurn} loading={isLoading === "endTurn"}>
+                {isLoading === "endTurn" ? "Ending Turn..." : "End Turn"}
+              </Button>
+            )} */}
+
+            {showEndTurn && (
               <Button onClick={handleEndTurn} loading={isLoading === "endTurn"}>
                 {isLoading === "endTurn" ? "Ending Turn..." : "End Turn"}
               </Button>
@@ -360,7 +401,7 @@ export const PlayerActions = ({
         </>
       )}
       {isStarted && (
-        <Badge className={isMyTurn ? "" : "mt-8"} variant="neutral">
+        <Badge className={isCurrentTurn ? "" : "mt-8"} variant="neutral">
           {formatAddress(currentPlayerState.wallet)} is playing
         </Badge>
       )}
