@@ -1,13 +1,9 @@
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  cn,
-  formatAddress,
-  formatPrice,
-} from "@/lib/utils";
+import { cn, formatAddress, formatPrice } from "@/lib/utils";
 import { useGameContext } from "@/components/providers/game-provider";
 import Link from "next/link";
 import { HomeIcon } from "lucide-react";
@@ -21,7 +17,6 @@ interface PlayerItemProps {
 }
 
 function PlayerItem({ player, index, isCurrentTurn, isYou }: PlayerItemProps) {
-
   return (
     <Card className={cn("py-3 relative", isCurrentTurn ? "bg-chart-3" : "")}>
       <CardContent className="px-3">
@@ -118,17 +113,16 @@ export function PlayerList() {
   const currentPlayerIndex = gameState.currentTurn;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Players</h2>
+    <Card className="bg-white">
+      <CardHeader className="flex items-center justify-between">
+        <CardTitle>Players</CardTitle>
         <Link href="/">
           <HomeIcon />
         </Link>
-      </div>
-      <div className="space-y-3">
+      </CardHeader>
+      <CardContent className="space-y-3">
         {players.map((player, index) => {
           const isCurrentTurn = index === currentPlayerIndex;
-
           return (
             <PlayerItem
               key={player.wallet}
@@ -139,7 +133,7 @@ export function PlayerList() {
             />
           );
         })}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

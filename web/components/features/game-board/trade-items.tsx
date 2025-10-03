@@ -15,30 +15,39 @@ import type { TradeData } from "@/types/schema";
 
 const getTradeStatusText = (status: TradeStatus): string => {
   switch (status) {
-    case 0: return "Pending";
-    case 1: return "Accepted";
-    case 2: return "Rejected";
-    case 3: return "Cancelled";
-    case 4: return "Expired";
-    default: return "Unknown";
+    case 0:
+      return "Pending";
+    case 1:
+      return "Accepted";
+    case 2:
+      return "Rejected";
+    case 3:
+      return "Cancelled";
+    case 4:
+      return "Expired";
+    default:
+      return "Unknown";
   }
 };
 
 const getTradeStatusVariant = (status: TradeStatus): "default" | "neutral" => {
   switch (status) {
-    case 0: return "neutral"; // Pending
-    case 1: return "default"; // Accepted
-    default: return "neutral";
+    case 0:
+      return "neutral"; // Pending
+    case 1:
+      return "default"; // Accepted
+    default:
+      return "neutral";
   }
 };
 
 export function TradeItems() {
-  const { 
-    activeTrades, 
-    isTradeDialogOpen, 
+  const {
+    activeTrades,
+    isTradeDialogOpen,
     setIsTradeDialogOpen,
     currentPlayerState,
-    cancelTrade
+    cancelTrade,
   } = useGameContext();
 
   const [selectedTrade, setSelectedTrade] = useState<TradeData | null>(null);
@@ -53,11 +62,14 @@ export function TradeItems() {
     setIsDetailsDialogOpen(true);
   };
 
-  const handleDeleteTrade = async (trade: TradeData, event: React.MouseEvent) => {
+  const handleDeleteTrade = async (
+    trade: TradeData,
+    event: React.MouseEvent
+  ) => {
     event.stopPropagation(); // Prevent opening details dialog
-    
+
     if (!currentPlayerState) return;
-    
+
     // Only allow canceling if current player is the initiator and trade is pending
     if (trade.initiator === currentPlayerState.wallet && trade.status === 0) {
       try {
@@ -75,11 +87,11 @@ export function TradeItems() {
   return (
     <>
       <div className="space-y-4">
-        <div className="flex items-center justify-between p-3 bg-[#FFD93D] border-2 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-          <h2 className="text-lg font-black text-black">Trades</h2>
-          <Button 
-            size="sm" 
-            className="h-9 px-4 rounded-none bg-[#4ECDC4] hover:bg-[#3BB3AA] border-2 border-black text-black font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Trades</h2>
+          <Button
+            size="sm"
+            className="h-8 px-3"
             onClick={handleCreateTrade}
             disabled={!currentPlayerState}
           >
@@ -101,9 +113,9 @@ export function TradeItems() {
               const toPlayerInfo = generatePlayerIcon(trade.target);
 
               return (
-                <Card 
-                  key={trade.id} 
-                  className="relative cursor-pointer border-2 border-black rounded-none bg-[#FFF5E6] shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                <Card
+                  key={trade.id}
+                  className="relative cursor-pointer hover:bg-muted/50 transition-colors"
                   onClick={() => handleViewTrade(trade)}
                 >
                   <CardContent className="p-2">
@@ -133,12 +145,12 @@ export function TradeItems() {
                         >
                           {getTradeStatusText(trade.status)}
                         </Badge>
-                        
+
                         {/* Action buttons */}
                         <div className="flex gap-1">
-                          <Button 
-                            variant="neutral" 
-                            className="h-6 px-1.5 text-xs rounded-none bg-[#88AAEE] hover:bg-[#6688CC] border border-black text-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
+                          <Button
+                            variant="neutral"
+                            className="h-6 px-2 text-xs"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleViewTrade(trade);
@@ -146,11 +158,11 @@ export function TradeItems() {
                           >
                             <Eye className="w-3 h-3" />
                           </Button>
-                          
+
                           {canDeleteTrade(trade) && (
-                            <Button 
-                              variant="neutral" 
-                              className="h-6 px-1.5 text-xs rounded-none bg-[#FF6B6B] hover:bg-[#FF5252] border border-black text-white font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
+                            <Button
+                              variant="neutral"
+                              className="h-6 px-2 text-xs bg-red-600 hover:bg-red-700 border-red-700 text-white"
                               onClick={(e) => handleDeleteTrade(trade, e)}
                             >
                               <Trash2 className="w-3 h-3" />
@@ -160,32 +172,54 @@ export function TradeItems() {
                       </div>
                     </div>
 
-                    <div className="text-[11px] text-black space-y-0.5">
+                    <div className="text-xs text-gray-600 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">
+                          {formatAddress(trade.initiator)}
+                        </span>
+                      </div>
+
                       {/* Trade summary */}
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-1">
                           <span className="font-bold">Offers:</span>
                           {trade.initiatorOffer.money !== "0" && (
-                            <span>💰 ${trade.initiatorOffer.money}</span>
+                            <span className="ml-1">
+                              💰 ${trade.initiatorOffer.money}
+                            </span>
                           )}
                           {trade.initiatorOffer.properties.length > 0 && (
-                            <span>🏠 {trade.initiatorOffer.properties.length}</span>
+                            <span className="ml-1">
+                              🏠 {trade.initiatorOffer.properties.length}{" "}
+                              properties
+                            </span>
                           )}
-                          {trade.initiatorOffer.money === "0" && trade.initiatorOffer.properties.length === 0 && (
-                            <span className="text-muted-foreground">Nothing</span>
-                          )}
+                          {trade.initiatorOffer.money === "0" &&
+                            trade.initiatorOffer.properties.length === 0 && (
+                              <span className="ml-1 text-muted-foreground">
+                                Nothing
+                              </span>
+                            )}
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="font-bold">Wants:</span>
                           {trade.targetOffer.money !== "0" && (
-                            <span>💰 ${trade.targetOffer.money}</span>
+                            <span className="ml-1">
+                              💰 ${trade.targetOffer.money}
+                            </span>
                           )}
                           {trade.targetOffer.properties.length > 0 && (
-                            <span>🏠 {trade.targetOffer.properties.length}</span>
+                            <span className="ml-1">
+                              🏠 {trade.targetOffer.properties.length}{" "}
+                              properties
+                            </span>
                           )}
-                          {trade.targetOffer.money === "0" && trade.targetOffer.properties.length === 0 && (
-                            <span className="text-muted-foreground">Nothing</span>
-                          )}
+                          {trade.targetOffer.money === "0" &&
+                            trade.targetOffer.properties.length === 0 && (
+                              <span className="ml-1 text-muted-foreground">
+                                Nothing
+                              </span>
+                            )}
                         </div>
                       </div>
                     </div>
@@ -197,11 +231,11 @@ export function TradeItems() {
         </div>
       </div>
 
-      <TradeDialog 
-        isOpen={isTradeDialogOpen} 
-        onClose={() => setIsTradeDialogOpen(false)} 
+      <TradeDialog
+        isOpen={isTradeDialogOpen}
+        onClose={() => setIsTradeDialogOpen(false)}
       />
-      
+
       <TradeDetailsDialog
         isOpen={isDetailsDialogOpen}
         onClose={() => setIsDetailsDialogOpen(false)}

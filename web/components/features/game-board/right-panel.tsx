@@ -20,21 +20,22 @@ export function RightPanel() {
   return (
     <div className="p-4 space-y-6 h-full overflow-auto">
       <TradeItems />
-      <Button
-        onClick={() =>
-          toast("Event has been created", {
-            description: "Sunday, December 03, 2023 at 9:00 AM",
-            action: {
-              label: "Undo",
-              onClick: () => console.log("Undo"),
-            },
-          })
-        }
-      >
-        Toast
-      </Button>
+
       {envConfig.IS_DEVELOPMENT && (
         <div className="flex items-start w-full flex-col gap-2">
+          <Button
+            onClick={() =>
+              toast("Event has been created", {
+                description: "Sunday, December 03, 2023 at 9:00 AM",
+                action: {
+                  label: "Undo",
+                  onClick: () => console.log("Undo"),
+                },
+              })
+            }
+          >
+            Toast
+          </Button>
           <DebugUI />
           <DiceTestForm />
         </div>

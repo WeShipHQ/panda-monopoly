@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useGameContext } from "@/components/providers/game-provider";
 import { colorMap, type BoardSpace } from "@/configs/board-data";
 import { useWallet } from "@/hooks/use-wallet";
@@ -53,12 +53,11 @@ export function OwnedProperties() {
   };
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold">
-        My properties ({ownedProperties.length})
-      </h2>
-
-      <div className="space-y-4">
+    <Card className="bg-white">
+      <CardHeader>
+        <CardTitle>My properties ({ownedProperties.length})</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
         {ownedProperties.map((property) => {
           const propertyData = getBoardSpaceData(property.position);
           if (!propertyData) {
@@ -97,7 +96,14 @@ export function OwnedProperties() {
             </Card>
           );
         })}
-      </div>
-    </div>
+      </CardContent>
+      {/* <div className="space-y-4">
+        <h2 className="text-lg font-semibold">
+          My properties ({ownedProperties.length})
+        </h2>
+
+        <div className="space-y-4"></div>
+      </div> */}
+    </Card>
   );
 }
