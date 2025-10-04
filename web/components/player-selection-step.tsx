@@ -2,7 +2,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { PlayerAccount } from "@/types/schema";
 
 interface PlayerSelectionStepProps {
@@ -36,44 +36,55 @@ export function PlayerSelectionStep({
     );
   }
 
+  // Neobrutalism colors for different users
+  const playerColors = [
+    { bg: 'bg-[#88AAEE]', icon: 'bg-[#3366CC]' },
+    { bg: 'bg-[#FF6B6B]', icon: 'bg-[#CC0000]' },
+    { bg: 'bg-[#4ECDC4]', icon: 'bg-[#0E9F8F]' },
+    { bg: 'bg-[#A98CFF]', icon: 'bg-[#7B3FF2]' },
+    { bg: 'bg-[#FFD93D]', icon: 'bg-[#F4B000]' },
+    { bg: 'bg-[#FF87CA]', icon: 'bg-[#E63980]' },
+    { bg: 'bg-[#95E1D3]', icon: 'bg-[#38B2A3]' },
+    { bg: 'bg-[#FFA07A]', icon: 'bg-[#FF6347]' },
+  ];
+
   return (
-    <div className="py-2">
-      <div className="grid gap-2">
-        {players.map((player) => (
-          <div
-            key={player.wallet}
-            className="flex items-center justify-between p-3.5 rounded-md  dark:hover:bg-emerald-900/10 transition-colors cursor-pointer border border-gray-100/50 dark:border-gray-800/20"
-            onClick={() => !player.isBankrupt && onPlayerSelect(player)}
-          >
-            <div className="flex items-center gap-3">
-              <Avatar className="h-12 w-12">
-                <AvatarFallback className="bg-emerald-600 text-white font-bold">
-                  {player.wallet.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
+    <div className="py-2 mt-1">
+      <div className="grid grid-cols-1 gap-2 max-h-60 custom-scrollbar">
+        {players.map((player, index) => {
+          const colorIndex = index % playerColors.length;
+          const colors = playerColors[colorIndex];
+          
+          return (
+            <div
+              key={player.wallet}
+              className={`flex items-center py-2 px-3 border-2 border-black rounded-none cursor-pointer transition-all hover:translate-x-[2px] hover:translate-y-[2px] ${colors.bg} text-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]`}
+              onClick={() => !player.isBankrupt && onPlayerSelect(player)}
+            >
+              <Avatar className="h-6 w-6 mr-2 border-2 border-black rounded-none">
+                <AvatarImage walletAddress={player.wallet} />
+                <AvatarFallback 
+                  walletAddress={player.wallet}
+                  className={`text-xs font-bold rounded-none ${colors.icon} text-white`}
+                />
               </Avatar>
-              
-              <div>
-                <div className="font-medium text-gray-900 dark:text-gray-100">
-                  {player.wallet.slice(0, 6)}...
-                </div>
-                <div className="flex flex-col text-xs mt-0.5 space-y-0.5">
-                  <div className="text-emerald-600 dark:text-emerald-400 font-medium">${player.cashBalance} cash</div>
-                  <div className="text-emerald-600 dark:text-emerald-400">{player.propertiesOwned.length} properties</div>
-                </div>
+              <div className="font-bold text-sm">
+                {player.wallet.slice(0, 5)}...
               </div>
             </div>
-
-            <Button
-              variant="default"
-              disabled={player.isBankrupt}
-              size="sm"
-              className={`h-9 px-4 rounded-md ${player.isBankrupt ? 'bg-red-200 text-red-800' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
-            >
-              {player.isBankrupt ? "Bankrupt" : "Select"}
-            </Button>
-          </div>
-        ))}
+          );
+        })}
       </div>
+      <style>{`
+        .custom-scrollbar {
+          overflow-y: auto;
+          scrollbar-width: none; /* Firefox */
+          -ms-overflow-style: none; /* IE and Edge */
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          display: none; /* Chrome, Safari, Opera */
+        }
+      `}</style>
     </div>
   );
 }
