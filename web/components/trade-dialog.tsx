@@ -88,40 +88,43 @@ export function TradeDialog({ isOpen, onClose }: TradeDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md overflow-y-auto p-6 bg-background border-none rounded-lg shadow-xl">
-        <DialogHeader className="pb-3 border-b border-black dark:border-gray-800">
+      <DialogContent className={`overflow-y-auto rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] ${currentStep === "player-selection" ? "max-w-[280px] p-4 bg-[#ffe0e3] border-4 border-black" : "max-w-md p-6 bg-[#FFF5E6] border-4 border-black"}`}>
+        <DialogHeader className={`${currentStep === "player-selection" ? "pb-2" : "pb-3 border-b-4 border-black"}`}>
           <div className="flex items-center gap-2 justify-between">
             {currentStep === "trade-configuration" && (
               <Button
                 variant="default"
                 size="icon"
                 onClick={handleBack}
-                className="h-8 w-8 rounded-full bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900 dark:hover:bg-emerald-800 text-emerald-600 dark:text-emerald-300"
+                className="h-9 w-9 rounded-none bg-[#4ECDC4] hover:bg-[#3BB3AA] border-2 border-black text-black font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
-            <DialogTitle className="text-base font-semibold flex-grow text-gray-900 dark:text-gray-100">
+            <DialogTitle className={`${currentStep === "player-selection" ? "text-base font-black flex-grow text-center text-black" : "text-lg font-black flex-grow text-black"}`}>
               {currentStep === "player-selection"
-                ? "Select Trading Partner"
+                ? "Create a trade"
                 : "Trade Properties & Money"}
             </DialogTitle>
             <Button
               variant="default"
               size="icon"
               onClick={handleClose}
-              className="h-8 w-8 rounded-full bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-300"
+              className={`${currentStep === "player-selection" ? "h-7 w-7" : "h-9 w-9"} rounded-none bg-[#FF6B6B] hover:bg-[#FF5252] border-2 border-black text-white font-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all`}
             >
-              <span className="text-lg">×</span>
+              <span className="text-base">×</span>
             </Button>
           </div>
         </DialogHeader>
 
         {currentStep === "player-selection" && (
-          <PlayerSelectionStep
-            players={availablePlayers}
-            onPlayerSelect={handlePlayerSelect}
-          />
+          <>
+            <p className="text-black text-center text-xs font-bold mt-1 mb-2">Select a player to trade with:</p>
+            <PlayerSelectionStep
+              players={availablePlayers}
+              onPlayerSelect={handlePlayerSelect}
+            />
+          </>
         )}
 
         {currentStep === "trade-configuration" && selectedPlayer && (

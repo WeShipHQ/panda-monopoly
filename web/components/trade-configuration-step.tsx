@@ -44,21 +44,22 @@ const getColorGroupName = (colorGroup: any): string => {
   return colorNames[colorGroup] || "Unknown";
 };
 
-// Custom scrollbar styles
+// Neobrutalism scrollbar styles
 const scrollbarStyles = `
   .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
+    border: 2px solid #000;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(156, 163, 175, 0.5);
-    border-radius: 20px;
-    border: transparent;
+    background-color: #000;
+    border-radius: 0;
+    border: 2px solid #000;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(156, 163, 175, 0.7);
+    background-color: #333;
   }
 `;
 
@@ -164,26 +165,26 @@ export function TradeConfigurationStep({
     return (
       <div className="flex-1 flex flex-col">
         {/* Player Info */}
-        <div className="flex items-center gap-2 mb-4 p-2 rounded-md bg-primary/5 border border-primary/20">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">
+        <div className="flex items-center gap-2 mb-4 p-2 rounded-none bg-[#FFD93D] border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+          <Avatar className="h-8 w-8 border-2 border-black rounded-none">
+            <AvatarFallback className="bg-black text-white text-xs font-black rounded-none">
               {player.wallet.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div>
-            <div className="text-sm font-medium">
+            <div className="text-sm font-black text-black">
               {isCurrentPlayer ? "You" : `${player.wallet.slice(0, 6)}...`}
             </div>
-            <div className="text-xs text-muted-foreground">
-              Balance: <span className="text-emerald-600 font-medium">${player.cashBalance}</span>
+            <div className="text-xs font-bold text-black">
+              Balance: <span className="font-black">${player.cashBalance}</span>
             </div>
           </div>
         </div>
         
         {/* Money slider with value bubble */}
         <div className="mb-6 relative py-4">
-          <div className="flex justify-between text-xs text-muted-foreground mb-2">
-            <span>0</span>
+          <div className="flex justify-between text-xs font-bold text-black mb-2">
+            <span>$0</span>
             <span>${maxDollars}</span>
           </div>
           <div className="relative">
@@ -200,7 +201,7 @@ export function TradeConfigurationStep({
             />
             {/* Current value bubble - use fixed positioning for smoother dragging */}
             <div 
-              className="absolute top-[-22px] bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-full font-medium shadow-md z-10 border border-emerald-400/30"
+              className="absolute top-[-26px] bg-[#4ECDC4] text-black text-xs px-3 py-1.5 rounded-none font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] z-10 border-2 border-black"
               style={{ 
                 left: `${maxDollars > 0 ? Math.min(100, (tempValue / maxDollars) * 100) : 0}%`,
                 transform: "translateX(-50%)",
@@ -208,8 +209,8 @@ export function TradeConfigurationStep({
               }}
             >
               <span className="flex items-center gap-1">
-                <span className="text-emerald-100">$</span>
-                <span className="text-white font-bold">{tempValue}</span>
+                <span className="text-black">$</span>
+                <span className="text-black font-black">{tempValue}</span>
               </span>
             </div>
           </div>
@@ -218,10 +219,10 @@ export function TradeConfigurationStep({
         {/* Properties list - simplified */}
         <div>
           {playerProperties.length > 0 && (
-            <div className="space-y-1 max-h-40 overflow-y-auto custom-scrollbar" 
+            <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar" 
                  style={{
                    scrollbarWidth: 'thin',
-                   scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
+                   scrollbarColor: '#000 transparent'
                  }}>
               {playerProperties.map((property) => {
                 // Get full property name from board data
@@ -261,16 +262,16 @@ export function TradeConfigurationStep({
                       property.position, 
                       !offer.properties.includes(property.position)
                     )}
-                    className={`flex items-center justify-between p-2.5 rounded-md cursor-pointer text-xs transition-colors duration-200 ${
+                    className={`flex items-center justify-between p-2 rounded-none cursor-pointer text-xs transition-all ${
                       isSelected 
-                        ? 'bg-emerald-500/10 border border-emerald-500/30 shadow-sm' 
-                        : 'bg-secondary/20 hover:bg-secondary/30 border border-transparent'
+                        ? 'bg-[#A98CFF] border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-bold' 
+                        : 'bg-white border-2 border-black hover:translate-x-[1px] hover:translate-y-[1px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]'
                     }`}
                   >
                     <div className="flex items-center gap-2">
                       {/* Color indicator with improved visibility */}
                       <div 
-                        className="w-4 h-4 rounded-sm flex-shrink-0 border border-gray-200 dark:border-gray-700 shadow-sm" 
+                        className="w-4 h-4 rounded-none flex-shrink-0 border-2 border-black" 
                         style={{ 
                           backgroundColor: colorHex || 'transparent',
                           display: 'flex',
@@ -285,12 +286,12 @@ export function TradeConfigurationStep({
                           <span className="text-[8px] font-bold">⚡</span>
                         )}
                       </div>
-                      <div className={`w-4 h-4 rounded-sm flex items-center justify-center transition-colors ${isSelected ? 'bg-emerald-500 text-white' : 'border border-gray-400/40'}`}>
-                        {isSelected && <span className="text-[8px]">✓</span>}
+                      <div className={`w-4 h-4 rounded-none flex items-center justify-center border-2 border-black transition-colors ${isSelected ? 'bg-black text-white' : 'bg-white'}`}>
+                        {isSelected && <span className="text-[10px] font-black">✓</span>}
                       </div>
-                      <span className={`${isSelected ? 'font-medium text-gray-900 dark:text-gray-100' : ''} truncate max-w-[120px]`}>{propertyName}</span>
+                      <span className={`${isSelected ? 'font-black text-black' : 'font-bold text-black'} truncate max-w-[120px]`}>{propertyName}</span>
                     </div>
-                    <span className={`${isSelected ? 'text-emerald-600 font-medium' : 'text-muted-foreground'}`}>${property.price}</span>
+                    <span className={`font-black text-black`}>${property.price}</span>
                   </div>
                 );
               })}
@@ -302,11 +303,11 @@ export function TradeConfigurationStep({
   });
 
   return (
-    <div className="bg-background py-2 flex flex-col">
+    <div className="bg-[#FFF5E6] py-2 flex flex-col">
       <style>{scrollbarStyles}</style>
       {/* Title with simplified UI */}
-      <div className="flex justify-between items-center mb-5 pb-2 ">
-        <div className="font-medium text-base text-primary">Trade Offer</div>
+      <div className="flex justify-between items-center mb-5 pb-2 border-b-4 border-black">
+        <div className="font-black text-lg text-black">Trade Offer</div>
       </div>
       
       {/* Trade offers in simplified layout */}
@@ -338,7 +339,7 @@ export function TradeConfigurationStep({
           onClick={onCreateTrade}
           disabled={!canCreateTrade}
           variant="default"
-          className={`px-8 py-2.5 text-sm font-medium transition-all ${canCreateTrade ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg' : 'opacity-70'}`}
+          className={`px-8 py-3 text-sm font-black rounded-none transition-all ${canCreateTrade ? 'bg-[#4ECDC4] hover:bg-[#3BB3AA] text-black border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'opacity-50 bg-gray-300 border-2 border-black'}`}
         >
           Send Trade
         </Button>

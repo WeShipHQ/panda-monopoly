@@ -75,24 +75,24 @@ export function TradeItems() {
   return (
     <>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Trades</h2>
+        <div className="flex items-center justify-between p-3 bg-[#FFD93D] border-2 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+          <h2 className="text-lg font-black text-black">Trades</h2>
           <Button 
             size="sm" 
-            className="h-8 px-3"
+            className="h-9 px-4 rounded-none bg-[#4ECDC4] hover:bg-[#3BB3AA] border-2 border-black text-black font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
             onClick={handleCreateTrade}
             disabled={!currentPlayerState}
           >
-            <Plus className="w-4 h-4 mr-1" />
+            <Plus className="w-4 h-4 mr-1 font-bold" />
             Create
           </Button>
         </div>
 
         <div className="space-y-3">
           {activeTrades.length === 0 ? (
-            <Card>
+            <Card className="border-2 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white">
               <CardContent className="p-4 text-center">
-                <p className="text-gray-500 text-sm">No active trades</p>
+                <p className="text-black font-bold text-sm">No active trades</p>
               </CardContent>
             </Card>
           ) : (
@@ -103,36 +103,35 @@ export function TradeItems() {
               return (
                 <Card 
                   key={trade.id} 
-                  className="relative cursor-pointer hover:bg-muted/50 transition-colors"
+                  className="relative cursor-pointer border-2 border-black rounded-none bg-[#FFF5E6] shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                   onClick={() => handleViewTrade(trade)}
                 >
-                  <CardContent className="p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <Avatar className="w-6 h-6">
+                  <CardContent className="p-2">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center space-x-1.5">
+                        <Avatar className="w-5 h-5 border border-black rounded-none">
                           <AvatarImage src={fromPlayerInfo.avatar} />
                           <AvatarFallback
                             style={{ backgroundColor: fromPlayerInfo.color }}
-                            className="text-white text-xs"
+                            className="text-white text-xs font-bold rounded-none"
                           >
                             {formatAddress(trade.initiator).slice(0, 2)}
                           </AvatarFallback>
                         </Avatar>
-                        <ArrowLeftRight className="w-3 h-3 text-gray-400" />
-                        <Avatar className="w-6 h-6">
+                        <ArrowLeftRight className="w-3 h-3 text-black font-bold" />
+                        <Avatar className="w-5 h-5 border border-black rounded-none">
                           <AvatarImage src={toPlayerInfo.avatar} />
                           <AvatarFallback
                             style={{ backgroundColor: toPlayerInfo.color }}
-                            className="text-white text-xs"
+                            className="text-white text-xs font-bold rounded-none"
                           >
                             {formatAddress(trade.target).slice(0, 2)}
                           </AvatarFallback>
                         </Avatar>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <Badge
-                          variant={getTradeStatusVariant(trade.status)}
-                          className="text-xs"
+                          className="text-[10px] font-bold bg-[#FFD93D] text-black border border-black rounded-none px-1.5 py-0.5"
                         >
                           {getTradeStatusText(trade.status)}
                         </Badge>
@@ -141,7 +140,7 @@ export function TradeItems() {
                         <div className="flex gap-1">
                           <Button 
                             variant="neutral" 
-                            className="h-6 px-2 text-xs"
+                            className="h-6 px-1.5 text-xs rounded-none bg-[#88AAEE] hover:bg-[#6688CC] border border-black text-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleViewTrade(trade);
@@ -153,7 +152,7 @@ export function TradeItems() {
                           {canDeleteTrade(trade) && (
                             <Button 
                               variant="neutral" 
-                              className="h-6 px-2 text-xs bg-red-600 hover:bg-red-700 border-red-700 text-white"
+                              className="h-6 px-1.5 text-xs rounded-none bg-[#FF6B6B] hover:bg-[#FF5252] border border-black text-white font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
                               onClick={(e) => handleDeleteTrade(trade, e)}
                             >
                               <Trash2 className="w-3 h-3" />
@@ -163,37 +162,31 @@ export function TradeItems() {
                       </div>
                     </div>
 
-                    <div className="text-xs text-gray-600 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">
-                          {formatAddress(trade.initiator)}
-                        </span>
-                      </div>
-                      
+                    <div className="text-[11px] text-black space-y-0.5">
                       {/* Trade summary */}
-                      <div className="space-y-1">
-                        <div className="text-xs">
-                          <span className="font-medium">Offers:</span>
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-1">
+                          <span className="font-bold">Offers:</span>
                           {trade.initiatorOffer.money !== "0" && (
-                            <span className="ml-1">💰 ${trade.initiatorOffer.money}</span>
+                            <span>💰 ${trade.initiatorOffer.money}</span>
                           )}
                           {trade.initiatorOffer.properties.length > 0 && (
-                            <span className="ml-1">🏠 {trade.initiatorOffer.properties.length} properties</span>
+                            <span>🏠 {trade.initiatorOffer.properties.length}</span>
                           )}
                           {trade.initiatorOffer.money === "0" && trade.initiatorOffer.properties.length === 0 && (
-                            <span className="ml-1 text-muted-foreground">Nothing</span>
+                            <span className="text-muted-foreground">Nothing</span>
                           )}
                         </div>
-                        <div className="text-xs">
-                          <span className="font-medium">Wants:</span>
+                        <div className="flex items-center gap-1">
+                          <span className="font-bold">Wants:</span>
                           {trade.targetOffer.money !== "0" && (
-                            <span className="ml-1">💰 ${trade.targetOffer.money}</span>
+                            <span>💰 ${trade.targetOffer.money}</span>
                           )}
                           {trade.targetOffer.properties.length > 0 && (
-                            <span className="ml-1">🏠 {trade.targetOffer.properties.length} properties</span>
+                            <span>🏠 {trade.targetOffer.properties.length}</span>
                           )}
                           {trade.targetOffer.money === "0" && trade.targetOffer.properties.length === 0 && (
-                            <span className="ml-1 text-muted-foreground">Nothing</span>
+                            <span className="text-muted-foreground">Nothing</span>
                           )}
                         </div>
                       </div>
