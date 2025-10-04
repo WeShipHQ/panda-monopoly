@@ -4,7 +4,7 @@ import { RightPanel } from "@/components/features/game-board/right-panel";
 
 export default function GamePage() {
   return (
-    <div className="max-h-screen game-container w-full h-full overflow-hidden">
+    <div className="max-h-screen game-container w-full h-full">
       <div
         style={{
           gridArea: "left",
@@ -17,7 +17,7 @@ export default function GamePage() {
         style={{
           gridArea: "center",
         }}
-        className="bg-green-200 w-[55vw]"
+        className="bg-green-200 aspect-square w-[100vw] lg:w-[55vw]"
       >
         <GameView />
       </div>
