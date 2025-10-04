@@ -41,10 +41,10 @@ export const PropertySpace: React.FC<PropertySpaceProps> = ({
       {...props}
     >
       <div className="flex flex-col items-center justify-center size-full text-center">
-        <div className="text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-bold leading-tight mb-1">
+        <div className="text-[0.5vh] sm:text-[0.7vh] md:text-[0.9vh] lg:text-[1.1vh] xl:text-[1.3vh] font-bold leading-tight mb-1">
           {name}
         </div>
-        <div className="text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-normal">
+        <div className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-normal">
           {formatPrice(Number(price))}
         </div>
       </div>
@@ -73,13 +73,13 @@ export const RailroadSpace: React.FC<RailroadSpaceProps> = ({
   const content = (
     <BaseSpace position={position} onChainProperty={onChainProperty} {...props}>
       <div className="text-center flex flex-col justify-between h-full">
-        <div className="text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-bold leading-tight">
+        <div className="text-[0.5vh] sm:text-[0.7vh] md:text-[0.9vh] lg:text-[1.1vh] xl:text-[1.3vh] font-bold leading-tight">
           {name}
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-lg sm:text-xl lg:text-2xl">🚂</div>
+          <div className="text-[1.5vh] sm:text-[2vh] md:text-[2.5vh] lg:text-[3vh] xl:text-[3.5vh]">🚂</div>
         </div>
-        <div className="text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-normal">
+        <div className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-normal">
           {formatPrice(Number(price))}
         </div>
       </div>
@@ -110,13 +110,13 @@ export const UtilitySpace: React.FC<UtilitySpaceProps> = ({
   const content = (
     <BaseSpace position={position} onChainProperty={onChainProperty} {...props}>
       <div className="text-center flex flex-col justify-between h-full">
-        <div className="text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-bold leading-tight">
+        <div className="text-[0.5vh] sm:text-[0.7vh] md:text-[0.9vh] lg:text-[1.1vh] xl:text-[1.3vh] font-bold leading-tight">
           {name}
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-lg sm:text-xl lg:text-2xl">{icon}</div>
+          <div className="text-[1.5vh] sm:text-[2vh] md:text-[2.5vh] lg:text-[3vh] xl:text-[3.5vh]">{icon}</div>
         </div>
-        <div className="text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-normal">
+        <div className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-normal">
           {formatPrice(Number(price))}
         </div>
       </div>
@@ -148,10 +148,10 @@ export const ChanceSpace: React.FC<ChanceSpaceProps> = ({
       {...props}
     >
       <div className="flex flex-col items-center justify-center text-center gap-2 h-full">
-        <div className="text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-bold leading-tight">
+        <div className="text-[0.5vh] sm:text-[0.7vh] md:text-[0.9vh] lg:text-[1.1vh] xl:text-[1.3vh] font-bold leading-tight">
           {props.name}
         </div>
-        <CircleQuestionMarkIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-main!" />
+        <CircleQuestionMarkIcon className="w-[1.5vh] h-[1.5vh] sm:w-[2vh] sm:h-[2vh] md:w-[2.5vh] md:h-[2.5vh] lg:w-[3vh] lg:h-[3vh] xl:w-[3.5vh] xl:h-[3.5vh] text-main!" />
       </div>
     </BaseSpace>
   );
@@ -172,13 +172,13 @@ export const CommunityChestSpace: React.FC<CommunityChestSpaceProps> = ({
       {...props}
     >
       <div className="flex flex-col text-center gap-2 items-center justify-center h-full">
-        <div className="text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-bold leading-tight">
+        <div className="text-[0.5vh] sm:text-[0.7vh] md:text-[0.9vh] lg:text-[1.1vh] xl:text-[1.3vh] font-bold leading-tight">
           {props.name}
         </div>
         <img
           src={props.logo || ""}
           alt="Community Chest"
-          className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 object-contain rounded-full"
+          className="w-[1.5vh] h-[1.5vh] sm:w-[2vh] sm:h-[2vh] md:w-[2.5vh] md:h-[2.5vh] lg:w-[3vh] lg:h-[3vh] xl:w-[3.5vh] xl:h-[3.5vh] object-contain rounded-full"
         />
       </div>
     </BaseSpace>
@@ -198,14 +198,14 @@ export const TaxSpace: React.FC<TaxSpaceProps> = ({
   return (
     <BaseSpace position={position} onChainProperty={onChainProperty} {...props}>
       <div className="text-center flex flex-col justify-between h-full">
-        <div className="text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-bold leading-tight">
+        <div className="text-[0.5vh] sm:text-[0.7vh] md:text-[0.9vh] lg:text-[1.1vh] xl:text-[1.3vh] font-bold leading-tight">
           {name}
         </div>
         <div className="flex items-center justify-center">
-          <TaxIcon className="w-6 h-6 text-main" />
+          <TaxIcon className="w-[1.5vh] h-[1.5vh] sm:w-[2vh] sm:h-[2vh] md:w-[2.5vh] md:h-[2.5vh] lg:w-[3vh] lg:h-[3vh] xl:w-[3.5vh] xl:h-[3.5vh] text-main" />
         </div>
         {propertyData && (
-          <div className="text-[0.35rem] sm:text-[0.4rem] lg:text-[0.5rem] font-normal">
+          <div className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-normal">
             Pay {formatPrice(propertyData.taxAmount)}
           </div>
         )}
