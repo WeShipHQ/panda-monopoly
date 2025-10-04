@@ -7,6 +7,12 @@ import { getBoardSpaceData } from "@/lib/board-utils";
 import { PlayerAccount } from "@/types/schema";
 import { Badge } from "@/components/ui/badge";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   JAIL_FINE,
   MEV_TAX_POSITION,
   PRIORITY_FEE_TAX_POSITION,
@@ -86,69 +92,52 @@ const PropertyActions: React.FC<PropertyActionsProps> = ({
     return <Button>Pay tax</Button>;
   }
 
+  const hasInsufficientFunds =
+    Number(player.cashBalance) < pendingPropertyInfo.propertyData?.price;
+
   return (
-    <div>
-      {/* Unowned Property */}
+    <>
       {!pendingPropertyInfo.isOwned &&
         pendingPropertyInfo.propertyData?.price && (
           <div className="space-y-2">
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={() => handleBuyProperty(position)}
-                disabled={
-                  Number(player.cashBalance) <
-                  pendingPropertyInfo.propertyData.price
-                }
-                loading={isLoading === "buyProperty"}
-                className="flex-1"
-              >
-                {isLoading === "buyProperty"
-                  ? "Buying..."
-                  : `Buy for ${formatPrice(
-                      pendingPropertyInfo.propertyData.price
-                    )}`}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Button
+                      size="sm"
+                      onClick={() => handleBuyProperty(position)}
+                      disabled={hasInsufficientFunds}
+                      loading={isLoading === "buyProperty"}
+                      className="flex-1"
+                    >
+                      {isLoading === "buyProperty"
+                        ? "Buying..."
+                        : `Buy for ${formatPrice(
+                            pendingPropertyInfo.propertyData.price
+                          )}`}
+                    </Button>
+                  </TooltipTrigger>
+                  {hasInsufficientFunds && (
+                    <TooltipContent>
+                      <p>Insufficient funds</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
               <Button
                 size="sm"
                 onClick={() => handleSkipProperty(position)}
-                loading={isLoading === "endTurn"}
+                loading={isLoading === "skipProperty"}
                 className="flex-1"
                 variant="neutral"
               >
                 Skip
               </Button>
             </div>
-            {/* // FIXME need check */}
-            {Number(player.cashBalance) <
-              pendingPropertyInfo.propertyData.price && (
-              <div className="text-xs text-red-600">
-                Insufficient funds (Need
-                {formatPrice(
-                  pendingPropertyInfo.propertyData.price -
-                    Number(player.cashBalance)
-                )}{" "}
-                more)
-              </div>
-            )}
           </div>
         )}
-
-      {/* Owned by Another Player */}
-      {pendingPropertyInfo.isOwned &&
-        !pendingPropertyInfo.isOwnedByCurrentPlayer && (
-          <div className="text-xs text-blue-600">
-            Owned by another player. Rent will be automatically paid.
-          </div>
-        )}
-
-      {/* Owned by Current Player */}
-      {pendingPropertyInfo.isOwnedByCurrentPlayer && (
-        <div className="text-xs text-green-600">
-          You own this property. Check for building opportunities.
-        </div>
-      )}
-    </div>
+    </>
   );
 };
 

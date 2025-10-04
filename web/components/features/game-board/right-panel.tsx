@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/sheet";
 import { useGameContext } from "@/components/providers/game-provider";
 import { TradeItems } from "./trade-items";
+import { BankruptcyButton } from "./bankruptcy-button";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import envConfig from "@/configs/env";
@@ -20,6 +21,8 @@ export function RightPanel() {
   return (
     <div className="p-4 space-y-6 h-full overflow-auto">
       <TradeItems />
+
+      <BankruptcyButton />
 
       {envConfig.IS_DEVELOPMENT && (
         <div className="flex items-start w-full flex-col gap-2">

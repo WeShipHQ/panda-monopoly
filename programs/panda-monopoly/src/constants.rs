@@ -4,7 +4,7 @@ use anchor_lang::prelude::*;
 pub const MAX_PLAYERS: u8 = 4;
 pub const MIN_PLAYERS: u8 = 2;
 pub const BOARD_SIZE: u8 = 40;
-pub const STARTING_MONEY: u32 = 1500;
+pub const STARTING_MONEY: u32 = 100; //1500;
 pub const GO_SALARY: u32 = 200;
 pub const JAIL_FINE: u32 = 50;
 pub const MAX_JAIL_TURNS: u8 = 3;

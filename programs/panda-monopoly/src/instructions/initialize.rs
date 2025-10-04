@@ -75,6 +75,8 @@ pub fn initialize_game_handler(ctx: Context<InitializeGame>) -> Result<()> {
         game.turn_started_at = clock.unix_timestamp;
         game.active_trades = vec![];
         game.next_trade_id = 0;
+        game.active_properties = vec![];
+        game.next_property_id = 0;
 
         // Initialize player state
         player_state.initialize_player_state(ctx.accounts.authority.key(), game.key(), clock);
@@ -90,25 +92,6 @@ pub fn initialize_game_handler(ctx: Context<InitializeGame>) -> Result<()> {
         msg!("Game account: {}", game.key());
         msg!("Game created at timestamp: {}", game.created_at);
     }
-
-    // #[cfg(not(feature = "local"))]
-    // {
-    //     use ephemeral_rollups_sdk::cpi::DelegateConfig;
-
-    //     let game = &ctx.accounts.game;
-    //     let player_state = &ctx.accounts.player_state;
-
-    //     player_state.exit(&crate::ID)?;
-    //     ctx.accounts.delegate_player_state(
-    //         &ctx.accounts.authority,
-    //         &[
-    //             b"player",
-    //             game.key().as_ref(),
-    //             ctx.accounts.authority.key().as_ref(),
-    //         ],
-    //         DelegateConfig::default(),
-    //     )?;
-    // }
 
     Ok(())
 }

@@ -104,49 +104,57 @@ pub struct GameState {
     pub players: Vec<Pubkey>, // 32 * 8 = 256 bytes max
     pub created_at: i64,     // 8 bytes - game creation timestamp
     pub game_status: GameStatus, // 1 byte - current game status
-    pub bank_balance: u64,       // 8 bytes - bank's money
-    pub free_parking_pool: u64,  // 8 bytes - parking pool
-    pub houses_remaining: u8,    // 1 byte - houses left in bank (32 total)
-    pub hotels_remaining: u8,    // 1 byte - hotels left in bank (12 total)
+    pub bank_balance: u64,   // 8 bytes - bank's money
+    pub free_parking_pool: u64, // 8 bytes - parking pool
+    pub houses_remaining: u8, // 1 byte - houses left in bank (32 total)
+    pub hotels_remaining: u8, // 1 byte - hotels left in bank (12 total)
     pub time_limit: Option<i64>, // 9 bytes - optional time limit
-    pub winner: Option<Pubkey>,  // 33 bytes - game winner
-    pub turn_started_at: i64,    // 8 bytes - when current turn started
-    
-    // New trading fields
+    pub winner: Option<Pubkey>, // 33 bytes - game winner
+    pub turn_started_at: i64, // 8 bytes - when current turn started
+
     #[max_len(20)]
     pub active_trades: Vec<TradeInfo>, // Vector of active trades
-    pub next_trade_id: u8,             // Next trade ID to assign
+    pub next_trade_id: u8, // Next trade ID to assign
+
+    #[max_len(40)]
+    pub active_properties: Vec<PropertyState>, // Vector of active properties
+    pub next_property_id: u8, // Next property ID to assign
 }
 
 impl GameState {
-    // Helper methods for trade management
     pub fn cleanup_expired_trades(&mut self, current_time: i64) {
         self.active_trades.retain(|trade| {
             trade.expires_at > current_time && trade.status == TradeStatus::Pending
         });
     }
-    
+
     pub fn find_trade_by_id(&self, trade_id: u8) -> Option<&TradeInfo> {
         self.active_trades.iter().find(|trade| trade.id == trade_id)
     }
-    
+
     pub fn find_trade_by_id_mut(&mut self, trade_id: u8) -> Option<&mut TradeInfo> {
-        self.active_trades.iter_mut().find(|trade| trade.id == trade_id)
+        self.active_trades
+            .iter_mut()
+            .find(|trade| trade.id == trade_id)
     }
-    
+
     pub fn remove_trade_by_id(&mut self, trade_id: u8) -> bool {
-        if let Some(pos) = self.active_trades.iter().position(|trade| trade.id == trade_id) {
+        if let Some(pos) = self
+            .active_trades
+            .iter()
+            .position(|trade| trade.id == trade_id)
+        {
             self.active_trades.remove(pos);
             true
         } else {
             false
         }
     }
-    
+
     pub fn can_add_trade(&self) -> bool {
         self.active_trades.len() < crate::constants::MAX_ACTIVE_TRADES
     }
-    
+
     pub fn get_next_trade_id(&mut self) -> u8 {
         let id = self.next_trade_id;
         self.next_trade_id = self.next_trade_id.wrapping_add(1);
