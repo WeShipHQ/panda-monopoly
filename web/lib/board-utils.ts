@@ -222,8 +222,8 @@ export const getTextContainerClasses = (side: BoardSide): string => {
     case "top":
       return `flex flex-col justify-between size-full ${basePadding} pb-5`; // Extra padding bottom for color bar
     case "right":
-      // For right column: vertical writing mode, right to left
-      return `flex flex-col justify-between size-full ${basePadding} pl-5 [writing-mode:vertical-lr]`;
+      // For right column: vertical writing mode, right to left with 180deg rotation
+      return `flex flex-col justify-between size-full ${basePadding} pl-5 [writing-mode:vertical-lr] [transform:rotate(180deg)]`;
     default:
       return `flex flex-col justify-between h-full ${basePadding} pt-5`;
   }
