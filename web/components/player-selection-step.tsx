@@ -2,7 +2,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { PlayerAccount } from "@/types/schema";
 
 interface PlayerSelectionStepProps {
@@ -62,9 +62,11 @@ export function PlayerSelectionStep({
               onClick={() => !player.isBankrupt && onPlayerSelect(player)}
             >
               <Avatar className="h-6 w-6 mr-2 border-2 border-black rounded-none">
-                <AvatarFallback className={`text-xs font-bold rounded-none ${colors.icon} text-white`}>
-                  {player.wallet.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
+                <AvatarImage walletAddress={player.wallet} />
+                <AvatarFallback 
+                  walletAddress={player.wallet}
+                  className={`text-xs font-bold rounded-none ${colors.icon} text-white`}
+                />
               </Avatar>
               <div className="font-bold text-sm">
                 {player.wallet.slice(0, 5)}...

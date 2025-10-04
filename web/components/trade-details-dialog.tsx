@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeftRight, Trash2, Check, X } from "lucide-react";
 import { formatAddress, generatePlayerIcon } from "@/lib/utils";
 import { useGameContext } from "@/components/providers/game-provider";
@@ -135,12 +135,12 @@ export function TradeDetailsDialog({ isOpen, onClose, trade }: TradeDetailsDialo
               {/* Player Info */}
               <div className="flex items-center gap-2 mb-4 p-2 rounded-none bg-[#88AAEE] border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                 <Avatar className="h-8 w-8 border-2 border-black rounded-none">
+                  <AvatarImage walletAddress={trade.initiator} />
                   <AvatarFallback 
+                    walletAddress={trade.initiator}
                     style={{ backgroundColor: initiatorInfo.color }} 
                     className="text-white text-xs font-black rounded-none"
-                  >
-                    {trade.initiator.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
+                  />
                 </Avatar>
                 <div>
                   <div className="text-sm font-black text-black">
@@ -240,12 +240,12 @@ export function TradeDetailsDialog({ isOpen, onClose, trade }: TradeDetailsDialo
               {/* Player Info */}
               <div className="flex items-center gap-2 mb-4 p-2 rounded-none bg-[#A98CFF] border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                 <Avatar className="h-8 w-8 border-2 border-black rounded-none">
+                  <AvatarImage walletAddress={trade.target} />
                   <AvatarFallback 
+                    walletAddress={trade.target}
                     style={{ backgroundColor: targetInfo.color }} 
                     className="text-white text-xs font-black rounded-none"
-                  >
-                    {trade.target.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
+                  />
                 </Avatar>
                 <div>
                   <div className="text-sm font-black text-black">

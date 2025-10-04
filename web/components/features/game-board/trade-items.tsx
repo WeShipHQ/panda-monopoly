@@ -110,23 +110,21 @@ export function TradeItems() {
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center space-x-1.5">
                         <Avatar className="w-5 h-5 border border-black rounded-none">
-                          <AvatarImage src={fromPlayerInfo.avatar} />
+                          <AvatarImage walletAddress={trade.initiator} />
                           <AvatarFallback
+                            walletAddress={trade.initiator}
                             style={{ backgroundColor: fromPlayerInfo.color }}
                             className="text-white text-xs font-bold rounded-none"
-                          >
-                            {formatAddress(trade.initiator).slice(0, 2)}
-                          </AvatarFallback>
+                          />
                         </Avatar>
                         <ArrowLeftRight className="w-3 h-3 text-black font-bold" />
                         <Avatar className="w-5 h-5 border border-black rounded-none">
-                          <AvatarImage src={toPlayerInfo.avatar} />
+                          <AvatarImage walletAddress={trade.target} />
                           <AvatarFallback
+                            walletAddress={trade.target}
                             style={{ backgroundColor: toPlayerInfo.color }}
                             className="text-white text-xs font-bold rounded-none"
-                          >
-                            {formatAddress(trade.target).slice(0, 2)}
-                          </AvatarFallback>
+                          />
                         </Avatar>
                       </div>
                       <div className="flex items-center gap-1.5">

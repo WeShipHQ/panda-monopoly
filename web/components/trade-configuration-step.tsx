@@ -4,7 +4,7 @@
 import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { useGameContext } from "@/components/providers/game-provider";
@@ -167,9 +167,11 @@ export function TradeConfigurationStep({
         {/* Player Info */}
         <div className="flex items-center gap-2 mb-4 p-2 rounded-none bg-[#FFD93D] border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
           <Avatar className="h-8 w-8 border-2 border-black rounded-none">
-            <AvatarFallback className="bg-black text-white text-xs font-black rounded-none">
-              {player.wallet.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
+            <AvatarImage walletAddress={player.wallet} />
+            <AvatarFallback 
+              walletAddress={player.wallet}
+              className="bg-black text-white text-xs font-black rounded-none"
+            />
           </Avatar>
           <div>
             <div className="text-sm font-black text-black">
