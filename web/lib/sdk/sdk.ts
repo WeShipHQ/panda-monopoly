@@ -40,6 +40,12 @@ import {
   getUndelegateGameHandlerInstruction,
   getBuyPropertyInstruction,
   getInitPropertyHandlerInstruction,
+  getCreateTradeInstructionAsync,
+  getAcceptTradeInstructionAsync,
+  getRejectTradeInstruction,
+  getCancelTradeInstruction,
+  fetchTradeState,
+  TradeState,
 } from "./generated";
 import {
   CreateGameIxs,
@@ -67,12 +73,17 @@ import {
   DeclinePropertyParams,
   GameEvent,
   CreatePlatformParams,
+  CreateTradeParams,
+  AcceptTradeParams,
+  RejectTradeParams,
+  CancelTradeParams,
 } from "./types";
 import {
   getGamePDA,
   getPlatformPDA,
   getPlayerStatePDA,
   getPropertyStatePDA,
+  getTradeStatePDA,
 } from "./pda";
 import {
   Account,
@@ -646,6 +657,100 @@ class MonopolyGameSDK {
     });
   }
 
+  // Trade methods
+
+  /**
+   * Create a trade with another player
+   */
+  async createTradeIx(params: CreateTradeParams): Promise<Instruction> {
+    const [tradeStateAddress] = await getTradeStatePDA(
+      params.gameAddress,
+      params.proposer.address
+    );
+
+    const [proposerStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.proposer.address
+    );
+
+    const [receiverStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.receiver
+    );
+
+    return await getCreateTradeInstructionAsync({
+      game: params.gameAddress,
+      trade: tradeStateAddress,
+      proposerState: proposerStateAddress,
+      receiverState: receiverStateAddress,
+      proposer: params.proposer,
+      receiver: params.receiver,
+      tradeType: params.tradeType,
+      proposerMoney: params.proposerMoney,
+      receiverMoney: params.receiverMoney,
+      proposerProperty: params.proposerProperty ?? null,
+      receiverProperty: params.receiverProperty ?? null,
+    });
+  }
+
+  /**
+   * Accept a trade proposal
+   */
+  async acceptTradeIx(params: AcceptTradeParams): Promise<Instruction> {
+    const [tradeStateAddress] = await getTradeStatePDA(
+      params.gameAddress,
+      params.proposer
+    );
+
+    const [proposerStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.proposer
+    );
+
+    const [receiverStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.receiver.address
+    );
+
+    return await getAcceptTradeInstructionAsync({
+      game: params.gameAddress,
+      trade: tradeStateAddress,
+      proposerState: proposerStateAddress,
+      accepterState: receiverStateAddress,
+      accepter: params.receiver,
+    });
+  }
+
+  /**
+   * Reject a trade proposal
+   */
+  async rejectTradeIx(params: RejectTradeParams): Promise<Instruction> {
+    const [tradeStateAddress] = await getTradeStatePDA(
+      params.gameAddress,
+      params.proposer
+    );
+
+    return getRejectTradeInstruction({
+      trade: tradeStateAddress,
+      rejecter: params.receiver,
+    });
+  }
+
+  /**
+   * Cancel a trade proposal (only proposer can cancel)
+   */
+  async cancelTradeIx(params: CancelTradeParams): Promise<Instruction> {
+    const [tradeStateAddress] = await getTradeStatePDA(
+      params.gameAddress,
+      params.proposer.address
+    );
+
+    return getCancelTradeInstruction({
+      trade: tradeStateAddress,
+      canceller: params.proposer,
+    });
+  }
+
   // Account fetching methods
 
   async getGameAccount(
@@ -703,6 +808,40 @@ class MonopolyGameSDK {
       return await fetchPlayerState(rpc, playerStateAddress);
     } catch (error) {
       return null;
+    }
+  }
+
+  /**
+   * Get a specific trade by proposer
+   */
+  async getTradeAccount(
+    rpc: Rpc<SolanaRpcApi>,
+    gamePDA: Address,
+    proposer: Address
+  ): Promise<Account<TradeState, string> | null> {
+    try {
+      const [tradeStateAddress] = await getTradeStatePDA(gamePDA, proposer);
+      return await fetchTradeState(rpc, tradeStateAddress);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Get all active trades for a game
+   */
+  async getActiveTradesForGame(
+    rpc: Rpc<SolanaRpcApi>,
+    gamePDA: Address
+  ): Promise<Account<TradeState, string>[]> {
+    try {
+      // Import trade discriminator and decoder if available
+      // This is a placeholder - would need to implement similar to getGameAccounts
+      // For now, we'll return empty array and implement later
+      return [];
+    } catch (error) {
+      console.error("Error fetching trades:", error);
+      return [];
     }
   }
 

@@ -5,6 +5,8 @@ import type {
   GameStatus,
   ColorGroup,
   PropertyType,
+  TradeStatus,
+  TradeType,
 } from "@/lib/sdk/generated";
 import {
   isSome,
@@ -78,6 +80,33 @@ export interface PropertyAccount {
   houseCost: number;
   mortgageValue: number;
   lastRentPaid: string;
+}
+
+// Trade related interfaces
+export interface TradeOffer {
+  money: string;
+  properties: number[]; // property positions
+}
+
+export interface TradeData {
+  id: string;
+  gameAddress: string;
+  initiator: string;
+  target: string;
+  initiatorOffer: TradeOffer;
+  targetOffer: TradeOffer;
+  status: TradeStatus;
+  type: TradeType;
+  createdAt: number;
+  expiresAt?: number;
+}
+
+export interface ActiveTrade {
+  trade: TradeData;
+  canAccept: boolean;
+  canReject: boolean;
+  canCancel: boolean;
+  isExpired: boolean;
 }
 
 function optionToNullable<T>(option: Option<T>): T | null {
