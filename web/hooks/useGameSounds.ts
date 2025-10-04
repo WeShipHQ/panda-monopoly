@@ -5,7 +5,11 @@ import { playGameStateSound, playPropertySound, playSound, SOUND_CONFIG } from '
 
 export const useGameSounds = (gameState: any, previousGameState: any) => {
   useEffect(() => {
-    if (!gameState || !previousGameState) return;
+    if (!gameState || !previousGameState) {
+      return;
+    }
+    
+    console.log("🎮 Game state changed, checking for sound effects");
 
     // Detect game state changes and play appropriate sounds
     
@@ -25,27 +29,40 @@ export const useGameSounds = (gameState: any, previousGameState: any) => {
       playSound("anime-wow", SOUND_CONFIG.volumes.specialEvents);
     }
 
-    // Property was bought
+        // Property was bought
     if (gameState.properties && previousGameState.properties) {
-      const currentOwnedCount = Object.values(gameState.properties).filter((p: any) => p.owner).length;
-      const previousOwnedCount = Object.values(previousGameState.properties).filter((p: any) => p.owner).length;
+      // Đã xử lý âm thanh mua nhà trực tiếp trong hàm buyProperty
+      // nên không cần phát âm thanh mua nhà ở đây nữa
       
-      if (currentOwnedCount > previousOwnedCount) {
-        // Property was purchased
-        setTimeout(() => playPropertySound('buy'), SOUND_CONFIG.delays.propertyBuyFeedback);
+      // Check for rent payment events (player landed on property owned by another player)
+      if (gameState.currentAction?.type === 'pay_rent' && gameState.currentAction !== previousGameState.currentAction) {
+        // Rent paid to property owner
+        setTimeout(() => {
+          console.log("🔊 Playing rent payment sound");
+          playPropertySound('pay');
+        }, SOUND_CONFIG.delays.moneyChangeFeedback);
+        
+        // If this game supported real-time multiplayer, we would also play a sound for the owner
+        // who received the rent, but that would require websocket notifications
       }
     }
 
     // Player's money changed (rent payment, receiving money, etc.)
-    if (gameState.currentPlayer?.money !== previousGameState.currentPlayer?.money) {
-      const moneyDiff = gameState.currentPlayer.money - previousGameState.currentPlayer.money;
+    if (gameState.currentPlayer?.cashBalance !== previousGameState?.currentPlayer?.cashBalance && 
+        gameState.currentPlayer && previousGameState?.currentPlayer) {
+      const moneyDiff = (gameState.currentPlayer.cashBalance || 0) - (previousGameState.currentPlayer.cashBalance || 0);
       
       if (moneyDiff > 0) {
         // Player received money
-        setTimeout(() => playSound("money-receive", SOUND_CONFIG.volumes.moneyReceive), SOUND_CONFIG.delays.moneyChangeFeedback);
+        console.log("� Playing money receive sound, balance increased by:", moneyDiff);
+        setTimeout(() => playPropertySound('receive'), SOUND_CONFIG.delays.moneyChangeFeedback);
       } else if (moneyDiff < 0) {
-        // Player paid money
-        setTimeout(() => playSound("money-pay", SOUND_CONFIG.volumes.moneyPay), SOUND_CONFIG.delays.moneyChangeFeedback);
+        // Player paid money - Không cần phát âm thanh ở đây nếu đang trả tiền thuê, vì đã được xử lý ở phần trên
+        // Check if this is part of a rent payment that we already played a sound for
+        if (!gameState.currentAction?.type?.includes('pay_rent')) {
+          console.log("� Playing money pay sound, balance decreased by:", Math.abs(moneyDiff));
+          setTimeout(() => playPropertySound('pay'), SOUND_CONFIG.delays.moneyChangeFeedback);
+        }
       }
     }
 
@@ -68,7 +85,7 @@ export const useGameSounds = (gameState: any, previousGameState: any) => {
       }
       
       if (action.type === 'pay_tax') {
-        setTimeout(() => playSound("money-pay", SOUND_CONFIG.volumes.moneyPay), SOUND_CONFIG.delays.taxPaymentFeedback);
+        setTimeout(() => playPropertySound('pay'), SOUND_CONFIG.delays.taxPaymentFeedback);
       }
     }
 

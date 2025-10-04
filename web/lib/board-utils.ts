@@ -198,15 +198,30 @@ export const getColorBarClasses = (side: BoardSide): string => {
 export const getOwnerIndicatorClasses = (side: BoardSide): string => {
   switch (side) {
     case "bottom":
-      return "absolute top-0 left-0 w-full h-3";
+      return "absolute bottom-0 left-0 w-full h-4 border-t border-white shadow-md";
     case "left":
-      return "absolute top-0 right-0 h-full w-3";
+      return "absolute top-0 left-0 h-full w-4 border-r border-white shadow-md";
     case "top":
-      return "absolute bottom-0 left-0 w-full h-3";
+      return "absolute top-0 left-0 w-full h-4 border-b border-white shadow-md";
     case "right":
-      return "absolute top-0 left-0 h-full w-3";
+      return "absolute top-0 right-0 h-full w-4 border-l border-white shadow-md";
     default:
-      return "absolute top-0 left-0 w-full h-3";
+      return "absolute bottom-0 left-0 w-full h-4 border-t border-white shadow-md";
+  }
+};
+
+export const getTextRotationClass = (side: BoardSide): string => {
+  switch (side) {
+    case "bottom":
+      return ""; // No rotation
+    case "left":
+      return "rotate-90"; // 90 degrees clockwise
+    case "top":
+      return "rotate-180"; // 180 degrees
+    case "right":
+      return "-rotate-90"; // 90 degrees counter-clockwise
+    default:
+      return "";
   }
 };
 
