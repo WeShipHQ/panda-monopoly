@@ -12,15 +12,7 @@ import {
   PRIORITY_FEE_TAX_POSITION,
 } from "@/configs/constants";
 import { WalletWithMetadata } from "@privy-io/react-auth";
-// import { DiceVisual, DiceController } from "@/components/dices";
 import { DicesOnly, useDiceContext } from "./dice";
-
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 interface PlayerTokenProps {
   player: PlayerAccount;
@@ -184,6 +176,7 @@ export const PlayerActions = ({
   isLoading: string | null;
 }) => {
   const {
+    demoDices,
     gameState: game,
     currentPlayerState,
     showRollDice,
@@ -204,19 +197,6 @@ export const PlayerActions = ({
   // const isEnded = game?.gameStatus  === GameStatus.Finished;
   const isCreator = game.authority === wallet.address;
   const isInGame = wallet.address && game.players.includes(wallet.address);
-
-  // const isMyTurn = isCurrentPlayerTurn();
-
-  // const hasPendingActions =
-  //   currentPlayerState.needsPropertyAction ||
-  //   currentPlayerState.needsChanceCard ||
-  //   currentPlayerState.needsCommunityChestCard ||
-  //   currentPlayerState.needsBankruptcyCheck ||
-  //   currentPlayerState.needsSpecialSpaceAction;
-
-  // const isDouble =
-  //   currentPlayerState.hasRolledDice &&
-  //   currentPlayerState.lastDiceRoll[0] === currentPlayerState.lastDiceRoll[1];
 
   return (
     <div className="flex flex-col items-center">
@@ -294,7 +274,7 @@ export const PlayerActions = ({
                 size="sm"
                 loading={isRolling}
               >
-                Roll dice
+                {demoDices ? "Demo Roll" : "Roll dice"}
               </Button>
             )}
 

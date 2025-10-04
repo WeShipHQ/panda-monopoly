@@ -440,6 +440,12 @@ pub fn reset_game_handler<'c: 'info, 'info>(
         // Change game status to in progress
         game.game_status = GameStatus::InProgress;
         game.current_turn = 0; // First player starts
+        game.houses_remaining = TOTAL_HOUSES; // First player starts
+        game.hotels_remaining = TOTAL_HOTELS; // First player starts
+        game.bank_balance = 1_000_000; // First player starts
+        game.winner = None; // First player starts
+        game.active_trades = vec![]; // First player starts
+        game.next_trade_id = 0; // First player starts
         game.turn_started_at = clock.unix_timestamp;
     }
 
@@ -452,10 +458,9 @@ pub fn reset_game_handler<'c: 'info, 'info>(
             let mut player_account =
                 Account::<PlayerState>::try_from(next_account_info(remaining_accounts_iter)?)?;
 
-            // player_account.initialize_player_state(*player_pubkey, game.key(), clock);
             player_account.cash_balance = STARTING_MONEY as u64;
+            player_account.position = 0;
             player_account.in_jail = false;
-
             player_account.jail_turns = 0;
             player_account.doubles_count = 0;
             player_account.is_bankrupt = false;
@@ -474,8 +479,6 @@ pub fn reset_game_handler<'c: 'info, 'info>(
             player_account.needs_special_space_action = false;
             player_account.pending_special_space_position = None;
             player_account.card_drawn_at = None;
-
-            // player_account.exit(ctx.program_id)?;
         }
     }
 
