@@ -18,7 +18,6 @@ pub struct DeclareBankruptcy<'info> {
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump,
-        constraint = player_state.needs_bankruptcy_check @ GameError::BankruptcyNotRequired,
         constraint = !player_state.is_bankrupt @ GameError::BankruptcyAlreadyStarted
     )]
     pub player_state: Account<'info, PlayerState>,

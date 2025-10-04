@@ -71,6 +71,7 @@ interface GameContextType {
   sellBuilding: (position: number, buildingType: BuildingType) => Promise<void>;
   payMevTax: () => Promise<void>;
   payPriorityFeeTax: () => Promise<void>;
+  declareBankruptcy: () => Promise<void>;
 
   // Trade actions
   createTrade: (
@@ -1147,6 +1148,39 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     [gameAddress, wallet, addGameLog]
   );
 
+  const declareBankruptcy = useCallback(async (): Promise<void> => {
+    if (
+      !gameAddress ||
+      !currentPlayerState ||
+      !wallet?.address ||
+      !wallet.delegated
+    ) {
+      throw new Error("Game address or player signer not available");
+    }
+
+    try {
+      const instruction = await sdk.declareBankruptcyIx({
+        gameAddress,
+        player: { address: address(wallet.address) } as TransactionSigner,
+        propertiesOwned: Array.from(currentPlayerState.propertiesOwned),
+      });
+
+      const signature = await buildAndSendTransactionWithPrivy(
+        erRpc,
+        [instruction],
+        wallet,
+        [],
+        "confirmed",
+        true
+      );
+
+      console.log("[declareBankruptcy] tx", signature);
+    } catch (error) {
+      console.error("Error declaring bankruptcy:", error);
+      throw error;
+    }
+  }, [gameAddress, currentPlayerState, wallet]);
+
   // Reset the modal shown flags when player state changes or when cards are no longer needed
   useEffect(() => {
     if (currentPlayerState) {
@@ -1479,6 +1513,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     sellBuilding,
     payMevTax,
     payPriorityFeeTax,
+    declareBankruptcy,
 
     // Trade actions
     createTrade,

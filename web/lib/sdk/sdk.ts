@@ -50,6 +50,7 @@ import {
   getAcceptTradeInstruction,
   getRejectTradeInstruction,
   getCancelTradeInstruction,
+  getDeclareBankruptcyInstruction,
 } from "./generated";
 import {
   CreateGameIxs,
@@ -68,7 +69,6 @@ import {
   BuildHotelParams,
   SellBuildingParams,
   CollectFreeParkingParams,
-  GoToJailParams,
   AttendFestivalParams,
   DrawChanceCardParams,
   DrawCommunityChestCardParams,
@@ -81,6 +81,7 @@ import {
   AcceptTradeParams,
   RejectTradeParams,
   CancelTradeParams,
+  DeclareBankruptcyParams,
 } from "./types";
 import {
   getGamePDA,
@@ -729,6 +730,39 @@ class MonopolyGameSDK {
       canceller: params.canceller,
       tradeId: params.tradeId,
     });
+  }
+
+  async declareBankruptcyIx(
+    params: DeclareBankruptcyParams
+  ): Promise<Instruction> {
+    const [playerStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.player.address
+    );
+
+    const ix = getDeclareBankruptcyInstruction({
+      game: params.gameAddress,
+      player: params.player,
+      playerState: playerStateAddress,
+    });
+
+    const addresses = await Promise.all(
+      params.propertiesOwned.map(async (position) =>
+        getPropertyStatePDA(params.gameAddress, position)
+      )
+    );
+
+    const remainingAccounts = addresses.map(
+      ([address, _]) =>
+        ({
+          address,
+          role: AccountRole.WRITABLE,
+        } as WritableAccount)
+    );
+
+    ix.accounts.push(...remainingAccounts);
+
+    return ix;
   }
 
   // Account fetching methods

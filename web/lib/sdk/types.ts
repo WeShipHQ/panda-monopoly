@@ -212,3 +212,9 @@ export interface CancelTradeParams {
   gameAddress: Address;
   tradeId: number;
 }
+
+export interface DeclareBankruptcyParams {
+  player: TransactionSigner;
+  gameAddress: Address;
+  propertiesOwned: number[];
+}
