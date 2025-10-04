@@ -285,7 +285,6 @@ class MonopolyGameSDK {
         role: AccountRole.WRITABLE,
       });
     }
-
     ix.accounts.push(...remainingAccounts);
 
     return ix;
