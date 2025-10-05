@@ -21,6 +21,7 @@ import { formatAddress } from "@/lib/utils";
 import { useGameLogs } from "@/hooks/useGameLogs";
 import { useRpcContext } from "./rpc-provider";
 import { useWallet } from "@/hooks/use-wallet";
+import { playPropertySound, playSound, SOUND_CONFIG } from "@/lib/soundUtil";
 
 interface GameContextType {
   gameAddress: Address | null;
@@ -441,6 +442,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[buyProperty] tx", signature);
 
+        // Play property buy sound
+        playPropertySound("buy");
+
         const propertyData = getTypedSpaceData(position, "property");
         addGameLog({
           type: "purchase",
@@ -530,6 +534,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         );
 
         console.log("[payRent] tx", signature);
+
+        // Play money pay sound for rent
+        playPropertySound("rent");
 
         const propertyData = getTypedSpaceData(position, "property");
 
@@ -725,6 +732,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[buildHouse] tx", signature);
 
+        // Play property buy sound for building
+        playPropertySound("buy");
+
         const propertyData = getTypedSpaceData(position, "property");
         addGameLog({
           type: "building",
@@ -766,6 +776,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         );
 
         console.log("[buildHotel] tx", signature);
+
+        // Play property buy sound for building hotel
+        playPropertySound("buy");
 
         const propertyData = getTypedSpaceData(position, "property");
         addGameLog({
