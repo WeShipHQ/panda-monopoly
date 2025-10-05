@@ -116,9 +116,9 @@ pub struct GameState {
     pub active_trades: Vec<TradeInfo>, // Vector of active trades
     pub next_trade_id: u8, // Next trade ID to assign
 
-    #[max_len(40)]
-    pub active_properties: Vec<PropertyState>, // Vector of active properties
-    pub next_property_id: u8, // Next property ID to assign
+                           // #[max_len(40)]
+                           // pub active_properties: Vec<PropertyState>, // Vector of active properties
+                           // pub next_property_id: u8, // Next property ID to assign
 }
 
 impl GameState {

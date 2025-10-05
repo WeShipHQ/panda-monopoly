@@ -16,16 +16,16 @@ export function OwnedProperties() {
 
   if (!ownedProperties.length) {
     return (
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold">My properties (0)</h2>
-        <Card>
-          <CardContent>
-            <p className="text-gray-500 text-center text-sm">
-              No properties owned
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="bg-white">
+        <CardHeader>
+          <CardTitle>My properties (0)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-500 text-center text-sm">
+            No properties owned
+          </p>
+        </CardContent>
+      </Card>
     );
   }
 

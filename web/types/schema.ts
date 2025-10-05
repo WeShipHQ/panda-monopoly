@@ -7,6 +7,7 @@ import type {
   PropertyType,
   TradeStatus,
   TradeType,
+  TradeInfo as GeneratedTradeInfo,
 } from "@/lib/sdk/generated";
 import { ColorGroup as GeneratedColorGroup } from "@/lib/sdk/generated";
 import {
@@ -35,6 +36,7 @@ export interface GameAccount {
   timeLimit: number | null;
   winner: string | null;
   turnStartedAt: number;
+  activeTrades: TradeInfo[];
 }
 
 export interface PlayerAccount {
@@ -83,32 +85,24 @@ export interface PropertyAccount {
   lastRentPaid: string;
 }
 
-// Trade related interfaces
 export interface TradeOffer {
   money: string;
-  properties: number[]; // property positions
+  property: number | null;
 }
 
-export interface TradeData {
-  id: string;
-  gameAddress: string;
-  initiator: string;
-  target: string;
-  initiatorOffer: TradeOffer;
-  targetOffer: TradeOffer;
+export type TradeInfo = {
+  id: number;
+  proposer: string;
+  receiver: string;
+  tradeType: TradeType;
+  proposerMoney: number | string;
+  receiverMoney: number | string;
+  proposerProperty: number | null;
+  receiverProperty: number | null;
   status: TradeStatus;
-  type: TradeType;
-  createdAt: number;
-  expiresAt?: number;
-}
-
-export interface ActiveTrade {
-  trade: TradeData;
-  canAccept: boolean;
-  canReject: boolean;
-  canCancel: boolean;
-  isExpired: boolean;
-}
+  createdAt: number | string;
+  expiresAt: number | string;
+};
 
 function optionToNullable<T>(option: Option<T>): T | null {
   return isSome(option) ? option.value : null;
@@ -157,6 +151,7 @@ export function mapGameStateToAccount(
       ? addressToString(optionToNullable(gameState.winner)!)
       : null,
     turnStartedAt: bigintToNumber(gameState.turnStartedAt),
+    activeTrades: gameState.activeTrades.map(mapTradeInfoToAccount),
   };
 }
 
@@ -252,5 +247,21 @@ export function mapPropertyStateToAccount(
     houseCost: propertyState.houseCost,
     mortgageValue: propertyState.mortgageValue,
     lastRentPaid: bigintToString(propertyState.lastRentPaid),
+  };
+}
+
+export function mapTradeInfoToAccount(
+  tradeInfo: GeneratedTradeInfo
+): TradeInfo {
+  return {
+    ...tradeInfo,
+    proposer: addressToString(tradeInfo.proposer),
+    receiver: addressToString(tradeInfo.receiver),
+    proposerMoney: bigintToString(tradeInfo.proposerMoney),
+    receiverMoney: bigintToString(tradeInfo.receiverMoney),
+    proposerProperty: optionToNullable(tradeInfo.proposerProperty),
+    receiverProperty: optionToNullable(tradeInfo.receiverProperty),
+    createdAt: bigintToNumber(tradeInfo.createdAt),
+    expiresAt: bigintToNumber(tradeInfo.expiresAt),
   };
 }

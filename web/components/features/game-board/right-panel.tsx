@@ -9,7 +9,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useGameContext } from "@/components/providers/game-provider";
-import { TradeItems } from "./trade-items";
+import { TradeView } from "./trade-view";
 import { BankruptcyButton } from "./bankruptcy-button";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,7 @@ import { toast } from "sonner";
 export function RightPanel() {
   return (
     <div className="p-4 space-y-6 h-full overflow-auto">
-      <TradeItems />
-
+      <TradeView />
       <BankruptcyButton />
 
       {envConfig.IS_DEVELOPMENT && (

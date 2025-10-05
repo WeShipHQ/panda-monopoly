@@ -63,6 +63,7 @@ export function useGameState(
       try {
         // Step 1: Fetch game account data
         let gameState = await sdk.getGameAccount(rpc, gameAddress);
+
         if (gameState?.programAddress === DELEGATION_PROGRAM_ID) {
           try {
             const erState = await sdk.getGameAccount(erRpc, gameAddress);

@@ -7,7 +7,6 @@ import {
   GameAccount,
   PlayerAccount,
   PropertyAccount,
-  TradeData,
   TradeOffer,
 } from "@/types/schema";
 import { Address, address, TransactionSigner } from "@solana/kit";
@@ -34,7 +33,7 @@ import { useWallet } from "@/hooks/use-wallet";
 import { playPropertySound, playSound, SOUND_CONFIG } from "@/lib/soundUtil";
 import { toast } from "sonner";
 import soundUtil from "@/lib/soundUtil";
-import { BuildingType, GameStatus } from "@/lib/sdk/generated";
+import { BuildingType, GameStatus, TradeType } from "@/lib/sdk/generated";
 
 interface GameContextType {
   gameAddress: Address | null;
@@ -75,11 +74,11 @@ interface GameContextType {
 
   // Trade actions
   createTrade: (
-    targetPlayer: string,
+    receiver: string,
     initiatorOffer: TradeOffer,
     targetOffer: TradeOffer
   ) => Promise<void>;
-  acceptTrade: (tradeId: string) => Promise<void>;
+  acceptTrade: (tradeId: string, proposer: string) => Promise<void>;
   rejectTrade: (tradeId: string) => Promise<void>;
   cancelTrade: (tradeId: string) => Promise<void>;
 
@@ -98,11 +97,6 @@ interface GameContextType {
   showRollDice: boolean;
   showEndTurn: boolean;
   showPayJailFine: boolean;
-
-  isTradeDialogOpen: boolean;
-  setIsTradeDialogOpen: (open: boolean) => void;
-  activeTrades: TradeData[];
-  setActiveTrades: (trades: TradeData[]) => void;
 
   // Game logs
   gameLogs: GameLogEntry[];
@@ -158,7 +152,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
   // Trade UI state
   const [isTradeDialogOpen, setIsTradeDialogOpen] = useState(false);
-  const [activeTrades, setActiveTrades] = useState<TradeData[]>([]);
 
   // Add these new state variables to track if modals have been shown
   const [hasShownChanceModal, setHasShownChanceModal] = useState(false);
@@ -206,6 +199,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   } = useGameState(gameAddress, {
     onCardDrawEvent: addCardDrawEvent,
   });
+  console.log("gameState", gameState);
 
   const currentPlayerAddress = useMemo(() => {
     return gameState?.players?.[gameState?.currentTurn] || null;
@@ -935,15 +929,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[payMevTax] tx", signature);
-
-      // addGameLog({
-      //   type: "move",
-      //   playerId: wallet.address,
-      //   message: `${formatAddress(
-      //     wallet.address
-      //   )} paid MEV tax of $${"MEV_TAX_AMOUNT"}`,
-      //   details: { taxType: "mev", amount: 9999, signature },
-      // });
     } catch (error) {
       console.error("Error paying MEV tax:", error);
       throw error;
@@ -991,161 +976,177 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
   }, [gameAddress, wallet, addGameLog]);
 
-  // Trade action handlers
   const createTrade = useCallback(
     async (
-      targetPlayer: string,
+      receiver: string,
       initiatorOffer: TradeOffer,
       targetOffer: TradeOffer
     ): Promise<void> => {
       if (!gameAddress || !wallet?.address || !wallet.delegated) {
-        console.error("Missing required data for trade creation");
-        return;
+        throw new Error("Game address or player signer not available");
       }
 
       try {
-        // For now, just simulate trade creation since we're not implementing actual SDK calls
-        const newTrade: TradeData = {
-          id: `trade_${Date.now()}`,
-          gameAddress: gameAddress,
-          initiator: wallet.address,
-          target: targetPlayer,
-          initiatorOffer,
-          targetOffer,
-          status: 0, // Pending
-          type: 0, // Will be determined based on offers
-          createdAt: Date.now(),
-          expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-        };
+        const proposerMoney = parseInt(initiatorOffer.money) || 0;
+        const receiverMoney = parseInt(targetOffer.money) || 0;
 
-        setActiveTrades((prev) => [...prev, newTrade]);
+        const proposerProperty = initiatorOffer.property;
+        const receiverProperty = targetOffer.property;
 
-        addGameLog({
-          type: "trade",
-          playerId: wallet.address,
-          message: `${formatAddress(
-            wallet.address
-          )} created a trade with ${formatAddress(targetPlayer)}`,
-          details: {
-            tradeId: newTrade.id,
-            action: "created",
-          },
+        let tradeType: TradeType;
+        if (proposerProperty !== null && receiverProperty !== null) {
+          tradeType = TradeType.PropertyOnly;
+        } else if (proposerProperty !== null && receiverMoney > 0) {
+          tradeType = TradeType.PropertyForMoney;
+        } else if (proposerMoney > 0 && receiverProperty !== null) {
+          tradeType = TradeType.MoneyForProperty;
+        } else {
+          tradeType = TradeType.MoneyOnly;
+        }
+
+        const instruction = await sdk.createTradeIx({
+          gameAddress,
+          proposer: { address: address(wallet.address) } as TransactionSigner,
+          receiver: address(receiver),
+          tradeType,
+          proposerMoney,
+          receiverMoney,
+          proposerProperty: proposerProperty ?? undefined,
+          receiverProperty: receiverProperty ?? undefined,
         });
 
-        console.log("Trade created:", newTrade);
+        const signature = await buildAndSendTransactionWithPrivy(
+          erRpc,
+          [instruction],
+          wallet,
+          [],
+          "confirmed",
+          true
+        );
+
+        console.log("[createTrade] tx", signature);
+
+        toast.success("Trade created successfully!");
       } catch (error) {
         console.error("Error creating trade:", error);
+        toast.error("Failed to create trade");
         throw error;
       }
     },
-    [gameAddress, wallet, addGameLog]
+    [gameAddress, wallet, erRpc, refetch]
   );
 
   const acceptTrade = useCallback(
-    async (tradeId: string): Promise<void> => {
-      if (!wallet?.address || !wallet.delegated) {
-        console.error("Missing required data for trade acceptance");
-        return;
+    async (tradeId: string, proposer: string): Promise<void> => {
+      if (!gameAddress || !wallet?.address || !wallet.delegated) {
+        throw new Error("Game address or player signer not available");
       }
 
       try {
-        setActiveTrades((prev) =>
-          prev.map((trade) =>
-            trade.id === tradeId
-              ? { ...trade, status: 1 } // Accepted
-              : trade
-          )
-        );
-
-        addGameLog({
-          type: "trade",
-          playerId: wallet.address,
-          message: `${formatAddress(wallet.address)} accepted a trade`,
-          details: {
-            tradeId,
-            action: "accepted",
-          },
+        const instruction = await sdk.acceptTradeIx({
+          gameAddress,
+          accepter: { address: address(wallet.address) } as TransactionSigner,
+          proposer: address(proposer),
+          tradeId: parseInt(tradeId), // Convert string to number for SDK
         });
 
-        console.log("Trade accepted:", tradeId);
+        const signature = await buildAndSendTransactionWithPrivy(
+          erRpc,
+          [instruction],
+          wallet,
+          [],
+          "confirmed",
+          true
+        );
+
+        console.log("[acceptTrade] tx", signature);
+
+        // Refresh game state to get updated trades
+        await refetch();
+
+        toast.success("Trade accepted successfully!");
       } catch (error) {
         console.error("Error accepting trade:", error);
+        toast.error("Failed to accept trade");
         throw error;
       }
     },
-    [wallet, addGameLog]
+    [gameAddress, wallet, erRpc, refetch]
   );
 
   const rejectTrade = useCallback(
     async (tradeId: string): Promise<void> => {
-      if (!wallet?.address || !wallet.delegated) {
-        console.error("Missing required data for trade rejection");
-        return;
+      if (!gameAddress || !wallet?.address || !wallet.delegated) {
+        throw new Error("Game address or player signer not available");
       }
 
       try {
-        setActiveTrades((prev) =>
-          prev.map((trade) =>
-            trade.id === tradeId
-              ? { ...trade, status: 2 } // Rejected
-              : trade
-          )
-        );
-
-        addGameLog({
-          type: "trade",
-          playerId: wallet.address,
-          message: `${formatAddress(wallet.address)} rejected a trade`,
-          details: {
-            tradeId,
-            action: "rejected",
-          },
+        console.log("tradeId", tradeId);
+        const instruction = await sdk.rejectTradeIx({
+          gameAddress,
+          rejecter: { address: address(wallet.address) } as TransactionSigner,
+          tradeId: parseInt(tradeId),
         });
 
-        console.log("Trade rejected:", tradeId);
+        const signature = await buildAndSendTransactionWithPrivy(
+          erRpc,
+          [instruction],
+          wallet,
+          [],
+          "confirmed",
+          true
+        );
+
+        console.log("[rejectTrade] tx", signature);
+
+        // Refresh game state to get updated trades
+        await refetch();
+
+        toast.success("Trade rejected successfully!");
       } catch (error) {
         console.error("Error rejecting trade:", error);
+        toast.error("Failed to reject trade");
         throw error;
       }
     },
-    [wallet, addGameLog]
+    [gameAddress, wallet, erRpc, refetch]
   );
 
   const cancelTrade = useCallback(
     async (tradeId: string): Promise<void> => {
-      if (!wallet?.address || !wallet.delegated) {
-        console.error("Missing required data for trade cancellation");
-        return;
+      if (!gameAddress || !wallet?.address || !wallet.delegated) {
+        throw new Error("Game address or player signer not available");
       }
 
       try {
-        setActiveTrades((prev) =>
-          prev.map((trade) =>
-            trade.id === tradeId
-              ? { ...trade, status: 3 } // Cancelled
-              : trade
-          )
-        );
-
-        addGameLog({
-          type: "trade",
-          playerId: wallet.address,
-          message: `${formatAddress(
-            wallet.address
-          )} cancelled their trade offer`,
-          details: {
-            tradeId,
-            action: "cancelled",
-          },
+        const instruction = await sdk.cancelTradeIx({
+          gameAddress,
+          canceller: { address: address(wallet.address) } as TransactionSigner,
+          tradeId: parseInt(tradeId), // Convert string to number for SDK
         });
 
-        console.log("Trade cancelled:", tradeId);
+        const signature = await buildAndSendTransactionWithPrivy(
+          erRpc,
+          [instruction],
+          wallet,
+          [],
+          "confirmed",
+          true
+        );
+
+        console.log("[cancelTrade] tx", signature);
+
+        // Refresh game state to get updated trades
+        await refetch();
+
+        toast.success("Trade cancelled successfully!");
       } catch (error) {
-        console.error("Error cancelling trade:", error);
+        console.error("Error canceling trade:", error);
+        toast.error("Failed to cancel trade");
         throw error;
       }
     },
-    [gameAddress, wallet, addGameLog]
+    [gameAddress, wallet, erRpc, refetch]
   );
 
   const declareBankruptcy = useCallback(async (): Promise<void> => {
@@ -1536,12 +1537,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     showRollDice,
     showEndTurn,
     showPayJailFine,
-
-    // Trade UI state
-    isTradeDialogOpen,
-    setIsTradeDialogOpen,
-    activeTrades,
-    setActiveTrades,
 
     // Game logs
     gameLogs,

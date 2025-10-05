@@ -55,8 +55,11 @@ pub fn create_trade_handler(
     require!(game.can_add_trade(), GameError::TooManyActiveTrades);
 
     // Validate trade parameters
-    require!(proposer_money <= proposer_state.cash_balance, GameError::InsufficientFunds);
-    
+    require!(
+        proposer_money <= proposer_state.cash_balance,
+        GameError::InsufficientFunds
+    );
+
     // Validate proposer property ownership
     if let Some(prop_pos) = proposer_property {
         require!(
@@ -76,21 +79,45 @@ pub fn create_trade_handler(
     // Validate trade type matches the provided parameters
     match trade_type {
         TradeType::MoneyOnly => {
-            require!(proposer_property.is_none() && receiver_property.is_none(), GameError::InvalidTradeType);
-            require!(proposer_money > 0 || receiver_money > 0, GameError::InvalidTradeType);
-        },
+            require!(
+                proposer_property.is_none() && receiver_property.is_none(),
+                GameError::InvalidTradeType
+            );
+            require!(
+                proposer_money > 0 || receiver_money > 0,
+                GameError::InvalidTradeType
+            );
+        }
         TradeType::PropertyOnly => {
-            require!(proposer_money == 0 && receiver_money == 0, GameError::InvalidTradeType);
-            require!(proposer_property.is_some() || receiver_property.is_some(), GameError::InvalidTradeType);
-        },
+            require!(
+                proposer_money == 0 && receiver_money == 0,
+                GameError::InvalidTradeType
+            );
+            require!(
+                proposer_property.is_some() || receiver_property.is_some(),
+                GameError::InvalidTradeType
+            );
+        }
         TradeType::MoneyForProperty => {
-            require!(proposer_money > 0 && receiver_property.is_some(), GameError::InvalidTradeType);
-            require!(proposer_property.is_none() && receiver_money == 0, GameError::InvalidTradeType);
-        },
+            require!(
+                proposer_money > 0 && receiver_property.is_some(),
+                GameError::InvalidTradeType
+            );
+            require!(
+                proposer_property.is_none() && receiver_money == 0,
+                GameError::InvalidTradeType
+            );
+        }
         TradeType::PropertyForMoney => {
-            require!(proposer_property.is_some() && receiver_money > 0, GameError::InvalidTradeType);
-            require!(proposer_money == 0 && receiver_property.is_none(), GameError::InvalidTradeType);
-        },
+            require!(
+                proposer_property.is_some() && receiver_money > 0,
+                GameError::InvalidTradeType
+            );
+            require!(
+                proposer_money == 0 && receiver_property.is_none(),
+                GameError::InvalidTradeType
+            );
+        }
     }
 
     // Create the trade
@@ -165,21 +192,37 @@ pub fn accept_trade_handler(ctx: Context<AcceptTrade>, trade_id: u8) -> Result<(
     let clock = &ctx.accounts.clock;
 
     // Clean up expired trades first
-    game.cleanup_expired_trades(clock.unix_timestamp);
+    // game.cleanup_expired_trades(clock.unix_timestamp);
 
     // Find the trade
-    let trade = game.find_trade_by_id(trade_id)
+    let trade = game
+        .find_trade_by_id(trade_id)
         .ok_or(GameError::TradeNotFound)?
         .clone(); // Clone to avoid borrow checker issues
 
     // Validate trade
-    require!(trade.status == TradeStatus::Pending, GameError::TradeNotPending);
-    require!(trade.receiver == ctx.accounts.accepter.key(), GameError::NotTradeTarget);
-    require!(trade.expires_at > clock.unix_timestamp, GameError::TradeExpired);
+    require!(
+        trade.status == TradeStatus::Pending,
+        GameError::TradeNotPending
+    );
+    require!(
+        trade.receiver == ctx.accounts.accepter.key(),
+        GameError::NotTradeTarget
+    );
+    require!(
+        trade.expires_at > clock.unix_timestamp,
+        GameError::TradeExpired
+    );
 
     // Validate funds and properties are still available
-    require!(proposer_state.cash_balance >= trade.proposer_money, GameError::InsufficientFunds);
-    require!(accepter_state.cash_balance >= trade.receiver_money, GameError::InsufficientFunds);
+    require!(
+        proposer_state.cash_balance >= trade.proposer_money,
+        GameError::InsufficientFunds
+    );
+    require!(
+        accepter_state.cash_balance >= trade.receiver_money,
+        GameError::InsufficientFunds
+    );
 
     if let Some(prop_pos) = trade.proposer_property {
         require!(
@@ -253,16 +296,23 @@ pub fn reject_trade_handler(ctx: Context<RejectTrade>, trade_id: u8) -> Result<(
     let clock = &ctx.accounts.clock;
 
     // Clean up expired trades first
-    game.cleanup_expired_trades(clock.unix_timestamp);
+    // game.cleanup_expired_trades(clock.unix_timestamp);
 
     // Find the trade
-    let trade = game.find_trade_by_id(trade_id)
+    let trade = game
+        .find_trade_by_id(trade_id)
         .ok_or(GameError::TradeNotFound)?
         .clone();
 
     // Validate trade
-    require!(trade.status == TradeStatus::Pending, GameError::TradeNotPending);
-    require!(trade.receiver == ctx.accounts.rejecter.key(), GameError::NotTradeTarget);
+    require!(
+        trade.status == TradeStatus::Pending,
+        GameError::TradeNotPending
+    );
+    require!(
+        trade.receiver == ctx.accounts.rejecter.key(),
+        GameError::NotTradeTarget
+    );
 
     // Remove the trade
     game.remove_trade_by_id(trade_id);
@@ -299,16 +349,23 @@ pub fn cancel_trade_handler(ctx: Context<CancelTrade>, trade_id: u8) -> Result<(
     let clock = &ctx.accounts.clock;
 
     // Clean up expired trades first
-    game.cleanup_expired_trades(clock.unix_timestamp);
+    // game.cleanup_expired_trades(clock.unix_timestamp);
 
     // Find the trade
-    let trade = game.find_trade_by_id(trade_id)
+    let trade = game
+        .find_trade_by_id(trade_id)
         .ok_or(GameError::TradeNotFound)?
         .clone();
 
     // Validate trade
-    require!(trade.status == TradeStatus::Pending, GameError::TradeNotPending);
-    require!(trade.proposer == ctx.accounts.canceller.key(), GameError::NotTradeProposer);
+    require!(
+        trade.status == TradeStatus::Pending,
+        GameError::TradeNotPending
+    );
+    require!(
+        trade.proposer == ctx.accounts.canceller.key(),
+        GameError::NotTradeProposer
+    );
 
     // Remove the trade
     game.remove_trade_by_id(trade_id);

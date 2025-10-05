@@ -24,7 +24,8 @@ export function GameView() {
   if (gameLoading || !gameAddress || !gameState) {
     return (
       <div className="h-screen w-full flex items-center justify-center">
-        <DiceLoading />
+        {/* <DiceLoading /> */}
+        loading...
       </div>
     );
   }

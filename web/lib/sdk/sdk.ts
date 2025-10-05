@@ -41,10 +41,10 @@ import {
   getInitPropertyHandlerInstruction,
   getCreateTradeInstructionAsync,
   getAcceptTradeInstructionAsync,
-  getRejectTradeInstruction,
-  getCancelTradeInstruction,
-  fetchTradeState,
-  TradeState,
+  // getRejectTradeInstruction,
+  // getCancelTradeInstruction,
+  // fetchTradeState,
+  // TradeState,
   getRollDiceVrfHandlerInstruction,
   getCreateTradeInstruction,
   getAcceptTradeInstruction,
@@ -667,7 +667,7 @@ class MonopolyGameSDK {
 
   // trading
 
-  async createCreateTradeIx(params: CreateTradeParams): Promise<Instruction> {
+  async createTradeIx(params: CreateTradeParams): Promise<Instruction> {
     const [proposerStateAddress] = await getPlayerStatePDA(
       params.gameAddress,
       params.proposer.address
@@ -832,9 +832,10 @@ class MonopolyGameSDK {
     rpc: Rpc<SolanaRpcApi>,
     gamePDA: Address,
     proposer: Address
-  ): Promise<Account<TradeState, string> | null> {
+  ): Promise<Account<any, string> | null> {
     try {
       const [tradeStateAddress] = await getTradeStatePDA(gamePDA, proposer);
+      // @ts-expect-error
       return await fetchTradeState(rpc, tradeStateAddress);
     } catch (error) {
       return null;
@@ -847,6 +848,7 @@ class MonopolyGameSDK {
   async getActiveTradesForGame(
     rpc: Rpc<SolanaRpcApi>,
     gamePDA: Address
+    // @ts-expect-error
   ): Promise<Account<TradeState, string>[]> {
     try {
       // Import trade discriminator and decoder if available
