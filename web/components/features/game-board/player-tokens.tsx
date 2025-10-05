@@ -1,7 +1,7 @@
 "use client";
 
 import { PlayerAccount } from "@/types/schema";
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getRandomAvatarByAddress } from "@/lib/avatar-utils";
 
@@ -18,6 +18,49 @@ export const PlayerToken: React.FC<PlayerTokenProps> = ({
   boardRotation,
   playersOnSameSpace,
 }) => {
+  const [animatedPosition, setAnimatedPosition] = useState(position);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const previousPositionRef = useRef(position);
+  
+  // Animate player movement step by step
+  useEffect(() => {
+    const oldPos = previousPositionRef.current;
+    const newPos = position;
+    
+    if (oldPos === newPos) return;
+    
+    // Calculate the number of steps to move
+    const steps = newPos > oldPos 
+      ? newPos - oldPos 
+      : (40 - oldPos) + newPos; // Handle wrapping around the board
+    
+    if (steps === 0 || steps > 12) {
+      // If too many steps or no movement, jump directly
+      setAnimatedPosition(newPos);
+      previousPositionRef.current = newPos;
+      return;
+    }
+    
+    // Animate step by step
+    setIsAnimating(true);
+    let currentStep = 0;
+    const stepDelay = 300; // ms per step - slower for smoother movement
+    
+    const animationInterval = setInterval(() => {
+      currentStep++;
+      const intermediatePos = (oldPos + currentStep) % 40;
+      setAnimatedPosition(intermediatePos);
+      
+      if (currentStep >= steps) {
+        clearInterval(animationInterval);
+        setIsAnimating(false);
+        previousPositionRef.current = newPos;
+      }
+    }, stepDelay);
+    
+    return () => clearInterval(animationInterval);
+  }, [position]);
+  
   // Position token based on board position (40 spaces total)
   const getTokenPosition = (pos: number) => {
     // 14x14 grid with 2x2 corner spaces and 2x2 side spaces
@@ -64,7 +107,8 @@ export const PlayerToken: React.FC<PlayerTokenProps> = ({
     }
   };
 
-  const baseTokenPos = getTokenPosition(position);
+  // Use animated position instead of final position
+  const baseTokenPos = getTokenPosition(animatedPosition);
 
   // Handle multiple players on same space
   const getAdjustedPosition = () => {
@@ -75,7 +119,7 @@ export const PlayerToken: React.FC<PlayerTokenProps> = ({
     const tokenIndex = playersOnSameSpace.findIndex(
       (p) => p.wallet === player.wallet
     );
-    const offsetDistance = 1.5; // Distance between tokens in percentage
+    const offsetDistance = 1.5; // Distance between tokens in percentage (reduced for better centering)
 
     let adjustedLeft = parseFloat(baseTokenPos.left);
     let adjustedTop = parseFloat(baseTokenPos.top);
@@ -112,12 +156,14 @@ export const PlayerToken: React.FC<PlayerTokenProps> = ({
 
   return (
     <div
-      className="absolute w-10 h-10 transition-all duration-300 ease-in-out flex items-center justify-center"
+      className={`absolute w-10 h-10 flex items-center justify-center ${
+        isAnimating ? 'transition-all duration-300 ease-in-out' : 'transition-all duration-500 ease-in-out'
+      }`}
       style={{
         left: tokenPos.left,
         top: tokenPos.top,
-        transform: `translate(-50%, -50%) rotate(${-boardRotation}deg)`,
-        zIndex: 1000 + player.wallet, // High z-index to ensure visibility above board elements
+        transform: `translate(-50%, -50%) rotate(${-boardRotation}deg) ${isAnimating ? 'scale(1.15)' : 'scale(1)'}`,
+        zIndex: isAnimating ? 2000 : 1000 + player.wallet, // Elevate during animation
       }}
     >
       {/* Location-like shape with avatar */}
