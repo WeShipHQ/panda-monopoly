@@ -22,72 +22,6 @@ import { address, TransactionSigner } from "@solana/kit";
 import { useGames } from "@/hooks/useGames";
 import { GameStatus } from "@/lib/sdk/generated";
 
-// const dummyGames: GameData[] = [
-//   {
-//     id: "game-1",
-//     players: ["player1", "player2"],
-//     maxPlayers: 4,
-//     currentPlayers: 2,
-//     bankBalance: 2100000000, // 2.1 SOL in lamports
-//     gameStatus: GameStatus.WaitingForPlayers,
-//     gameId: 1001,
-//     timeLimit: 3600, // 1 hour
-//     createdAt: Date.now() / 1000 - 3600, // 1 hour ago
-//   },
-//   {
-//     id: "game-2",
-//     players: ["player3", "player4"],
-//     maxPlayers: 4,
-//     currentPlayers: 2,
-//     bankBalance: 50000000, // 0.05 SOL in lamports
-//     gameStatus: GameStatus.WaitingForPlayers,
-//     gameId: 1002,
-//     timeLimit: 1800, // 30 minutes
-//     createdAt: Date.now() / 1000 - 1800, // 30 minutes ago
-//   },
-//   {
-//     id: "game-3",
-//     players: ["player5", "player6"],
-//     maxPlayers: 4,
-//     currentPlayers: 2,
-//     bankBalance: 420000000, // 0.42 SOL in lamports
-//     gameStatus: GameStatus.InProgress,
-//     gameId: 1003,
-//     timeLimit: 2700, // 45 minutes
-//     createdAt: Date.now() / 1000 - 2700, // 45 minutes ago
-//   },
-//   {
-//     id: "game-4",
-//     players: ["player7", "player8"],
-//     maxPlayers: 4,
-//     currentPlayers: 2,
-//     bankBalance: 90000000, // 0.09 SOL in lamports
-//     gameStatus: GameStatus.InProgress,
-//     gameId: 1004,
-//     createdAt: Date.now() / 1000 - 5400, // 1.5 hours ago
-//   },
-//   {
-//     id: "game-5",
-//     players: ["player9", "player10"],
-//     maxPlayers: 4,
-//     currentPlayers: 2,
-//     bankBalance: 84000000, // 0.084 SOL in lamports
-//     gameStatus: GameStatus.InProgress,
-//     gameId: 1005,
-//     createdAt: Date.now() / 1000 - 7200, // 2 hours ago
-//   },
-//   {
-//     id: "game-6",
-//     players: ["player11", "player12"],
-//     maxPlayers: 4,
-//     currentPlayers: 2,
-//     bankBalance: 10000000, // 0.01 SOL in lamports
-//     gameStatus: GameStatus.InProgress,
-//     gameId: 1006,
-//     createdAt: Date.now() / 1000 - 9000, // 2.5 hours ago
-//   },
-// ];
-
 type GameStatusFilter = "all" | GameStatus;
 
 const FILTER_OPTIONS = [
@@ -99,7 +33,7 @@ const FILTER_OPTIONS = [
 
 export function GameList() {
   const router = useRouter();
-  const [statusFilter, setStatusFilter] = useState<GameStatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<GameStatusFilter>(0);
   const { wallet } = useWallet();
   const { rpc } = useRpcContext();
   const [joining, setJoining] = useState(false);

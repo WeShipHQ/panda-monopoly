@@ -19,14 +19,27 @@ interface UseGamesResult {
 
 export function useGames(config: UseGamesConfig = {}): UseGamesResult {
   const { enabled = true } = config;
-  const { rpc } = useRpcContext();
+  const { rpc, erRpc } = useRpcContext();
 
   const cacheKey = enabled ? ["game-list"] : null;
 
   const { data, error, isLoading, mutate } = useSWR(
     cacheKey,
-    () => {
-      return sdk.getGameAccounts(rpc);
+    async () => {
+      const allGames = await Promise.all([
+        sdk.getGameAccounts(rpc),
+        sdk.getGameAccounts(erRpc),
+      ]);
+
+      return allGames.flat().sort((a, b) => {
+        if (a.createdAt > b.createdAt) {
+          return -1;
+        }
+        if (b.createdAt > a.createdAt) {
+          return 1;
+        }
+        return 0;
+      });
     },
     {
       revalidateOnFocus: false,

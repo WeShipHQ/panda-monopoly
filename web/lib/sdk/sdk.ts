@@ -51,6 +51,8 @@ import {
   getRejectTradeInstruction,
   getCancelTradeInstruction,
   getDeclareBankruptcyInstruction,
+  getGameStatusEncoder,
+  GameStatus,
 } from "./generated";
 import {
   CreateGameIxs,
@@ -795,6 +797,17 @@ class MonopolyGameSDK {
         // @ts-expect-error
         bytes: getBase58Decoder().decode(
           getAddressEncoder().encode(PLATFORM_ID)
+        ),
+        encoding: "base58",
+      },
+    };
+
+    const statusFilter: GetProgramAccountsMemcmpFilter = {
+      memcmp: {
+        offset: BigInt(348),
+        // @ts-expect-error
+        bytes: getBase58Decoder().decode(
+          getGameStatusEncoder().encode(GameStatus.InProgress)
         ),
         encoding: "base58",
       },
