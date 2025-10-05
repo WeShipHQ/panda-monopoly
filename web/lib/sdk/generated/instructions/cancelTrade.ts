@@ -14,6 +14,8 @@ import {
   getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
+  getU8Decoder,
+  getU8Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
@@ -24,6 +26,7 @@ import {
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
+  type ReadonlyAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
@@ -44,31 +47,43 @@ export function getCancelTradeDiscriminatorBytes() {
 
 export type CancelTradeInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
-  TAccountTrade extends string | AccountMeta<string> = string,
+  TAccountGame extends string | AccountMeta<string> = string,
   TAccountCanceller extends string | AccountMeta<string> = string,
+  TAccountClock extends
+    | string
+    | AccountMeta<string> = 'SysvarC1ock11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
-      TAccountTrade extends string
-        ? WritableAccount<TAccountTrade>
-        : TAccountTrade,
+      TAccountGame extends string
+        ? WritableAccount<TAccountGame>
+        : TAccountGame,
       TAccountCanceller extends string
         ? WritableSignerAccount<TAccountCanceller> &
             AccountSignerMeta<TAccountCanceller>
         : TAccountCanceller,
+      TAccountClock extends string
+        ? ReadonlyAccount<TAccountClock>
+        : TAccountClock,
       ...TRemainingAccounts,
     ]
   >;
 
-export type CancelTradeInstructionData = { discriminator: ReadonlyUint8Array };
+export type CancelTradeInstructionData = {
+  discriminator: ReadonlyUint8Array;
+  tradeId: number;
+};
 
-export type CancelTradeInstructionDataArgs = {};
+export type CancelTradeInstructionDataArgs = { tradeId: number };
 
 export function getCancelTradeInstructionDataEncoder(): FixedSizeEncoder<CancelTradeInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['tradeId', getU8Encoder()],
+    ]),
     (value) => ({ ...value, discriminator: CANCEL_TRADE_DISCRIMINATOR })
   );
 }
@@ -76,6 +91,7 @@ export function getCancelTradeInstructionDataEncoder(): FixedSizeEncoder<CancelT
 export function getCancelTradeInstructionDataDecoder(): FixedSizeDecoder<CancelTradeInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['tradeId', getU8Decoder()],
   ]);
 }
 
@@ -90,47 +106,70 @@ export function getCancelTradeInstructionDataCodec(): FixedSizeCodec<
 }
 
 export type CancelTradeInput<
-  TAccountTrade extends string = string,
+  TAccountGame extends string = string,
   TAccountCanceller extends string = string,
+  TAccountClock extends string = string,
 > = {
-  trade: Address<TAccountTrade>;
+  game: Address<TAccountGame>;
   canceller: TransactionSigner<TAccountCanceller>;
+  clock?: Address<TAccountClock>;
+  tradeId: CancelTradeInstructionDataArgs['tradeId'];
 };
 
 export function getCancelTradeInstruction<
-  TAccountTrade extends string,
+  TAccountGame extends string,
   TAccountCanceller extends string,
+  TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: CancelTradeInput<TAccountTrade, TAccountCanceller>,
+  input: CancelTradeInput<TAccountGame, TAccountCanceller, TAccountClock>,
   config?: { programAddress?: TProgramAddress }
-): CancelTradeInstruction<TProgramAddress, TAccountTrade, TAccountCanceller> {
+): CancelTradeInstruction<
+  TProgramAddress,
+  TAccountGame,
+  TAccountCanceller,
+  TAccountClock
+> {
   // Program address.
   const programAddress =
     config?.programAddress ?? PANDA_MONOPOLY_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
-    trade: { value: input.trade ?? null, isWritable: true },
+    game: { value: input.game ?? null, isWritable: true },
     canceller: { value: input.canceller ?? null, isWritable: true },
+    clock: { value: input.clock ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
+  // Resolve default values.
+  if (!accounts.clock.value) {
+    accounts.clock.value =
+      'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
+  }
+
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta(accounts.trade),
+      getAccountMeta(accounts.game),
       getAccountMeta(accounts.canceller),
+      getAccountMeta(accounts.clock),
     ],
-    data: getCancelTradeInstructionDataEncoder().encode({}),
+    data: getCancelTradeInstructionDataEncoder().encode(
+      args as CancelTradeInstructionDataArgs
+    ),
     programAddress,
   } as CancelTradeInstruction<
     TProgramAddress,
-    TAccountTrade,
-    TAccountCanceller
+    TAccountGame,
+    TAccountCanceller,
+    TAccountClock
   >);
 }
 
@@ -140,8 +179,9 @@ export type ParsedCancelTradeInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    trade: TAccountMetas[0];
+    game: TAccountMetas[0];
     canceller: TAccountMetas[1];
+    clock: TAccountMetas[2];
   };
   data: CancelTradeInstructionData;
 };
@@ -154,7 +194,7 @@ export function parseCancelTradeInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedCancelTradeInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 2) {
+  if (instruction.accounts.length < 3) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -166,7 +206,11 @@ export function parseCancelTradeInstruction<
   };
   return {
     programAddress: instruction.programAddress,
-    accounts: { trade: getNextAccount(), canceller: getNextAccount() },
+    accounts: {
+      game: getNextAccount(),
+      canceller: getNextAccount(),
+      clock: getNextAccount(),
+    },
     data: getCancelTradeInstructionDataDecoder().decode(instruction.data),
   };
 }

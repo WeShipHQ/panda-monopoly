@@ -4,14 +4,21 @@ import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { formatAddress, formatPrice } from "@/lib/utils";
 import { getBoardSpaceData } from "@/lib/board-utils";
-import { DicesOnly, useDiceContext } from "./dice";
 import { PlayerAccount } from "@/types/schema";
 import { Badge } from "@/components/ui/badge";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  JAIL_FINE,
   MEV_TAX_POSITION,
   PRIORITY_FEE_TAX_POSITION,
 } from "@/configs/constants";
 import { WalletWithMetadata } from "@privy-io/react-auth";
+import { DicesOnly, useDiceContext } from "./dice";
 
 interface PlayerTokenProps {
   player: PlayerAccount;
@@ -85,69 +92,52 @@ const PropertyActions: React.FC<PropertyActionsProps> = ({
     return <Button>Pay tax</Button>;
   }
 
+  const hasInsufficientFunds =
+    Number(player.cashBalance) < pendingPropertyInfo.propertyData?.price;
+
   return (
-    <div>
-      {/* Unowned Property */}
+    <>
       {!pendingPropertyInfo.isOwned &&
         pendingPropertyInfo.propertyData?.price && (
           <div className="space-y-2">
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={() => handleBuyProperty(position)}
-                disabled={
-                  Number(player.cashBalance) <
-                  pendingPropertyInfo.propertyData.price
-                }
-                loading={isLoading === "buyProperty"}
-                className="flex-1"
-              >
-                {isLoading === "buyProperty"
-                  ? "Buying..."
-                  : `Buy for ${formatPrice(
-                      pendingPropertyInfo.propertyData.price
-                    )}`}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Button
+                      size="sm"
+                      onClick={() => handleBuyProperty(position)}
+                      disabled={hasInsufficientFunds}
+                      loading={isLoading === "buyProperty"}
+                      className="flex-1"
+                    >
+                      {isLoading === "buyProperty"
+                        ? "Buying..."
+                        : `Buy for ${formatPrice(
+                            pendingPropertyInfo.propertyData.price
+                          )}`}
+                    </Button>
+                  </TooltipTrigger>
+                  {hasInsufficientFunds && (
+                    <TooltipContent>
+                      <p>Insufficient funds</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
               <Button
                 size="sm"
                 onClick={() => handleSkipProperty(position)}
-                loading={isLoading === "endTurn"}
+                loading={isLoading === "skipProperty"}
                 className="flex-1"
                 variant="neutral"
               >
                 Skip
               </Button>
             </div>
-            {/* // FIXME need check */}
-            {Number(player.cashBalance) <
-              pendingPropertyInfo.propertyData.price && (
-              <div className="text-xs text-red-600">
-                Insufficient funds (Need
-                {formatPrice(
-                  pendingPropertyInfo.propertyData.price -
-                    Number(player.cashBalance)
-                )}{" "}
-                more)
-              </div>
-            )}
           </div>
         )}
-
-      {/* Owned by Another Player */}
-      {pendingPropertyInfo.isOwned &&
-        !pendingPropertyInfo.isOwnedByCurrentPlayer && (
-          <div className="text-xs text-blue-600">
-            Owned by another player. Rent will be automatically paid.
-          </div>
-        )}
-
-      {/* Owned by Current Player */}
-      {pendingPropertyInfo.isOwnedByCurrentPlayer && (
-        <div className="text-xs text-green-600">
-          You own this property. Check for building opportunities.
-        </div>
-      )}
-    </div>
+    </>
   );
 };
 
@@ -160,6 +150,7 @@ export const PlayerActions = ({
   handleEndTurn,
   handlePayMevTax,
   handlePayPriorityFeeTax,
+  handlePayJailFine,
   isLoading,
 }: {
   wallet: WalletWithMetadata;
@@ -170,16 +161,22 @@ export const PlayerActions = ({
   handlePayMevTax: () => void;
   handlePayPriorityFeeTax: () => void;
   handleEndTurn: () => void;
+  handlePayJailFine: () => void;
   isLoading: string | null;
 }) => {
-  const { canRoll, isRolling, handleRollDice } = useDiceContext();
   const {
+    demoDices,
     gameState: game,
     currentPlayerState,
-    isCurrentPlayerTurn,
+    showRollDice,
+    isCurrentTurn,
+    showEndTurn,
+    showPayJailFine,
     setCardDrawType,
     setIsCardDrawModalOpen,
   } = useGameContext();
+
+  const { canRoll, isRolling, handleRollDice } = useDiceContext();
 
   if (!currentPlayerState || !game) {
     return null;
@@ -189,19 +186,6 @@ export const PlayerActions = ({
   // const isEnded = game?.gameStatus  === GameStatus.Finished;
   const isCreator = game.authority === wallet.address;
   const isInGame = wallet.address && game.players.includes(wallet.address);
-
-  const isMyTurn = isCurrentPlayerTurn();
-
-  const hasPendingActions =
-    currentPlayerState.needsPropertyAction ||
-    currentPlayerState.needsChanceCard ||
-    currentPlayerState.needsCommunityChestCard ||
-    currentPlayerState.needsBankruptcyCheck ||
-    currentPlayerState.needsSpecialSpaceAction;
-
-  const isDouble =
-    currentPlayerState.hasRolledDice &&
-    currentPlayerState.lastDiceRoll[0] === currentPlayerState.lastDiceRoll[1];
 
   return (
     <div className="flex flex-col items-center">
@@ -241,11 +225,12 @@ export const PlayerActions = ({
         </div>
       )}
 
-      {isStarted && isMyTurn && (
+      {isStarted && isCurrentTurn && (
         <>
           <div className="flex items-center gap-2 mt-8 mb-4">
-            {!hasPendingActions &&
-              (!currentPlayerState.hasRolledDice || isDouble) && (
+            {/* {!hasPendingActions &&
+              (!currentPlayerState.hasRolledDice || isDouble) &&
+              !currentPlayerState.inJail && (
                 <Button
                   disabled={!canRoll || isRolling}
                   onClick={handleRollDice}
@@ -254,14 +239,51 @@ export const PlayerActions = ({
                 >
                   Roll dice
                 </Button>
-              )}
+              )} */}
 
-            {currentPlayerState?.inJail && (
+            {/* {((!hasPendingActions && !currentPlayerState.hasRolledDice) ||
+              (!hasPendingActions &&
+                currentPlayerState.hasRolledDice &&
+                isDouble &&
+                !currentPlayerState.inJail)) && (
+              <Button
+                disabled={!canRoll || isRolling}
+                onClick={handleRollDice}
+                size="sm"
+                loading={isRolling}
+              >
+                Roll dice
+              </Button>
+            )} */}
+
+            {showRollDice && (
+              <Button
+                disabled={!canRoll || isRolling}
+                onClick={handleRollDice}
+                size="sm"
+                loading={isRolling}
+              >
+                {demoDices ? "Demo Roll" : "Roll dice"}
+              </Button>
+            )}
+
+            {showPayJailFine && (
+              <Button
+                disabled={Number(currentPlayerState.cashBalance) < JAIL_FINE}
+                onClick={handlePayJailFine}
+                size="sm"
+                loading={isLoading === "payJailFine"}
+              >
+                Pay jail fine
+              </Button>
+            )}
+
+            {/* {currentPlayerState?.inJail && (
               <PlayerInJailAlert
                 player={currentPlayerState}
                 handleEndTurn={handleEndTurn}
               />
-            )}
+            )} */}
 
             {currentPlayerState?.needsBankruptcyCheck && (
               <BankruptcyAction player={currentPlayerState} />
@@ -302,7 +324,7 @@ export const PlayerActions = ({
                 </Button>
               )}
 
-            {isMyTurn && currentPlayerState.needsChanceCard && (
+            {isCurrentTurn && currentPlayerState.needsChanceCard && (
               <Button
                 size="sm"
                 onClick={() => {
@@ -315,7 +337,7 @@ export const PlayerActions = ({
               </Button>
             )}
 
-            {isMyTurn && currentPlayerState.needsCommunityChestCard && (
+            {isCurrentTurn && currentPlayerState.needsCommunityChestCard && (
               <>
                 <Button
                   size="sm"
@@ -329,21 +351,26 @@ export const PlayerActions = ({
               </>
             )}
 
-            {!hasPendingActions &&
+            {/* {((!hasPendingActions &&
               currentPlayerState.hasRolledDice &&
-              !isDouble && (
-                <Button
-                  onClick={handleEndTurn}
-                  loading={isLoading === "endTurn"}
-                >
-                  {isLoading === "endTurn" ? "Ending Turn..." : "End Turn"}
-                </Button>
-              )}
+              !isDouble) ||
+              (currentPlayerState.hasRolledDice &&
+                currentPlayerState.inJail)) && (
+              <Button onClick={handleEndTurn} loading={isLoading === "endTurn"}>
+                {isLoading === "endTurn" ? "Ending Turn..." : "End Turn"}
+              </Button>
+            )} */}
+
+            {showEndTurn && (
+              <Button onClick={handleEndTurn} loading={isLoading === "endTurn"}>
+                {isLoading === "endTurn" ? "Ending Turn..." : "End Turn"}
+              </Button>
+            )}
           </div>
         </>
       )}
       {isStarted && (
-        <Badge variant="neutral">
+        <Badge className={isCurrentTurn ? "" : "mt-8"} variant="neutral">
           {formatAddress(currentPlayerState.wallet)} is playing
         </Badge>
       )}

@@ -3,7 +3,12 @@
 import { useGameState } from "@/hooks/useGameState";
 import { sdk } from "@/lib/sdk/sdk";
 import { buildAndSendTransactionWithPrivy } from "@/lib/tx";
-import { GameAccount, PlayerAccount, PropertyAccount, TradeData, TradeOffer } from "@/types/schema";
+import {
+  GameAccount,
+  PlayerAccount,
+  PropertyAccount,
+  TradeOffer,
+} from "@/types/schema";
 import { Address, address, TransactionSigner } from "@solana/kit";
 import React, {
   createContext,
@@ -15,13 +20,20 @@ import React, {
   useCallback,
 } from "react";
 import { GameEvent } from "@/lib/sdk/types";
-import { getTypedSpaceData } from "@/lib/board-utils";
+import {
+  getBoardSpaceData,
+  getTypedSpaceData,
+  calculateRentForProperty,
+} from "@/lib/board-utils";
 import { GameLogEntry } from "@/types/space-types";
 import { formatAddress } from "@/lib/utils";
 import { useGameLogs } from "@/hooks/useGameLogs";
 import { useRpcContext } from "./rpc-provider";
 import { useWallet } from "@/hooks/use-wallet";
 import { playPropertySound, playSound, SOUND_CONFIG } from "@/lib/soundUtil";
+import { toast } from "sonner";
+import soundUtil from "@/lib/soundUtil";
+import { BuildingType, GameStatus, TradeType } from "@/lib/sdk/generated";
 
 interface GameContextType {
   gameAddress: Address | null;
@@ -55,12 +67,18 @@ interface GameContextType {
   payJailFine: () => Promise<void>;
   buildHouse: (position: number) => Promise<void>;
   buildHotel: (position: number) => Promise<void>;
+  sellBuilding: (position: number, buildingType: BuildingType) => Promise<void>;
   payMevTax: () => Promise<void>;
   payPriorityFeeTax: () => Promise<void>;
+  declareBankruptcy: () => Promise<void>;
 
   // Trade actions
-  createTrade: (targetPlayer: string, initiatorOffer: TradeOffer, targetOffer: TradeOffer) => Promise<void>;
-  acceptTrade: (tradeId: string) => Promise<void>;
+  createTrade: (
+    receiver: string,
+    initiatorOffer: TradeOffer,
+    targetOffer: TradeOffer
+  ) => Promise<void>;
+  acceptTrade: (tradeId: string, proposer: string) => Promise<void>;
   rejectTrade: (tradeId: string) => Promise<void>;
   cancelTrade: (tradeId: string) => Promise<void>;
 
@@ -74,11 +92,11 @@ interface GameContextType {
   cardDrawType: "chance" | "community-chest" | null;
   setCardDrawType: (type: "chance" | "community-chest" | null) => void;
 
-  // Trade UI state
-  isTradeDialogOpen: boolean;
-  setIsTradeDialogOpen: (open: boolean) => void;
-  activeTrades: TradeData[];
-  setActiveTrades: (trades: TradeData[]) => void;
+  // ui state
+  isCurrentTurn: boolean;
+  showRollDice: boolean;
+  showEndTurn: boolean;
+  showPayJailFine: boolean;
 
   // Game logs
   gameLogs: GameLogEntry[];
@@ -134,7 +152,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
   // Trade UI state
   const [isTradeDialogOpen, setIsTradeDialogOpen] = useState(false);
-  const [activeTrades, setActiveTrades] = useState<TradeData[]>([]);
+
+  // Add these new state variables to track if modals have been shown
+  const [hasShownChanceModal, setHasShownChanceModal] = useState(false);
+  const [hasShownCommunityChestModal, setHasShownCommunityChestModal] =
+    useState(false);
 
   const { gameLogs, addGameLog } = useGameLogs();
 
@@ -177,6 +199,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   } = useGameState(gameAddress, {
     onCardDrawEvent: addCardDrawEvent,
   });
+  console.log("gameState", gameState);
 
   const currentPlayerAddress = useMemo(() => {
     return gameState?.players?.[gameState?.currentTurn] || null;
@@ -189,7 +212,43 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     return player || null;
   }, [currentPlayerAddress, players]);
 
-  // Utility functions
+  // state
+  const isInProgress =
+    !!gameState && gameState?.gameStatus === GameStatus.InProgress;
+
+  const isCurrentTurn =
+    isInProgress &&
+    !!wallet?.address &&
+    gameState.players[gameState.currentTurn] === wallet.address;
+
+  const showRollDice =
+    isCurrentTurn &&
+    !!currentPlayerState &&
+    !currentPlayerState.hasRolledDice &&
+    !currentPlayerState.needsPropertyAction &&
+    !currentPlayerState.needsChanceCard &&
+    !currentPlayerState.needsCommunityChestCard &&
+    !currentPlayerState.needsSpecialSpaceAction &&
+    !currentPlayerState.needsBankruptcyCheck;
+
+  const showEndTurn =
+    isCurrentTurn &&
+    !!currentPlayerState &&
+    currentPlayerState.hasRolledDice &&
+    !currentPlayerState.needsPropertyAction &&
+    !currentPlayerState.needsChanceCard &&
+    !currentPlayerState.needsCommunityChestCard &&
+    !currentPlayerState.needsSpecialSpaceAction &&
+    !currentPlayerState.needsBankruptcyCheck &&
+    (currentPlayerState.doublesCount === 0 ||
+      // (currentPlayerState.lastDiceRoll[0] !==
+      //   currentPlayerState.lastDiceRoll[1] ||
+      currentPlayerState.inJail);
+
+  const showPayJailFine =
+    isCurrentTurn && !!currentPlayerState && currentPlayerState.inJail;
+  // currentPlayerState.cashBalance >= JAIL_FINE; -> display on UI
+
   const getPropertyByPosition = useCallback(
     (position: number): PropertyAccount | null => {
       return properties.find((prop) => prop.position === position) || null;
@@ -222,13 +281,21 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     // Player can roll dice if they haven't rolled dice yet and are not in jail
     // FIXME Need test all cases
     return (
-      (!currentPlayerState.hasRolledDice &&
-        !currentPlayerState.inJail &&
-        !hasPendingActions) ||
+      (!hasPendingActions && !currentPlayerState.hasRolledDice) ||
       (currentPlayerState.hasRolledDice &&
         currentPlayerState.lastDiceRoll[0] ===
-          currentPlayerState.lastDiceRoll[1])
+          currentPlayerState.lastDiceRoll[1] &&
+        !currentPlayerState.inJail)
     );
+
+    // return (
+    //   (!currentPlayerState.hasRolledDice &&
+    //     !currentPlayerState.inJail &&
+    //     !hasPendingActions) ||
+    //   (currentPlayerState.hasRolledDice &&
+    //     currentPlayerState.lastDiceRoll[0] ===
+    //       currentPlayerState.lastDiceRoll[1])
+    // );
   }, [currentPlayerState, isCurrentPlayerTurn]);
 
   const canPlayerAct = useCallback((): boolean => {
@@ -375,7 +442,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         const instruction = await sdk.rollDiceIx({
           gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
-          diceRoll: diceRoll || null,
+          diceRoll: diceRoll as any,
         });
 
         const signature = await buildAndSendTransactionWithPrivy(
@@ -459,6 +526,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
             signature,
           },
         });
+        soundUtil.playPropertySound("buy");
       } catch (error) {
         console.error("Error buying property:", error);
         throw error;
@@ -678,7 +746,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
     try {
       const instruction = await sdk.payJailFineIx({
-        rpc,
         gameAddress,
         player: { address: address(wallet.address) } as TransactionSigner,
       });
@@ -797,6 +864,50 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     [gameAddress, wallet, addGameLog]
   );
 
+  const sellBuilding = useCallback(
+    async (position: number, buildingType: BuildingType): Promise<void> => {
+      if (!gameAddress || !wallet?.address || !wallet.delegated) {
+        throw new Error("Game address or player signer not available");
+      }
+
+      try {
+        const instruction = await sdk.sellBuildingIx({
+          rpc,
+          gameAddress,
+          player: { address: address(wallet.address) } as TransactionSigner,
+          position,
+          buildingType,
+        });
+
+        const signature = await buildAndSendTransactionWithPrivy(
+          erRpc,
+          [instruction],
+          wallet,
+          [],
+          "confirmed",
+          true
+        );
+
+        console.log("[sellBuilding] tx", signature);
+
+        const propertyData = getTypedSpaceData(position, "property");
+        addGameLog({
+          type: "building",
+          playerId: wallet.address,
+          message: `${formatAddress(
+            wallet.address
+          )} sold a ${buildingType} on ${propertyData?.name || "property"}`,
+          // @ts-expect-error
+          details: { position, buildingType: `sell_${buildingType}` },
+        });
+      } catch (error) {
+        console.error(`Error selling ${buildingType}:`, error);
+        throw error;
+      }
+    },
+    [gameAddress, wallet, addGameLog]
+  );
+
   const payMevTax = useCallback(async (): Promise<void> => {
     if (!gameAddress || !wallet?.address || !wallet.delegated) {
       throw new Error("Game address or player signer not available");
@@ -818,15 +929,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[payMevTax] tx", signature);
-
-      // addGameLog({
-      //   type: "move",
-      //   playerId: wallet.address,
-      //   message: `${formatAddress(
-      //     wallet.address
-      //   )} paid MEV tax of $${"MEV_TAX_AMOUNT"}`,
-      //   details: { taxType: "mev", amount: 9999, signature },
-      // });
     } catch (error) {
       console.error("Error paying MEV tax:", error);
       throw error;
@@ -874,146 +976,226 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
   }, [gameAddress, wallet, addGameLog]);
 
-  // Trade action handlers
-  const createTrade = useCallback(async (
-    targetPlayer: string,
-    initiatorOffer: TradeOffer,
-    targetOffer: TradeOffer
-  ): Promise<void> => {
-    if (!gameAddress || !wallet?.address || !wallet.delegated) {
-      console.error("Missing required data for trade creation");
-      return;
+  const createTrade = useCallback(
+    async (
+      receiver: string,
+      initiatorOffer: TradeOffer,
+      targetOffer: TradeOffer
+    ): Promise<void> => {
+      if (!gameAddress || !wallet?.address || !wallet.delegated) {
+        throw new Error("Game address or player signer not available");
+      }
+
+      try {
+        const proposerMoney = parseInt(initiatorOffer.money) || 0;
+        const receiverMoney = parseInt(targetOffer.money) || 0;
+
+        const proposerProperty = initiatorOffer.property;
+        const receiverProperty = targetOffer.property;
+
+        let tradeType: TradeType;
+        if (proposerProperty !== null && receiverProperty !== null) {
+          tradeType = TradeType.PropertyOnly;
+        } else if (proposerProperty !== null && receiverMoney > 0) {
+          tradeType = TradeType.PropertyForMoney;
+        } else if (proposerMoney > 0 && receiverProperty !== null) {
+          tradeType = TradeType.MoneyForProperty;
+        } else {
+          tradeType = TradeType.MoneyOnly;
+        }
+
+        const instruction = await sdk.createTradeIx({
+          gameAddress,
+          proposer: { address: address(wallet.address) } as TransactionSigner,
+          receiver: address(receiver),
+          tradeType,
+          proposerMoney,
+          receiverMoney,
+          proposerProperty: proposerProperty ?? undefined,
+          receiverProperty: receiverProperty ?? undefined,
+        });
+
+        const signature = await buildAndSendTransactionWithPrivy(
+          erRpc,
+          [instruction],
+          wallet,
+          [],
+          "confirmed",
+          true
+        );
+
+        console.log("[createTrade] tx", signature);
+
+        toast.success("Trade created successfully!");
+      } catch (error) {
+        console.error("Error creating trade:", error);
+        toast.error("Failed to create trade");
+        throw error;
+      }
+    },
+    [gameAddress, wallet, erRpc, refetch]
+  );
+
+  const acceptTrade = useCallback(
+    async (tradeId: string, proposer: string): Promise<void> => {
+      if (!gameAddress || !wallet?.address || !wallet.delegated) {
+        throw new Error("Game address or player signer not available");
+      }
+
+      try {
+        const instruction = await sdk.acceptTradeIx({
+          gameAddress,
+          accepter: { address: address(wallet.address) } as TransactionSigner,
+          proposer: address(proposer),
+          tradeId: parseInt(tradeId), // Convert string to number for SDK
+        });
+
+        const signature = await buildAndSendTransactionWithPrivy(
+          erRpc,
+          [instruction],
+          wallet,
+          [],
+          "confirmed",
+          true
+        );
+
+        console.log("[acceptTrade] tx", signature);
+
+        // Refresh game state to get updated trades
+        await refetch();
+
+        toast.success("Trade accepted successfully!");
+      } catch (error) {
+        console.error("Error accepting trade:", error);
+        toast.error("Failed to accept trade");
+        throw error;
+      }
+    },
+    [gameAddress, wallet, erRpc, refetch]
+  );
+
+  const rejectTrade = useCallback(
+    async (tradeId: string): Promise<void> => {
+      if (!gameAddress || !wallet?.address || !wallet.delegated) {
+        throw new Error("Game address or player signer not available");
+      }
+
+      try {
+        console.log("tradeId", tradeId);
+        const instruction = await sdk.rejectTradeIx({
+          gameAddress,
+          rejecter: { address: address(wallet.address) } as TransactionSigner,
+          tradeId: parseInt(tradeId),
+        });
+
+        const signature = await buildAndSendTransactionWithPrivy(
+          erRpc,
+          [instruction],
+          wallet,
+          [],
+          "confirmed",
+          true
+        );
+
+        console.log("[rejectTrade] tx", signature);
+
+        // Refresh game state to get updated trades
+        await refetch();
+
+        toast.success("Trade rejected successfully!");
+      } catch (error) {
+        console.error("Error rejecting trade:", error);
+        toast.error("Failed to reject trade");
+        throw error;
+      }
+    },
+    [gameAddress, wallet, erRpc, refetch]
+  );
+
+  const cancelTrade = useCallback(
+    async (tradeId: string): Promise<void> => {
+      if (!gameAddress || !wallet?.address || !wallet.delegated) {
+        throw new Error("Game address or player signer not available");
+      }
+
+      try {
+        const instruction = await sdk.cancelTradeIx({
+          gameAddress,
+          canceller: { address: address(wallet.address) } as TransactionSigner,
+          tradeId: parseInt(tradeId), // Convert string to number for SDK
+        });
+
+        const signature = await buildAndSendTransactionWithPrivy(
+          erRpc,
+          [instruction],
+          wallet,
+          [],
+          "confirmed",
+          true
+        );
+
+        console.log("[cancelTrade] tx", signature);
+
+        // Refresh game state to get updated trades
+        await refetch();
+
+        toast.success("Trade cancelled successfully!");
+      } catch (error) {
+        console.error("Error canceling trade:", error);
+        toast.error("Failed to cancel trade");
+        throw error;
+      }
+    },
+    [gameAddress, wallet, erRpc, refetch]
+  );
+
+  const declareBankruptcy = useCallback(async (): Promise<void> => {
+    if (
+      !gameAddress ||
+      !currentPlayerState ||
+      !wallet?.address ||
+      !wallet.delegated
+    ) {
+      throw new Error("Game address or player signer not available");
     }
 
     try {
-      // For now, just simulate trade creation since we're not implementing actual SDK calls
-      const newTrade: TradeData = {
-        id: `trade_${Date.now()}`,
-        gameAddress: gameAddress,
-        initiator: wallet.address,
-        target: targetPlayer,
-        initiatorOffer,
-        targetOffer,
-        status: 0, // Pending
-        type: 0, // Will be determined based on offers
-        createdAt: Date.now(),
-        expiresAt: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
-      };
-
-      setActiveTrades(prev => [...prev, newTrade]);
-
-      addGameLog({
-        type: "trade",
-        playerId: wallet.address,
-        message: `${formatAddress(wallet.address)} created a trade with ${formatAddress(targetPlayer)}`,
-        details: {
-          tradeId: newTrade.id,
-          action: "created",
-        },
+      const instruction = await sdk.declareBankruptcyIx({
+        gameAddress,
+        player: { address: address(wallet.address) } as TransactionSigner,
+        propertiesOwned: Array.from(currentPlayerState.propertiesOwned),
       });
 
-      console.log("Trade created:", newTrade);
-    } catch (error) {
-      console.error("Error creating trade:", error);
-      throw error;
-    }
-  }, [gameAddress, wallet, addGameLog]);
-
-  const acceptTrade = useCallback(async (tradeId: string): Promise<void> => {
-    if (!wallet?.address || !wallet.delegated) {
-      console.error("Missing required data for trade acceptance");
-      return;
-    }
-
-    try {
-      setActiveTrades(prev => 
-        prev.map(trade => 
-          trade.id === tradeId 
-            ? { ...trade, status: 1 } // Accepted
-            : trade
-        )
+      const signature = await buildAndSendTransactionWithPrivy(
+        erRpc,
+        [instruction],
+        wallet,
+        [],
+        "confirmed",
+        true
       );
 
-      addGameLog({
-        type: "trade",
-        playerId: wallet.address,
-        message: `${formatAddress(wallet.address)} accepted a trade`,
-        details: {
-          tradeId,
-          action: "accepted",
-        },
-      });
-
-      console.log("Trade accepted:", tradeId);
+      console.log("[declareBankruptcy] tx", signature);
     } catch (error) {
-      console.error("Error accepting trade:", error);
+      console.error("Error declaring bankruptcy:", error);
       throw error;
     }
-  }, [wallet, addGameLog]);
+  }, [gameAddress, currentPlayerState, wallet]);
 
-  const rejectTrade = useCallback(async (tradeId: string): Promise<void> => {
-    if (!wallet?.address || !wallet.delegated) {
-      console.error("Missing required data for trade rejection");
-      return;
+  // Reset the modal shown flags when player state changes or when cards are no longer needed
+  useEffect(() => {
+    if (currentPlayerState) {
+      if (!currentPlayerState.needsChanceCard) {
+        setHasShownChanceModal(false);
+      }
+      if (!currentPlayerState.needsCommunityChestCard) {
+        setHasShownCommunityChestModal(false);
+      }
     }
-
-    try {
-      setActiveTrades(prev => 
-        prev.map(trade => 
-          trade.id === tradeId 
-            ? { ...trade, status: 2 } // Rejected
-            : trade
-        )
-      );
-
-      addGameLog({
-        type: "trade",
-        playerId: wallet.address,
-        message: `${formatAddress(wallet.address)} rejected a trade`,
-        details: {
-          tradeId,
-          action: "rejected",
-        },
-      });
-
-      console.log("Trade rejected:", tradeId);
-    } catch (error) {
-      console.error("Error rejecting trade:", error);
-      throw error;
-    }
-  }, [wallet, addGameLog]);
-
-  const cancelTrade = useCallback(async (tradeId: string): Promise<void> => {
-    if (!wallet?.address || !wallet.delegated) {
-      console.error("Missing required data for trade cancellation");
-      return;
-    }
-
-    try {
-      setActiveTrades(prev => 
-        prev.map(trade => 
-          trade.id === tradeId 
-            ? { ...trade, status: 3 } // Cancelled
-            : trade
-        )
-      );
-
-      addGameLog({
-        type: "trade",
-        playerId: wallet.address,
-        message: `${formatAddress(wallet.address)} cancelled their trade offer`,
-        details: {
-          tradeId,
-          action: "cancelled",
-        },
-      });
-
-      console.log("Trade cancelled:", tradeId);
-    } catch (error) {
-      console.error("Error cancelling trade:", error);
-      throw error;
-    }
-  }, [gameAddress, wallet, addGameLog]);
+  }, [
+    currentPlayerState?.needsChanceCard,
+    currentPlayerState?.needsCommunityChestCard,
+  ]);
 
   useEffect(() => {
     async function handleAction(player: PlayerAccount) {
@@ -1040,12 +1222,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       // Priority 3: Handle dice rolling (if player hasn't rolled yet)
-      if (!player.hasRolledDice && !player.inJail) {
-        console.log("Player needs to roll dice");
-        // Don't auto-roll - let player click the dice button
-        // This is handled by the ActionPanel component
-        return;
-      }
+      // if (!player.hasRolledDice && !player.inJail) {
+      //   console.log("Player needs to roll dice");
+      //   // Don't auto-roll - let player click the dice button
+      //   // This is handled by the ActionPanel component
+      //   return;
+      // }
 
       // Priority 4: Handle property actions (after landing on a property)
       if (player.needsPropertyAction && player.pendingPropertyPosition) {
@@ -1068,6 +1250,35 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
           console.log("Auto-paying rent to property owner");
           try {
             await payRent(pendingPropertyPosition, property.owner);
+
+            const ownerPlayer = getPlayerByAddress(property.owner as Address);
+            if (ownerPlayer) {
+              const rentAmount = calculateRentForProperty(
+                property,
+                ownerPlayer,
+                player.lastDiceRoll as [number, number],
+                properties
+              );
+
+              const propertyData = getBoardSpaceData(property.position);
+              const propertyName = propertyData?.name || "Property";
+
+              toast.info(
+                `${formatAddress(
+                  player.wallet
+                )} paid $${rentAmount} rent to ${formatAddress(
+                  property.owner
+                )} for ${propertyName}`
+              );
+            }
+            // else {
+            //   const propertyData = getBoardSpaceData(property.position);
+            //   toast.info(
+            //     `${formatAddress(player.wallet)} paid rent to ${formatAddress(
+            //       property.owner
+            //     )} for ${propertyData?.name || "Property"}`
+            //   );
+            // }
           } catch (error) {
             console.error("Error auto-paying rent:", error);
           }
@@ -1170,7 +1381,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       // }
 
       // Priority 6: Handle card drawing
-      if (player.needsChanceCard) {
+      if (
+        player.needsChanceCard &&
+        !isCardDrawModalOpen &&
+        !hasShownChanceModal
+      ) {
+        setHasShownChanceModal(true);
         setTimeout(() => {
           console.log("Player needs to draw Chance card");
           setCardDrawType("chance");
@@ -1179,9 +1395,14 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         return;
       }
 
-      if (player.needsCommunityChestCard) {
-        console.log("Player needs to draw Community Chest card");
+      if (
+        player.needsCommunityChestCard &&
+        !isCardDrawModalOpen &&
+        !hasShownCommunityChestModal
+      ) {
+        setHasShownCommunityChestModal(true);
         setTimeout(() => {
+          console.log("Player needs to draw Community Chest card");
           setCardDrawType("community-chest");
           setIsCardDrawModalOpen(true);
         }, 300);
@@ -1231,6 +1452,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
 
     if (gameAddress && currentPlayerState && signer && isCurrentPlayerTurn()) {
+      console.log("-------------------------------");
       handleAction(currentPlayerState);
     }
   }, [
@@ -1241,6 +1463,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     payRent,
     isCurrentPlayerTurn,
     addGameLog,
+    isCardDrawModalOpen,
+    hasShownChanceModal,
+    hasShownCommunityChestModal,
   ]);
 
   // events
@@ -1286,8 +1511,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     payJailFine,
     buildHouse,
     buildHotel,
+    sellBuilding,
     payMevTax,
     payPriorityFeeTax,
+    declareBankruptcy,
 
     // Trade actions
     createTrade,
@@ -1305,11 +1532,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     cardDrawType,
     setCardDrawType,
 
-    // Trade UI state
-    isTradeDialogOpen,
-    setIsTradeDialogOpen,
-    activeTrades,
-    setActiveTrades,
+    // ui
+    isCurrentTurn,
+    showRollDice,
+    showEndTurn,
+    showPayJailFine,
 
     // Game logs
     gameLogs,

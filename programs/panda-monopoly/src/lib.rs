@@ -82,6 +82,14 @@ pub mod panda_monopoly {
         instructions::dice::roll_dice_handler(ctx, dice_roll)
     }
 
+    pub fn roll_dice_vrf_handler(
+        ctx: Context<RollDiceVrf>,
+        seed: u8,
+        dice_roll: Option<[u8; 2]>,
+    ) -> Result<()> {
+        instructions::dice::roll_dice_vrf_handler(ctx, seed, dice_roll)
+    }
+
     pub fn callback_roll_dice(
         ctx: Context<CallbackRollDiceCtx>,
         randomness: [u8; 32],
@@ -101,10 +109,16 @@ pub mod panda_monopoly {
         instructions::dice::pay_jail_fine_handler(ctx)
     }
 
-    // Special spaces instructions
-    pub fn go_to_jail(ctx: Context<GoToJail>) -> Result<()> {
-        instructions::special_spaces::go_to_jail_handler(ctx)
+    // Bankruptcy instructions
+    pub fn declare_bankruptcy<'c: 'info, 'info>(
+        ctx: Context<'_, '_, 'c, 'info, DeclareBankruptcy<'info>>,
+    ) -> Result<()> {
+        instructions::bankruptcy::declare_bankruptcy_handler(ctx)
     }
+
+    // pub fn go_to_jail(ctx: Context<GoToJail>) -> Result<()> {
+    //     instructions::dice::go_to_jail_handler(ctx)
+    // }
 
     pub fn pay_mev_tax_handler(ctx: Context<PayTax>) -> Result<()> {
         instructions::special_spaces::pay_mev_tax_handler(ctx)
@@ -134,11 +148,7 @@ pub mod panda_monopoly {
         instructions::special_spaces::attend_festival_handler(ctx)
     }
 
-    // pub fn collect_go(ctx: Context<CollectGo>) -> Result<()> {
-    //     instructions::special_spaces::collect_go_handler(ctx)
-    // }
-
-    // property instructions
+    // Property instructions
     pub fn init_property_handler(
         ctx: Context<InitProperty>,
         game_key: Pubkey,
@@ -183,7 +193,7 @@ pub mod panda_monopoly {
         instructions::property::unmortgage_property_handler(ctx, position)
     }
 
-    // Trading instructions
+    // Trading instructions (updated for vector-based approach)
     pub fn create_trade(
         ctx: Context<CreateTrade>,
         trade_type: TradeType,
@@ -202,21 +212,25 @@ pub mod panda_monopoly {
         )
     }
 
-    pub fn accept_trade(ctx: Context<AcceptTrade>) -> Result<()> {
-        instructions::trading::accept_trade_handler(ctx)
+    pub fn accept_trade(ctx: Context<AcceptTrade>, trade_id: u8) -> Result<()> {
+        instructions::trading::accept_trade_handler(ctx, trade_id)
     }
 
-    pub fn reject_trade(ctx: Context<RejectTrade>) -> Result<()> {
-        instructions::trading::reject_trade_handler(ctx)
+    pub fn reject_trade(ctx: Context<RejectTrade>, trade_id: u8) -> Result<()> {
+        instructions::trading::reject_trade_handler(ctx, trade_id)
     }
 
-    pub fn cancel_trade(ctx: Context<CancelTrade>) -> Result<()> {
-        instructions::trading::cancel_trade_handler(ctx)
+    pub fn cancel_trade(ctx: Context<CancelTrade>, trade_id: u8) -> Result<()> {
+        instructions::trading::cancel_trade_handler(ctx, trade_id)
     }
 
-    // Auction instructions
-    // pub fn start_auction(ctx: Context<StartAuction>, property_position: u8) -> Result<()> {
-    //     instructions::auction::start_auction_handler(ctx, property_position)
+    pub fn cleanup_expired_trades(ctx: Context<CleanupExpiredTrades>) -> Result<()> {
+        instructions::trading::cleanup_expired_trades_handler(ctx)
+    }
+
+    // Auction instructions (commented out as they're not implemented yet)
+    // pub fn start_auction(ctx: Context<StartAuction>, position: u8) -> Result<()> {
+    //     instructions::auction::start_auction_handler(ctx, position)
     // }
 
     // pub fn place_bid(ctx: Context<PlaceBid>, bid_amount: u64) -> Result<()> {

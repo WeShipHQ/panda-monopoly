@@ -8,7 +8,6 @@ use ephemeral_rollups_sdk::cpi::DelegateConfig;
 #[derive(Accounts)]
 #[instruction(game_key: Pubkey, position: u8)]
 pub struct InitProperty<'info> {
-    /// CHECK: Validate by CPI
     #[account(
         init,
         payer = authority,
@@ -54,6 +53,7 @@ pub fn init_property_handler(
         let property = &mut ctx.accounts.property_state;
         property.position = position;
         property.game = game_key;
+        property.init = false;
     }
 
     {
@@ -133,7 +133,6 @@ pub fn buy_property_handler(ctx: Context<BuyProperty>, position: u8) -> Result<(
     let player_pubkey = ctx.accounts.player.key();
     let clock = &ctx.accounts.clock;
 
-    // Validate it's the player's turn
     let player_index = game
         .players
         .iter()
@@ -144,17 +143,14 @@ pub fn buy_property_handler(ctx: Context<BuyProperty>, position: u8) -> Result<(
         return Err(GameError::NotPlayerTurn.into());
     }
 
-    // Validate player is at the property position
     if player_state.position != position {
         return Err(GameError::InvalidPropertyPosition.into());
     }
 
-    // Validate position is a purchasable property
     if !is_property_purchasable(position) {
         return Err(GameError::PropertyNotPurchasable.into());
     }
 
-    // Get property data from constants
     let property_data = get_property_data(position).ok_or(GameError::InvalidPropertyPosition)?;
 
     // Check if property is already owned
@@ -162,15 +158,14 @@ pub fn buy_property_handler(ctx: Context<BuyProperty>, position: u8) -> Result<(
         return Err(GameError::PropertyAlreadyOwned.into());
     }
 
-    // Check if player has enough money
     if player_state.cash_balance < property_data.price {
         return Err(GameError::InsufficientFunds.into());
     }
 
     // Initialize property state if needed
-    if property_state.position == 0 {
+    if !property_state.init {
         // Not initialized
-        property_state.position = position;
+        property_state.init = true;
         property_state.price = property_data.price as u16;
         property_state.color_group = match property_data.color_group {
             1 => ColorGroup::Brown,
@@ -388,7 +383,6 @@ pub fn pay_rent_handler(ctx: Context<PayRent>, position: u8) -> Result<()> {
     let property_owner_pubkey = ctx.accounts.property_owner.key();
     let clock = &ctx.accounts.clock;
 
-    // Validate it's the payer's turn
     let payer_index = game
         .players
         .iter()
@@ -399,12 +393,10 @@ pub fn pay_rent_handler(ctx: Context<PayRent>, position: u8) -> Result<()> {
         return Err(GameError::NotPlayerTurn.into());
     }
 
-    // Validate payer is at the property position
     if payer_state.position != position {
         return Err(GameError::InvalidPropertyPosition.into());
     }
 
-    // Validate property exists and is owned
     let property_owner = property_state.owner.ok_or(GameError::PropertyNotOwned)?;
     if property_owner != property_owner_pubkey {
         return Err(GameError::InvalidPropertyOwner.into());
@@ -412,7 +404,7 @@ pub fn pay_rent_handler(ctx: Context<PayRent>, position: u8) -> Result<()> {
 
     // Can't pay rent to yourself
     if payer_pubkey == property_owner {
-        return Ok(()); // No rent payment needed
+        return Ok(());
     }
 
     // Check if property is mortgaged (no rent if mortgaged)
@@ -420,7 +412,6 @@ pub fn pay_rent_handler(ctx: Context<PayRent>, position: u8) -> Result<()> {
         return Ok(()); // No rent payment needed
     }
 
-    // Calculate rent amount
     let rent_amount =
         calculate_rent_for_property(&property_state, &owner_state, payer_state.last_dice_roll)?;
 
@@ -531,7 +522,7 @@ pub fn build_house_handler(ctx: Context<BuildHouse>, position: u8) -> Result<()>
     }
 
     // Get property data
-    let property_data = get_property_data(position).ok_or(GameError::InvalidPropertyPosition)?;
+    // let property_data = get_property_data(position).ok_or(GameError::InvalidPropertyPosition)?;
 
     // Check monopoly requirement
     if !has_monopoly_for_player(player_state, property_state.color_group) {

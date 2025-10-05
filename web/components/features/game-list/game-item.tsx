@@ -8,17 +8,17 @@ import { Eye } from "lucide-react";
 import { GameAccount } from "@/types/schema";
 import { GameStatus } from "@/lib/sdk/generated";
 
-export interface GameData {
-  id: string;
-  players: string[];
-  maxPlayers: number;
-  currentPlayers: number;
-  bankBalance: number;
-  gameStatus: GameStatus;
-  gameId: number;
-  timeLimit?: number;
-  createdAt: number;
-}
+// export interface GameData {
+//   id: string;
+//   players: string[];
+//   maxPlayers: number;
+//   currentPlayers: number;
+//   bankBalance: number;
+//   gameStatus: GameStatus;
+//   gameId: number;
+//   timeLimit?: number;
+//   createdAt: number;
+// }
 
 interface GameItemProps {
   game: GameAccount;
@@ -69,11 +69,15 @@ export function GameItem({
     for (let i = 0; i < players.length; i++) {
       const player = players[i];
       avatars.push(
-        <Avatar key={player} className="w-10 h-10 sm:w-12 sm:h-12 border-2 border-white">
-          <AvatarImage
+        <Avatar
+          key={player}
+          className="w-10 h-10 sm:w-12 sm:h-12 border-2 border-white"
+        >
+          <AvatarImage walletAddress={player} />
+          <AvatarFallback
             walletAddress={player}
-          />
-          <AvatarFallback walletAddress={player} className="bg-blue-500 text-white text-xs sm:text-sm">
+            className="bg-blue-500 text-white text-xs sm:text-sm"
+          >
             {player.slice(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>

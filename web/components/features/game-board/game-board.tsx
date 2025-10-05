@@ -22,6 +22,7 @@ import {
 
 import { PlayerTokensContainer } from "./player-tokens";
 import { DiceProvider } from "./dice";
+// import { DiceProvider } from "@/components/dices";
 import { CardDrawModal } from "./card-draw-modal";
 import { useGameContext } from "@/components/providers/game-provider";
 import { PlayerActions } from "./player-actions";
@@ -37,16 +38,12 @@ import {
 import { useWallet } from "@/hooks/use-wallet";
 import { Button } from "@/components/ui/button";
 
-interface MonopolyBoardProps {
-  boardRotation: number;
-  onRotateClockwise: () => void;
-  onRotateCounterClockwise: () => void;
-}
+interface MonopolyBoardProps {}
 
-const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
+const GameBoard: React.FC<MonopolyBoardProps> = () => {
   const [isLoading, setIsLoading] = useState<string | null>(null);
 
-  const { wallet, authenticated } = useWallet();
+  const { wallet } = useWallet();
 
   const {
     gameState,
@@ -65,10 +62,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
     skipProperty,
     payMevTax,
     payPriorityFeeTax,
-    drawChanceCard,
-    // Utilities
-    getPropertyByPosition,
-    isCurrentPlayerTurn,
+    payJailFine,
   } = useGameContext();
 
   // console.log("currentPlayerState", currentPlayerState);
@@ -151,6 +145,17 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
     }
   };
 
+  const handlePayJailFine = async () => {
+    setIsLoading("payJailFine");
+    try {
+      await payJailFine();
+    } catch (error) {
+      console.error("Failed to pay jail fine:", error);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
   const renderSpace = (space: BoardSpace, properties: PropertyAccount[]) => {
     const position = space.position;
     const key = `${space.name}-${position}`;
@@ -196,24 +201,25 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
   return (
     <div
       className="h-full w-full monopoly-board overflow-hidden relative"
-      style={{
-        backgroundImage: 'url("/images/monopoly-bg.jpg")',
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
+      // style={{
+      //   backgroundImage: 'url("/images/monopoly-bg.jpg")',
+      //   backgroundSize: "cover",
+      //   backgroundPosition: "center",
+      // }}
     >
       <div className="h-full w-full flex items-center justify-center p-2 sm:p-4">
         <div
           className="relative aspect-square bg-board-bg transition-transform duration-500 ease-in-out border-2
                      w-full h-full max-w-[min(100vh,100vw)] max-h-[min(100vh,100vw)]
                      lg:max-w-none lg:max-h-none lg:h-full lg:w-auto"
-          style={{ transform: `rotate(${boardRotation}deg)` }}
+          style={{ transform: `rotate(${0}deg)` }}
         >
           <div className="absolute inset-0 grid grid-cols-14 grid-rows-14">
             {/* Player Tokens */}
             <PlayerTokensContainer
               players={players}
-              boardRotation={boardRotation}
+              boardRotation={0}
+              currentPlayer={currentPlayerState.wallet}
             />
 
             {/* Center - Responsive */}
@@ -232,6 +238,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
                       handleSkipProperty={handleSkipProperty}
                       handlePayMevTax={handlePayMevTax}
                       handlePayPriorityFeeTax={handlePayPriorityFeeTax}
+                      handlePayJailFine={handlePayJailFine}
                       isLoading={isLoading}
                       wallet={wallet}
                     />
@@ -244,7 +251,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
               </div>
 
               {/* game-logs */}
-              {authenticated && (
+              {/* {authenticated && (
                 <EnhancedGameLogs
                   filterTypes={[
                     "move",
@@ -259,7 +266,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
                     "game",
                   ]}
                 />
-              )}
+              )} */}
             </div>
 
             <GoCorner />

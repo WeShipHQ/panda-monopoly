@@ -21,15 +21,16 @@ import {
   type ParsedBuyPropertyInstruction,
   type ParsedCallbackRollDiceInstruction,
   type ParsedCancelTradeInstruction,
+  type ParsedCleanupExpiredTradesInstruction,
   type ParsedCloseGameHandlerInstruction,
   type ParsedCollectFreeParkingInstruction,
   type ParsedCreatePlatformConfigInstruction,
   type ParsedCreateTradeInstruction,
+  type ParsedDeclareBankruptcyInstruction,
   type ParsedDeclinePropertyInstruction,
   type ParsedDrawChanceCardInstruction,
   type ParsedDrawCommunityChestCardInstruction,
   type ParsedEndTurnInstruction,
-  type ParsedGoToJailInstruction,
   type ParsedInitializeGameInstruction,
   type ParsedInitPropertyHandlerInstruction,
   type ParsedJoinGameInstruction,
@@ -41,6 +42,7 @@ import {
   type ParsedRejectTradeInstruction,
   type ParsedResetGameHandlerInstruction,
   type ParsedRollDiceInstruction,
+  type ParsedRollDiceVrfHandlerInstruction,
   type ParsedSellBuildingInstruction,
   type ParsedStartGameInstruction,
   type ParsedTestDiceHandlerInstruction,
@@ -58,7 +60,6 @@ export enum PandaMonopolyAccount {
   PlatformConfig,
   PlayerState,
   PropertyState,
-  TradeState,
 }
 
 export function identifyPandaMonopolyAccount(
@@ -109,17 +110,6 @@ export function identifyPandaMonopolyAccount(
   ) {
     return PandaMonopolyAccount.PropertyState;
   }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([18, 152, 250, 23, 138, 87, 85, 1])
-      ),
-      0
-    )
-  ) {
-    return PandaMonopolyAccount.TradeState;
-  }
   throw new Error(
     'The provided account could not be identified as a pandaMonopoly account.'
   );
@@ -133,15 +123,16 @@ export enum PandaMonopolyInstruction {
   BuyProperty,
   CallbackRollDice,
   CancelTrade,
+  CleanupExpiredTrades,
   CloseGameHandler,
   CollectFreeParking,
   CreatePlatformConfig,
   CreateTrade,
+  DeclareBankruptcy,
   DeclineProperty,
   DrawChanceCard,
   DrawCommunityChestCard,
   EndTurn,
-  GoToJail,
   InitPropertyHandler,
   InitializeGame,
   JoinGame,
@@ -153,6 +144,7 @@ export enum PandaMonopolyInstruction {
   RejectTrade,
   ResetGameHandler,
   RollDice,
+  RollDiceVrfHandler,
   SellBuilding,
   StartGame,
   TestDiceHandler,
@@ -247,6 +239,17 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([7, 253, 210, 8, 4, 48, 168, 107])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.CleanupExpiredTrades;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([171, 148, 141, 45, 42, 192, 182, 21])
       ),
       0
@@ -291,6 +294,17 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([119, 207, 255, 228, 104, 178, 50, 132])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.DeclareBankruptcy;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([155, 79, 198, 116, 170, 10, 2, 84])
       ),
       0
@@ -330,17 +344,6 @@ export function identifyPandaMonopolyInstruction(
     )
   ) {
     return PandaMonopolyInstruction.EndTurn;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([188, 39, 17, 2, 222, 137, 233, 11])
-      ),
-      0
-    )
-  ) {
-    return PandaMonopolyInstruction.GoToJail;
   }
   if (
     containsBytes(
@@ -467,6 +470,17 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([39, 65, 195, 145, 53, 169, 192, 6])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.RollDiceVrfHandler;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([81, 56, 161, 40, 97, 140, 191, 123])
       ),
       0
@@ -570,6 +584,9 @@ export type ParsedPandaMonopolyInstruction<
       instructionType: PandaMonopolyInstruction.CancelTrade;
     } & ParsedCancelTradeInstruction<TProgram>)
   | ({
+      instructionType: PandaMonopolyInstruction.CleanupExpiredTrades;
+    } & ParsedCleanupExpiredTradesInstruction<TProgram>)
+  | ({
       instructionType: PandaMonopolyInstruction.CloseGameHandler;
     } & ParsedCloseGameHandlerInstruction<TProgram>)
   | ({
@@ -582,6 +599,9 @@ export type ParsedPandaMonopolyInstruction<
       instructionType: PandaMonopolyInstruction.CreateTrade;
     } & ParsedCreateTradeInstruction<TProgram>)
   | ({
+      instructionType: PandaMonopolyInstruction.DeclareBankruptcy;
+    } & ParsedDeclareBankruptcyInstruction<TProgram>)
+  | ({
       instructionType: PandaMonopolyInstruction.DeclineProperty;
     } & ParsedDeclinePropertyInstruction<TProgram>)
   | ({
@@ -593,9 +613,6 @@ export type ParsedPandaMonopolyInstruction<
   | ({
       instructionType: PandaMonopolyInstruction.EndTurn;
     } & ParsedEndTurnInstruction<TProgram>)
-  | ({
-      instructionType: PandaMonopolyInstruction.GoToJail;
-    } & ParsedGoToJailInstruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.InitPropertyHandler;
     } & ParsedInitPropertyHandlerInstruction<TProgram>)
@@ -629,6 +646,9 @@ export type ParsedPandaMonopolyInstruction<
   | ({
       instructionType: PandaMonopolyInstruction.RollDice;
     } & ParsedRollDiceInstruction<TProgram>)
+  | ({
+      instructionType: PandaMonopolyInstruction.RollDiceVrfHandler;
+    } & ParsedRollDiceVrfHandlerInstruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.SellBuilding;
     } & ParsedSellBuildingInstruction<TProgram>)

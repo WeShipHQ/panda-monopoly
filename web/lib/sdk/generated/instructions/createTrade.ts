@@ -66,14 +66,10 @@ export function getCreateTradeDiscriminatorBytes() {
 export type CreateTradeInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountGame extends string | AccountMeta<string> = string,
-  TAccountTrade extends string | AccountMeta<string> = string,
   TAccountProposerState extends string | AccountMeta<string> = string,
   TAccountReceiverState extends string | AccountMeta<string> = string,
   TAccountProposer extends string | AccountMeta<string> = string,
   TAccountReceiver extends string | AccountMeta<string> = string,
-  TAccountSystemProgram extends
-    | string
-    | AccountMeta<string> = '11111111111111111111111111111111',
   TAccountClock extends
     | string
     | AccountMeta<string> = 'SysvarC1ock11111111111111111111111111111111',
@@ -85,9 +81,6 @@ export type CreateTradeInstruction<
       TAccountGame extends string
         ? WritableAccount<TAccountGame>
         : TAccountGame,
-      TAccountTrade extends string
-        ? WritableAccount<TAccountTrade>
-        : TAccountTrade,
       TAccountProposerState extends string
         ? WritableAccount<TAccountProposerState>
         : TAccountProposerState,
@@ -101,9 +94,6 @@ export type CreateTradeInstruction<
       TAccountReceiver extends string
         ? ReadonlyAccount<TAccountReceiver>
         : TAccountReceiver,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
       TAccountClock extends string
         ? ReadonlyAccount<TAccountClock>
         : TAccountClock,
@@ -165,21 +155,17 @@ export function getCreateTradeInstructionDataCodec(): Codec<
 
 export type CreateTradeAsyncInput<
   TAccountGame extends string = string,
-  TAccountTrade extends string = string,
   TAccountProposerState extends string = string,
   TAccountReceiverState extends string = string,
   TAccountProposer extends string = string,
   TAccountReceiver extends string = string,
-  TAccountSystemProgram extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
-  trade?: Address<TAccountTrade>;
   proposerState?: Address<TAccountProposerState>;
   receiverState?: Address<TAccountReceiverState>;
   proposer: TransactionSigner<TAccountProposer>;
   receiver: Address<TAccountReceiver>;
-  systemProgram?: Address<TAccountSystemProgram>;
   clock?: Address<TAccountClock>;
   tradeType: CreateTradeInstructionDataArgs['tradeType'];
   proposerMoney: CreateTradeInstructionDataArgs['proposerMoney'];
@@ -190,23 +176,19 @@ export type CreateTradeAsyncInput<
 
 export async function getCreateTradeInstructionAsync<
   TAccountGame extends string,
-  TAccountTrade extends string,
   TAccountProposerState extends string,
   TAccountReceiverState extends string,
   TAccountProposer extends string,
   TAccountReceiver extends string,
-  TAccountSystemProgram extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
   input: CreateTradeAsyncInput<
     TAccountGame,
-    TAccountTrade,
     TAccountProposerState,
     TAccountReceiverState,
     TAccountProposer,
     TAccountReceiver,
-    TAccountSystemProgram,
     TAccountClock
   >,
   config?: { programAddress?: TProgramAddress }
@@ -214,12 +196,10 @@ export async function getCreateTradeInstructionAsync<
   CreateTradeInstruction<
     TProgramAddress,
     TAccountGame,
-    TAccountTrade,
     TAccountProposerState,
     TAccountReceiverState,
     TAccountProposer,
     TAccountReceiver,
-    TAccountSystemProgram,
     TAccountClock
   >
 > {
@@ -230,12 +210,10 @@ export async function getCreateTradeInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     game: { value: input.game ?? null, isWritable: true },
-    trade: { value: input.trade ?? null, isWritable: true },
     proposerState: { value: input.proposerState ?? null, isWritable: true },
     receiverState: { value: input.receiverState ?? null, isWritable: false },
     proposer: { value: input.proposer ?? null, isWritable: true },
     receiver: { value: input.receiver ?? null, isWritable: false },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     clock: { value: input.clock ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -247,16 +225,6 @@ export async function getCreateTradeInstructionAsync<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.trade.value) {
-    accounts.trade.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(new Uint8Array([116, 114, 97, 100, 101])),
-        getAddressEncoder().encode(expectAddress(accounts.game.value)),
-        getAddressEncoder().encode(expectAddress(accounts.proposer.value)),
-      ],
-    });
-  }
   if (!accounts.proposerState.value) {
     accounts.proposerState.value = await getProgramDerivedAddress({
       programAddress,
@@ -277,10 +245,6 @@ export async function getCreateTradeInstructionAsync<
       ],
     });
   }
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
   if (!accounts.clock.value) {
     accounts.clock.value =
       'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
@@ -290,12 +254,10 @@ export async function getCreateTradeInstructionAsync<
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.game),
-      getAccountMeta(accounts.trade),
       getAccountMeta(accounts.proposerState),
       getAccountMeta(accounts.receiverState),
       getAccountMeta(accounts.proposer),
       getAccountMeta(accounts.receiver),
-      getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.clock),
     ],
     data: getCreateTradeInstructionDataEncoder().encode(
@@ -305,33 +267,27 @@ export async function getCreateTradeInstructionAsync<
   } as CreateTradeInstruction<
     TProgramAddress,
     TAccountGame,
-    TAccountTrade,
     TAccountProposerState,
     TAccountReceiverState,
     TAccountProposer,
     TAccountReceiver,
-    TAccountSystemProgram,
     TAccountClock
   >);
 }
 
 export type CreateTradeInput<
   TAccountGame extends string = string,
-  TAccountTrade extends string = string,
   TAccountProposerState extends string = string,
   TAccountReceiverState extends string = string,
   TAccountProposer extends string = string,
   TAccountReceiver extends string = string,
-  TAccountSystemProgram extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
-  trade: Address<TAccountTrade>;
   proposerState: Address<TAccountProposerState>;
   receiverState: Address<TAccountReceiverState>;
   proposer: TransactionSigner<TAccountProposer>;
   receiver: Address<TAccountReceiver>;
-  systemProgram?: Address<TAccountSystemProgram>;
   clock?: Address<TAccountClock>;
   tradeType: CreateTradeInstructionDataArgs['tradeType'];
   proposerMoney: CreateTradeInstructionDataArgs['proposerMoney'];
@@ -342,35 +298,29 @@ export type CreateTradeInput<
 
 export function getCreateTradeInstruction<
   TAccountGame extends string,
-  TAccountTrade extends string,
   TAccountProposerState extends string,
   TAccountReceiverState extends string,
   TAccountProposer extends string,
   TAccountReceiver extends string,
-  TAccountSystemProgram extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
   input: CreateTradeInput<
     TAccountGame,
-    TAccountTrade,
     TAccountProposerState,
     TAccountReceiverState,
     TAccountProposer,
     TAccountReceiver,
-    TAccountSystemProgram,
     TAccountClock
   >,
   config?: { programAddress?: TProgramAddress }
 ): CreateTradeInstruction<
   TProgramAddress,
   TAccountGame,
-  TAccountTrade,
   TAccountProposerState,
   TAccountReceiverState,
   TAccountProposer,
   TAccountReceiver,
-  TAccountSystemProgram,
   TAccountClock
 > {
   // Program address.
@@ -380,12 +330,10 @@ export function getCreateTradeInstruction<
   // Original accounts.
   const originalAccounts = {
     game: { value: input.game ?? null, isWritable: true },
-    trade: { value: input.trade ?? null, isWritable: true },
     proposerState: { value: input.proposerState ?? null, isWritable: true },
     receiverState: { value: input.receiverState ?? null, isWritable: false },
     proposer: { value: input.proposer ?? null, isWritable: true },
     receiver: { value: input.receiver ?? null, isWritable: false },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     clock: { value: input.clock ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -397,10 +345,6 @@ export function getCreateTradeInstruction<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
   if (!accounts.clock.value) {
     accounts.clock.value =
       'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
@@ -410,12 +354,10 @@ export function getCreateTradeInstruction<
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.game),
-      getAccountMeta(accounts.trade),
       getAccountMeta(accounts.proposerState),
       getAccountMeta(accounts.receiverState),
       getAccountMeta(accounts.proposer),
       getAccountMeta(accounts.receiver),
-      getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.clock),
     ],
     data: getCreateTradeInstructionDataEncoder().encode(
@@ -425,12 +367,10 @@ export function getCreateTradeInstruction<
   } as CreateTradeInstruction<
     TProgramAddress,
     TAccountGame,
-    TAccountTrade,
     TAccountProposerState,
     TAccountReceiverState,
     TAccountProposer,
     TAccountReceiver,
-    TAccountSystemProgram,
     TAccountClock
   >);
 }
@@ -442,13 +382,11 @@ export type ParsedCreateTradeInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     game: TAccountMetas[0];
-    trade: TAccountMetas[1];
-    proposerState: TAccountMetas[2];
-    receiverState: TAccountMetas[3];
-    proposer: TAccountMetas[4];
-    receiver: TAccountMetas[5];
-    systemProgram: TAccountMetas[6];
-    clock: TAccountMetas[7];
+    proposerState: TAccountMetas[1];
+    receiverState: TAccountMetas[2];
+    proposer: TAccountMetas[3];
+    receiver: TAccountMetas[4];
+    clock: TAccountMetas[5];
   };
   data: CreateTradeInstructionData;
 };
@@ -461,7 +399,7 @@ export function parseCreateTradeInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedCreateTradeInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 8) {
+  if (instruction.accounts.length < 6) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -475,12 +413,10 @@ export function parseCreateTradeInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       game: getNextAccount(),
-      trade: getNextAccount(),
       proposerState: getNextAccount(),
       receiverState: getNextAccount(),
       proposer: getNextAccount(),
       receiver: getNextAccount(),
-      systemProgram: getNextAccount(),
       clock: getNextAccount(),
     },
     data: getCreateTradeInstructionDataDecoder().decode(instruction.data),

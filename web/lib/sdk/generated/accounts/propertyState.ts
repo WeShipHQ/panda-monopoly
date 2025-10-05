@@ -87,6 +87,7 @@ export type PropertyState = {
   houseCost: number;
   mortgageValue: number;
   lastRentPaid: bigint;
+  init: boolean;
 };
 
 export type PropertyStateArgs = {
@@ -106,6 +107,7 @@ export type PropertyStateArgs = {
   houseCost: number;
   mortgageValue: number;
   lastRentPaid: number | bigint;
+  init: boolean;
 };
 
 export function getPropertyStateEncoder(): Encoder<PropertyStateArgs> {
@@ -128,6 +130,7 @@ export function getPropertyStateEncoder(): Encoder<PropertyStateArgs> {
       ['houseCost', getU16Encoder()],
       ['mortgageValue', getU16Encoder()],
       ['lastRentPaid', getI64Encoder()],
+      ['init', getBooleanEncoder()],
     ]),
     (value) => ({ ...value, discriminator: PROPERTY_STATE_DISCRIMINATOR })
   );
@@ -152,6 +155,7 @@ export function getPropertyStateDecoder(): Decoder<PropertyState> {
     ['houseCost', getU16Decoder()],
     ['mortgageValue', getU16Decoder()],
     ['lastRentPaid', getI64Decoder()],
+    ['init', getBooleanDecoder()],
   ]);
 }
 

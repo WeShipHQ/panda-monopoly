@@ -11,6 +11,8 @@ import {
   boardData,
   ColorGroup,
 } from "@/configs/board-data";
+import { PropertyAccount, PlayerAccount } from "@/types/schema";
+import { PropertyType } from "@/lib/sdk/generated";
 
 export const isPropertySpace = (space: BoardSpace): space is PropertySpace => {
   return space.type === "property";
@@ -198,13 +200,13 @@ export const getColorBarClasses = (side: BoardSide): string => {
 export const getOwnerIndicatorClasses = (side: BoardSide): string => {
   switch (side) {
     case "bottom":
-      return "absolute top-0 left-0 w-full h-3";
+      return "absolute -top-3 left-0 w-full h-3";
     case "left":
-      return "absolute top-0 right-0 h-full w-3";
+      return "absolute top-0 -right-3 h-full w-3";
     case "top":
-      return "absolute bottom-0 left-0 w-full h-3";
+      return "absolute -bottom-3 left-0 w-full h-3";
     case "right":
-      return "absolute top-0 left-0 h-full w-3";
+      return "absolute top-0 -left-3 h-full w-3";
     default:
       return "absolute top-0 left-0 w-full h-3";
   }
@@ -227,4 +229,114 @@ export const getTextContainerClasses = (side: BoardSide): string => {
     default:
       return `flex flex-col justify-between h-full ${basePadding} pt-5`;
   }
+};
+
+// Add this function at the end of the file
+export const calculateRentForProperty = (
+  property: PropertyAccount,
+  ownerState: PlayerAccount,
+  diceResult: [number, number],
+  allProperties: PropertyAccount[]
+): number => {
+  const propertyTypeMap = {
+    [PropertyType.Street]: "Street",
+    [PropertyType.Railroad]: "Railroad",
+    [PropertyType.Utility]: "Utility",
+    [PropertyType.Property]: "Street", // Fallback to Street for Property type
+  };
+
+  // @ts-expect-error
+  const propertyTypeString = propertyTypeMap[property.propertyType] || "Street";
+
+  switch (propertyTypeString) {
+    case "Street": {
+      if (property.hasHotel) {
+        return property.rentWithHotel;
+      } else if (property.houses > 0) {
+        const houseIndex = property.houses - 1;
+        if (houseIndex < property.rentWithHouses.length) {
+          return property.rentWithHouses[houseIndex];
+        } else {
+          return property.rentBase;
+        }
+      } else {
+        if (
+          hasColorGroupMonopoly(ownerState, property.colorGroup, allProperties)
+        ) {
+          return property.rentWithColorGroup;
+        } else {
+          return property.rentBase;
+        }
+      }
+    }
+    case "Railroad": {
+      const railroadsOwned = countRailroadsOwned(ownerState, allProperties);
+      const baseRent = property.rentBase;
+
+      switch (railroadsOwned) {
+        case 1:
+          return baseRent;
+        case 2:
+          return baseRent * 2;
+        case 3:
+          return baseRent * 4;
+        case 4:
+          return baseRent * 8;
+        default:
+          return baseRent;
+      }
+    }
+    case "Utility": {
+      const utilitiesOwned = countUtilitiesOwned(ownerState, allProperties);
+      const diceSum = diceResult[0] + diceResult[1];
+
+      const multiplier = utilitiesOwned === 1 ? 4 : 10;
+      return diceSum * multiplier;
+    }
+    default:
+      return 0;
+  }
+};
+
+export const hasColorGroupMonopoly = (
+  ownerState: PlayerAccount,
+  colorGroup: ColorGroup,
+  allProperties: PropertyAccount[]
+): boolean => {
+  const propertiesInGroup = allProperties.filter(
+    (prop) =>
+      prop.colorGroup === colorGroup &&
+      prop.propertyType === PropertyType.Street
+  );
+
+  const ownedPropertiesInGroup = propertiesInGroup.filter(
+    (prop) => prop.owner === ownerState.wallet
+  );
+
+  return (
+    propertiesInGroup.length > 0 &&
+    ownedPropertiesInGroup.length === propertiesInGroup.length
+  );
+};
+
+const countRailroadsOwned = (
+  ownerState: PlayerAccount,
+  allProperties: PropertyAccount[]
+): number => {
+  return allProperties.filter(
+    (prop) =>
+      prop.owner === ownerState.wallet &&
+      prop.propertyType === PropertyType.Railroad
+  ).length;
+};
+
+const countUtilitiesOwned = (
+  ownerState: PlayerAccount,
+  allProperties: PropertyAccount[]
+): number => {
+  return allProperties.filter(
+    (prop) =>
+      prop.owner === ownerState.wallet &&
+      prop.propertyType === PropertyType.Utility
+  ).length;
 };

@@ -1,25 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import GameBoard from "./game-board";
 
 import { useGameContext } from "@/components/providers/game-provider";
 import { useParams } from "next/navigation";
 import { address } from "@solana/kit";
+import { LeftPanel } from "./left-panel";
+import { RightPanel } from "./right-panel";
+import { DiceLoading } from "@/components/dice-loading";
 
 export function GameView() {
   const { address: gameAddress } = useParams<{ address: string }>();
-  const [boardRotation, setBoardRotation] = useState(0);
-  const [activeTab, setActiveTab] = useState<"players" | "settings">("players");
-  const { gameState, setGameAddress } = useGameContext();
-
-  const rotateBoardClockwise = () => {
-    setBoardRotation((prev) => (prev + 90) % 360);
-  };
-
-  const rotateBoardCounterClockwise = () => {
-    setBoardRotation((prev) => (prev - 90 + 360) % 360);
-  };
+  const { setGameAddress, gameState, gameLoading, gameError } =
+    useGameContext();
 
   useEffect(() => {
     if (gameAddress) {
@@ -27,11 +21,50 @@ export function GameView() {
     }
   }, [gameAddress]);
 
+  if (gameLoading || !gameAddress || !gameState) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center">
+        {/* <DiceLoading /> */}
+        loading...
+      </div>
+    );
+  }
+
+  if (gameError) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center">
+        <div id="error">
+          <p>ERROR: {gameError?.message}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <GameBoard
-      boardRotation={boardRotation}
-      onRotateClockwise={rotateBoardClockwise}
-      onRotateCounterClockwise={rotateBoardCounterClockwise}
-    />
+    <div className="max-h-screen game-container w-full h-full overflow-hidden">
+      <div
+        style={{
+          gridArea: "left",
+        }}
+        className="overflow-hidden h-screen"
+      >
+        <LeftPanel />
+      </div>
+      <div
+        style={{
+          gridArea: "center",
+        }}
+        className="w-[55vw]"
+      >
+        <GameBoard />
+      </div>
+      <div
+        style={{
+          gridArea: "right",
+        }}
+      >
+        <RightPanel />
+      </div>
+    </div>
   );
 }

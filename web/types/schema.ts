@@ -1,13 +1,15 @@
+import { ColorGroup } from "@/configs/board-data";
 import type {
   GameState,
   PlayerState,
   PropertyState,
   GameStatus,
-  ColorGroup,
   PropertyType,
   TradeStatus,
   TradeType,
+  TradeInfo as GeneratedTradeInfo,
 } from "@/lib/sdk/generated";
+import { ColorGroup as GeneratedColorGroup } from "@/lib/sdk/generated";
 import {
   isSome,
   type Address,
@@ -34,6 +36,7 @@ export interface GameAccount {
   timeLimit: number | null;
   winner: string | null;
   turnStartedAt: number;
+  activeTrades: TradeInfo[];
 }
 
 export interface PlayerAccount {
@@ -82,32 +85,24 @@ export interface PropertyAccount {
   lastRentPaid: string;
 }
 
-// Trade related interfaces
 export interface TradeOffer {
   money: string;
-  properties: number[]; // property positions
+  property: number | null;
 }
 
-export interface TradeData {
-  id: string;
-  gameAddress: string;
-  initiator: string;
-  target: string;
-  initiatorOffer: TradeOffer;
-  targetOffer: TradeOffer;
+export type TradeInfo = {
+  id: number;
+  proposer: string;
+  receiver: string;
+  tradeType: TradeType;
+  proposerMoney: number | string;
+  receiverMoney: number | string;
+  proposerProperty: number | null;
+  receiverProperty: number | null;
   status: TradeStatus;
-  type: TradeType;
-  createdAt: number;
-  expiresAt?: number;
-}
-
-export interface ActiveTrade {
-  trade: TradeData;
-  canAccept: boolean;
-  canReject: boolean;
-  canCancel: boolean;
-  isExpired: boolean;
-}
+  createdAt: number | string;
+  expiresAt: number | string;
+};
 
 function optionToNullable<T>(option: Option<T>): T | null {
   return isSome(option) ? option.value : null;
@@ -156,6 +151,7 @@ export function mapGameStateToAccount(
       ? addressToString(optionToNullable(gameState.winner)!)
       : null,
     turnStartedAt: bigintToNumber(gameState.turnStartedAt),
+    activeTrades: gameState.activeTrades.map(mapTradeInfoToAccount),
   };
 }
 
@@ -197,6 +193,37 @@ export function mapPlayerStateToAccount(
   };
 }
 
+function mapGeneratedColorGroupToFrontend(
+  colorGroup: GeneratedColorGroup
+): ColorGroup {
+  switch (colorGroup) {
+    case GeneratedColorGroup.Brown:
+      return "brown";
+    case GeneratedColorGroup.LightBlue:
+      return "lightBlue";
+    case GeneratedColorGroup.Pink:
+      return "pink";
+    case GeneratedColorGroup.Orange:
+      return "orange";
+    case GeneratedColorGroup.Red:
+      return "red";
+    case GeneratedColorGroup.Yellow:
+      return "yellow";
+    case GeneratedColorGroup.Green:
+      return "green";
+    case GeneratedColorGroup.DarkBlue:
+      return "darkBlue";
+    // Note: Railroad, Utility, and Special don't have direct mappings in frontend ColorGroup
+    // You may need to handle these cases based on your business logic
+    case GeneratedColorGroup.Railroad:
+    case GeneratedColorGroup.Utility:
+    case GeneratedColorGroup.Special:
+    default:
+      // Fallback to brown for unmapped cases
+      return "brown";
+  }
+}
+
 export function mapPropertyStateToAccount(
   propertyState: PropertyState,
   address: Address
@@ -208,7 +235,7 @@ export function mapPropertyStateToAccount(
       ? addressToString(optionToNullable(propertyState.owner)!)
       : null,
     price: propertyState.price,
-    colorGroup: propertyState.colorGroup,
+    colorGroup: mapGeneratedColorGroupToFrontend(propertyState.colorGroup),
     propertyType: propertyState.propertyType,
     houses: propertyState.houses,
     hasHotel: propertyState.hasHotel,
@@ -220,5 +247,21 @@ export function mapPropertyStateToAccount(
     houseCost: propertyState.houseCost,
     mortgageValue: propertyState.mortgageValue,
     lastRentPaid: bigintToString(propertyState.lastRentPaid),
+  };
+}
+
+export function mapTradeInfoToAccount(
+  tradeInfo: GeneratedTradeInfo
+): TradeInfo {
+  return {
+    ...tradeInfo,
+    proposer: addressToString(tradeInfo.proposer),
+    receiver: addressToString(tradeInfo.receiver),
+    proposerMoney: bigintToString(tradeInfo.proposerMoney),
+    receiverMoney: bigintToString(tradeInfo.receiverMoney),
+    proposerProperty: optionToNullable(tradeInfo.proposerProperty),
+    receiverProperty: optionToNullable(tradeInfo.receiverProperty),
+    createdAt: bigintToNumber(tradeInfo.createdAt),
+    expiresAt: bigintToNumber(tradeInfo.expiresAt),
   };
 }

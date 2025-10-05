@@ -5,7 +5,12 @@ import {
   Instruction,
   GetAccountInfoApi,
 } from "@solana/kit";
-import { ChanceCardDrawn, CommunityChestCardDrawn } from "./generated";
+import {
+  BuildingType,
+  ChanceCardDrawn,
+  CommunityChestCardDrawn,
+  TradeType,
+} from "./generated";
 
 export interface CreatePlatformParams {
   rpc: Rpc<GetAccountInfoApi>;
@@ -54,7 +59,6 @@ export interface EndTurnParams {
 }
 
 export interface PayJailFineParams {
-  rpc: Rpc<GetAccountInfoApi>;
   player: TransactionSigner;
   gameAddress: Address;
 }
@@ -115,7 +119,7 @@ export interface SellBuildingParams {
   player: TransactionSigner;
   gameAddress: Address;
   position: number;
-  buildingType: number;
+  buildingType: BuildingType;
 }
 
 // Special space instruction parameters
@@ -178,13 +182,12 @@ export type GameEvent =
       data: CommunityChestCardDrawn;
     };
 
-// Trade-related instruction parameters
+// trading
 export interface CreateTradeParams {
-  rpc: Rpc<GetAccountInfoApi>;
   proposer: TransactionSigner;
   receiver: Address;
   gameAddress: Address;
-  tradeType: number; // TradeType enum
+  tradeType: TradeType;
   proposerMoney: number;
   receiverMoney: number;
   proposerProperty?: number;
@@ -192,22 +195,26 @@ export interface CreateTradeParams {
 }
 
 export interface AcceptTradeParams {
-  rpc: Rpc<GetAccountInfoApi>;
-  receiver: TransactionSigner;
+  accepter: TransactionSigner;
   gameAddress: Address;
   proposer: Address;
+  tradeId: number;
 }
 
 export interface RejectTradeParams {
-  rpc: Rpc<GetAccountInfoApi>;
-  receiver: TransactionSigner;
+  rejecter: TransactionSigner;
   gameAddress: Address;
-  proposer: Address;
+  tradeId: number;
 }
 
 export interface CancelTradeParams {
-  rpc: Rpc<GetAccountInfoApi>;
-  proposer: TransactionSigner;
+  canceller: TransactionSigner;
   gameAddress: Address;
-  receiver: Address;
+  tradeId: number;
+}
+
+export interface DeclareBankruptcyParams {
+  player: TransactionSigner;
+  gameAddress: Address;
+  propertiesOwned: number[];
 }
