@@ -50,7 +50,7 @@ export default async function (fastify: FastifyInstance) {
     async (_request, reply) => {
       try {
         const rpcStats = rateLimitedRPC.getRpcPoolStats()
-        const rateLimiterStats = rateLimitedRPC.getRateLimiterStats()
+        const rateLimiterStats = await rateLimitedRPC.getRateLimiterStats()
 
         return {
           rpcPool: rpcStats,

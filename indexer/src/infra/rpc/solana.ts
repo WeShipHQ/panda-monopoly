@@ -112,9 +112,16 @@ export const rateLimitedRPC = {
   // Stats helpers
   getRpcPoolStats: () => rpcPool.getStats(),
   resetAllCircuitBreakers: () => rpcPool.resetAllCircuitBreakers(),
-  getRateLimiterStats: () => ({
-    queued: globalRateLimiter.queued(),
-    running: globalRateLimiter.running(),
-    reservoir: (globalRateLimiter as any).reservoir
-  })
+  getRateLimiterStats: async () => {
+    const [queued, running] = await Promise.all([
+      Promise.resolve(globalRateLimiter.queued()),
+      Promise.resolve(globalRateLimiter.running())
+    ])
+
+    return {
+      queued: typeof queued === 'number' ? queued : 0,
+      running: typeof running === 'number' ? running : 0,
+      reservoir: (globalRateLimiter as any).reservoir || 0
+    }
+  }
 }
