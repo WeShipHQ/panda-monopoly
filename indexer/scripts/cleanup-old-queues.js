@@ -5,12 +5,9 @@
  * Run with: node scripts/cleanup-old-queues.js
  */
 
-const IORedis = require('ioredis')
+import IORedis from 'ioredis'
 
-const redis = new IORedis(
-  process.env.REDIS_URL ||
-    'redis://default:OEI0ChHz56kWMd7wmAeY7WVBZ19sLmUW@redis-13183.c270.us-east-1-3.ec2.redns.redis-cloud.com:13183'
-)
+const redis = new IORedis(process.env.REDIS_URL)
 
 async function cleanupOldQueues() {
   try {
