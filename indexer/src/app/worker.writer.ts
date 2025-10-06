@@ -1,5 +1,5 @@
 // Bull worker: upsert into DB
-import { Worker, writerDlq, writerEvents, connection } from '#infra/queue/bull'
+import { Worker, writerDlq, writerEvents, workerBaseOpts } from '#infra/queue/bull'
 import type { MonopolyRecord, WriterJob } from '#infra/queue/types'
 import type { DatabasePort } from '#infra/db/db.port'
 import { logger } from '#utils/logger'
@@ -11,30 +11,58 @@ export function startWriterWorker(db: DatabasePort) {
     async (job) => {
       const { record } = job.data
 
-      const handle = async (r: MonopolyRecord) => {
-        switch (r.kind) {
+      const handle = async (record: MonopolyRecord) => {
+        switch (record.kind) {
           case 'game':
-            return db.upsertGame(r.data)
+            return db.upsertGame(record.data)
           case 'player':
-            return db.upsertPlayer(r.data)
+            return db.upsertPlayer(record.data)
           case 'property':
-            return db.upsertProperty(r.data)
+            return db.upsertProperty(record.data)
           case 'trade':
-            return db.upsertTrade(r.data)
+            return db.upsertTrade(record.data)
         }
       }
 
+      logger.info(`Processing ${record.kind} record in writer worker`)
+      const stopTimer = metrics.startTimer('writer:duration')
       try {
-        await handle(record)
+        logger.info(
+          {
+            kind: record.kind,
+            pubkey: (record.data as any)?.pubkey,
+            hasValidData: !!record.data
+          },
+          `About to call handle for record`
+        )
+        const result = await handle(record)
         await metrics.incr('writer:processed')
+        logger.info(
+          {
+            kind: record.kind,
+            pubkey: (record.data as any)?.pubkey
+          },
+          `✅ Successfully processed record in database`
+        )
       } catch (err: any) {
-        await metrics.incr('writer:failed')
-        // Push to DLQ with the same jobId for traceability
+        logger.error(
+          {
+            kind: record.kind,
+            error: err.message,
+            stack: err.stack,
+            pubkey: (record.data as any)?.pubkey
+          },
+          `❌ Failed to process record`
+        )
+        metrics.incr('writer:failed')
+        // đẩy vào DLQ, kèm lý do và đếm số lần replay
         await writerDlq.add('dlq', job.data, { jobId: job.id ?? undefined })
-        throw err
+        throw err // để BullMQ mark failed
+      } finally {
+        stopTimer() // histogram
       }
     },
-    { connection }
+    workerBaseOpts
   )
 
   writerEvents.on('completed', async () => metrics.incr('writer:completed'))

@@ -1,6 +1,6 @@
 // WebSocket logsSubscribe -> enqueue realtime
 import { makeConnection, programId } from '#infra/rpc/solana'
-import { realtimeQueue, opts } from '#infra/queue/bull'
+import { realtimeQueue } from '#infra/queue/bull'
 import { logger } from '#utils/logger'
 
 export async function startRealtimeListener() {
@@ -9,11 +9,16 @@ export async function startRealtimeListener() {
     programId,
     async (logs) => {
       const sig = logs.signature
-      // Idempotency: set jobId = signature to avoid duplicates
-      await realtimeQueue.add('rt', { signature: sig }, { ...opts, jobId: sig })
+      await realtimeQueue.add('rt', { signature: sig }, { jobId: sig }) // idempotent
     },
     'confirmed'
   )
+
   logger.info({ subId }, 'Realtime listener subscribed')
-  return () => conn.removeOnLogsListener(subId)
+
+  return async () => {
+    try {
+      await conn.removeOnLogsListener(subId)
+    } catch {}
+  }
 }
