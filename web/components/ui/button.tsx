@@ -5,6 +5,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 import { Spinner } from "./spinner";
+import { playSound, SOUND_CONFIG } from "@/lib/soundUtil";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center cursor-pointer whitespace-nowrap rounded-base text-sm font-base ring-offset-white transition-all gap-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
@@ -44,6 +45,8 @@ function Button({
   disabled,
   asChild = false,
   loading = false,
+  onClick,
+  onMouseEnter,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
@@ -52,11 +55,29 @@ function Button({
   }) {
   const Comp = asChild ? Slot : "button";
 
+  // Handle click with sound
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!disabled && !loading) {
+      playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+      onClick?.(e);
+    }
+  };
+
+  // Handle hover with sound
+  const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!disabled && !loading) {
+      playSound("button-hover", SOUND_CONFIG.volumes.buttonHover);
+      onMouseEnter?.(e);
+    }
+  };
+
   return (
     <Comp
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className, loading }))}
       disabled={disabled || loading}
+      onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
       {...props}
     >
       {loading && (

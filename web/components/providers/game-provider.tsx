@@ -143,6 +143,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [latestCardDraw, setLatestCardDraw] = useState<GameEvent | null>(null);
 
   const [demoDices, setDemoDices] = useState<number[] | null>(null);
+  
+  // Track previous player count to detect new player joins
+  const prevPlayerCountRef = React.useRef<number | null>(null);
 
   const { rpc, erRpc } = useRpcContext();
 
@@ -177,6 +180,30 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   } = useGameState(gameAddress, {
     onCardDrawEvent: addCardDrawEvent,
   });
+
+  // Play notification sound when new player joins
+  useEffect(() => {
+    if (players && players.length > 0) {
+      const currentPlayerCount = players.length;
+      
+      // Only play sound if this is not the initial load and player count increased
+      if (prevPlayerCountRef.current !== null && currentPlayerCount > prevPlayerCountRef.current) {
+        playSound("notification", SOUND_CONFIG.volumes.notification);
+        
+        // Add game log for new player join
+        const newPlayer = players[players.length - 1];
+        if (newPlayer) {
+          addGameLog({
+            type: "join",
+            playerId: newPlayer.wallet,
+            message: `${formatAddress(newPlayer.wallet)} joined the game`,
+          });
+        }
+      }
+      
+      prevPlayerCountRef.current = currentPlayerCount;
+    }
+  }, [players, addGameLog]);
 
   const currentPlayerAddress = useMemo(() => {
     return gameState?.players?.[gameState?.currentTurn] || null;

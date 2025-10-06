@@ -9,6 +9,7 @@ import {
 } from "@/lib/board-utils";
 import { useSpaceOwner } from "@/hooks/useSpaceOwner";
 import { BaseSpaceProps } from "@/types/space-types";
+import { playSound, SOUND_CONFIG } from "@/lib/soundUtil";
 
 interface BaseSpaceComponentProps extends BaseSpaceProps {
   children: React.ReactNode;
@@ -26,6 +27,7 @@ export const BaseSpace: React.FC<BaseSpaceComponentProps> = ({
   showColorBar = false,
   className = "",
   contentContainerclassName = "",
+  onClick,
   ...rest
 }) => {
   const { ownerMeta } = useSpaceOwner(onChainProperty);
@@ -36,8 +38,13 @@ export const BaseSpace: React.FC<BaseSpaceComponentProps> = ({
   const ownerIndicatorClasses = getOwnerIndicatorClasses(side);
   const textContainerClasses = getTextContainerClasses(side);
 
+  // Handle click with sound
+  const handleClick = () => {
+    playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+    onClick?.(position);
+  };
+
   return (
-    // @ts-expect-error
     <div
       className={cn(
         "bg-board-space relative cursor-pointer",
@@ -45,6 +52,7 @@ export const BaseSpace: React.FC<BaseSpaceComponentProps> = ({
         className
       )}
       {...rest}
+      onClick={handleClick}
     >
       {/* Color bar for properties */}
       {showColorBar && colorBarColor && (

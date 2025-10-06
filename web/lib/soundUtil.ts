@@ -32,6 +32,7 @@ export const SOUND_CONFIG = {
     win: 1.0,
     lose: 0.8,
     specialEvents: 0.4,
+    notification: 0.6,
   },
 } as const;
 
@@ -55,6 +56,7 @@ const soundMap = {
   jail: "/sounds/jail.mp3",
   win: "/sounds/win.mp3",
   lose: "/sounds/lose.mp3",
+  notification: "/sounds/notification.mp3",
 
   // Fun sounds
   "anime-wow": "/sounds/anime-wow.mp3",

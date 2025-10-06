@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getGlobalVolume, setGlobalVolume } from "@/lib/soundUtil";
+import { getGlobalVolume, setGlobalVolume, playSound, SOUND_CONFIG } from "@/lib/soundUtil";
 
 export const SoundControl: React.FC = () => {
   const [volume, setVolume] = useState(0.7);
@@ -24,7 +24,10 @@ export const SoundControl: React.FC = () => {
     if (isMuted) {
       setGlobalVolume(volume);
       setIsMuted(false);
+      // Play a sound after unmuting to confirm
+      setTimeout(() => playSound("button-click", SOUND_CONFIG.volumes.buttonClick), 50);
     } else {
+      playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
       setGlobalVolume(0);
       setIsMuted(true);
     }

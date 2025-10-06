@@ -12,6 +12,7 @@ import { TradeDialog } from "@/components/trade-dialog";
 import { TradeDetailsDialog } from "@/components/trade-details-dialog";
 import { TradeStatus } from "@/lib/sdk/generated";
 import type { TradeData } from "@/types/schema";
+import { playSound, SOUND_CONFIG } from "@/lib/soundUtil";
 
 const getTradeStatusText = (status: TradeStatus): string => {
   switch (status) {
@@ -104,7 +105,10 @@ export function TradeItems() {
                 <Card 
                   key={trade.id} 
                   className="relative cursor-pointer border-2 border-black rounded-none bg-[#FFF5E6] shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
-                  onClick={() => handleViewTrade(trade)}
+                  onClick={() => {
+                    playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+                    handleViewTrade(trade);
+                  }}
                 >
                   <CardContent className="p-2">
                     <div className="flex items-center justify-between mb-1.5">

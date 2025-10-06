@@ -10,6 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import { useGameContext } from "@/components/providers/game-provider";
 import { boardData, colorMap } from "@/configs/board-data";
 import type { PlayerAccount, TradeOffer, PropertyAccount } from "@/types/schema";
+import { playSound, SOUND_CONFIG } from "@/lib/soundUtil";
 
 interface TradeConfigurationStepProps {
   selectedPlayer: PlayerAccount;
@@ -260,10 +261,13 @@ export function TradeConfigurationStep({
                 return (
                   <div 
                     key={property.position} 
-                    onClick={() => onPropertyToggle(
-                      property.position, 
-                      !offer.properties.includes(property.position)
-                    )}
+                    onClick={() => {
+                      playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+                      onPropertyToggle(
+                        property.position, 
+                        !offer.properties.includes(property.position)
+                      );
+                    }}
                     className={`flex items-center justify-between p-2 rounded-none cursor-pointer text-xs transition-all ${
                       isSelected 
                         ? 'bg-[#A98CFF] border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-bold' 

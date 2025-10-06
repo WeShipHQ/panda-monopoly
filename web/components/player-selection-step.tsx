@@ -4,6 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { PlayerAccount } from "@/types/schema";
+import { playSound, SOUND_CONFIG } from "@/lib/soundUtil";
 
 interface PlayerSelectionStepProps {
   players: PlayerAccount[];
@@ -59,7 +60,12 @@ export function PlayerSelectionStep({
             <div
               key={player.wallet}
               className={`flex items-center py-2 px-3 border-2 border-black rounded-none cursor-pointer transition-all hover:translate-x-[2px] hover:translate-y-[2px] ${colors.bg} text-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]`}
-              onClick={() => !player.isBankrupt && onPlayerSelect(player)}
+              onClick={() => {
+                if (!player.isBankrupt) {
+                  playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+                  onPlayerSelect(player);
+                }
+              }}
             >
               <Avatar className="h-6 w-6 mr-2 border-2 border-black rounded-none">
                 <AvatarImage walletAddress={player.wallet} />
