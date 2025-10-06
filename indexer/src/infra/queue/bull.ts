@@ -1,19 +1,52 @@
 import { env } from '#config'
-import { Queue, Worker, JobsOptions, QueueEvents } from 'bullmq'
+import { bullJobDefaults, bullLimiter } from '#config/env'
+import { Queue, Worker, QueueEvents, JobsOptions, QueueOptions, WorkerOptions } from 'bullmq'
 import IORedis from 'ioredis'
 
 export const connection = new IORedis(env.redis.url, {
-  maxRetriesPerRequest: null
+  maxRetriesPerRequest: null,
+  enableReadyCheck: false,
+  lazyConnect: false
 })
 
-export const opts: JobsOptions = { attempts: 5, backoff: { type: 'exponential', delay: 1000 } }
+const baseQueueOpts: Omit<QueueOptions, 'connection'> = {
+  prefix: env.bullmq.prefix
+}
 
-export const realtimeQueue = new Queue('realtime', { connection })
-export const backfillQueue = new Queue('backfill', { connection })
-export const writerQueue = new Queue('writer', { connection })
-export const writerDlq = new Queue('writer-dlq', { connection })
+const queueOpts = {
+  connection,
+  prefix: env.bullmq.prefix,
+  defaultJobOptions: bullJobDefaults,
+  ...(bullLimiter ? { limiter: bullLimiter } : {})
+}
 
-export const writerEvents = new QueueEvents('writer', { connection })
-export const writerDlqEvents = new QueueEvents('writer-dlq', { connection })
+export function createQueue(name: string) {
+  return new Queue(name, { connection, ...baseQueueOpts })
+}
+export function createQueueEvents(name: string) {
+  return new QueueEvents(name, { connection, ...baseQueueOpts })
+}
+const baseWorkerOpts = {
+  connection,
+  prefix: env.bullmq.prefix
+}
+
+export function createWorker<Name extends string, Data = any>(
+  name: Name,
+  processor: (job: any) => Promise<any> | any,
+  opts: Partial<WorkerOptions> = {}
+) {
+  return new Worker<Data>(name, processor, { ...baseWorkerOpts, ...opts })
+}
+
+export const realtimeQueue = new Queue('realtime', queueOpts)
+export const backfillQueue = new Queue('backfill', queueOpts)
+export const writerQueue = new Queue('writer', queueOpts)
+export const writerDlq = new Queue('writer-dlq', queueOpts)
+
+export const writerEvents = new QueueEvents('writer', { connection, prefix: env.bullmq.prefix })
+export const writerDlqEvents = new QueueEvents('writer-dlq', { connection, prefix: env.bullmq.prefix })
+
+export const workerBaseOpts = baseWorkerOpts
 
 export { Worker }
