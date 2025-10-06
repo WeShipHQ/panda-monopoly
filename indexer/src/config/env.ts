@@ -13,6 +13,13 @@ export enum LogLevel {
   error = 'error'
 }
 
+enum QueueProfile {
+  tiny = 'tiny',
+  small = 'small',
+  standard = 'standard',
+  large = 'large'
+}
+
 const schema = Type.Object({
   // Database
   DATABASE_URL: Type.String(),
@@ -31,6 +38,15 @@ const schema = Type.Object({
   REALTIME_ENABLED: Type.Boolean({ default: true }),
   BACKFILL_START_SLOT: Type.Number({ default: 0 }),
 
+  // DLQ replayer
+  DLQ_MAX_REPLAYS: Type.Number({ default: 3 }),
+  DLQ_REPLAY_DELAY_MS: Type.Number({ default: 30000 }),
+
+  // Backfill throttling (optional)
+  BACKFILL_BATCH_LIMIT: Type.Number({ default: 150 }),
+  BACKFILL_QUEUE_THRESHOLD: Type.Number({ default: 20000 }),
+  BACKFILL_BATCH_SLEEP_MS: Type.Number({ default: 400 }),
+
   // Solana RPC
   SOLANA_PROGRAM_ID: Type.String(),
   SOLANA_RPC: Type.String(),
@@ -39,50 +55,163 @@ const schema = Type.Object({
   SOLANA_ER_WSL: Type.Optional(Type.String()),
   SOLANA_COMMITMENT: Type.String({ default: 'confirmed' }),
   SOLANA_BACKUP_RPC_URLS: Type.Optional(Type.String()),
-  SOLANA_RATE_LIMIT: Type.Optional(Type.Number({ default: 100 }))
+  SOLANA_RATE_LIMIT: Type.Optional(Type.Number({ default: 100 })),
+
+  // BullMQ (Redis-based job queue)
+  // Memory profiles: tiny/small/standard/large
+  QUEUE_MEMORY_PROFILE: Type.Enum(QueueProfile, { default: QueueProfile.tiny }),
+  BULLMQ_PREFIX: Type.String({ default: 'monopoly' }),
+  BULLMQ_LIMITER_MAX: Type.Optional(Type.Number()),
+  BULLMQ_LIMITER_DURATION: Type.Optional(Type.Number()),
+  BULLMQ_ATTEMPTS: Type.Optional(Type.Number()),
+  BULLMQ_BACKOFF_MS: Type.Optional(Type.Number()),
+  BULLMQ_REMOVE_ON_COMPLETE: Type.Optional(Type.Number()),
+  BULLMQ_REMOVE_ON_FAIL: Type.Optional(Type.Number()),
+  PARSER_CONCURRENCY: Type.Optional(Type.Number()),
+  BACKFILL_LIMIT: Type.Optional(Type.Number())
 })
 
-const env = envSchema<Static<typeof schema>>({
+const raw = envSchema<Static<typeof schema>>({
   dotenv: true,
   schema
 })
 
+const preset = tuneByProfile(raw.QUEUE_MEMORY_PROFILE)
+
+function tuneByProfile(profile: QueueProfile) {
+  switch (profile) {
+    case QueueProfile.tiny:
+      return {
+        attempts: 3,
+        backoffMs: 1000,
+        removeOnComplete: 200,
+        removeOnFail: 50,
+        concurrency: 1,
+        backfillLimit: 300,
+        backfillSleep: 300,
+        limiterMax: undefined,
+        limiterDuration: undefined
+      }
+    case QueueProfile.small:
+      return {
+        attempts: 3,
+        backoffMs: 800,
+        removeOnComplete: 1000,
+        removeOnFail: 100,
+        concurrency: 2,
+        backfillLimit: 800,
+        backfillSleep: 200,
+        limiterMax: 30,
+        limiterDuration: 1000
+      }
+    case QueueProfile.standard:
+      return {
+        attempts: 5,
+        backoffMs: 500,
+        removeOnComplete: 5000,
+        removeOnFail: 500,
+        concurrency: 4,
+        backfillLimit: 1500,
+        backfillSleep: 100,
+        limiterMax: 60,
+        limiterDuration: 1000
+      }
+    case QueueProfile.large:
+      return {
+        attempts: 5,
+        backoffMs: 400,
+        removeOnComplete: 20000,
+        removeOnFail: 1000,
+        concurrency: 8,
+        backfillLimit: 2000,
+        backfillSleep: 60,
+        limiterMax: 120,
+        limiterDuration: 1000
+      }
+  }
+}
+
+// Apply presets with override from environment variables
+const tune = {
+  attempts: raw.BULLMQ_ATTEMPTS ?? preset.attempts,
+  backoffMs: raw.BULLMQ_BACKOFF_MS ?? preset.backoffMs,
+  removeOnComplete: raw.BULLMQ_REMOVE_ON_COMPLETE ?? preset.removeOnComplete,
+  removeOnFail: raw.BULLMQ_REMOVE_ON_FAIL ?? preset.removeOnFail,
+  concurrency: raw.PARSER_CONCURRENCY ?? preset.concurrency,
+  backfillLimit: raw.BACKFILL_LIMIT ?? preset.backfillLimit,
+  backfillSleep: raw.BACKFILL_BATCH_SLEEP_MS ?? preset.backfillSleep,
+  limiterMax: raw.BULLMQ_LIMITER_MAX ?? preset.limiterMax,
+  limiterDuration: raw.BULLMQ_LIMITER_DURATION ?? preset.limiterDuration
+}
+
+export const bullJobDefaults = {
+  attempts: tune.attempts,
+  backoff: { type: 'exponential' as const, delay: tune.backoffMs },
+  removeOnComplete: tune.removeOnComplete,
+  removeOnFail: tune.removeOnFail
+}
+
+// Limiter cho Queue (nếu có)
+export const bullLimiter =
+  tune.limiterMax && tune.limiterDuration ? { max: tune.limiterMax, duration: tune.limiterDuration } : undefined
+
 export default {
-  nodeEnv: env.NODE_ENV,
-  isDevelopment: env.NODE_ENV === NodeEnv.development,
+  nodeEnv: raw.NODE_ENV,
+  isDevelopment: raw.NODE_ENV === NodeEnv.development,
 
   log: {
-    level: env.LOG_LEVEL
+    level: raw.LOG_LEVEL
   },
 
   server: {
-    host: env.HOST,
-    port: env.PORT
+    host: raw.HOST,
+    port: raw.PORT
   },
 
   db: {
-    url: env.DATABASE_URL
+    url: raw.DATABASE_URL
   },
 
   redis: {
-    url: env.REDIS_URL
+    url: raw.REDIS_URL
   },
 
   indexer: {
-    backfillEnabled: env.BACKFILL_ENABLED,
-    realtimeEnabled: env.REALTIME_ENABLED,
-    backfillStartSlot: env.BACKFILL_START_SLOT
+    backfillEnabled: raw.BACKFILL_ENABLED,
+    realtimeEnabled: raw.REALTIME_ENABLED,
+    backfillStartSlot: raw.BACKFILL_START_SLOT
+  },
+
+  dlq: {
+    maxReplays: raw.DLQ_MAX_REPLAYS,
+    replayDelayMs: raw.DLQ_REPLAY_DELAY_MS
+  },
+
+  backfill: {
+    batchLimit: raw.BACKFILL_BATCH_LIMIT,
+    queueThreshold: raw.BACKFILL_QUEUE_THRESHOLD,
+    batchSleepMs: raw.BACKFILL_BATCH_SLEEP_MS
   },
 
   solana: {
-    rpcUrl: env.SOLANA_RPC,
-    wsUrl: env.SOLANA_WS || env.SOLANA_RPC.replace('https://', 'wss://'),
-    erRpcUrl: env.SOLANA_ER_RPCL,
-    erWsUrl: env.SOLANA_ER_WSL || (env.SOLANA_ER_RPCL ? env.SOLANA_ER_RPCL.replace('https://', 'wss://') : undefined),
-    commitment: env.SOLANA_COMMITMENT,
-    programId: env.SOLANA_PROGRAM_ID,
-    backupRpcUrls: env.SOLANA_BACKUP_RPC_URLS ? env.SOLANA_BACKUP_RPC_URLS.split(',') : [],
-    rateLimit: env.SOLANA_RATE_LIMIT || 100,
+    rpcUrl: raw.SOLANA_RPC,
+    wsUrl: raw.SOLANA_WS || raw.SOLANA_RPC.replace('https://', 'wss://'),
+    erRpcUrl: raw.SOLANA_ER_RPCL,
+    erWsUrl: raw.SOLANA_ER_WSL || (raw.SOLANA_ER_RPCL ? raw.SOLANA_ER_RPCL.replace('https://', 'wss://') : undefined),
+    commitment: raw.SOLANA_COMMITMENT,
+    programId: raw.SOLANA_PROGRAM_ID,
+    backupRpcUrls: raw.SOLANA_BACKUP_RPC_URLS ? raw.SOLANA_BACKUP_RPC_URLS.split(',') : [],
+    rateLimit: raw.SOLANA_RATE_LIMIT || 100,
     batchSize: 100
-  }
+  },
+
+  // BullMQ configuration
+  bullmq: {
+    prefix: raw.BULLMQ_PREFIX,
+    jobDefaults: bullJobDefaults,
+    limiter: bullLimiter
+  },
+
+  // Tuning configuration
+  tune: tune
 }

@@ -1,36 +1,46 @@
-// định nghĩa interface chung mà mọi adapter (pg/drizzle/…) phải implement.
-import { NewGame, NewPlayer, NewProperty, NewTrade } from './schema'
+// Database port interface with type-safe methods
+import { NewGame, NewPlayer, NewProperty, NewTrade, Game, Player, Property, Trade } from './schema'
 
-export interface DatabasePort {
-  init(): Promise<void>
+// Filter and pagination types
+export interface QueryFilters {
+  [key: string]: unknown
+}
 
-  // Monopoly core upserts (idempotent by pubkey)
-  upsertGame(row: NewGame): Promise<void>
-  upsertPlayer(row: NewPlayer): Promise<void>
-  upsertProperty(row: NewProperty): Promise<void>
-  upsertTrade(row: NewTrade): Promise<void>
+export interface PaginationOptions {
+  page?: number
+  limit?: number
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
+}
 
-  // Checkpoints (used by checkpoint.ts)
-  getCheckpoint(id: string): Promise<{ last_slot: number | null; last_signature: string | null } | null>
-  setCheckpoint(id: string, data: { last_slot?: number; last_signature?: string }): Promise<void>
-
-  // Convenience reads (optional)
-  getGame(pubkey: string): Promise<any | null>
-  getPlayer(pubkey: string): Promise<any | null>
-  getProperty(pubkey: string): Promise<any | null>
-  getTrade(pubkey: string): Promise<any | null>
+export interface PaginatedResult<T> {
+  data: T[]
+  total: number
+  page?: number
+  limit?: number
 }
 
 export interface DatabasePort {
   init(): Promise<void>
 
+  // Raw query execution (for health checks only)
+  query(sql: string, params?: unknown[]): Promise<unknown[]>
+
+  // Core upserts (idempotent by pubkey)
   upsertGame(row: NewGame): Promise<void>
   upsertPlayer(row: NewPlayer): Promise<void>
   upsertProperty(row: NewProperty): Promise<void>
   upsertTrade(row: NewTrade): Promise<void>
 
-  getGame(pubkey: string): Promise<any | null>
-  getPlayer(pubkey: string): Promise<any | null>
-  getProperty(pubkey: string): Promise<any | null>
-  getTrade(pubkey: string): Promise<any | null>
+  // Single entity reads
+  getGame(pubkey: string): Promise<Game | null>
+  getPlayer(pubkey: string): Promise<Player | null>
+  getProperty(pubkey: string): Promise<Property | null>
+  getTrade(pubkey: string): Promise<Trade | null>
+
+  // Paginated queries for API endpoints
+  getGames(filters?: QueryFilters, pagination?: PaginationOptions): Promise<PaginatedResult<Game>>
+  getPlayers(filters?: QueryFilters, pagination?: PaginationOptions): Promise<PaginatedResult<Player>>
+  getProperties(filters?: QueryFilters, pagination?: PaginationOptions): Promise<PaginatedResult<Property>>
+  getTrades(filters?: QueryFilters, pagination?: PaginationOptions): Promise<PaginatedResult<Trade>>
 }

@@ -1,17 +1,20 @@
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
-import { eq } from 'drizzle-orm'
-import type { DatabasePort } from './db.port'
+import { eq, count, and, or, gte, desc, asc } from 'drizzle-orm'
+import type { DatabasePort, QueryFilters, PaginationOptions, PaginatedResult } from './db.port'
 import {
   games,
   players,
   properties,
   trades,
-  checkpoints,
   type NewGame,
   type NewPlayer,
   type NewProperty,
-  type NewTrade
+  type NewTrade,
+  type Game,
+  type Player,
+  type Property,
+  type Trade
 } from './schema'
 import { env } from '#config'
 
@@ -29,172 +32,356 @@ export class DrizzleAdapter implements DatabasePort {
     await this.pool.query('select 1')
   }
 
+  async query(sql: string, params?: unknown[]): Promise<unknown[]> {
+    const result = await this.pool.query(sql, params)
+    return result.rows
+  }
+
   async upsertGame(row: NewGame) {
-    await this.db
-      .insert(games)
-      .values(row)
-      .onConflictDoUpdate({
-        target: games.pubkey,
-        set: {
-          gameId: row.gameId,
-          configId: row.configId,
-          authority: row.authority,
-          bump: row.bump,
-          maxPlayers: row.maxPlayers,
-          currentPlayers: row.currentPlayers,
-          currentTurn: row.currentTurn,
-          players: row.players,
-          createdAt: row.createdAt,
-          gameStatus: row.gameStatus,
-          bankBalance: row.bankBalance,
-          freeParkingPool: row.freeParkingPool,
-          housesRemaining: row.housesRemaining,
-          hotelsRemaining: row.hotelsRemaining,
-          timeLimit: row.timeLimit,
-          turnStartedAt: row.turnStartedAt,
-          winner: row.winner,
-          accountUpdatedAt: row.accountUpdatedAt ?? new Date(),
-          createdSlot: row.createdSlot,
-          updatedSlot: row.updatedSlot,
-          lastSignature: row.lastSignature
-        }
-      })
+    // Convert string dates to Date objects if needed
+    const processedGameRow = {
+      ...row,
+      createdAt: typeof row.createdAt === 'string' ? new Date(row.createdAt) : row.createdAt,
+      accountCreatedAt:
+        typeof row.accountCreatedAt === 'string' ? new Date(row.accountCreatedAt) : row.accountCreatedAt,
+      accountUpdatedAt: typeof row.accountUpdatedAt === 'string' ? new Date(row.accountUpdatedAt) : row.accountUpdatedAt
+    }
+
+    try {
+      const result = await this.db
+        .insert(games)
+        .values(processedGameRow)
+        .onConflictDoUpdate({
+          target: games.pubkey,
+          set: {
+            gameId: processedGameRow.gameId,
+            configId: processedGameRow.configId,
+            authority: processedGameRow.authority,
+            bump: processedGameRow.bump,
+            maxPlayers: processedGameRow.maxPlayers,
+            currentPlayers: processedGameRow.currentPlayers,
+            currentTurn: processedGameRow.currentTurn,
+            players: processedGameRow.players,
+            createdAt: processedGameRow.createdAt,
+            gameStatus: processedGameRow.gameStatus,
+            bankBalance: processedGameRow.bankBalance,
+            freeParkingPool: processedGameRow.freeParkingPool,
+            housesRemaining: processedGameRow.housesRemaining,
+            hotelsRemaining: processedGameRow.hotelsRemaining,
+            timeLimit: processedGameRow.timeLimit,
+            turnStartedAt: processedGameRow.turnStartedAt,
+            winner: processedGameRow.winner,
+            accountUpdatedAt: processedGameRow.accountUpdatedAt ?? new Date(),
+            createdSlot: processedGameRow.createdSlot,
+            updatedSlot: processedGameRow.updatedSlot,
+            lastSignature: processedGameRow.lastSignature
+          }
+        })
+
+      console.log('Game upserted:', row.pubkey.slice(0, 8) + '...')
+    } catch (error) {
+      console.error('[DrizzleAdapter] ❌ Failed to upsert game:', row.pubkey)
+      console.error('[DrizzleAdapter] Error details:', error)
+      throw error
+    }
   }
 
   async upsertPlayer(row: NewPlayer) {
-    await this.db
-      .insert(players)
-      .values(row)
-      .onConflictDoUpdate({
-        target: players.pubkey,
-        set: {
-          wallet: row.wallet,
-          game: row.game,
-          cashBalance: row.cashBalance,
-          netWorth: row.netWorth,
-          position: row.position,
-          inJail: row.inJail,
-          jailTurns: row.jailTurns,
-          doublesCount: row.doublesCount,
-          isBankrupt: row.isBankrupt,
-          propertiesOwned: row.propertiesOwned,
-          getOutOfJailCards: row.getOutOfJailCards,
-          hasRolledDice: row.hasRolledDice,
-          lastDiceRoll: row.lastDiceRoll,
-          lastRentCollected: row.lastRentCollected,
-          festivalBoostTurns: row.festivalBoostTurns,
-          cardDrawnAt: row.cardDrawnAt,
-          needsPropertyAction: row.needsPropertyAction,
-          pendingPropertyPosition: row.pendingPropertyPosition,
-          needsChanceCard: row.needsChanceCard,
-          needsCommunityChestCard: row.needsCommunityChestCard,
-          needsBankruptcyCheck: row.needsBankruptcyCheck,
-          needsSpecialSpaceAction: row.needsSpecialSpaceAction,
-          pendingSpecialSpacePosition: row.pendingSpecialSpacePosition,
-          accountUpdatedAt: row.accountUpdatedAt ?? new Date(),
-          createdSlot: row.createdSlot,
-          updatedSlot: row.updatedSlot,
-          lastSignature: row.lastSignature
-        }
-      })
+    // Convert string dates to Date objects if needed
+    const processedPlayerRow = {
+      ...row,
+      accountCreatedAt:
+        typeof row.accountCreatedAt === 'string' ? new Date(row.accountCreatedAt) : row.accountCreatedAt,
+      accountUpdatedAt: typeof row.accountUpdatedAt === 'string' ? new Date(row.accountUpdatedAt) : row.accountUpdatedAt
+    }
+
+    try {
+      const result = await this.db
+        .insert(players)
+        .values(processedPlayerRow)
+        .onConflictDoUpdate({
+          target: players.pubkey,
+          set: {
+            wallet: processedPlayerRow.wallet,
+            game: processedPlayerRow.game,
+            cashBalance: processedPlayerRow.cashBalance,
+            netWorth: processedPlayerRow.netWorth,
+            position: processedPlayerRow.position,
+            inJail: processedPlayerRow.inJail,
+            jailTurns: processedPlayerRow.jailTurns,
+            doublesCount: processedPlayerRow.doublesCount,
+            isBankrupt: processedPlayerRow.isBankrupt,
+            propertiesOwned: processedPlayerRow.propertiesOwned,
+            getOutOfJailCards: processedPlayerRow.getOutOfJailCards,
+            hasRolledDice: processedPlayerRow.hasRolledDice,
+            lastDiceRoll: processedPlayerRow.lastDiceRoll,
+            lastRentCollected: processedPlayerRow.lastRentCollected,
+            festivalBoostTurns: processedPlayerRow.festivalBoostTurns,
+            cardDrawnAt: processedPlayerRow.cardDrawnAt,
+            needsPropertyAction: processedPlayerRow.needsPropertyAction,
+            pendingPropertyPosition: processedPlayerRow.pendingPropertyPosition,
+            needsChanceCard: processedPlayerRow.needsChanceCard,
+            needsCommunityChestCard: processedPlayerRow.needsCommunityChestCard,
+            needsBankruptcyCheck: processedPlayerRow.needsBankruptcyCheck,
+            needsSpecialSpaceAction: processedPlayerRow.needsSpecialSpaceAction,
+            pendingSpecialSpacePosition: processedPlayerRow.pendingSpecialSpacePosition,
+            accountUpdatedAt: processedPlayerRow.accountUpdatedAt ?? new Date(),
+            createdSlot: processedPlayerRow.createdSlot,
+            updatedSlot: processedPlayerRow.updatedSlot,
+            lastSignature: processedPlayerRow.lastSignature
+          }
+        })
+
+      console.log('Player upserted:', row.wallet.slice(0, 8) + '...')
+    } catch (error) {
+      console.error('[DrizzleAdapter] ❌ Failed to upsert player:', row.pubkey)
+      console.error('[DrizzleAdapter] Error details:', error)
+      throw error
+    }
   }
 
   async upsertProperty(row: NewProperty) {
-    await this.db
-      .insert(properties)
-      .values(row)
-      .onConflictDoUpdate({
-        target: properties.pubkey,
-        set: {
-          position: row.position,
-          owner: row.owner,
-          price: row.price,
-          colorGroup: row.colorGroup,
-          propertyType: row.propertyType,
-          houses: row.houses,
-          hasHotel: row.hasHotel,
-          isMortgaged: row.isMortgaged,
-          rentBase: row.rentBase,
-          rentWithColorGroup: row.rentWithColorGroup,
-          rentWithHouses: row.rentWithHouses,
-          rentWithHotel: row.rentWithHotel,
-          houseCost: row.houseCost,
-          mortgageValue: row.mortgageValue,
-          lastRentPaid: row.lastRentPaid,
-          accountUpdatedAt: row.accountUpdatedAt ?? new Date(),
-          createdSlot: row.createdSlot,
-          updatedSlot: row.updatedSlot,
-          lastSignature: row.lastSignature
-        }
-      })
+    // Convert string dates to Date objects if needed
+    const processedRow = {
+      ...row,
+      accountCreatedAt:
+        typeof row.accountCreatedAt === 'string' ? new Date(row.accountCreatedAt) : row.accountCreatedAt,
+      accountUpdatedAt: typeof row.accountUpdatedAt === 'string' ? new Date(row.accountUpdatedAt) : row.accountUpdatedAt
+    }
+
+    try {
+      const result = await this.db
+        .insert(properties)
+        .values(processedRow)
+        .onConflictDoUpdate({
+          target: properties.pubkey,
+          set: {
+            position: processedRow.position,
+            owner: processedRow.owner,
+            price: processedRow.price,
+            colorGroup: processedRow.colorGroup,
+            propertyType: processedRow.propertyType,
+            houses: processedRow.houses,
+            hasHotel: processedRow.hasHotel,
+            isMortgaged: processedRow.isMortgaged,
+            rentBase: processedRow.rentBase,
+            rentWithColorGroup: processedRow.rentWithColorGroup,
+            rentWithHouses: processedRow.rentWithHouses,
+            rentWithHotel: processedRow.rentWithHotel,
+            houseCost: processedRow.houseCost,
+            mortgageValue: processedRow.mortgageValue,
+            lastRentPaid: processedRow.lastRentPaid,
+            accountUpdatedAt: processedRow.accountUpdatedAt ?? new Date(),
+            createdSlot: processedRow.createdSlot,
+            updatedSlot: processedRow.updatedSlot,
+            lastSignature: processedRow.lastSignature
+          }
+        })
+
+      console.log('Property upserted: Position', row.position, '→', row.pubkey.slice(0, 8) + '...')
+    } catch (error) {
+      console.error('[DrizzleAdapter] ❌ Failed to upsert property:', row.pubkey)
+      console.error('[DrizzleAdapter] Error details:', error)
+      throw error
+    }
   }
 
   async upsertTrade(row: NewTrade) {
-    await this.db
-      .insert(trades)
-      .values(row)
-      .onConflictDoUpdate({
-        target: trades.pubkey,
-        set: {
-          game: row.game,
-          proposer: row.proposer,
-          receiver: row.receiver,
-          tradeType: row.tradeType,
-          proposerMoney: row.proposerMoney,
-          receiverMoney: row.receiverMoney,
-          proposerProperty: row.proposerProperty,
-          receiverProperty: row.receiverProperty,
-          status: row.status,
-          createdAt: row.createdAt,
-          expiresAt: row.expiresAt,
-          bump: row.bump,
-          accountUpdatedAt: row.accountUpdatedAt ?? new Date(),
-          createdSlot: row.createdSlot,
-          updatedSlot: row.updatedSlot,
-          lastSignature: row.lastSignature
-        }
-      })
+    // Convert string dates to Date objects if needed
+    const processedTradeRow = {
+      ...row,
+      accountCreatedAt:
+        typeof row.accountCreatedAt === 'string' ? new Date(row.accountCreatedAt) : row.accountCreatedAt,
+      accountUpdatedAt: typeof row.accountUpdatedAt === 'string' ? new Date(row.accountUpdatedAt) : row.accountUpdatedAt
+    }
+
+    try {
+      const result = await this.db
+        .insert(trades)
+        .values(processedTradeRow)
+        .onConflictDoUpdate({
+          target: trades.pubkey,
+          set: {
+            game: processedTradeRow.game,
+            proposer: processedTradeRow.proposer,
+            receiver: processedTradeRow.receiver,
+            tradeType: processedTradeRow.tradeType,
+            proposerMoney: processedTradeRow.proposerMoney,
+            receiverMoney: processedTradeRow.receiverMoney,
+            proposerProperty: processedTradeRow.proposerProperty,
+            receiverProperty: processedTradeRow.receiverProperty,
+            status: processedTradeRow.status,
+            createdAt: processedTradeRow.createdAt,
+            expiresAt: processedTradeRow.expiresAt,
+            bump: processedTradeRow.bump,
+            accountUpdatedAt: processedTradeRow.accountUpdatedAt ?? new Date(),
+            createdSlot: processedTradeRow.createdSlot,
+            updatedSlot: processedTradeRow.updatedSlot,
+            lastSignature: processedTradeRow.lastSignature
+          }
+        })
+
+      console.log(
+        'Trade upserted:',
+        row.proposer.slice(0, 8) + '... →',
+        row.receiver.slice(0, 8) + '... (',
+        row.tradeType,
+        ')'
+      )
+    } catch (error) {
+      console.error('[DrizzleAdapter] ❌ Failed to upsert trade:', row.pubkey)
+      console.error('[DrizzleAdapter] Error details:', error)
+      throw error
+    }
   }
 
-  // Checkpoints
-  async getCheckpoint(id: string) {
-    const r = await this.db.select().from(checkpoints).where(eq(checkpoints.id, id)).limit(1)
-    return r[0] ? { last_slot: r[0].lastSlot ?? null, last_signature: r[0].lastSignature ?? null } : null
-  }
-  async setCheckpoint(id: string, data: { last_slot?: number; last_signature?: string }) {
-    await this.db
-      .insert(checkpoints)
-      .values({
-        id,
-        lastSlot: data.last_slot ?? null,
-        lastSignature: data.last_signature ?? null,
-        updatedAt: new Date()
-      })
-      .onConflictDoUpdate({
-        target: checkpoints.id,
-        set: {
-          lastSlot: data.last_slot ?? undefined,
-          lastSignature: data.last_signature ?? undefined,
-          updatedAt: new Date()
-        }
-      })
+  // Single entity reads
+  async getGame(pubkey: string): Promise<Game | null> {
+    const result = await this.db.select().from(games).where(eq(games.pubkey, pubkey)).limit(1)
+    return result[0] ?? null
   }
 
-  // Reads
-  async getGame(pubkey: string) {
-    const r = await this.db.select().from(games).where(eq(games.pubkey, pubkey)).limit(1)
-    return r[0] ?? null
+  async getPlayer(pubkey: string): Promise<Player | null> {
+    const result = await this.db.select().from(players).where(eq(players.pubkey, pubkey)).limit(1)
+    return result[0] ?? null
   }
-  async getPlayer(pubkey: string) {
-    const r = await this.db.select().from(players).where(eq(players.pubkey, pubkey)).limit(1)
-    return r[0] ?? null
+
+  async getProperty(pubkey: string): Promise<Property | null> {
+    const result = await this.db.select().from(properties).where(eq(properties.pubkey, pubkey)).limit(1)
+    return result[0] ?? null
   }
-  async getProperty(pubkey: string) {
-    const r = await this.db.select().from(properties).where(eq(properties.pubkey, pubkey)).limit(1)
-    return r[0] ?? null
+
+  async getTrade(pubkey: string): Promise<Trade | null> {
+    const result = await this.db.select().from(trades).where(eq(trades.pubkey, pubkey)).limit(1)
+    return result[0] ?? null
   }
-  async getTrade(pubkey: string) {
-    const r = await this.db.select().from(trades).where(eq(trades.pubkey, pubkey)).limit(1)
-    return r[0] ?? null
+
+  // Simplified paginated query methods
+  async getGames(filters: QueryFilters = {}, pagination: PaginationOptions = {}): Promise<PaginatedResult<Game>> {
+    // Simple pagination
+    const page = pagination.page ?? 1
+    const limit = Math.min(pagination.limit ?? 20, 100) // Max 100 items
+    const offset = (page - 1) * limit
+
+    // Basic filters
+    const conditions = []
+    if (filters.gameStatus) conditions.push(eq(games.gameStatus, filters.gameStatus as any))
+    if (filters.authority) conditions.push(eq(games.authority, filters.authority as string))
+    if (filters.maxPlayers) conditions.push(eq(games.maxPlayers, filters.maxPlayers as number))
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined
+
+    // Simple sorting
+    const orderBy = pagination.sortOrder === 'asc' ? asc(games.accountUpdatedAt) : desc(games.accountUpdatedAt)
+
+    // Execute queries
+    const [data, totalResult] = await Promise.all([
+      this.db.select().from(games).where(whereClause).orderBy(orderBy).limit(limit).offset(offset),
+      this.db.select({ count: count() }).from(games).where(whereClause)
+    ])
+
+    const total = totalResult[0]?.count ?? 0
+    return {
+      data,
+      total,
+      page,
+      limit
+    }
+  }
+
+  async getPlayers(filters: QueryFilters = {}, pagination: PaginationOptions = {}): Promise<PaginatedResult<Player>> {
+    const page = pagination.page ?? 1
+    const limit = Math.min(pagination.limit ?? 20, 100)
+    const offset = (page - 1) * limit
+
+    const conditions = []
+    if (filters.wallet) conditions.push(eq(players.wallet, filters.wallet as string))
+    if (filters.gameId) conditions.push(eq(players.game, filters.gameId as string))
+    if (filters.inJail !== undefined) conditions.push(eq(players.inJail, filters.inJail as boolean))
+    if (filters.isBankrupt !== undefined) conditions.push(eq(players.isBankrupt, filters.isBankrupt as boolean))
+    if (filters.position !== undefined) conditions.push(eq(players.position, filters.position as number))
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined
+    const orderBy = pagination.sortOrder === 'asc' ? asc(players.accountUpdatedAt) : desc(players.accountUpdatedAt)
+
+    const [data, totalResult] = await Promise.all([
+      this.db.select().from(players).where(whereClause).orderBy(orderBy).limit(limit).offset(offset),
+      this.db.select({ count: count() }).from(players).where(whereClause)
+    ])
+
+    return {
+      data,
+      total: totalResult[0]?.count ?? 0,
+      page,
+      limit
+    }
+  }
+
+  async getProperties(
+    filters: QueryFilters = {},
+    pagination: PaginationOptions = {}
+  ): Promise<PaginatedResult<Property>> {
+    const page = pagination.page ?? 1
+    const limit = Math.min(pagination.limit ?? 20, 100)
+    const offset = (page - 1) * limit
+
+    const conditions = []
+    if (filters.owner) conditions.push(eq(properties.owner, filters.owner as string))
+    if (filters.colorGroup) conditions.push(eq(properties.colorGroup, filters.colorGroup as any))
+    if (filters.propertyType) conditions.push(eq(properties.propertyType, filters.propertyType as any))
+    if (filters.isMortgaged !== undefined) conditions.push(eq(properties.isMortgaged, filters.isMortgaged as boolean))
+    if (filters.position !== undefined) conditions.push(eq(properties.position, filters.position as number))
+
+    // Buildings filter
+    if (filters.hasBuildings !== undefined) {
+      if (filters.hasBuildings) {
+        conditions.push(or(gte(properties.houses, 1), eq(properties.hasHotel, true)))
+      } else {
+        conditions.push(and(eq(properties.houses, 0), eq(properties.hasHotel, false)))
+      }
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined
+    const orderBy = pagination.sortOrder === 'asc' ? asc(properties.position) : desc(properties.position)
+
+    const [data, totalResult] = await Promise.all([
+      this.db.select().from(properties).where(whereClause).orderBy(orderBy).limit(limit).offset(offset),
+      this.db.select({ count: count() }).from(properties).where(whereClause)
+    ])
+
+    return {
+      data,
+      total: totalResult[0]?.count ?? 0,
+      page,
+      limit
+    }
+  }
+
+  async getTrades(filters: QueryFilters = {}, pagination: PaginationOptions = {}): Promise<PaginatedResult<Trade>> {
+    const page = pagination.page ?? 1
+    const limit = Math.min(pagination.limit ?? 20, 100)
+    const offset = (page - 1) * limit
+
+    const conditions = []
+    if (filters.gameId) conditions.push(eq(trades.game, filters.gameId as string))
+    if (filters.proposer) conditions.push(eq(trades.proposer, filters.proposer as string))
+    if (filters.receiver) conditions.push(eq(trades.receiver, filters.receiver as string))
+    if (filters.status) conditions.push(eq(trades.status, filters.status as any))
+    if (filters.tradeType) conditions.push(eq(trades.tradeType, filters.tradeType as any))
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined
+    const orderBy = pagination.sortOrder === 'asc' ? asc(trades.createdAt) : desc(trades.createdAt)
+
+    const [data, totalResult] = await Promise.all([
+      this.db.select().from(trades).where(whereClause).orderBy(orderBy).limit(limit).offset(offset),
+      this.db.select({ count: count() }).from(trades).where(whereClause)
+    ])
+
+    return {
+      data,
+      total: totalResult[0]?.count ?? 0,
+      page,
+      limit
+    }
   }
 }
