@@ -1,47 +1,69 @@
--- Enable Row Level Security (RLS) for all public tables
--- This migration fixes the RLS security warnings from Supabase
--- Enable RLS on all tables
-ALTER TABLE "public"."auctions" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."chance_card_events" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."checkpoints" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."community_chest_card_events" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."game_events" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."games" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."integrator_configs" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."platform_configs" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."player_passed_go_events" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."players" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."processing_queue" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."properties" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."sync_status" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."trades" ENABLE ROW LEVEL SECURITY;
--- Create permissive policies to allow all operations for now
--- You can customize these policies based on your security requirements
--- Auctions policies
-CREATE POLICY "Allow all operations on auctions" ON "public"."auctions" FOR ALL USING (true) WITH CHECK (true);
--- Chance card events policies
-CREATE POLICY "Allow all operations on chance_card_events" ON "public"."chance_card_events" FOR ALL USING (true) WITH CHECK (true);
--- Checkpoints policies  
-CREATE POLICY "Allow all operations on checkpoints" ON "public"."checkpoints" FOR ALL USING (true) WITH CHECK (true);
--- Community chest card events policies
-CREATE POLICY "Allow all operations on community_chest_card_events" ON "public"."community_chest_card_events" FOR ALL USING (true) WITH CHECK (true);
--- Game events policies
-CREATE POLICY "Allow all operations on game_events" ON "public"."game_events" FOR ALL USING (true) WITH CHECK (true);
--- Games policies
-CREATE POLICY "Allow all operations on games" ON "public"."games" FOR ALL USING (true) WITH CHECK (true);
--- Integrator configs policies
-CREATE POLICY "Allow all operations on integrator_configs" ON "public"."integrator_configs" FOR ALL USING (true) WITH CHECK (true);
--- Platform configs policies
-CREATE POLICY "Allow all operations on platform_configs" ON "public"."platform_configs" FOR ALL USING (true) WITH CHECK (true);
--- Player passed go events policies
-CREATE POLICY "Allow all operations on player_passed_go_events" ON "public"."player_passed_go_events" FOR ALL USING (true) WITH CHECK (true);
--- Players policies
-CREATE POLICY "Allow all operations on players" ON "public"."players" FOR ALL USING (true) WITH CHECK (true);
--- Processing queue policies
-CREATE POLICY "Allow all operations on processing_queue" ON "public"."processing_queue" FOR ALL USING (true) WITH CHECK (true);
--- Properties policies
-CREATE POLICY "Allow all operations on properties" ON "public"."properties" FOR ALL USING (true) WITH CHECK (true);
--- Sync status policies
-CREATE POLICY "Allow all operations on sync_status" ON "public"."sync_status" FOR ALL USING (true) WITH CHECK (true);
--- Trades policies
-CREATE POLICY "Allow all operations on trades" ON "public"."trades" FOR ALL USING (true) WITH CHECK (true);
+-- Enable RLS for all tables and create security policies
+-- This migration enables Row Level Security (RLS) for all tables in the monopoly game database
+-- Platform and config tables
+ALTER TABLE platform_configs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE integrator_configs ENABLE ROW LEVEL SECURITY;
+-- Core game tables  
+ALTER TABLE games ENABLE ROW LEVEL SECURITY;
+ALTER TABLE players ENABLE ROW LEVEL SECURITY;
+ALTER TABLE properties ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trades ENABLE ROW LEVEL SECURITY;
+-- Event and log tables
+ALTER TABLE game_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE game_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chance_card_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE community_chest_card_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE player_passed_go_events ENABLE ROW LEVEL SECURITY;
+-- Auction tables
+ALTER TABLE auctions ENABLE ROW LEVEL SECURITY;
+-- Infrastructure tables
+ALTER TABLE processing_queue ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sync_status ENABLE ROW LEVEL SECURITY;
+-- Create basic RLS policies (allow all operations for now - can be refined later)
+-- Platform configs - only allow read access
+CREATE POLICY "platform_configs_read_policy" ON platform_configs FOR
+SELECT USING (true);
+-- Games - allow read access to all, write access for indexer
+CREATE POLICY "games_read_policy" ON games FOR
+SELECT USING (true);
+CREATE POLICY "games_write_policy" ON games FOR ALL USING (true);
+-- Players - allow read access to all, write access for indexer  
+CREATE POLICY "players_read_policy" ON players FOR
+SELECT USING (true);
+CREATE POLICY "players_write_policy" ON players FOR ALL USING (true);
+-- Properties - allow read access to all, write access for indexer
+CREATE POLICY "properties_read_policy" ON properties FOR
+SELECT USING (true);
+CREATE POLICY "properties_write_policy" ON properties FOR ALL USING (true);
+-- Trades - allow read access to all, write access for indexer
+CREATE POLICY "trades_read_policy" ON trades FOR
+SELECT USING (true);
+CREATE POLICY "trades_write_policy" ON trades FOR ALL USING (true);
+-- Game events - allow read access to all, write access for indexer
+CREATE POLICY "game_events_read_policy" ON game_events FOR
+SELECT USING (true);
+CREATE POLICY "game_events_write_policy" ON game_events FOR ALL USING (true);
+-- Game logs - allow read access to all, write access for indexer
+CREATE POLICY "game_logs_read_policy" ON game_logs FOR
+SELECT USING (true);
+CREATE POLICY "game_logs_write_policy" ON game_logs FOR ALL USING (true);
+-- Event tables - allow read access to all, write access for indexer
+CREATE POLICY "chance_card_events_read_policy" ON chance_card_events FOR
+SELECT USING (true);
+CREATE POLICY "chance_card_events_write_policy" ON chance_card_events FOR ALL USING (true);
+CREATE POLICY "community_chest_card_events_read_policy" ON community_chest_card_events FOR
+SELECT USING (true);
+CREATE POLICY "community_chest_card_events_write_policy" ON community_chest_card_events FOR ALL USING (true);
+CREATE POLICY "player_passed_go_events_read_policy" ON player_passed_go_events FOR
+SELECT USING (true);
+CREATE POLICY "player_passed_go_events_write_policy" ON player_passed_go_events FOR ALL USING (true);
+-- Auctions - allow read access to all, write access for indexer
+CREATE POLICY "auctions_read_policy" ON auctions FOR
+SELECT USING (true);
+CREATE POLICY "auctions_write_policy" ON auctions FOR ALL USING (true);
+-- Integrator configs - only allow read access
+CREATE POLICY "integrator_configs_read_policy" ON integrator_configs FOR
+SELECT USING (true);
+-- Infrastructure tables - allow full access for system operations
+CREATE POLICY "processing_queue_policy" ON processing_queue FOR ALL USING (true);
+CREATE POLICY "sync_status_policy" ON sync_status FOR ALL USING (true);

@@ -7,6 +7,7 @@ import {
   players,
   properties,
   trades,
+  gameLogs,
   type NewGame,
   type NewPlayer,
   type NewProperty,
@@ -14,14 +15,17 @@ import {
   type Game,
   type Player,
   type Property,
-  type Trade
+  type Trade,
+  type GameLog,
+  type NewGameLog,
+  type GameLogEntry
 } from './schema'
 import { env } from '#config'
 
 export class DrizzleAdapter implements DatabasePort {
   public pool = new Pool({
     connectionString: env.db.url,
-    ssl: env.nodeEnv === 'production' ? { rejectUnauthorized: false } : false,
+    ssl: env.nodeEnv === 'production' ? { rejectUnauthorized: true } : { rejectUnauthorized: false },
     max: 10,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000
@@ -382,6 +386,143 @@ export class DrizzleAdapter implements DatabasePort {
       total: totalResult[0]?.count ?? 0,
       page,
       limit
+    }
+  }
+
+  // Game Logs CRUD operations
+  async createGameLog(
+    log: Omit<NewGameLog, 'id' | 'createdAt' | 'accountCreatedAt' | 'accountUpdatedAt'>
+  ): Promise<GameLog> {
+    const logData = {
+      ...log,
+      timestamp: log.timestamp || Date.now()
+    }
+
+    try {
+      const result = await this.db.insert(gameLogs).values(logData).returning()
+
+      console.log('Game log created:', logData.type, 'for game:', logData.gameId.slice(0, 8) + '...')
+      return result[0]
+    } catch (error) {
+      console.error('[DrizzleAdapter] ❌ Failed to create game log:', logData)
+      console.error('[DrizzleAdapter] Error details:', error)
+      throw error
+    }
+  }
+
+  async getGameLogs(
+    gameId: string,
+    filters: QueryFilters = {},
+    pagination: PaginationOptions = {}
+  ): Promise<PaginatedResult<GameLog>> {
+    const page = pagination.page ?? 1
+    const limit = Math.min(pagination.limit ?? 50, 200)
+    const offset = (page - 1) * limit
+
+    const conditions = [eq(gameLogs.gameId, gameId)]
+
+    // Add filters
+    if (filters.playerId) conditions.push(eq(gameLogs.playerId, filters.playerId as string))
+    if (filters.type) conditions.push(eq(gameLogs.type, filters.type as any))
+    if (filters.position !== undefined) conditions.push(eq(gameLogs.position, filters.position as number))
+    if (filters.startTime) conditions.push(gte(gameLogs.timestamp, filters.startTime as number))
+
+    const whereClause = and(...conditions)
+    const orderBy = pagination.sortOrder === 'asc' ? asc(gameLogs.timestamp) : desc(gameLogs.timestamp)
+
+    const [data, totalResult] = await Promise.all([
+      this.db.select().from(gameLogs).where(whereClause).orderBy(orderBy).limit(limit).offset(offset),
+      this.db.select({ count: count() }).from(gameLogs).where(whereClause)
+    ])
+
+    return {
+      data,
+      total: totalResult[0]?.count ?? 0,
+      page,
+      limit
+    }
+  }
+
+  async getGameLogsAsEntries(
+    gameId: string,
+    filters: QueryFilters = {},
+    pagination: PaginationOptions = {}
+  ): Promise<PaginatedResult<GameLogEntry>> {
+    const result = await this.getGameLogs(gameId, filters, pagination)
+
+    const entries: GameLogEntry[] = result.data.map(
+      (log): GameLogEntry => ({
+        id: log.id,
+        timestamp: Number(log.timestamp),
+        type: log.type,
+        playerId: log.playerId,
+        playerName: log.playerName || undefined,
+        message: log.message,
+        details: {
+          // Property-related
+          propertyName: log.propertyName || undefined,
+          position: log.position || undefined,
+          price: log.price ? Number(log.price) : undefined,
+          owner: log.owner || undefined,
+
+          // Card-related
+          cardType: log.cardType as 'chance' | 'community-chest' | undefined,
+          cardTitle: log.cardTitle || undefined,
+          cardDescription: log.cardDescription || undefined,
+          cardIndex: log.cardIndex || undefined,
+          effectType: log.effectType || undefined,
+          amount: log.amount ? Number(log.amount) : undefined,
+
+          // Trade-related
+          tradeId: log.tradeId || undefined,
+          action: log.action || undefined,
+          targetPlayer: log.targetPlayer || undefined,
+          targetPlayerName: log.targetPlayerName || undefined,
+          offeredProperties: log.offeredProperties || undefined,
+          requestedProperties: log.requestedProperties || undefined,
+          offeredMoney: log.offeredMoney ? Number(log.offeredMoney) : undefined,
+          requestedMoney: log.requestedMoney ? Number(log.requestedMoney) : undefined,
+
+          // Movement-related
+          fromPosition: log.fromPosition || undefined,
+          toPosition: log.toPosition || undefined,
+          diceRoll: log.diceRoll || undefined,
+          doublesCount: log.doublesCount || undefined,
+          passedGo: log.passedGo || undefined,
+
+          // Jail-related
+          jailReason: log.jailReason as 'doubles' | 'go_to_jail' | 'card' | undefined,
+          fineAmount: log.fineAmount ? Number(log.fineAmount) : undefined,
+
+          // Building-related
+          buildingType: log.buildingType as 'house' | 'hotel' | undefined,
+
+          // Tax-related
+          taxType: log.taxType || undefined,
+
+          // Other
+          signature: log.signature || undefined,
+          error: log.error || undefined
+        }
+      })
+    )
+
+    return {
+      data: entries,
+      total: result.total,
+      page: result.page,
+      limit: result.limit
+    }
+  }
+
+  async deleteGameLogs(gameId: string): Promise<void> {
+    try {
+      await this.db.delete(gameLogs).where(eq(gameLogs.gameId, gameId))
+      console.log('Game logs deleted for game:', gameId.slice(0, 8) + '...')
+    } catch (error) {
+      console.error('[DrizzleAdapter] ❌ Failed to delete game logs:', gameId)
+      console.error('[DrizzleAdapter] Error details:', error)
+      throw error
     }
   }
 }

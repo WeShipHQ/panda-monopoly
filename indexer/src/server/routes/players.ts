@@ -122,8 +122,8 @@ export default async function playersRoutes(fastify: FastifyInstance) {
         description: 'Get a single player by their public key',
         params: Type.Object({
           pubkey: Type.String({
-            pattern: '^[1-9A-HJ-NP-Za-km-z]{32,44}$',
-            description: 'Player public key'
+            pattern: '^(player-[a-zA-Z0-9]{8}-[a-zA-Z0-9]{8}|[1-9A-HJ-NP-Za-km-z]{32,44})$',
+            description: 'Player public key (either composite format or Solana pubkey)'
           })
         }),
         response: {
@@ -266,63 +266,6 @@ export default async function playersRoutes(fastify: FastifyInstance) {
         return reply
           .code(500)
           .send(ResponseFormatter.error('Failed to retrieve player statistics', 500, getRequestId()))
-      }
-    }
-  )
-
-  // GET /api/players/leaderboard - Get player leaderboard
-  fastify.get(
-    '/players/leaderboard',
-    {
-      schema: {
-        tags: ['players'],
-        summary: 'Get player leaderboard',
-        description: 'Get top players ranked by balance or properties',
-        querystring: Type.Object({
-          rankBy: Type.Optional(
-            Type.Union([Type.Literal('balance'), Type.Literal('properties')], {
-              default: 'balance',
-              description: 'Ranking criteria'
-            })
-          ),
-          limit: Type.Optional(
-            Type.Number({
-              minimum: 1,
-              maximum: 100,
-              default: 10,
-              description: 'Number of top players to return'
-            })
-          )
-        }),
-        response: {
-          200: responseWrapperSchema(
-            Type.Object({
-              leaderboard: Type.Array(
-                Type.Object({
-                  rank: Type.Number(),
-                  player: playerSchema,
-                  value: Type.Number(),
-                  gameCount: Type.Number()
-                })
-              ),
-              rankBy: Type.String()
-            })
-          ),
-          500: errorResponseSchema
-        }
-      }
-    },
-    async (request, reply) => {
-      try {
-        const query = request.query as any
-        const rankBy = query.rankBy || 'balance'
-        const limit = query.limit || 10
-
-        const leaderboard = await playerService.getLeaderboard(rankBy, limit)
-        return ResponseFormatter.success({ leaderboard, rankBy }, getRequestId())
-      } catch (error) {
-        fastify.log.error(error, 'Failed to get player leaderboard')
-        return reply.code(500).send(ResponseFormatter.error('Failed to retrieve leaderboard', 500, getRequestId()))
       }
     }
   )

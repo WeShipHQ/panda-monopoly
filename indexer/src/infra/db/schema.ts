@@ -12,6 +12,7 @@ import {
   serial,
   text
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 
 export type InferEnum<T extends { enumValues: string[] }> = T['enumValues'][number]
 
@@ -61,6 +62,22 @@ export const tradeTypeEnum = pgEnum('trade_type', [
   'PropertyOnly',
   'MoneyForProperty',
   'PropertyForMoney'
+] as const)
+
+export const gameLogTypeEnum = pgEnum('game_log_type', [
+  'move',
+  'purchase',
+  'rent',
+  'card',
+  'jail',
+  'bankruptcy',
+  'turn',
+  'dice',
+  'building',
+  'trade',
+  'game',
+  'skip',
+  'join'
 ] as const)
 
 // ==================== TABLES ====================
@@ -523,6 +540,81 @@ export const gameEvents = pgTable(
   ]
 )
 
+// Game Logs for Frontend Display
+export const gameLogs = pgTable(
+  'game_logs',
+  {
+    id: varchar('id', { length: 36 })
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    gameId: varchar('game_id', { length: 44 }).notNull(),
+    playerId: varchar('player_id', { length: 44 }).notNull(),
+    playerName: varchar('player_name', { length: 100 }),
+    type: gameLogTypeEnum('type').notNull(),
+    message: text('message').notNull(),
+
+    // Property-related details
+    propertyName: varchar('property_name', { length: 100 }),
+    position: smallint('position'),
+    price: bigint('price', { mode: 'number' }),
+    owner: varchar('owner', { length: 44 }),
+
+    // Card-related details
+    cardType: varchar('card_type', { length: 20 }), // 'chance' | 'community-chest'
+    cardTitle: varchar('card_title', { length: 200 }),
+    cardDescription: text('card_description'),
+    cardIndex: smallint('card_index'),
+    effectType: smallint('effect_type'),
+    amount: bigint('amount', { mode: 'number' }),
+
+    // Trade-related details
+    tradeId: varchar('trade_id', { length: 44 }),
+    action: varchar('action', { length: 50 }),
+    targetPlayer: varchar('target_player', { length: 44 }),
+    targetPlayerName: varchar('target_player_name', { length: 100 }),
+    offeredProperties: json('offered_properties').$type<number[]>(),
+    requestedProperties: json('requested_properties').$type<number[]>(),
+    offeredMoney: bigint('offered_money', { mode: 'number' }),
+    requestedMoney: bigint('requested_money', { mode: 'number' }),
+
+    // Movement-related details
+    fromPosition: smallint('from_position'),
+    toPosition: smallint('to_position'),
+    diceRoll: json('dice_roll').$type<[number, number]>(),
+    doublesCount: smallint('doubles_count'),
+    passedGo: boolean('passed_go'),
+
+    // Jail-related details
+    jailReason: varchar('jail_reason', { length: 20 }), // 'doubles' | 'go_to_jail' | 'card'
+    fineAmount: bigint('fine_amount', { mode: 'number' }),
+
+    // Building-related details
+    buildingType: varchar('building_type', { length: 10 }), // 'house' | 'hotel'
+
+    // Tax-related details
+    taxType: varchar('tax_type', { length: 50 }),
+
+    // Metadata
+    signature: varchar('signature', { length: 88 }),
+    error: text('error'),
+    slot: bigint('slot', { mode: 'number' }),
+
+    // Timestamps
+    timestamp: bigint('timestamp', { mode: 'number' }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    accountCreatedAt: timestamp('account_created_at', { withTimezone: true }).defaultNow(),
+    accountUpdatedAt: timestamp('account_updated_at', { withTimezone: true }).defaultNow()
+  },
+  (table) => [
+    index('idx_game_logs_game_id').on(table.gameId),
+    index('idx_game_logs_player_id').on(table.playerId),
+    index('idx_game_logs_type').on(table.type),
+    index('idx_game_logs_timestamp').on(table.timestamp),
+    index('idx_game_logs_position').on(table.position),
+    index('idx_game_logs_created_at').on(table.createdAt)
+  ]
+)
+
 // ==================== TYPES ====================
 
 // Enum Types
@@ -574,3 +666,62 @@ export type NewIntegratorConfig = typeof integratorConfigs.$inferInsert
 
 export type GameEvent = typeof gameEvents.$inferSelect
 export type NewGameEvent = typeof gameEvents.$inferInsert
+
+export type GameLog = typeof gameLogs.$inferSelect
+export type NewGameLog = typeof gameLogs.$inferInsert
+
+// Frontend-compatible GameLogEntry type
+export interface GameLogEntry {
+  id: string
+  timestamp: number
+  type: InferEnum<typeof gameLogTypeEnum>
+  playerId: string
+  playerName?: string
+  message: string
+  details?: {
+    // Property-related
+    propertyName?: string
+    position?: number
+    price?: number
+    owner?: string
+
+    // Card-related
+    cardType?: 'chance' | 'community-chest'
+    cardTitle?: string
+    cardDescription?: string
+    cardIndex?: number
+    effectType?: number
+    amount?: number
+
+    // Trade-related
+    tradeId?: string
+    action?: string
+    targetPlayer?: string
+    targetPlayerName?: string
+    offeredProperties?: number[]
+    requestedProperties?: number[]
+    offeredMoney?: number
+    requestedMoney?: number
+
+    // Movement-related
+    fromPosition?: number
+    toPosition?: number
+    diceRoll?: [number, number]
+    doublesCount?: number
+    passedGo?: boolean
+
+    // Jail-related
+    jailReason?: 'doubles' | 'go_to_jail' | 'card'
+    fineAmount?: number
+
+    // Building-related
+    buildingType?: 'house' | 'hotel'
+
+    // Tax-related
+    taxType?: string
+
+    // Other
+    signature?: string
+    error?: string
+  }
+}

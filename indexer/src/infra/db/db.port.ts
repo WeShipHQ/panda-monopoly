@@ -1,5 +1,17 @@
 // Database port interface with type-safe methods
-import { NewGame, NewPlayer, NewProperty, NewTrade, Game, Player, Property, Trade } from './schema'
+import {
+  NewGame,
+  NewPlayer,
+  NewProperty,
+  NewTrade,
+  Game,
+  Player,
+  Property,
+  Trade,
+  GameLog,
+  NewGameLog,
+  GameLogEntry
+} from './schema'
 
 // Filter and pagination types
 export interface QueryFilters {
@@ -43,4 +55,14 @@ export interface DatabasePort {
   getPlayers(filters?: QueryFilters, pagination?: PaginationOptions): Promise<PaginatedResult<Player>>
   getProperties(filters?: QueryFilters, pagination?: PaginationOptions): Promise<PaginatedResult<Property>>
   getTrades(filters?: QueryFilters, pagination?: PaginationOptions): Promise<PaginatedResult<Trade>>
+
+  // Game Logs CRUD operations
+  createGameLog(log: Omit<NewGameLog, 'id' | 'createdAt' | 'accountCreatedAt' | 'accountUpdatedAt'>): Promise<GameLog>
+  getGameLogs(gameId: string, filters?: QueryFilters, pagination?: PaginationOptions): Promise<PaginatedResult<GameLog>>
+  getGameLogsAsEntries(
+    gameId: string,
+    filters?: QueryFilters,
+    pagination?: PaginationOptions
+  ): Promise<PaginatedResult<GameLogEntry>>
+  deleteGameLogs(gameId: string): Promise<void>
 }
