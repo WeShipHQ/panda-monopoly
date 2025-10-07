@@ -1,5 +1,5 @@
 {
-  "id": "810a5ba6-d53b-4467-a947-ac905cb082ac",
+  "id": "6d5008b3-9aa7-41b2-8e10-1517d3f600e5",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -334,44 +334,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.checkpoints": {
-      "name": "checkpoints",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "last_slot": {
-          "name": "last_slot",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "last_signature": {
-          "name": "last_signature",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.community_chest_card_events": {
       "name": "community_chest_card_events",
       "schema": "",
@@ -621,6 +583,355 @@
           "columns": [
             {
               "expression": "slot",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.game_logs": {
+      "name": "game_logs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar(36)",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "game_id": {
+          "name": "game_id",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "player_name": {
+          "name": "player_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "game_log_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "property_name": {
+          "name": "property_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "position": {
+          "name": "position",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price": {
+          "name": "price",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "owner": {
+          "name": "owner",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "card_type": {
+          "name": "card_type",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "card_title": {
+          "name": "card_title",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "card_description": {
+          "name": "card_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "card_index": {
+          "name": "card_index",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "effect_type": {
+          "name": "effect_type",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amount": {
+          "name": "amount",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trade_id": {
+          "name": "trade_id",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "action": {
+          "name": "action",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "target_player": {
+          "name": "target_player",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "target_player_name": {
+          "name": "target_player_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "offered_properties": {
+          "name": "offered_properties",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "requested_properties": {
+          "name": "requested_properties",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "offered_money": {
+          "name": "offered_money",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "requested_money": {
+          "name": "requested_money",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "from_position": {
+          "name": "from_position",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_position": {
+          "name": "to_position",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dice_roll": {
+          "name": "dice_roll",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "doubles_count": {
+          "name": "doubles_count",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "passed_go": {
+          "name": "passed_go",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "jail_reason": {
+          "name": "jail_reason",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fine_amount": {
+          "name": "fine_amount",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "building_type": {
+          "name": "building_type",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tax_type": {
+          "name": "tax_type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "signature": {
+          "name": "signature",
+          "type": "varchar(88)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error": {
+          "name": "error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "slot": {
+          "name": "slot",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "account_created_at": {
+          "name": "account_created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "account_updated_at": {
+          "name": "account_updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_game_logs_game_id": {
+          "name": "idx_game_logs_game_id",
+          "columns": [
+            {
+              "expression": "game_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_game_logs_player_id": {
+          "name": "idx_game_logs_player_id",
+          "columns": [
+            {
+              "expression": "player_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_game_logs_type": {
+          "name": "idx_game_logs_type",
+          "columns": [
+            {
+              "expression": "type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_game_logs_timestamp": {
+          "name": "idx_game_logs_timestamp",
+          "columns": [
+            {
+              "expression": "timestamp",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_game_logs_position": {
+          "name": "idx_game_logs_position",
+          "columns": [
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_game_logs_created_at": {
+          "name": "idx_game_logs_created_at",
+          "columns": [
+            {
+              "expression": "created_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -2512,6 +2823,25 @@
         "Railroad",
         "Utility",
         "Special"
+      ]
+    },
+    "public.game_log_type": {
+      "name": "game_log_type",
+      "schema": "public",
+      "values": [
+        "move",
+        "purchase",
+        "rent",
+        "card",
+        "jail",
+        "bankruptcy",
+        "turn",
+        "dice",
+        "building",
+        "trade",
+        "game",
+        "skip",
+        "join"
       ]
     },
     "public.game_status": {

@@ -6,6 +6,7 @@ import propertiesRoutes from './properties'
 import tradesRoutes from './trades'
 import rpcStatusRoutes from './rpc-status'
 import metricsRoutes from './metrics'
+import leaderboardRoutes from './leaderboard'
 
 export default async function routes(fastify: FastifyInstance) {
   // Root API endpoint
@@ -18,6 +19,7 @@ export default async function routes(fastify: FastifyInstance) {
       players: '/api/players',
       properties: '/api/properties',
       trades: '/api/trades',
+      leaderboard: '/api/leaderboard',
       health: '/api/health',
       metrics: '/api/metrics',
       'rpc-status': '/api/rpc-status',
@@ -31,6 +33,7 @@ export default async function routes(fastify: FastifyInstance) {
   await fastify.register(playersRoutes)
   await fastify.register(propertiesRoutes)
   await fastify.register(tradesRoutes)
+  await fastify.register(leaderboardRoutes)
   await fastify.register(rpcStatusRoutes)
   await fastify.register(metricsRoutes)
 }

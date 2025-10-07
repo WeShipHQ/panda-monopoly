@@ -164,7 +164,6 @@ export class ResponseFormatter {
     return {
       success: true,
       data,
-      timestamp: new Date().toISOString(),
       requestId: requestId || 'unknown'
     }
   }
