@@ -30,6 +30,14 @@ pub struct PlayerPassedGo {
     pub timestamp: i64,
 }
 
+// Game ending event
+#[event]
+pub struct GameEnded {
+    pub game_id: u64,
+    pub winner: Option<Pubkey>,
+    pub ended_at: i64,
+}
+
 // New trade events for vector-based trading
 #[event]
 pub struct TradeCreated {

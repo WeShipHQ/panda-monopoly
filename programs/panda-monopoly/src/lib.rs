@@ -44,8 +44,8 @@ pub mod panda_monopoly {
     }
 
     // Game management instructions
-    pub fn initialize_game(ctx: Context<InitializeGame>) -> Result<()> {
-        instructions::initialize::initialize_game_handler(ctx)
+    pub fn initialize_game(ctx: Context<InitializeGame>, entry_fee: u64) -> Result<()> {
+        instructions::initialize::initialize_game_handler(ctx, entry_fee)
     }
 
     pub fn reset_game_handler<'c: 'info, 'info>(
@@ -74,6 +74,11 @@ pub mod panda_monopoly {
         ctx: Context<'_, '_, 'c, 'info, StartGame<'info>>,
     ) -> Result<()> {
         instructions::initialize::start_game_handler(ctx)
+    }
+
+    // Game ending instruction
+    pub fn end_game(ctx: Context<EndGame>) -> Result<()> {
+        instructions::end_game::end_game_handler(ctx)
     }
 
     // Dice and movement instructions
@@ -130,17 +135,14 @@ pub mod panda_monopoly {
         instructions::jail::use_get_out_of_jail_card_handler(ctx)
     }
 
-    // Bankruptcy instructions
+    // Bankruptcy instruction
     pub fn declare_bankruptcy<'c: 'info, 'info>(
         ctx: Context<'_, '_, 'c, 'info, DeclareBankruptcy<'info>>,
     ) -> Result<()> {
         instructions::bankruptcy::declare_bankruptcy_handler(ctx)
     }
 
-    // pub fn go_to_jail(ctx: Context<GoToJail>) -> Result<()> {
-    //     instructions::dice::go_to_jail_handler(ctx)
-    // }
-
+    // Tax instructions
     pub fn pay_mev_tax_handler(ctx: Context<PayTax>) -> Result<()> {
         instructions::special_spaces::pay_mev_tax_handler(ctx)
     }
@@ -222,7 +224,7 @@ pub mod panda_monopoly {
         instructions::property::unmortgage_property_handler(ctx, position)
     }
 
-    // Trading instructions (updated for vector-based approach)
+    // Trading instructions
     pub fn create_trade(
         ctx: Context<CreateTrade>,
         trade_type: TradeType,
@@ -256,17 +258,4 @@ pub mod panda_monopoly {
     pub fn cleanup_expired_trades(ctx: Context<CleanupExpiredTrades>) -> Result<()> {
         instructions::trading::cleanup_expired_trades_handler(ctx)
     }
-
-    // Auction instructions (commented out as they're not implemented yet)
-    // pub fn start_auction(ctx: Context<StartAuction>, position: u8) -> Result<()> {
-    //     instructions::auction::start_auction_handler(ctx, position)
-    // }
-
-    // pub fn place_bid(ctx: Context<PlaceBid>, bid_amount: u64) -> Result<()> {
-    //     instructions::auction::place_bid_handler(ctx, bid_amount)
-    // }
-
-    // pub fn end_auction(ctx: Context<EndAuction>) -> Result<()> {
-    //     instructions::auction::end_auction_handler(ctx)
-    // }
 }

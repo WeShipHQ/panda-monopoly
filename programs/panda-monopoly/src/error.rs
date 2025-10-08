@@ -15,6 +15,9 @@ pub enum GameError {
     #[msg("Game has already ended")]
     GameAlreadyEnded,
 
+    #[msg("Game cannot end - multiple players still active")]
+    GameCannotEnd,
+
     #[msg("Maximum number of players reached")]
     MaxPlayersReached,
 
@@ -110,7 +113,7 @@ pub enum GameError {
     #[msg("Not enough hotels available in bank")]
     NotEnoughHotelsInBank,
 
-    // Dice and Movement Errors
+    // Movement and Dice Errors
     #[msg("Invalid dice roll")]
     InvalidDiceRoll,
 
@@ -123,7 +126,7 @@ pub enum GameError {
     #[msg("Player rolled doubles too many times")]
     TooManyDoubles,
 
-    // Trading Errors
+    // Trade Errors
     #[msg("Trade not found")]
     TradeNotFound,
 
@@ -335,4 +338,23 @@ pub enum GameError {
 
     #[msg("Too many active trades")]
     TooManyActiveTrades,
+
+    // Token and Fee Errors
+    #[msg("Missing required token accounts for entry fee")]
+    MissingTokenAccounts,
+
+    #[msg("Invalid game authority PDA")]
+    InvalidGameAuthority,
+
+    #[msg("Invalid token vault PDA")]
+    InvalidTokenVault,
+
+    #[msg("Invalid token account")]
+    InvalidTokenAccount,
+
+    #[msg("Entry fee transfer failed")]
+    EntryFeeTransferFailed,
+
+    #[msg("Token accounts provided for free game")]
+    UnexpectedTokenAccounts,
 }

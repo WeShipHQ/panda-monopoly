@@ -2,6 +2,10 @@ use crate::constants::*;
 use crate::error::GameError;
 use crate::state::*;
 use anchor_lang::prelude::*;
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
+};
 use ephemeral_rollups_sdk::anchor::{commit, delegate};
 use ephemeral_rollups_sdk::cpi::DelegateConfig;
 use ephemeral_rollups_sdk::ephem::commit_and_undelegate_accounts;
@@ -10,7 +14,7 @@ use ephemeral_rollups_sdk::ephem::commit_and_undelegate_accounts;
 pub struct InitializeGame<'info> {
     #[account(
         init,
-        payer = authority,
+        payer = creator,
         space = 8 + GameState::INIT_SPACE,
         seeds = [
             b"game",
@@ -23,15 +27,15 @@ pub struct InitializeGame<'info> {
 
     #[account(
         init,
-        payer = authority,
+        payer = creator,
         space = 8 + PlayerState::INIT_SPACE + 64,
-        seeds = [b"player", game.key().as_ref(), authority.key().as_ref()],
+        seeds = [b"player", game.key().as_ref(), creator.key().as_ref()],
         bump,
     )]
     pub player_state: Account<'info, PlayerState>,
 
     #[account(mut)]
-    pub authority: Signer<'info>,
+    pub creator: Signer<'info>,
 
     #[account(
         mut,
@@ -40,58 +44,154 @@ pub struct InitializeGame<'info> {
     )]
     pub config: Account<'info, PlatformConfig>,
 
+    /// CHECK: game authority PDA
+    pub game_authority: Option<UncheckedAccount<'info>>,
+
+    #[account(
+        mint::token_program = token_program,
+    )]
+    pub token_mint: Option<InterfaceAccount<'info, Mint>>,
+
+    #[account(
+        mut,
+        associated_token::mint = token_mint,
+        associated_token::authority = creator,
+        associated_token::token_program = token_program
+    )]
+    pub creator_token_account: Option<InterfaceAccount<'info, TokenAccount>>,
+
+    #[account(
+        init,
+        payer = creator,
+        associated_token::mint = token_mint,
+        associated_token::authority = game_authority,
+        associated_token::token_program = token_program
+    )]
+    pub token_vault: Option<InterfaceAccount<'info, TokenAccount>>,
+
+    pub token_program: Option<Interface<'info, TokenInterface>>,
+    pub associated_token_program: Option<Program<'info, AssociatedToken>>,
+
     pub system_program: Program<'info, System>,
 
     pub clock: Sysvar<'info, Clock>,
 }
 
-pub fn initialize_game_handler(ctx: Context<InitializeGame>) -> Result<()> {
-    {
-        let config = &mut ctx.accounts.config;
-        let game = &mut ctx.accounts.game;
-        let player_state = &mut ctx.accounts.player_state;
-        let clock = &ctx.accounts.clock;
+pub fn initialize_game_handler(ctx: Context<InitializeGame>, entry_fee: u64) -> Result<()> {
+    let config = &mut ctx.accounts.config;
+    let game = &mut ctx.accounts.game;
+    let player_state = &mut ctx.accounts.player_state;
+    let clock = &ctx.accounts.clock;
 
-        let game_id = config.next_game_id;
-        config.next_game_id += 1;
-        config.total_games_created += 1;
-
-        // Initialize game state
-        game.game_id = game_id;
-        game.config_id = config.id;
-        game.authority = ctx.accounts.authority.key();
-        game.bump = ctx.bumps.game;
-        game.game_status = GameStatus::WaitingForPlayers;
-        game.current_turn = 0;
-        game.current_players = 0; // Initial player count
-        game.max_players = MAX_PLAYERS;
-        game.players = vec![];
-        game.houses_remaining = TOTAL_HOUSES;
-        game.hotels_remaining = TOTAL_HOTELS;
-        game.created_at = clock.unix_timestamp;
-        game.bank_balance = 1_000_000; // Initial bank balance
-        game.time_limit = None;
-        game.winner = None;
-        game.turn_started_at = clock.unix_timestamp;
-        game.active_trades = vec![];
-        game.next_trade_id = 0;
-        // game.active_properties = vec![];
-        // game.next_property_id = 0;
-
-        // Initialize player state
-        player_state.initialize_player_state(ctx.accounts.authority.key(), game.key(), clock);
-
-        // Add player to game
-        game.players.push(player_state.wallet);
-        game.current_players = game.players.len() as u8;
-
-        msg!(
-            "Game initialized by authority: {}",
-            ctx.accounts.authority.key()
+    if entry_fee > 0 {
+        require!(
+            ctx.accounts.game_authority.is_some()
+                && ctx.accounts.token_mint.is_some()
+                && ctx.accounts.creator_token_account.is_some()
+                && ctx.accounts.token_vault.is_some()
+                && ctx.accounts.token_program.is_some()
+                && ctx.accounts.associated_token_program.is_some(),
+            GameError::MissingTokenAccounts
         );
-        msg!("Game account: {}", game.key());
-        msg!("Game created at timestamp: {}", game.created_at);
+
+        let token_mint = ctx.accounts.token_mint.as_ref().unwrap();
+        let creator_token_account = ctx.accounts.creator_token_account.as_ref().unwrap();
+        let token_vault = ctx.accounts.token_vault.as_ref().unwrap();
+        let game_authority = ctx.accounts.game_authority.as_ref().unwrap();
+
+        // Validate game authority PDA
+        let (expected_game_authority, _) =
+            Pubkey::find_program_address(&[GAME_AUTHORITY_SEED], ctx.program_id);
+
+        require!(
+            game_authority.key() == expected_game_authority,
+            GameError::InvalidGameAuthority
+        );
+
+        require!(
+            creator_token_account.mint == token_mint.key(),
+            GameError::InvalidTokenAccount
+        );
+        require!(
+            creator_token_account.owner == ctx.accounts.creator.key(),
+            GameError::InvalidTokenAccount
+        );
+
+        require!(
+            token_vault.mint == token_mint.key(),
+            GameError::InvalidTokenAccount
+        );
+        require!(
+            token_vault.owner == game_authority.key(),
+            GameError::InvalidTokenAccount
+        );
+
+        // Transfer entry fee from creator to vault
+        let transfer_accounts = TransferChecked {
+            from: creator_token_account.to_account_info(),
+            mint: token_mint.to_account_info(),
+            to: token_vault.to_account_info(),
+            authority: ctx.accounts.creator.to_account_info(),
+        };
+
+        let transfer_ctx = CpiContext::new(
+            ctx.accounts
+                .token_program
+                .as_ref()
+                .unwrap()
+                .to_account_info(),
+            transfer_accounts,
+        );
+
+        transfer_checked(transfer_ctx, entry_fee, token_mint.decimals)?;
+
+        game.token_mint = Some(token_mint.key());
+        game.token_vault = Some(token_vault.key());
+        game.total_prize_pool = entry_fee;
+    } else {
+        game.token_mint = None;
+        game.token_vault = None;
+        game.total_prize_pool = 0;
     }
+
+    let game_id = config.next_game_id;
+    config.next_game_id += 1;
+    config.total_games_created += 1;
+
+    // Initialize game state
+    game.game_id = game_id;
+    game.config_id = config.id;
+    game.creator = ctx.accounts.creator.key();
+    game.bump = ctx.bumps.game;
+    game.game_status = GameStatus::WaitingForPlayers;
+    game.current_turn = 0;
+    game.current_players = 0; // Initial player count
+    game.max_players = MAX_PLAYERS;
+    game.players = vec![];
+    game.houses_remaining = TOTAL_HOUSES;
+    game.hotels_remaining = TOTAL_HOTELS;
+    game.created_at = clock.unix_timestamp;
+    game.bank_balance = 1_000_000; // Initial bank balance
+    game.time_limit = None;
+    game.winner = None;
+    game.turn_started_at = clock.unix_timestamp;
+    game.active_trades = vec![];
+    game.next_trade_id = 0;
+    game.entry_fee = entry_fee;
+
+    // Initialize player state
+    player_state.initialize_player_state(ctx.accounts.creator.key(), game.key(), clock);
+
+    // Add player to game
+    game.players.push(player_state.wallet);
+    game.current_players = game.players.len() as u8;
+
+    msg!(
+        "Game initialized by creator: {}",
+        ctx.accounts.creator.key()
+    );
+    msg!("Game account: {}", game.key());
+    msg!("Game created at timestamp: {}", game.created_at);
 
     Ok(())
 }
@@ -100,7 +200,6 @@ pub fn initialize_game_handler(ctx: Context<InitializeGame>) -> Result<()> {
 pub struct JoinGame<'info> {
     #[account(
         mut,
-        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::WaitingForPlayers @ GameError::GameNotInProgress,
@@ -119,6 +218,33 @@ pub struct JoinGame<'info> {
 
     #[account(mut)]
     pub player: Signer<'info>,
+
+    /// CHECK: game authority PDA - only required for paid games
+    pub game_authority: Option<UncheckedAccount<'info>>,
+
+    #[account(
+        mint::token_program = token_program,
+    )]
+    pub token_mint: Option<InterfaceAccount<'info, Mint>>,
+
+    #[account(
+        mut,
+        associated_token::mint = token_mint,
+        associated_token::authority = player,
+        associated_token::token_program = token_program
+    )]
+    pub player_token_account: Option<InterfaceAccount<'info, TokenAccount>>,
+
+    #[account(
+        mut,
+        associated_token::mint = token_mint,
+        associated_token::authority = game_authority,
+        associated_token::token_program = token_program
+    )]
+    pub token_vault: Option<InterfaceAccount<'info, TokenAccount>>,
+
+    pub token_program: Option<Interface<'info, TokenInterface>>,
+    pub associated_token_program: Option<Program<'info, AssociatedToken>>,
 
     pub system_program: Program<'info, System>,
     pub clock: Sysvar<'info, Clock>,
@@ -140,6 +266,104 @@ pub fn join_game_handler(ctx: Context<JoinGame>) -> Result<()> {
             return Err(GameError::PlayerAlreadyExists.into());
         }
     }
+
+    // Handle entry fee payment if game has entry fee
+    if game.entry_fee > 0 {
+        require!(
+            ctx.accounts.game_authority.is_some()
+                && ctx.accounts.token_mint.is_some()
+                && ctx.accounts.player_token_account.is_some()
+                && ctx.accounts.token_vault.is_some()
+                && ctx.accounts.token_program.is_some(),
+            GameError::MissingTokenAccounts
+        );
+
+        let token_mint = ctx.accounts.token_mint.as_ref().unwrap();
+        let player_token_account = ctx.accounts.player_token_account.as_ref().unwrap();
+        let token_vault = ctx.accounts.token_vault.as_ref().unwrap();
+        let game_authority = ctx.accounts.game_authority.as_ref().unwrap();
+
+        // Validate game authority PDA
+        let (expected_game_authority, _) =
+            Pubkey::find_program_address(&[GAME_AUTHORITY_SEED], ctx.program_id);
+
+        require!(
+            game_authority.key() == expected_game_authority,
+            GameError::InvalidGameAuthority
+        );
+
+        // Validate token accounts
+        require!(
+            player_token_account.mint == token_mint.key(),
+            GameError::InvalidTokenAccount
+        );
+        require!(
+            player_token_account.owner == ctx.accounts.player.key(),
+            GameError::InvalidTokenAccount
+        );
+
+        require!(
+            token_vault.mint == token_mint.key(),
+            GameError::InvalidTokenAccount
+        );
+        require!(
+            token_vault.owner == game_authority.key(),
+            GameError::InvalidTokenAccount
+        );
+
+        // Validate that the token accounts match the game's configuration
+        require!(
+            Some(token_mint.key()) == game.token_mint,
+            GameError::InvalidTokenAccount
+        );
+        require!(
+            Some(token_vault.key()) == game.token_vault,
+            GameError::InvalidTokenAccount
+        );
+
+        // Transfer entry fee from player to vault
+        let transfer_accounts = TransferChecked {
+            from: player_token_account.to_account_info(),
+            mint: token_mint.to_account_info(),
+            to: token_vault.to_account_info(),
+            authority: ctx.accounts.player.to_account_info(),
+        };
+
+        let transfer_ctx = CpiContext::new(
+            ctx.accounts
+                .token_program
+                .as_ref()
+                .unwrap()
+                .to_account_info(),
+            transfer_accounts,
+        );
+
+        transfer_checked(transfer_ctx, game.entry_fee, token_mint.decimals)?;
+
+        // Update total prize pool
+        game.total_prize_pool = game
+            .total_prize_pool
+            .checked_add(game.entry_fee)
+            .ok_or(GameError::ArithmeticOverflow)?;
+
+        msg!(
+            "Entry fee {} paid by player {}",
+            game.entry_fee,
+            player_pubkey
+        );
+        msg!("Total prize pool: {}", game.total_prize_pool);
+    } 
+    // else {
+    //     // For free games, ensure no token accounts are provided
+    //     require!(
+    //         ctx.accounts.game_authority.is_none()
+    //             && ctx.accounts.token_mint.is_none()
+    //             && ctx.accounts.player_token_account.is_none()
+    //             && ctx.accounts.token_vault.is_none()
+    //             && ctx.accounts.token_program.is_none(),
+    //         GameError::UnexpectedTokenAccounts
+    //     );
+    // }
 
     // Initialize player state
     player_state.initialize_player_state(player_pubkey, game.key(), clock);
@@ -171,7 +395,7 @@ pub struct StartGame<'info> {
         bump,
         constraint = game.game_status == GameStatus::WaitingForPlayers @ GameError::GameNotInProgress,
         constraint = game.current_players >= MIN_PLAYERS @ GameError::MinPlayersNotMet,
-        constraint = authority.key() == game.authority @ GameError::Unauthorized,
+        constraint = authority.key() == game.creator @ GameError::Unauthorized,
         del
     )]
     pub game: Account<'info, GameState>,
@@ -272,8 +496,6 @@ pub fn start_game_handler<'c: 'info, 'info>(
     Ok(())
 }
 
-// test functions
-
 #[commit]
 #[derive(Accounts)]
 pub struct UndelegateGame<'info> {
@@ -283,7 +505,7 @@ pub struct UndelegateGame<'info> {
         bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress,
         constraint = game.current_players >= MIN_PLAYERS @ GameError::MinPlayersNotMet,
-        constraint = authority.key() == game.authority @ GameError::Unauthorized,
+        constraint = authority.key() == game.creator @ GameError::Unauthorized,
     )]
     pub game: Account<'info, GameState>,
 
@@ -349,7 +571,7 @@ pub struct CloseGame<'info> {
         bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress,
         constraint = game.current_players >= MIN_PLAYERS @ GameError::MinPlayersNotMet,
-        constraint = authority.key() == game.authority @ GameError::Unauthorized,
+        constraint = authority.key() == game.creator @ GameError::Unauthorized,
         close = authority
     )]
     pub game: Account<'info, GameState>,
@@ -403,7 +625,7 @@ pub struct ResetGame<'info> {
         bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress,
         constraint = game.current_players >= MIN_PLAYERS @ GameError::MinPlayersNotMet,
-        constraint = authority.key() == game.authority @ GameError::Unauthorized,
+        constraint = authority.key() == game.creator @ GameError::Unauthorized,
     )]
     pub game: Account<'info, GameState>,
 

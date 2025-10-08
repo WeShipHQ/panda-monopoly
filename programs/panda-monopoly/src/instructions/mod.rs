@@ -1,6 +1,7 @@
 // pub mod auction;
 pub mod bankruptcy;
 pub mod dice;
+pub mod end_game;
 pub mod end_turn;
 pub mod initialize;
 pub mod jail;
@@ -12,6 +13,7 @@ pub mod platform;
 // pub use auction::*;
 pub use bankruptcy::*;
 pub use dice::*;
+pub use end_game::*;
 pub use end_turn::*;
 pub use initialize::*;
 pub use jail::*;

@@ -1,7 +1,6 @@
-use crate::constants::*;
 use crate::error::GameError;
+use crate::instructions::end_game::check_game_end_condition;
 use crate::state::*;
-use crate::utils::*;
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
@@ -36,90 +35,75 @@ pub fn declare_bankruptcy_handler<'c: 'info, 'info>(
     let player_pubkey = ctx.accounts.player.key();
     let clock = &ctx.accounts.clock;
 
+    // Find player index in game.players vector
     let player_index = game
         .players
         .iter()
         .position(|&p| p == player_pubkey)
         .ok_or(GameError::PlayerNotFound)?;
 
-    if game.current_turn != player_index as u8 {
+    // Verify it's the player's turn or they need bankruptcy check
+    if game.current_turn != player_index as u8 && !player_state.needs_bankruptcy_check {
         return Err(GameError::NotPlayerTurn.into());
     }
 
+    // Mark player as bankrupt
+    player_state.is_bankrupt = true;
+
+    // Calculate total liquidation value from properties
     let mut total_liquidation_value = 0u64;
     let mut houses_returned = 0u8;
     let mut hotels_returned = 0u8;
 
-    let remaining_accounts_iter = &mut ctx.remaining_accounts.iter();
+    // Get all property accounts from remaining accounts
+    let remaining_accounts = &mut ctx.remaining_accounts.iter();
 
-    let owned_properties = player_state.properties_owned.clone();
+    for _i in 0..player_state.properties_owned.len() {
+        let property_account_info = next_account_info(remaining_accounts)?;
 
-    for &property_position in &owned_properties {
-        // Each property should have its PropertyState account in remaining_accounts
-        if let Some(property_account_info) = remaining_accounts_iter.next() {
-            let mut property_account_data = property_account_info.try_borrow_mut_data()?;
-            let mut property_state =
-                PropertyState::try_deserialize(&mut property_account_data.as_ref())?;
+        // let mut property_data = property_account_info.try_borrow_mut_data()?;
 
-            if property_state.owner != Some(player_pubkey) {
-                continue; // Skip if not owned by this player
-            }
+        let mut property_state: Account<PropertyState> =
+            Account::try_from_unchecked(property_account_info)?;
 
-            if property_state.position != property_position {
-                return Err(GameError::InvalidAccount.into());
-            }
-
+        // Verify this property belongs to the bankrupt player
+        if property_state.owner == Some(player_pubkey) {
+            // Calculate building liquidation value
             let building_value = calculate_building_liquidation_value(&property_state)?;
             total_liquidation_value = total_liquidation_value
                 .checked_add(building_value)
                 .ok_or(GameError::ArithmeticOverflow)?;
 
-            houses_returned = houses_returned
-                .checked_add(property_state.houses)
-                .ok_or(GameError::ArithmeticOverflow)?;
+            // Return buildings to bank
+            if property_state.houses > 0 {
+                houses_returned = houses_returned
+                    .checked_add(property_state.houses)
+                    .ok_or(GameError::ArithmeticOverflow)?;
+                property_state.houses = 0;
+            }
 
             if property_state.has_hotel {
                 hotels_returned = hotels_returned
                     .checked_add(1)
                     .ok_or(GameError::ArithmeticOverflow)?;
+                property_state.has_hotel = false;
             }
 
+            // Calculate mortgage value if not already mortgaged
             if !property_state.is_mortgaged {
+                let mortgage_value = property_state.mortgage_value as u64;
                 total_liquidation_value = total_liquidation_value
-                    .checked_add(property_state.mortgage_value as u64)
+                    .checked_add(mortgage_value)
                     .ok_or(GameError::ArithmeticOverflow)?;
             }
 
+            // Clear ownership
             property_state.owner = None;
-            property_state.houses = 0;
-            property_state.has_hotel = false;
             property_state.is_mortgaged = false;
-            property_state.last_rent_paid = 0;
-
-            // Serialize the updated property state back
-            let mut updated_data = Vec::new();
-            property_state.try_serialize(&mut updated_data)?;
-
-            // Update the account data
-            if updated_data.len() <= property_account_data.len() {
-                property_account_data[..updated_data.len()].copy_from_slice(&updated_data);
-            }
-
-            msg!(
-                "Property at position {} liquidated and returned to bank",
-                property_position
-            );
-        } else {
-            // If no property account provided for an owned property, just use base mortgage value
-            if let Some(property_data) = get_property_data(property_position) {
-                total_liquidation_value = total_liquidation_value
-                    .checked_add(property_data.mortgage_value as u64)
-                    .ok_or(GameError::ArithmeticOverflow)?;
-            }
         }
     }
 
-    // Return buildings to bank inventory
+    // Return buildings to bank
     game.houses_remaining = game
         .houses_remaining
         .checked_add(houses_returned)
@@ -130,22 +114,13 @@ pub fn declare_bankruptcy_handler<'c: 'info, 'info>(
         .checked_add(hotels_returned)
         .ok_or(GameError::ArithmeticOverflow)?;
 
-    // // Check if player truly needs to declare bankruptcy
-    // let total_available_funds = player_state.cash_balance + total_liquidation_value;
-
-    // // For now, we'll allow bankruptcy if they have insufficient funds for any pending obligation
-    // if total_available_funds > 0 && !player_state.needs_bankruptcy_check {
-    //     return Err(GameError::CannotDeclareBankruptcyWithAssets.into());
-    // }
-
-    // Add liquidation proceeds to player's cash
-    player_state.cash_balance = player_state
-        .cash_balance
+    // Add liquidation value to bank
+    game.bank_balance = game
+        .bank_balance
         .checked_add(total_liquidation_value)
         .ok_or(GameError::ArithmeticOverflow)?;
 
-    // Mark player as bankrupt
-    player_state.is_bankrupt = true;
+    // Clear bankruptcy check flag
     player_state.needs_bankruptcy_check = false;
 
     // Transfer all remaining cash to the bank
@@ -183,14 +158,33 @@ pub fn declare_bankruptcy_handler<'c: 'info, 'info>(
     );
 
     // Check if game should end (only one player remaining)
-    if game.current_players <= 1 {
+    if check_game_end_condition(game) {
         game.game_status = GameStatus::Finished;
-        if game.current_players == 1 {
-            // Find the remaining player and declare them winner
-            if let Some(&winner_pubkey) = game.players.iter().find(|&&p| p != Pubkey::default()) {
-                game.winner = Some(winner_pubkey);
-                msg!("Game ended. Winner: {}", winner_pubkey);
-            }
+
+        // Find the remaining player and declare them winner
+        if let Some(winner_pubkey) = game
+            .players
+            .iter()
+            .find(|&&p| p != Pubkey::default())
+            .copied()
+        {
+            game.winner = Some(winner_pubkey);
+            msg!("Game ended. Winner: {}", winner_pubkey);
+
+            emit!(GameEnded {
+                game_id: game.game_id,
+                winner: Some(winner_pubkey),
+                ended_at: clock.unix_timestamp,
+            });
+        } else {
+            // No players remaining (shouldn't happen in normal gameplay)
+            msg!("Game ended with no remaining players");
+
+            emit!(GameEnded {
+                game_id: game.game_id,
+                winner: None,
+                ended_at: clock.unix_timestamp,
+            });
         }
     } else {
         // Advance to next player's turn
@@ -213,7 +207,7 @@ fn calculate_building_liquidation_value(property_state: &PropertyState) -> Resul
             .ok_or(GameError::ArithmeticOverflow)?;
     }
 
-    // Hotels sell for half their cost (hotel cost = house_cost * 5)
+    // Hotels sell for half their cost (house_cost * 5 / 2)
     if property_state.has_hotel {
         let hotel_value = (property_state.house_cost as u64 * 5) / 2;
         value = value
@@ -225,25 +219,17 @@ fn calculate_building_liquidation_value(property_state: &PropertyState) -> Resul
 }
 
 fn reset_player_state_for_bankruptcy(player_state: &mut PlayerState) {
-    // Clear all pending actions
+    player_state.has_rolled_dice = false;
     player_state.needs_property_action = false;
     player_state.pending_property_position = None;
     player_state.needs_chance_card = false;
     player_state.needs_community_chest_card = false;
     player_state.needs_special_space_action = false;
     player_state.pending_special_space_position = None;
-    player_state.needs_bankruptcy_check = false;
-
-    // Reset position and jail status
-    player_state.position = 0; // Or move to a "bankrupt" position
+    player_state.doubles_count = 0;
     player_state.in_jail = false;
     player_state.jail_turns = 0;
-    player_state.doubles_count = 0;
-    player_state.has_rolled_dice = false;
-
-    // Reset other tracking fields
-    player_state.last_dice_roll = [0, 0];
-    player_state.last_rent_collected = 0;
+    player_state.position = 0; // Reset to GO
     player_state.festival_boost_turns = 0;
     player_state.card_drawn_at = None;
 }
