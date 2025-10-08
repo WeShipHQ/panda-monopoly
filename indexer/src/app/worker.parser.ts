@@ -4,7 +4,7 @@ import { writerQueue, Worker, workerBaseOpts } from '#infra/queue/bull'
 import { BackfillJob, RealtimeJob } from '#infra/queue/types'
 import { rateLimitedRPC } from '#infra/rpc/solana'
 import { logger } from '#utils/logger'
-import { mapTxToMonopolyRecords } from './monopoly.mapper'
+import { mapTxToMonopolyRecords } from '#shared/mappers/monopoly.mapper'
 
 export function startParserWorkers() {
   const handle = async (signature: string) => {
@@ -35,12 +35,13 @@ export function startParserWorkers() {
 
       for (const record of records) {
         // idempotent by pubkey if provided in data
-        const id = (record as any)?.data?.pubkey ?? `${signature}-${record.kind}`
+        const recordData = record as { data?: { pubkey?: string }; kind: string }
+        const id = recordData?.data?.pubkey ?? `${signature}-${record.kind}`
         await writerQueue.add('write', { record }, { jobId: id })
         logger.info(`Added ${record.kind} record to writer queue with id: ${id}`)
       }
     } catch (error: any) {
-      logger.error(`Failed to process transaction ${signature}:`, error)
+      logger.error({ error, signature }, `Failed to process transaction ${signature}`)
       throw error // Let the job queue handle retries
     }
   }

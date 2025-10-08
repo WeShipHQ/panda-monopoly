@@ -19,6 +19,8 @@ export async function startRealtimeListener() {
   return async () => {
     try {
       await conn.removeOnLogsListener(subId)
-    } catch {}
+    } catch (error) {
+      logger.warn({ error }, 'Failed to remove logs listener')
+    }
   }
 }
