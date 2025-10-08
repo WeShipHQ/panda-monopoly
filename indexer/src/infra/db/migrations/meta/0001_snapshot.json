@@ -1,6 +1,6 @@
 {
-  "id": "8f26808f-4eda-4302-80f5-182ac1c6f849",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "3a4cbbe8-91b7-4a44-a3a5-59c7b31d53d4",
+  "prevId": "8f26808f-4eda-4302-80f5-182ac1c6f849",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -659,6 +659,13 @@
           "type": "smallint",
           "primaryKey": false,
           "notNull": true
+        },
+        "active_trades": {
+          "name": "active_trades",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::json"
         },
         "account_created_at": {
           "name": "account_created_at",
@@ -1885,7 +1892,9 @@
         "sync_status_component_unique": {
           "name": "sync_status_component_unique",
           "nullsNotDistinct": false,
-          "columns": ["component"]
+          "columns": [
+            "component"
+          ]
         }
       },
       "policies": {},
@@ -2132,7 +2141,10 @@
     "public.building_type": {
       "name": "building_type",
       "schema": "public",
-      "values": ["House", "Hotel"]
+      "values": [
+        "House",
+        "Hotel"
+      ]
     },
     "public.color_group": {
       "name": "color_group",
@@ -2173,7 +2185,11 @@
     "public.game_status": {
       "name": "game_status",
       "schema": "public",
-      "values": ["WaitingForPlayers", "InProgress", "Finished"]
+      "values": [
+        "WaitingForPlayers",
+        "InProgress",
+        "Finished"
+      ]
     },
     "public.property_type": {
       "name": "property_type",
@@ -2194,22 +2210,44 @@
     "public.sync_component": {
       "name": "sync_component",
       "schema": "public",
-      "values": ["historical_sync", "account_listener", "queue_processor", "live_sync", "gap_recovery"]
+      "values": [
+        "historical_sync",
+        "account_listener",
+        "queue_processor",
+        "live_sync",
+        "gap_recovery"
+      ]
     },
     "public.sync_status_type": {
       "name": "sync_status_type",
       "schema": "public",
-      "values": ["running", "stopped", "completed", "failed"]
+      "values": [
+        "running",
+        "stopped",
+        "completed",
+        "failed"
+      ]
     },
     "public.trade_status": {
       "name": "trade_status",
       "schema": "public",
-      "values": ["Pending", "Accepted", "Rejected", "Cancelled", "Expired"]
+      "values": [
+        "Pending",
+        "Accepted",
+        "Rejected",
+        "Cancelled",
+        "Expired"
+      ]
     },
     "public.trade_type": {
       "name": "trade_type",
       "schema": "public",
-      "values": ["MoneyOnly", "PropertyOnly", "MoneyForProperty", "PropertyForMoney"]
+      "values": [
+        "MoneyOnly",
+        "PropertyOnly",
+        "MoneyForProperty",
+        "PropertyForMoney"
+      ]
     }
   },
   "schemas": {},
