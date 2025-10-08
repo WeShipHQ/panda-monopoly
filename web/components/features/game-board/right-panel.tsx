@@ -91,7 +91,15 @@ export function RightPanel() {
         <div className="flex items-start w-full flex-col gap-2">
           <Button
             onClick={() => {
+<<<<<<< HEAD
               handleUpdateBalance();
+=======
+              const rentAmount = 100;
+              const owner = "XLXwXZ6gEDERzH2H3N928Xf3DtCtLy2rpLFi9bArZQF";
+              const propertyName = "Test Property";
+
+              showRentPaymentErrorToast();
+>>>>>>> 4dab2eb (rent popup)
             }}
           >
             CHANCE

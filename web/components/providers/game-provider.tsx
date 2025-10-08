@@ -39,7 +39,10 @@ import {
   showRentPaymentFallbackToast,
   showRentPaymentErrorToast,
 } from "@/lib/toast-utils";
+<<<<<<< HEAD
 import { KeyedMutator } from "swr";
+=======
+>>>>>>> 4dab2eb (rent popup)
 
 interface GameContextType {
   gameAddress: Address | null;
