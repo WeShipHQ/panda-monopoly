@@ -1,412 +1,547 @@
+/**
+ * Leaderboard Routes
+ *
+ * Handles REST API endpoints for leaderboards, player statistics,
+ * and game analytics for marketing and engagement purposes.
+ *
+ * Architecture principles:
+ * - Comprehensive player statistics and rankings
+ * - Game analytics for business intelligence
+ * - Performance optimized with pagination
+ * - Flexible filtering and time ranges
+ *
+ * @author Senior Engineer - Following Google Code Standards
+ */
+
 import { FastifyInstance } from 'fastify'
 import { Type } from '@sinclair/typebox'
 import { DatabasePort } from '#infra/db/db.port'
-import {
-  PlayerService,
-  ResponseFormatter,
-  responseWrapperSchema,
-  errorResponseWrapperSchema,
-  paginatedResponseWrapperSchema,
-  paginatedQueryRequestDtoSchema
-} from '#shared'
+import { LeaderboardService } from '#server/services/leaderboard.service'
 import { getRequestId } from '../plugins/request-context'
 
-// Leaderboard item schemas
-const balanceLeaderboardItemSchema = Type.Object({
-  rank: Type.Number({ example: 1 }),
-  player: Type.Object({
-    pubkey: Type.String({ example: 'player-crH7JXBm-CtDZwaSy' }),
-    wallet: Type.String({ example: 'BD8S7kHhcpQgvyNp66AQYb97WzTRrUDyxZvWCtDZwaSy' }),
-    cash_balance: Type.String({ example: '1500' }),
-    net_worth: Type.String({ example: '1500' })
-  }),
-  value: Type.String({ example: '1500' }),
-  gameCount: Type.Number({ example: 0 })
+// ==================== VALIDATION SCHEMAS ====================
+
+const LeaderboardFiltersSchema = Type.Object({
+  timeRange: Type.Optional(Type.String({ enum: ['day', 'week', 'month', 'all'] })),
+  minGames: Type.Optional(Type.Number({ minimum: 0 })),
+  page: Type.Optional(Type.Number({ minimum: 1 })),
+  limit: Type.Optional(Type.Number({ minimum: 1, maximum: 100 }))
 })
 
-const winnersLeaderboardItemSchema = Type.Object({
-  rank: Type.Number({ example: 1 }),
-  player: Type.Object({
-    pubkey: Type.String({ example: 'player-xyz123' }),
-    wallet: Type.String({ example: 'BD8S7kHhcpQgvyNp66AQYb97WzTRrUDyxZvWCtDZwaSy' }),
-    wins: Type.Number({ example: 15 }),
-    totalGames: Type.Number({ example: 20 }),
-    winRate: Type.Number({ example: 75.0 })
-  }),
-  value: Type.Number({ example: 15 }),
-  winRate: Type.Number({ example: 75.0 })
+const PlayerStatsSchema = Type.Object({
+  playerId: Type.String(),
+  walletAddress: Type.String(),
+  playerName: Type.Optional(Type.String()),
+  totalGamesPlayed: Type.Number(),
+  totalGamesWon: Type.Number(),
+  totalGamesLost: Type.Number(),
+  winRate: Type.Number(),
+  averageCashBalance: Type.Number(),
+  highestCashBalance: Type.Number(),
+  totalPropertiesOwned: Type.Number(),
+  lastActiveDate: Type.String(),
+  rank: Type.Optional(Type.Number())
 })
 
-const richestPlayersItemSchema = Type.Object({
-  rank: Type.Number({ example: 1 }),
-  player: Type.Object({
-    pubkey: Type.String({ example: 'player-xyz123' }),
-    wallet: Type.String({ example: 'BD8S7kHhcpQgvyNp66AQYb97WzTRrUDyxZvWCtDZwaSy' }),
-    netWorth: Type.String({ example: '5500000' }),
-    cashBalance: Type.String({ example: '1200000' }),
-    propertiesValue: Type.String({ example: '4300000' }),
-    propertiesCount: Type.Number({ example: 8 })
-  }),
-  value: Type.String({ example: '5500000' })
+const GameAnalyticsSchema = Type.Object({
+  totalGames: Type.Number(),
+  activeGames: Type.Number(),
+  completedGames: Type.Number(),
+  totalPlayers: Type.Number(),
+  activePlayers: Type.Number(),
+  averagePlayersPerGame: Type.Number(),
+  averageGameDuration: Type.Optional(Type.Number()),
+  mostPopularTimeSlot: Type.Optional(Type.String()),
+  topProperties: Type.Array(
+    Type.Object({
+      position: Type.Number(),
+      propertyName: Type.Optional(Type.String()),
+      timesPurchased: Type.Number(),
+      averagePrice: Type.Number(),
+      totalRevenue: Type.Number()
+    })
+  )
 })
 
-const propertyMogulsItemSchema = Type.Object({
-  rank: Type.Number({ example: 1 }),
-  player: Type.Object({
-    pubkey: Type.String({ example: 'player-xyz123' }),
-    wallet: Type.String({ example: 'BD8S7kHhcpQgvyNp66AQYb97WzTRrUDyxZvWCtDZwaSy' }),
-    propertiesCount: Type.Number({ example: 12 }),
-    monopolies: Type.Number({ example: 2 }),
-    totalHouses: Type.Number({ example: 20 }),
-    totalHotels: Type.Number({ example: 3 })
-  }),
-  value: Type.Number({ example: 12 })
-})
-
-const recentWinnersItemSchema = Type.Object({
-  rank: Type.Number({ example: 1 }),
-  player: Type.Object({
-    pubkey: Type.String({ example: 'player-xyz123' }),
-    wallet: Type.String({ example: 'BD8S7kHhcpQgvyNp66AQYb97WzTRrUDyxZvWCtDZwaSy' }),
-    gameId: Type.String({ example: 'game-abc123' }),
-    winAmount: Type.String({ example: '3500000' }),
-    gameDuration: Type.Number({ example: 1800 }),
-    winnersCount: Type.Number({ example: 4 })
-  }),
-  wonAt: Type.String({ example: '2025-10-07T10:30:00Z' }),
-  timeAgo: Type.String({ example: '2 hours ago' })
-})
-
-// Paginated response schemas
-const balanceLeaderboardSchema = paginatedResponseWrapperSchema(balanceLeaderboardItemSchema)
-const winnersLeaderboardSchema = paginatedResponseWrapperSchema(winnersLeaderboardItemSchema)
-const richestPlayersSchema = paginatedResponseWrapperSchema(richestPlayersItemSchema)
-const propertyMogulsSchema = paginatedResponseWrapperSchema(propertyMogulsItemSchema)
-const recentWinnersSchema = paginatedResponseWrapperSchema(recentWinnersItemSchema)
-
-const globalStatsSchema = responseWrapperSchema(
+const PaginationResponseSchema = (itemSchema: any) =>
   Type.Object({
-    totalPlayers: Type.Number({ example: 1250 }),
-    totalGames: Type.Number({ example: 450 }),
-    activeGames: Type.Number({ example: 23 }),
-    totalMoneyInCirculation: Type.String({ example: '15750000000' }),
-    averageGameDuration: Type.Number({ example: 2340 }),
-    mostPopularProperty: Type.String({ example: 'Boardwalk' }),
-    biggestWin: Type.String({ example: '8500000' }),
-    longestGame: Type.Number({ example: 4800 })
+    success: Type.Boolean(),
+    data: Type.Object({
+      data: Type.Array(itemSchema),
+      pagination: Type.Object({
+        page: Type.Number(),
+        limit: Type.Number(),
+        total: Type.Number(),
+        totalPages: Type.Number(),
+        hasNext: Type.Boolean(),
+        hasPrev: Type.Boolean()
+      })
+    }),
+    requestId: Type.String(),
+    timestamp: Type.String()
   })
-)
 
-// Declare Fastify instance type
-declare module 'fastify' {
-  interface FastifyInstance {
-    db: DatabasePort
-  }
-}
+const ItemResponseSchema = (itemSchema: any) =>
+  Type.Object({
+    success: Type.Boolean(),
+    data: itemSchema,
+    requestId: Type.String(),
+    timestamp: Type.String()
+  })
+
+const ErrorResponseSchema = Type.Object({
+  success: Type.Boolean(),
+  error: Type.Object({
+    code: Type.String(),
+    message: Type.String(),
+    details: Type.Optional(Type.String())
+  }),
+  requestId: Type.String(),
+  timestamp: Type.String()
+})
+
+// ==================== ROUTES IMPLEMENTATION ====================
 
 export default async function leaderboardRoutes(fastify: FastifyInstance) {
-  const db = fastify.db
-  const playerService = new PlayerService(db)
+  const db: DatabasePort = fastify.db
+  const leaderboardService = new LeaderboardService(db)
 
-  // GET /api/leaderboard/balance - Top players by balance
-  fastify.get(
-    '/leaderboard/balance',
-    {
-      schema: {
-        tags: ['leaderboard'],
-        summary: 'Get players ranked by balance',
-        description: 'Get top players ranked by cash balance',
-        querystring: paginatedQueryRequestDtoSchema,
-        response: {
-          200: balanceLeaderboardSchema,
-          500: errorResponseWrapperSchema
-        }
+  // Removed redundant /leaderboard/winrate and /leaderboard/games-played endpoints
+  // These functionalities are now covered by the comprehensive /leaderboard/top-players endpoint
+
+  // ==================== COMPREHENSIVE TOP PLAYERS LEADERBOARD ====================
+
+  fastify.get('/leaderboard/top-players', {
+    schema: {
+      tags: ['Leaderboard'],
+      summary: 'Get comprehensive top players leaderboard',
+      description:
+        'Get players ranked by combined activity (games played) and success (games won) - perfect for main leaderboard display',
+      querystring: LeaderboardFiltersSchema,
+      response: {
+        200: PaginationResponseSchema(
+          Type.Object({
+            playerId: Type.String(),
+            walletAddress: Type.String(),
+            playerName: Type.Optional(Type.String()),
+            totalGamesPlayed: Type.Number(),
+            totalGamesWon: Type.Number(),
+            totalGamesLost: Type.Number(),
+            winRate: Type.Number(),
+            averageCashBalance: Type.Number(),
+            highestCashBalance: Type.Number(),
+            totalPropertiesOwned: Type.Number(),
+            lastActiveDate: Type.String(),
+            leaderboardScore: Type.Number(),
+            rank: Type.Optional(Type.Number())
+          })
+        ),
+        400: ErrorResponseSchema,
+        500: ErrorResponseSchema
       }
     },
-    async (request, reply) => {
+    handler: async (request, reply) => {
+      const requestId = getRequestId()
+      const filters = request.query as any
+
       try {
-        const query = request.query as any
+        // Validate filters
+        const validationErrors = leaderboardService.validateFilters(filters)
+        if (validationErrors.length > 0) {
+          reply.code(400).send({
+            success: false,
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: 'Invalid leaderboard filters',
+              details: validationErrors.join(', ')
+            },
+            requestId,
+            timestamp: new Date().toISOString()
+          })
+          return
+        }
+
         const pagination = {
-          page: query.page || 1,
-          limit: query.limit || 10
+          page: filters.page || 1,
+          limit: filters.limit || 10
         }
 
-        const leaderboard = await playerService.getLeaderboard('balance', pagination.limit)
+        const result = await leaderboardService.getTopPlayersLeaderboard(filters, pagination)
 
-        const paginationResult = {
-          data: leaderboard,
-          pagination: {
-            page: pagination.page,
-            limit: pagination.limit,
-            total: leaderboard.length, // For now, since getLeaderboard doesn't return total
-            totalPages: Math.ceil(leaderboard.length / pagination.limit),
-            hasNext: false,
-            hasPrev: pagination.page > 1
-          }
+        const paginationMeta = {
+          page: pagination.page,
+          limit: pagination.limit,
+          total: result.total,
+          totalPages: Math.ceil(result.total / pagination.limit),
+          hasNext: pagination.page * pagination.limit < result.total,
+          hasPrev: pagination.page > 1
         }
 
-        return ResponseFormatter.success(paginationResult, getRequestId())
+        reply.code(200).send({
+          success: true,
+          data: {
+            data: result.data,
+            pagination: paginationMeta
+          },
+          requestId,
+          timestamp: new Date().toISOString()
+        })
       } catch (error) {
-        fastify.log.error(error, 'Failed to get balance leaderboard')
-        reply.statusCode = 500
-        return ResponseFormatter.error('Failed to retrieve balance leaderboard', 500, getRequestId())
+        fastify.log.error({ error, requestId }, 'Failed to get top players leaderboard')
+        reply.code(500).send({
+          success: false,
+          error: {
+            code: 'FETCH_TOP_PLAYERS_LEADERBOARD_FAILED',
+            message: 'Failed to fetch top players leaderboard'
+          },
+          requestId,
+          timestamp: new Date().toISOString()
+        })
       }
     }
-  )
+  })
 
-  // GET /api/leaderboard/properties - Top players by properties
-  fastify.get(
-    '/leaderboard/properties',
-    {
-      schema: {
-        tags: ['leaderboard'],
-        summary: 'Get players ranked by properties',
-        description: 'Get top players ranked by number of properties owned',
-        querystring: paginatedQueryRequestDtoSchema,
-        response: {
-          200: balanceLeaderboardSchema,
-          500: errorResponseWrapperSchema
-        }
+  // Removed redundant /leaderboard/cash endpoint
+  // Cash balance information is included in the comprehensive /leaderboard/top-players endpoint
+
+  // ==================== GAME ANALYTICS ====================
+
+  fastify.get('/leaderboard/analytics', {
+    schema: {
+      tags: ['Leaderboard'],
+      summary: 'Get comprehensive game analytics',
+      description: 'Get overall game statistics and analytics for business intelligence',
+      querystring: Type.Object({
+        timeRange: Type.Optional(Type.String({ enum: ['day', 'week', 'month', 'all'] }))
+      }),
+      response: {
+        200: ItemResponseSchema(GameAnalyticsSchema),
+        500: ErrorResponseSchema
       }
     },
-    async (request, reply) => {
+    handler: async (request, reply) => {
+      const requestId = getRequestId()
+      const { timeRange = 'all' } = request.query as any
+
       try {
-        const query = request.query as any
-        const pagination = {
-          page: query.page || 1,
-          limit: query.limit || 10
-        }
+        const analytics = await leaderboardService.getGameAnalytics(timeRange)
 
-        const leaderboard = await playerService.getLeaderboard('properties', pagination.limit)
-
-        const paginationResult = {
-          data: leaderboard,
-          pagination: {
-            page: pagination.page,
-            limit: pagination.limit,
-            total: leaderboard.length,
-            totalPages: Math.ceil(leaderboard.length / pagination.limit),
-            hasNext: false,
-            hasPrev: pagination.page > 1
-          }
-        }
-
-        return ResponseFormatter.success(paginationResult, getRequestId())
+        reply.code(200).send({
+          success: true,
+          data: analytics,
+          requestId,
+          timestamp: new Date().toISOString()
+        })
       } catch (error) {
-        fastify.log.error(error, 'Failed to get properties leaderboard')
-        reply.statusCode = 500
-        return ResponseFormatter.error('Failed to retrieve properties leaderboard', 500, getRequestId())
+        fastify.log.error({ error, requestId }, 'Failed to get game analytics')
+        reply.code(500).send({
+          success: false,
+          error: {
+            code: 'FETCH_GAME_ANALYTICS_FAILED',
+            message: 'Failed to fetch game analytics'
+          },
+          requestId,
+          timestamp: new Date().toISOString()
+        })
       }
     }
-  )
+  })
 
-  // GET /api/leaderboard/winners - Top game winners
-  fastify.get(
-    '/leaderboard/winners',
-    {
-      schema: {
-        tags: ['leaderboard'],
-        summary: 'Get top game winners',
-        description: 'Get players with the most game wins',
-        querystring: paginatedQueryRequestDtoSchema,
-        response: {
-          200: winnersLeaderboardSchema,
-          500: errorResponseWrapperSchema
-        }
+  // ==================== PLAYER STATS ====================
+
+  fastify.get('/leaderboard/player/:playerId', {
+    schema: {
+      tags: ['Leaderboard'],
+      summary: 'Get individual player statistics',
+      description: 'Get comprehensive statistics for a specific player',
+      params: Type.Object({
+        playerId: Type.String({ minLength: 32, maxLength: 44 })
+      }),
+      response: {
+        200: ItemResponseSchema(PlayerStatsSchema),
+        404: ErrorResponseSchema,
+        500: ErrorResponseSchema
       }
     },
-    async (request, reply) => {
+    handler: async (request, reply) => {
+      const requestId = getRequestId()
+      const { playerId } = request.params as { playerId: string }
+
       try {
-        const query = request.query as any
-        const pagination = {
-          page: query.page || 1,
-          limit: query.limit || 10
+        const playerStats = await leaderboardService.getPlayerStats(playerId)
+
+        if (!playerStats) {
+          reply.code(404).send({
+            success: false,
+            error: {
+              code: 'PLAYER_NOT_FOUND',
+              message: `Player with ID ${playerId} not found`
+            },
+            requestId,
+            timestamp: new Date().toISOString()
+          })
+          return
         }
 
-        const result = await playerService.getTopWinners(pagination)
-
-        const paginationResult = {
-          data: result.data,
-          pagination: {
-            page: result.page,
-            limit: result.limit,
-            total: result.total,
-            totalPages: Math.ceil(result.total / result.limit),
-            hasNext: result.page * result.limit < result.total,
-            hasPrev: result.page > 1
-          }
-        }
-
-        return ResponseFormatter.success(paginationResult, getRequestId())
+        reply.code(200).send({
+          success: true,
+          data: playerStats,
+          requestId,
+          timestamp: new Date().toISOString()
+        })
       } catch (error) {
-        fastify.log.error(error, 'Failed to get top winners')
-        reply.statusCode = 500
-        return ResponseFormatter.error('Failed to retrieve top winners', 500, getRequestId())
+        fastify.log.error({ error, requestId, playerId }, 'Failed to get player stats')
+        reply.code(500).send({
+          success: false,
+          error: {
+            code: 'FETCH_PLAYER_STATS_FAILED',
+            message: 'Failed to fetch player statistics'
+          },
+          requestId,
+          timestamp: new Date().toISOString()
+        })
       }
     }
-  )
+  })
 
-  // GET /api/leaderboard/richest - Richest players by net worth
-  fastify.get(
-    '/leaderboard/richest',
-    {
-      schema: {
-        tags: ['leaderboard'],
-        summary: 'Get richest players',
-        description: 'Get players with highest net worth including properties',
-        querystring: paginatedQueryRequestDtoSchema,
-        response: {
-          200: richestPlayersSchema,
-          500: errorResponseWrapperSchema
-        }
+  // ==================== PLAYER STATS BY WALLET ADDRESS ====================
+
+  fastify.get('/leaderboard/wallet/:walletAddress', {
+    schema: {
+      tags: ['Leaderboard'],
+      summary: 'Get player statistics by wallet address',
+      description: 'Get comprehensive statistics for a player using their wallet address',
+      params: Type.Object({
+        walletAddress: Type.String({ minLength: 32, maxLength: 44 })
+      }),
+      response: {
+        200: ItemResponseSchema(PlayerStatsSchema),
+        404: ErrorResponseSchema,
+        500: ErrorResponseSchema
       }
     },
-    async (request, reply) => {
+    handler: async (request, reply) => {
+      const requestId = getRequestId()
+      const { walletAddress } = request.params as { walletAddress: string }
+
       try {
-        const query = request.query as any
-        const pagination = {
-          page: query.page || 1,
-          limit: query.limit || 10
+        const playerStats = await leaderboardService.getPlayerStatsByWallet(walletAddress)
+
+        if (!playerStats) {
+          reply.code(404).send({
+            success: false,
+            error: {
+              code: 'PLAYER_NOT_FOUND',
+              message: `Player with wallet address ${walletAddress} not found`
+            },
+            requestId,
+            timestamp: new Date().toISOString()
+          })
+          return
         }
 
-        const result = await playerService.getRichestPlayers(pagination)
-
-        const paginationResult = {
-          data: result.data,
-          pagination: {
-            page: result.page,
-            limit: result.limit,
-            total: result.total,
-            totalPages: Math.ceil(result.total / result.limit),
-            hasNext: result.page * result.limit < result.total,
-            hasPrev: result.page > 1
-          }
-        }
-
-        return ResponseFormatter.success(paginationResult, getRequestId())
+        reply.code(200).send({
+          success: true,
+          data: playerStats,
+          requestId,
+          timestamp: new Date().toISOString()
+        })
       } catch (error) {
-        fastify.log.error(error, 'Failed to get richest players')
-        reply.statusCode = 500
-        return ResponseFormatter.error('Failed to retrieve richest players', 500, getRequestId())
+        fastify.log.error({ error, requestId, walletAddress }, 'Failed to get player stats by wallet')
+        reply.code(500).send({
+          success: false,
+          error: {
+            code: 'FETCH_PLAYER_STATS_BY_WALLET_FAILED',
+            message: 'Failed to fetch player statistics by wallet address'
+          },
+          requestId,
+          timestamp: new Date().toISOString()
+        })
       }
     }
-  )
+  })
 
-  // GET /api/leaderboard/property-moguls - Property moguls (most properties)
-  fastify.get(
-    '/leaderboard/property-moguls',
-    {
-      schema: {
-        tags: ['leaderboard'],
-        summary: 'Get property moguls',
-        description: 'Get players with the most properties owned',
-        querystring: paginatedQueryRequestDtoSchema,
-        response: {
-          200: propertyMogulsSchema,
-          500: errorResponseWrapperSchema
-        }
+  // ==================== RECENT ACTIVITY ====================
+
+  fastify.get('/leaderboard/recent-activity', {
+    schema: {
+      tags: ['Leaderboard'],
+      summary: 'Get recent game activity',
+      description: 'Get recent games and activity summary',
+      querystring: Type.Object({
+        limit: Type.Optional(Type.Number({ minimum: 1, maximum: 50 }))
+      }),
+      response: {
+        200: Type.Object({
+          success: Type.Boolean(),
+          data: Type.Object({
+            data: Type.Array(
+              Type.Object({
+                pubkey: Type.String(),
+                gameId: Type.Number(),
+                currentPlayers: Type.Number(),
+                gameStatus: Type.String(),
+                createdAt: Type.Number()
+              })
+            ),
+            newPlayers: Type.Number(),
+            activePlayersToday: Type.Number()
+          }),
+          requestId: Type.String(),
+          timestamp: Type.String()
+        }),
+        500: ErrorResponseSchema
       }
     },
-    async (request, reply) => {
+    handler: async (request, reply) => {
+      const requestId = getRequestId()
+      const { limit = 10 } = request.query as any
+
       try {
-        const query = request.query as any
-        const pagination = {
-          page: query.page || 1,
-          limit: query.limit || 10
-        }
+        const activity = await leaderboardService.getRecentActivity(limit)
 
-        const result = await playerService.getPropertyMoguls(pagination)
-
-        const paginationResult = {
-          data: result.data,
-          pagination: {
-            page: result.page,
-            limit: result.limit,
-            total: result.total,
-            totalPages: Math.ceil(result.total / result.limit),
-            hasNext: result.page * result.limit < result.total,
-            hasPrev: result.page > 1
-          }
-        }
-
-        return ResponseFormatter.success(paginationResult, getRequestId())
+        reply.code(200).send({
+          success: true,
+          data: {
+            data: activity.recentGames,
+            newPlayers: activity.newPlayers,
+            activePlayersToday: activity.activePlayersToday
+          },
+          requestId,
+          timestamp: new Date().toISOString()
+        })
       } catch (error) {
-        fastify.log.error(error, 'Failed to get property moguls')
-        reply.statusCode = 500
-        return ResponseFormatter.error('Failed to retrieve property moguls', 500, getRequestId())
+        fastify.log.error({ error, requestId }, 'Failed to get recent activity')
+        reply.code(500).send({
+          success: false,
+          error: {
+            code: 'FETCH_RECENT_ACTIVITY_FAILED',
+            message: 'Failed to fetch recent activity'
+          },
+          requestId,
+          timestamp: new Date().toISOString()
+        })
       }
     }
-  )
+  })
 
-  // GET /api/leaderboard/recent-winners - Recent game winners
-  fastify.get(
-    '/leaderboard/recent-winners',
-    {
-      schema: {
-        tags: ['leaderboard'],
-        summary: 'Get recent game winners',
-        description: 'Get players who won games recently',
-        querystring: paginatedQueryRequestDtoSchema,
-        response: {
-          200: recentWinnersSchema,
-          500: errorResponseWrapperSchema
-        }
+  // ==================== TOP GAMES ====================
+
+  fastify.get('/leaderboard/top-games', {
+    schema: {
+      tags: ['Leaderboard'],
+      summary: 'Get top performing games',
+      description: 'Get games with highest player engagement',
+      querystring: Type.Object({
+        limit: Type.Optional(Type.Number({ minimum: 1, maximum: 50 }))
+      }),
+      response: {
+        200: ItemResponseSchema(
+          Type.Object({
+            data: Type.Array(
+              Type.Object({
+                gameId: Type.String(),
+                playerCount: Type.Number(),
+                duration: Type.Optional(Type.Number()),
+                status: Type.String(),
+                createdAt: Type.String(),
+                isPopular: Type.Boolean()
+              })
+            )
+          })
+        ),
+        500: ErrorResponseSchema
       }
     },
-    async (request, reply) => {
+    handler: async (request, reply) => {
+      const requestId = getRequestId()
+      const { limit = 10 } = request.query as any
+
       try {
-        const query = request.query as any
-        const pagination = {
-          page: query.page || 1,
-          limit: query.limit || 5
-        }
+        const topGames = await leaderboardService.getTopGames(limit)
 
-        const result = await playerService.getRecentWinners(pagination)
-
-        const paginationResult = {
-          data: result.data,
-          pagination: {
-            page: result.page,
-            limit: result.limit,
-            total: result.total,
-            totalPages: Math.ceil(result.total / result.limit),
-            hasNext: result.page * result.limit < result.total,
-            hasPrev: result.page > 1
-          }
-        }
-
-        return ResponseFormatter.success(paginationResult, getRequestId())
+        reply.code(200).send({
+          success: true,
+          data: {
+            data: topGames
+          },
+          requestId,
+          timestamp: new Date().toISOString()
+        })
       } catch (error) {
-        fastify.log.error(error, 'Failed to get recent winners')
-        reply.statusCode = 500
-        return ResponseFormatter.error('Failed to retrieve recent winners', 500, getRequestId())
+        fastify.log.error({ error, requestId }, 'Failed to get top games')
+        reply.code(500).send({
+          success: false,
+          error: {
+            code: 'FETCH_TOP_GAMES_FAILED',
+            message: 'Failed to fetch top games'
+          },
+          requestId,
+          timestamp: new Date().toISOString()
+        })
       }
     }
-  )
+  })
 
-  // GET /api/leaderboard/stats - Global game statistics
-  fastify.get(
-    '/leaderboard/stats',
-    {
-      schema: {
-        tags: ['leaderboard'],
-        summary: 'Get global game statistics',
-        description: 'Get overall game statistics for homepage and leaderboard',
-        response: {
-          200: globalStatsSchema,
-          500: errorResponseWrapperSchema
-        }
+  // ==================== DYNAMIC CONFIGURATION DEBUG ENDPOINT ====================
+
+  fastify.get('/leaderboard/config', {
+    schema: {
+      tags: ['Leaderboard'],
+      summary: 'Get dynamic configuration values',
+      description: 'Debug endpoint to view current dynamic configuration settings',
+      response: {
+        200: Type.Object({
+          success: Type.Boolean(),
+          data: Type.Object({
+            winThreshold: Type.Number(),
+            thresholdSource: Type.String(),
+            thresholdCalculatedAt: Type.String(),
+            gameDefaults: Type.Object({
+              minGames: Type.Number(),
+              defaultLimit: Type.Number(),
+              maxLimit: Type.Number()
+            }),
+            databaseStats: Type.Object({
+              recentGamesCount: Type.Number(),
+              cashPercentiles: Type.Object({
+                p25: Type.Number(),
+                p50: Type.Number(),
+                p75: Type.Number(),
+                p90: Type.Number()
+              })
+            })
+          }),
+          requestId: Type.String(),
+          timestamp: Type.String()
+        }),
+        500: ErrorResponseSchema
       }
     },
-    async (request, reply) => {
+    handler: async (request, reply) => {
+      const requestId = getRequestId()
+
       try {
-        const stats = await playerService.getGlobalStats()
-        return ResponseFormatter.success(stats, getRequestId())
+        const config = await leaderboardService.getDynamicConfiguration()
+
+        reply.code(200).send({
+          success: true,
+          data: config,
+          requestId,
+          timestamp: new Date().toISOString()
+        })
       } catch (error) {
-        fastify.log.error(error, 'Failed to get global stats')
-        reply.statusCode = 500
-        return ResponseFormatter.error('Failed to retrieve global stats', 500, getRequestId())
+        fastify.log.error({ error, requestId }, 'Failed to get dynamic configuration')
+        reply.code(500).send({
+          success: false,
+          error: {
+            code: 'CONFIG_FETCH_FAILED',
+            message: 'Failed to fetch dynamic configuration'
+          },
+          requestId,
+          timestamp: new Date().toISOString()
+        })
       }
     }
-  )
+  })
 }

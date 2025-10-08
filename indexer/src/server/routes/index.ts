@@ -1,12 +1,13 @@
 import { FastifyInstance } from 'fastify'
 import healthRoutes from './health'
-import gamesRoutes from './games'
-import playersRoutes from './players'
-import propertiesRoutes from './properties'
-import tradesRoutes from './trades'
+import gameStatesRoutes from './game-states'
+import playerStatesRoutes from './player-states'
+import propertyStatesRoutes from './property-states'
+import tradeStatesRoutes from './trade-states'
+import gameLogsRoutes from './game-logs'
+import leaderboardRoutes from './leaderboard'
 import rpcStatusRoutes from './rpc-status'
 import metricsRoutes from './metrics'
-import leaderboardRoutes from './leaderboard'
 
 export default async function routes(fastify: FastifyInstance) {
   // Root API endpoint
@@ -15,10 +16,11 @@ export default async function routes(fastify: FastifyInstance) {
     message: 'Panda Monopoly Indexer API',
     version: '1.0.0',
     endpoints: {
-      games: '/api/games',
-      players: '/api/players',
-      properties: '/api/properties',
-      trades: '/api/trades',
+      'game-states': '/api/game-states',
+      'player-states': '/api/player-states',
+      'property-states': '/api/property-states',
+      'trade-states': '/api/trade-states',
+      'game-logs': '/api/game-logs',
       leaderboard: '/api/leaderboard',
       health: '/api/health',
       metrics: '/api/metrics',
@@ -29,10 +31,11 @@ export default async function routes(fastify: FastifyInstance) {
 
   // Register all route modules
   await fastify.register(healthRoutes)
-  await fastify.register(gamesRoutes)
-  await fastify.register(playersRoutes)
-  await fastify.register(propertiesRoutes)
-  await fastify.register(tradesRoutes)
+  await fastify.register(gameStatesRoutes)
+  await fastify.register(playerStatesRoutes)
+  await fastify.register(propertyStatesRoutes)
+  await fastify.register(tradeStatesRoutes)
+  await fastify.register(gameLogsRoutes)
   await fastify.register(leaderboardRoutes)
   await fastify.register(rpcStatusRoutes)
   await fastify.register(metricsRoutes)
