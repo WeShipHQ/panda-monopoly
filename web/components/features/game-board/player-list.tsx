@@ -44,9 +44,7 @@ function PlayerItem({ player, index, isCurrentTurn, isYou }: PlayerItemProps) {
               </p>
             </div>
             <p className="text-sm text-gray-600">
-              {formatPrice(Number(player.cashBalance), {
-                compact: true,
-              })}
+              {formatPrice(Number(player.cashBalance))}
             </p>
 
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center space-x-1 mt-1">

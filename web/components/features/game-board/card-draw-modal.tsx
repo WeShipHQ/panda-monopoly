@@ -106,7 +106,6 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
   }, [latestCardDraw, isDrawing, cardDeck, cardType]);
 
   const startRolling = React.useCallback(() => {
-    // Cycle quickly through deck while waiting for the chain event
     if (rollingTimerRef.current) {
       window.clearInterval(rollingTimerRef.current);
     }
@@ -131,7 +130,6 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
       } else {
         await drawCommunityChestCard();
       }
-      // await new Promise((resolve) => setTimeout(resolve, 3000));
     } catch (error) {
       console.error("Error drawing card:", error);
       if (rollingTimerRef.current) {
@@ -165,28 +163,8 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
     onClose?.();
   };
 
-  // const handleApplyCard = () => {
-  //   if (drawnCard) {
-  //     onCardDrawn?.(drawnCard);
-  //   }
-  //   handleClose();
-  // };
-
   const displayCard: CardData | null =
     drawnCard ?? (isDrawing ? cardDeck[rollingIndex] : null);
-
-  /* Type=Chance */
-
-  // width: 112px;
-  // height: 182px;
-
-  // background: #D9E8D6;
-  // border: 3.5px solid #000000;
-
-  // /* Inside auto layout */
-  // flex: none;
-  // order: 1;
-  // flex-grow: 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>

@@ -14,8 +14,13 @@ import { BankruptcyButton } from "./bankruptcy-button";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import envConfig from "@/configs/env";
-import { cn } from "@/lib/utils";
+import { cn, formatAddress } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  showRentPaymentErrorToast,
+  showRentPaymentToast,
+  showRentPaymentFallbackToast,
+} from "@/lib/toast-utils";
 
 export function RightPanel() {
   const { setCardDrawType, setIsCardDrawModalOpen } = useGameContext();
@@ -28,12 +33,11 @@ export function RightPanel() {
         <div className="flex items-start w-full flex-col gap-2">
           <Button
             onClick={() => {
-              // setHasShownChanceModal(true);
-              setTimeout(() => {
-                console.log("Player needs to draw Chance card");
-                setCardDrawType("chance");
-                setIsCardDrawModalOpen(true);
-              }, 300);
+              const rentAmount = 100;
+              const owner = "XLXwXZ6gEDERzH2H3N928Xf3DtCtLy2rpLFi9bArZQF";
+              const propertyName = "Test Property";
+
+              showRentPaymentErrorToast();
             }}
           >
             CHANCE

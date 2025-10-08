@@ -34,6 +34,11 @@ import { playPropertySound, playSound, SOUND_CONFIG } from "@/lib/soundUtil";
 import { toast } from "sonner";
 import soundUtil from "@/lib/soundUtil";
 import { BuildingType, GameStatus, TradeType } from "@/lib/sdk/generated";
+import {
+  showRentPaymentToast,
+  showRentPaymentFallbackToast,
+  showRentPaymentErrorToast,
+} from "@/lib/toast-utils";
 
 interface GameContextType {
   gameAddress: Address | null;
@@ -149,9 +154,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [cardDrawType, setCardDrawType] = useState<
     "chance" | "community-chest" | null
   >(null);
-
-  // Trade UI state
-  const [isTradeDialogOpen, setIsTradeDialogOpen] = useState(false);
 
   // Add these new state variables to track if modals have been shown
   const [hasShownChanceModal, setHasShownChanceModal] = useState(false);
@@ -1259,24 +1261,22 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
               const propertyData = getBoardSpaceData(property.position);
               const propertyName = propertyData?.name || "Property";
 
-              toast.info(
-                `${formatAddress(
-                  player.wallet
-                )} paid $${rentAmount} rent to ${formatAddress(
-                  property.owner
-                )} for ${propertyName}`
-              );
+              showRentPaymentToast({
+                rentAmount,
+                ownerAddress: property.owner,
+                propertyName,
+              });
+            } else {
+              // Fallback toast if owner player data is not available
+              const propertyData = getBoardSpaceData(property.position);
+              showRentPaymentFallbackToast({
+                ownerAddress: property.owner,
+                propertyName: propertyData?.name || "Property",
+              });
             }
-            // else {
-            //   const propertyData = getBoardSpaceData(property.position);
-            //   toast.info(
-            //     `${formatAddress(player.wallet)} paid rent to ${formatAddress(
-            //       property.owner
-            //     )} for ${propertyData?.name || "Property"}`
-            //   );
-            // }
           } catch (error) {
             console.error("Error auto-paying rent:", error);
+            showRentPaymentErrorToast();
           }
           return;
         }
