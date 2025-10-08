@@ -1,5 +1,6 @@
 import { FastifyError, FastifyInstance } from 'fastify'
 import fp from 'fastify-plugin'
+import { ResponseFormatter, ERROR_CODES } from '#shared/utils/response-formatter'
 import { getRequestId } from './request-context'
 
 // Base exception class
@@ -116,15 +117,12 @@ async function errorHandler(fastify: FastifyInstance) {
 
   // Handle 404 routes
   fastify.setNotFoundHandler((request, reply) => {
-    const requestId = getRequestId()
-
-    return reply.status(404).send({
-      success: false,
-      statusCode: 404,
-      message: `Route ${request.method}:${request.url} not found`,
-      error: 'Not Found',
-      requestId
-    })
+    return reply.status(404).send(
+      ResponseFormatter.error(ERROR_CODES.NOT_FOUND, 'Route not found', {
+        path: request.url,
+        method: request.method
+      })
+    )
   })
 }
 
