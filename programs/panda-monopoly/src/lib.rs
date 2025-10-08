@@ -82,16 +82,13 @@ pub mod panda_monopoly {
     }
 
     // Dice and movement instructions
-    pub fn roll_dice(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> Result<()> {
-        instructions::dice::roll_dice_handler(ctx, dice_roll)
-    }
-
-    pub fn roll_dice_vrf_handler(
-        ctx: Context<RollDiceVrf>,
-        seed: u8,
+    pub fn roll_dice(
+        ctx: Context<RollDice>,
+        use_vrf: bool,
+        client_seed: u8,
         dice_roll: Option<[u8; 2]>,
     ) -> Result<()> {
-        instructions::dice::roll_dice_vrf_handler(ctx, seed, dice_roll)
+        instructions::dice::roll_dice_handler(ctx, use_vrf, client_seed, dice_roll)
     }
 
     pub fn callback_roll_dice(
@@ -99,14 +96,6 @@ pub mod panda_monopoly {
         randomness: [u8; 32],
     ) -> Result<()> {
         instructions::dice::callback_roll_dice(ctx, randomness)
-    }
-
-    pub fn draw_chance_card_vrf_handler(
-        ctx: Context<DrawChanceCardVrf>,
-        client_seed: u8,
-        card_index: Option<u8>,
-    ) -> Result<()> {
-        instructions::special_spaces::draw_chance_card_vrf_handler(ctx, client_seed, card_index)
     }
 
     pub fn callback_draw_chance_card(
@@ -151,77 +140,126 @@ pub mod panda_monopoly {
         instructions::special_spaces::pay_priority_fee_tax_handler(ctx)
     }
 
-    pub fn draw_chance_card(ctx: Context<DrawChanceCard>, card_index: Option<u8>) -> Result<()> {
-        instructions::special_spaces::draw_chance_card_handler(ctx, card_index)
-    }
-
-    pub fn draw_community_chest_card(
-        ctx: Context<DrawCommunityChestCard>,
-        client_seed: Option<u8>,
+    pub fn draw_chance_card(
+        ctx: Context<DrawChanceCard>,
+        use_vrf: bool,
+        client_seed: u8,
         card_index: Option<u8>,
     ) -> Result<()> {
-        instructions::special_spaces::draw_community_chest_card_handler(
+        instructions::special_spaces::draw_chance_card_handler(
             ctx,
+            use_vrf,
             client_seed,
             card_index,
         )
     }
 
-    pub fn collect_free_parking(ctx: Context<CollectFreeParking>) -> Result<()> {
-        instructions::special_spaces::collect_free_parking_handler(ctx)
+    pub fn draw_community_chest_card(
+        ctx: Context<DrawCommunityChestCard>,
+        use_vrf: bool,
+        client_seed: u8,
+        card_index: Option<u8>,
+    ) -> Result<()> {
+        instructions::special_spaces::draw_community_chest_card_handler(
+            ctx,
+            use_vrf,
+            client_seed,
+            card_index,
+        )
     }
 
-    pub fn visit_beach_resort(ctx: Context<VisitBeachResort>) -> Result<()> {
-        instructions::special_spaces::visit_beach_resort_handler(ctx)
-    }
+    // pub fn collect_free_parking(ctx: Context<CollectFreeParking>) -> Result<()> {
+    //     instructions::special_spaces::collect_free_parking_handler(ctx)
+    // }
 
-    pub fn attend_festival(ctx: Context<AttendFestival>) -> Result<()> {
-        instructions::special_spaces::attend_festival_handler(ctx)
-    }
+    // pub fn visit_beach_resort(ctx: Context<VisitBeachResort>) -> Result<()> {
+    //     instructions::special_spaces::visit_beach_resort_handler(ctx)
+    // }
+
+    // pub fn attend_festival(ctx: Context<AttendFestival>) -> Result<()> {
+    //     instructions::special_spaces::attend_festival_handler(ctx)
+    // }
 
     // Property instructions
-    pub fn init_property_handler(
-        ctx: Context<InitProperty>,
-        game_key: Pubkey,
-        position: u8,
-    ) -> Result<()> {
-        instructions::property::init_property_handler(ctx, game_key, position)
+    // pub fn init_property_handler(
+    //     ctx: Context<InitProperty>,
+    //     game_key: Pubkey,
+    //     position: u8,
+    // ) -> Result<()> {
+    //     instructions::property::init_property_handler(ctx, game_key, position)
+    // }
+
+    // pub fn buy_property(ctx: Context<BuyProperty>, position: u8) -> Result<()> {
+    //     instructions::property::buy_property_handler(ctx, position)
+    // }
+
+    // pub fn decline_property(ctx: Context<DeclineProperty>, position: u8) -> Result<()> {
+    //     instructions::property::decline_property_handler(ctx, position)
+    // }
+
+    // pub fn pay_rent(ctx: Context<PayRent>, position: u8) -> Result<()> {
+    //     instructions::property::pay_rent_handler(ctx, position)
+    // }
+
+    // pub fn build_house(ctx: Context<BuildHouse>, position: u8) -> Result<()> {
+    //     instructions::property::build_house_handler(ctx, position)
+    // }
+
+    // pub fn build_hotel(ctx: Context<BuildHotel>, position: u8) -> Result<()> {
+    //     instructions::property::build_hotel_handler(ctx, position)
+    // }
+
+    // pub fn sell_building(
+    //     ctx: Context<SellBuilding>,
+    //     position: u8,
+    //     building_type: BuildingType,
+    // ) -> Result<()> {
+    //     instructions::property::sell_building_handler(ctx, position, building_type)
+    // }
+
+    // pub fn mortgage_property(ctx: Context<MortgageProperty>, position: u8) -> Result<()> {
+    //     instructions::property::mortgage_property_handler(ctx, position)
+    // }
+
+    // pub fn unmortgage_property(ctx: Context<UnmortgageProperty>, position: u8) -> Result<()> {
+    //     instructions::property::unmortgage_property_handler(ctx, position)
+    // }
+
+    // properties v2
+    pub fn buy_property_v2(ctx: Context<BuyPropertyV2>, position: u8) -> Result<()> {
+        instructions::property::buy_property_v2_handler(ctx, position)
     }
 
-    pub fn buy_property(ctx: Context<BuyProperty>, position: u8) -> Result<()> {
-        instructions::property::buy_property_handler(ctx, position)
-    }
-
-    pub fn decline_property(ctx: Context<DeclineProperty>, position: u8) -> Result<()> {
-        instructions::property::decline_property_handler(ctx, position)
-    }
-
-    pub fn pay_rent(ctx: Context<PayRent>, position: u8) -> Result<()> {
-        instructions::property::pay_rent_handler(ctx, position)
-    }
-
-    pub fn build_house(ctx: Context<BuildHouse>, position: u8) -> Result<()> {
-        instructions::property::build_house_handler(ctx, position)
-    }
-
-    pub fn build_hotel(ctx: Context<BuildHotel>, position: u8) -> Result<()> {
-        instructions::property::build_hotel_handler(ctx, position)
-    }
-
-    pub fn sell_building(
-        ctx: Context<SellBuilding>,
+    pub fn sell_building_v2(
+        ctx: Context<SellBuildingV2>,
         position: u8,
         building_type: BuildingType,
     ) -> Result<()> {
-        instructions::property::sell_building_handler(ctx, position, building_type)
+        instructions::property::sell_building_v2_handler(ctx, position, building_type)
     }
 
-    pub fn mortgage_property(ctx: Context<MortgageProperty>, position: u8) -> Result<()> {
-        instructions::property::mortgage_property_handler(ctx, position)
+    pub fn decline_property_v2(ctx: Context<DeclinePropertyV2>, position: u8) -> Result<()> {
+        instructions::property::decline_property_v2_handler(ctx, position)
     }
 
-    pub fn unmortgage_property(ctx: Context<UnmortgageProperty>, position: u8) -> Result<()> {
-        instructions::property::unmortgage_property_handler(ctx, position)
+    pub fn pay_rent_v2(ctx: Context<PayRentV2>, position: u8) -> Result<()> {
+        instructions::property::pay_rent_v2_handler(ctx, position)
+    }
+
+    pub fn build_house_v2(ctx: Context<BuildHouseV2>, position: u8) -> Result<()> {
+        instructions::property::build_house_v2_handler(ctx, position)
+    }
+
+    pub fn build_hotel_v2(ctx: Context<BuildHotelV2>, position: u8) -> Result<()> {
+        instructions::property::build_hotel_v2_handler(ctx, position)
+    }
+
+    pub fn mortgage_property_v2(ctx: Context<MortgagePropertyV2>, position: u8) -> Result<()> {
+        instructions::property::mortgage_property_v2_handler(ctx, position)
+    }
+
+    pub fn unmortgage_property_v2(ctx: Context<MortgagePropertyV2>, position: u8) -> Result<()> {
+        instructions::property::unmortgage_property_v2_handler(ctx, position)
     }
 
     // Trading instructions
@@ -259,4 +297,3 @@ pub mod panda_monopoly {
         instructions::trading::cleanup_expired_trades_handler(ctx)
     }
 }
-
