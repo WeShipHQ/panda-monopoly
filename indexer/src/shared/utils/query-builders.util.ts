@@ -156,31 +156,4 @@ export class QueryBuilder {
   }
 }
 
-/**
- * Response formatter for consistent API responses
- */
-export class ResponseFormatter {
-  static success<T>(data: T, requestId?: string) {
-    return {
-      success: true,
-      data,
-      requestId: requestId || 'unknown'
-    }
-  }
-
-  static error(message: string, statusCode = 500, requestId?: string) {
-    return {
-      success: false,
-      error: {
-        message,
-        statusCode,
-        timestamp: new Date().toISOString(),
-        requestId: requestId || 'unknown'
-      }
-    }
-  }
-
-  static paginated<T>(result: PaginationResult<T>, requestId?: string) {
-    return this.success(result, requestId)
-  }
-}
+// Removed ResponseFormatter - now using shared/utils/response-formatter.ts

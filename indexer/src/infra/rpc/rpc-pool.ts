@@ -1,5 +1,5 @@
 import { env } from '#config'
-import { Connection, PublicKey } from '@solana/web3.js'
+import { Connection } from '@solana/web3.js'
 import { CircuitBreaker } from '#utils/circuit-breaker'
 import { logger } from '#utils/logger'
 
