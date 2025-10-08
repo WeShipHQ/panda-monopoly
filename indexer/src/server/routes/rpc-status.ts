@@ -36,7 +36,7 @@ export default async function (fastify: FastifyInstance) {
     '/rpc-status',
     {
       schema: {
-        tags: ['monitoring'],
+        tags: ['Monitoring'],
         summary: 'RPC pool status',
         description: 'Get detailed status and performance metrics for all Solana RPC endpoints',
         response: {
@@ -71,7 +71,7 @@ export default async function (fastify: FastifyInstance) {
     '/rpc-status/reset',
     {
       schema: {
-        tags: ['monitoring'],
+        tags: ['Monitoring'],
         summary: 'Reset RPC circuit breakers',
         description: 'Manually reset all RPC circuit breakers to recover from failures',
         response: {
@@ -110,7 +110,7 @@ export default async function (fastify: FastifyInstance) {
     '/rpc-status/test',
     {
       schema: {
-        tags: ['monitoring'],
+        tags: ['Monitoring'],
         summary: 'Test RPC connectivity',
         description: 'Test connectivity to all RPC endpoints by fetching latest slot',
         response: {
