@@ -73,7 +73,7 @@ export class HealthCheck {
         lastCheck: this.lastCheck,
         uptime: now - this.startTime
       }
-    } catch (error) {
+    } catch {
       logger.error('Error checking health')
       this.status = 'unhealthy'
 
@@ -105,7 +105,7 @@ export class HealthCheck {
         ping: true,
         updatedAt: new Date()
       }
-    } catch (error) {
+    } catch {
       logger.warn('Database health check failed')
       components.database = {
         status: 'unhealthy',

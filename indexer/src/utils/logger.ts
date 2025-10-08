@@ -1,5 +1,6 @@
 import env from '#config/env'
 import pino from 'pino'
+import { hostname } from 'os'
 
 const createLogger = () => {
   const logLevel = env.log?.level || (env.isDevelopment ? 'debug' : 'warn')
@@ -18,7 +19,7 @@ const createLogger = () => {
       : undefined,
     base: {
       pid: process.pid,
-      hostname: require('os').hostname()
+      hostname: hostname()
     },
     serializers: {
       err: pino.stdSerializers.err,
@@ -29,6 +30,6 @@ const createLogger = () => {
 
 export const logger = createLogger()
 
-export const createChildLogger = (bindings: Record<string, any>) => {
+export const createChildLogger = (bindings: Record<string, unknown>) => {
   return logger.child(bindings)
 }
