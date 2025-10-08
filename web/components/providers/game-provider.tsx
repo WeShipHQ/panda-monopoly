@@ -7,6 +7,7 @@ import {
   GameAccount,
   PlayerAccount,
   PropertyAccount,
+  // PropertyInfo,
   TradeOffer,
 } from "@/types/schema";
 import { Address, address, TransactionSigner } from "@solana/kit";
@@ -39,10 +40,8 @@ import {
   showRentPaymentFallbackToast,
   showRentPaymentErrorToast,
 } from "@/lib/toast-utils";
-<<<<<<< HEAD
 import { KeyedMutator } from "swr";
-=======
->>>>>>> 4dab2eb (rent popup)
+import { USE_VRF } from "@/configs/constants";
 
 interface GameContextType {
   gameAddress: Address | null;
@@ -193,18 +192,18 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       setCardDrawEvents((prev) => [...prev, newEvent].slice(-50)); // Keep last 50 events
       setLatestCardDraw(newEvent);
 
-      addGameLog({
-        type: "card",
-        playerId: newEvent.data.player,
-        message: `${formatAddress(newEvent.data.player)} drew a card`,
-        details: {
-          cardType:
-            newEvent.type === "ChanceCardDrawn" ? "chance" : "community-chest",
-          cardIndex: newEvent.data.cardIndex,
-          effectType: newEvent.data.effectType,
-          amount: newEvent.data.amount,
-        },
-      });
+      // addGameLog({
+      //   type: "card",
+      //   playerId: newEvent.data.player,
+      //   message: `${formatAddress(newEvent.data.player)} drew a card`,
+      //   details: {
+      //     cardType:
+      //       newEvent.type === "ChanceCardDrawn" ? "chance" : "community-chest",
+      //     cardIndex: newEvent.data.cardIndex,
+      //     effectType: newEvent.data.effectType,
+      //     amount: newEvent.data.amount,
+      //   },
+      // });
     },
     [addGameLog]
   );
@@ -349,6 +348,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
     try {
       const instruction = await sdk.startGameIx({
+        rpc,
         gameAddress,
         players: gameState?.players.map(address) || [],
         authority: { address: address(wallet.address) } as TransactionSigner,
@@ -374,6 +374,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
     try {
       const instruction = await sdk.resetGameIx({
+        rpc: erRpc,
         gameAddress,
         players: gameState?.players.map(address) || [],
         authority: { address: address(wallet.address) } as TransactionSigner,
@@ -402,6 +403,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
     try {
       const [undelegateIx, closeIx] = await sdk.closeGameIx({
+        rpc: erRpc,
         gameAddress,
         players: gameState?.players.map(address) || [],
         authority: { address: address(wallet.address) } as TransactionSigner,
@@ -439,7 +441,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
 
     try {
-      const { instruction } = await sdk.joinGameIx({
+      const { instructions } = await sdk.joinGameIx({
         rpc,
         gameAddress,
         player: { address: address(wallet.address) } as TransactionSigner,
@@ -447,7 +449,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
       const signature = await buildAndSendTransactionWithPrivy(
         rpc,
-        [instruction],
+        instructions,
         wallet
       );
 
@@ -465,10 +467,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       try {
-        const instruction = await sdk.rollDiceVrfIx({
+        const instruction = await sdk.rollDiceIx({
           gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
           diceRoll: diceRoll as any,
+          useVrf: USE_VRF,
         });
 
         const signature = await buildAndSendTransactionWithPrivy(
@@ -506,19 +509,19 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       try {
-        const initPropertyInstruction = await sdk.initPropertyIx({
-          gameAddress,
-          player: { address: address(wallet.address) } as TransactionSigner,
-          position,
-        });
+        // const initPropertyInstruction = await sdk.initPropertyIx({
+        //   gameAddress,
+        //   player: { address: address(wallet.address) } as TransactionSigner,
+        //   position,
+        // });
 
-        const signature1 = await buildAndSendTransactionWithPrivy(
-          rpc,
-          [initPropertyInstruction],
-          wallet
-        );
+        // const signature1 = await buildAndSendTransactionWithPrivy(
+        //   rpc,
+        //   [initPropertyInstruction],
+        //   wallet
+        // );
 
-        const instruction = await sdk.buyPropertyIx({
+        const instruction = await sdk.buyPropertyIxV2({
           gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
           position,
@@ -568,7 +571,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       try {
-        const instruction = await sdk.declinePropertyIx({
+        const instruction = await sdk.declinePropertyIxV2({
           rpc,
           gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
@@ -610,7 +613,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       try {
-        const instruction = await sdk.payRentIx({
+        const instruction = await sdk.payRentIxV2({
           rpc,
           gameAddress: gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
@@ -699,7 +702,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       const instruction = await sdk.drawChanceCardIx({
         gameAddress: gameAddress,
         player: { address: address(wallet.address) } as TransactionSigner,
-        index: 4,
+        // index: 4,
+        useVrf: USE_VRF,
       });
 
       const signature = await buildAndSendTransactionWithPrivy(
@@ -736,7 +740,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       const instruction = await sdk.drawCommunityChestCardIx({
         gameAddress: gameAddress,
         player: { address: address(wallet.address) } as TransactionSigner,
-        index: 0,
+        // index: 0,
+        useVrf: USE_VRF,
       });
 
       const signature = await buildAndSendTransactionWithPrivy(
@@ -833,7 +838,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       try {
-        const instruction = await sdk.buildHouseIx({
+        const instruction = await sdk.buildHouseIxV2({
           rpc,
           gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
@@ -878,7 +883,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       try {
-        const instruction = await sdk.buildHotelIx({
+        const instruction = await sdk.buildHouseIxV2({
           rpc,
           gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
@@ -923,7 +928,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       try {
-        const instruction = await sdk.sellBuildingIx({
+        const instruction = await sdk.sellBuildingIxV2({
           rpc,
           gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
@@ -1598,6 +1603,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     // events
     cardDrawEvents,
     latestCardDraw,
+    // @ts-expect-error
     addCardDrawEvent,
     clearCardDrawEvents,
     acknowledgeCardDraw,
