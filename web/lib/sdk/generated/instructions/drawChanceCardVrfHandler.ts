@@ -45,24 +45,21 @@ import {
   type ResolvedAccount,
 } from '../shared';
 
-export const DRAW_COMMUNITY_CHEST_CARD_DISCRIMINATOR = new Uint8Array([
-  33, 118, 197, 172, 171, 175, 39, 117,
+export const DRAW_CHANCE_CARD_VRF_HANDLER_DISCRIMINATOR = new Uint8Array([
+  246, 20, 32, 102, 233, 141, 32, 234,
 ]);
 
-export function getDrawCommunityChestCardDiscriminatorBytes() {
+export function getDrawChanceCardVrfHandlerDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    DRAW_COMMUNITY_CHEST_CARD_DISCRIMINATOR
+    DRAW_CHANCE_CARD_VRF_HANDLER_DISCRIMINATOR
   );
 }
 
-export type DrawCommunityChestCardInstruction<
+export type DrawChanceCardVrfHandlerInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountGame extends string | AccountMeta<string> = string,
   TAccountPlayerState extends string | AccountMeta<string> = string,
   TAccountPlayer extends string | AccountMeta<string> = string,
-  TAccountRecentBlockhashes extends
-    | string
-    | AccountMeta<string> = 'SysvarRecentB1ockHashes11111111111111111111',
   TAccountClock extends
     | string
     | AccountMeta<string> = 'SysvarC1ock11111111111111111111111111111111',
@@ -94,9 +91,6 @@ export type DrawCommunityChestCardInstruction<
         ? WritableSignerAccount<TAccountPlayer> &
             AccountSignerMeta<TAccountPlayer>
         : TAccountPlayer,
-      TAccountRecentBlockhashes extends string
-        ? ReadonlyAccount<TAccountRecentBlockhashes>
-        : TAccountRecentBlockhashes,
       TAccountClock extends string
         ? ReadonlyAccount<TAccountClock>
         : TAccountClock,
@@ -119,54 +113,53 @@ export type DrawCommunityChestCardInstruction<
     ]
   >;
 
-export type DrawCommunityChestCardInstructionData = {
+export type DrawChanceCardVrfHandlerInstructionData = {
   discriminator: ReadonlyUint8Array;
-  clientSeed: Option<number>;
+  clientSeed: number;
   cardIndex: Option<number>;
 };
 
-export type DrawCommunityChestCardInstructionDataArgs = {
-  clientSeed: OptionOrNullable<number>;
+export type DrawChanceCardVrfHandlerInstructionDataArgs = {
+  clientSeed: number;
   cardIndex: OptionOrNullable<number>;
 };
 
-export function getDrawCommunityChestCardInstructionDataEncoder(): Encoder<DrawCommunityChestCardInstructionDataArgs> {
+export function getDrawChanceCardVrfHandlerInstructionDataEncoder(): Encoder<DrawChanceCardVrfHandlerInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['clientSeed', getOptionEncoder(getU8Encoder())],
+      ['clientSeed', getU8Encoder()],
       ['cardIndex', getOptionEncoder(getU8Encoder())],
     ]),
     (value) => ({
       ...value,
-      discriminator: DRAW_COMMUNITY_CHEST_CARD_DISCRIMINATOR,
+      discriminator: DRAW_CHANCE_CARD_VRF_HANDLER_DISCRIMINATOR,
     })
   );
 }
 
-export function getDrawCommunityChestCardInstructionDataDecoder(): Decoder<DrawCommunityChestCardInstructionData> {
+export function getDrawChanceCardVrfHandlerInstructionDataDecoder(): Decoder<DrawChanceCardVrfHandlerInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['clientSeed', getOptionDecoder(getU8Decoder())],
+    ['clientSeed', getU8Decoder()],
     ['cardIndex', getOptionDecoder(getU8Decoder())],
   ]);
 }
 
-export function getDrawCommunityChestCardInstructionDataCodec(): Codec<
-  DrawCommunityChestCardInstructionDataArgs,
-  DrawCommunityChestCardInstructionData
+export function getDrawChanceCardVrfHandlerInstructionDataCodec(): Codec<
+  DrawChanceCardVrfHandlerInstructionDataArgs,
+  DrawChanceCardVrfHandlerInstructionData
 > {
   return combineCodec(
-    getDrawCommunityChestCardInstructionDataEncoder(),
-    getDrawCommunityChestCardInstructionDataDecoder()
+    getDrawChanceCardVrfHandlerInstructionDataEncoder(),
+    getDrawChanceCardVrfHandlerInstructionDataDecoder()
   );
 }
 
-export type DrawCommunityChestCardAsyncInput<
+export type DrawChanceCardVrfHandlerAsyncInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountPlayer extends string = string,
-  TAccountRecentBlockhashes extends string = string,
   TAccountClock extends string = string,
   TAccountOracleQueue extends string = string,
   TAccountProgramIdentity extends string = string,
@@ -177,22 +170,20 @@ export type DrawCommunityChestCardAsyncInput<
   game: Address<TAccountGame>;
   playerState?: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
-  recentBlockhashes?: Address<TAccountRecentBlockhashes>;
   clock?: Address<TAccountClock>;
   oracleQueue?: Address<TAccountOracleQueue>;
   programIdentity?: Address<TAccountProgramIdentity>;
   vrfProgram?: Address<TAccountVrfProgram>;
   slotHashes?: Address<TAccountSlotHashes>;
   systemProgram?: Address<TAccountSystemProgram>;
-  clientSeed: DrawCommunityChestCardInstructionDataArgs['clientSeed'];
-  cardIndex: DrawCommunityChestCardInstructionDataArgs['cardIndex'];
+  clientSeed: DrawChanceCardVrfHandlerInstructionDataArgs['clientSeed'];
+  cardIndex: DrawChanceCardVrfHandlerInstructionDataArgs['cardIndex'];
 };
 
-export async function getDrawCommunityChestCardInstructionAsync<
+export async function getDrawChanceCardVrfHandlerInstructionAsync<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountPlayer extends string,
-  TAccountRecentBlockhashes extends string,
   TAccountClock extends string,
   TAccountOracleQueue extends string,
   TAccountProgramIdentity extends string,
@@ -201,11 +192,10 @@ export async function getDrawCommunityChestCardInstructionAsync<
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: DrawCommunityChestCardAsyncInput<
+  input: DrawChanceCardVrfHandlerAsyncInput<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
-    TAccountRecentBlockhashes,
     TAccountClock,
     TAccountOracleQueue,
     TAccountProgramIdentity,
@@ -215,12 +205,11 @@ export async function getDrawCommunityChestCardInstructionAsync<
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
-  DrawCommunityChestCardInstruction<
+  DrawChanceCardVrfHandlerInstruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
-    TAccountRecentBlockhashes,
     TAccountClock,
     TAccountOracleQueue,
     TAccountProgramIdentity,
@@ -238,10 +227,6 @@ export async function getDrawCommunityChestCardInstructionAsync<
     game: { value: input.game ?? null, isWritable: true },
     playerState: { value: input.playerState ?? null, isWritable: true },
     player: { value: input.player ?? null, isWritable: true },
-    recentBlockhashes: {
-      value: input.recentBlockhashes ?? null,
-      isWritable: false,
-    },
     clock: { value: input.clock ?? null, isWritable: false },
     oracleQueue: { value: input.oracleQueue ?? null, isWritable: true },
     programIdentity: {
@@ -270,10 +255,6 @@ export async function getDrawCommunityChestCardInstructionAsync<
         getAddressEncoder().encode(expectAddress(accounts.player.value)),
       ],
     });
-  }
-  if (!accounts.recentBlockhashes.value) {
-    accounts.recentBlockhashes.value =
-      'SysvarRecentB1ockHashes11111111111111111111' as Address<'SysvarRecentB1ockHashes11111111111111111111'>;
   }
   if (!accounts.clock.value) {
     accounts.clock.value =
@@ -312,7 +293,6 @@ export async function getDrawCommunityChestCardInstructionAsync<
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.playerState),
       getAccountMeta(accounts.player),
-      getAccountMeta(accounts.recentBlockhashes),
       getAccountMeta(accounts.clock),
       getAccountMeta(accounts.oracleQueue),
       getAccountMeta(accounts.programIdentity),
@@ -320,16 +300,15 @@ export async function getDrawCommunityChestCardInstructionAsync<
       getAccountMeta(accounts.slotHashes),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getDrawCommunityChestCardInstructionDataEncoder().encode(
-      args as DrawCommunityChestCardInstructionDataArgs
+    data: getDrawChanceCardVrfHandlerInstructionDataEncoder().encode(
+      args as DrawChanceCardVrfHandlerInstructionDataArgs
     ),
     programAddress,
-  } as DrawCommunityChestCardInstruction<
+  } as DrawChanceCardVrfHandlerInstruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
-    TAccountRecentBlockhashes,
     TAccountClock,
     TAccountOracleQueue,
     TAccountProgramIdentity,
@@ -339,11 +318,10 @@ export async function getDrawCommunityChestCardInstructionAsync<
   >);
 }
 
-export type DrawCommunityChestCardInput<
+export type DrawChanceCardVrfHandlerInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountPlayer extends string = string,
-  TAccountRecentBlockhashes extends string = string,
   TAccountClock extends string = string,
   TAccountOracleQueue extends string = string,
   TAccountProgramIdentity extends string = string,
@@ -354,22 +332,20 @@ export type DrawCommunityChestCardInput<
   game: Address<TAccountGame>;
   playerState: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
-  recentBlockhashes?: Address<TAccountRecentBlockhashes>;
   clock?: Address<TAccountClock>;
   oracleQueue?: Address<TAccountOracleQueue>;
   programIdentity: Address<TAccountProgramIdentity>;
   vrfProgram?: Address<TAccountVrfProgram>;
   slotHashes?: Address<TAccountSlotHashes>;
   systemProgram?: Address<TAccountSystemProgram>;
-  clientSeed: DrawCommunityChestCardInstructionDataArgs['clientSeed'];
-  cardIndex: DrawCommunityChestCardInstructionDataArgs['cardIndex'];
+  clientSeed: DrawChanceCardVrfHandlerInstructionDataArgs['clientSeed'];
+  cardIndex: DrawChanceCardVrfHandlerInstructionDataArgs['cardIndex'];
 };
 
-export function getDrawCommunityChestCardInstruction<
+export function getDrawChanceCardVrfHandlerInstruction<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountPlayer extends string,
-  TAccountRecentBlockhashes extends string,
   TAccountClock extends string,
   TAccountOracleQueue extends string,
   TAccountProgramIdentity extends string,
@@ -378,11 +354,10 @@ export function getDrawCommunityChestCardInstruction<
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: DrawCommunityChestCardInput<
+  input: DrawChanceCardVrfHandlerInput<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
-    TAccountRecentBlockhashes,
     TAccountClock,
     TAccountOracleQueue,
     TAccountProgramIdentity,
@@ -391,12 +366,11 @@ export function getDrawCommunityChestCardInstruction<
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
-): DrawCommunityChestCardInstruction<
+): DrawChanceCardVrfHandlerInstruction<
   TProgramAddress,
   TAccountGame,
   TAccountPlayerState,
   TAccountPlayer,
-  TAccountRecentBlockhashes,
   TAccountClock,
   TAccountOracleQueue,
   TAccountProgramIdentity,
@@ -413,10 +387,6 @@ export function getDrawCommunityChestCardInstruction<
     game: { value: input.game ?? null, isWritable: true },
     playerState: { value: input.playerState ?? null, isWritable: true },
     player: { value: input.player ?? null, isWritable: true },
-    recentBlockhashes: {
-      value: input.recentBlockhashes ?? null,
-      isWritable: false,
-    },
     clock: { value: input.clock ?? null, isWritable: false },
     oracleQueue: { value: input.oracleQueue ?? null, isWritable: true },
     programIdentity: {
@@ -436,10 +406,6 @@ export function getDrawCommunityChestCardInstruction<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.recentBlockhashes.value) {
-    accounts.recentBlockhashes.value =
-      'SysvarRecentB1ockHashes11111111111111111111' as Address<'SysvarRecentB1ockHashes11111111111111111111'>;
-  }
   if (!accounts.clock.value) {
     accounts.clock.value =
       'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
@@ -467,7 +433,6 @@ export function getDrawCommunityChestCardInstruction<
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.playerState),
       getAccountMeta(accounts.player),
-      getAccountMeta(accounts.recentBlockhashes),
       getAccountMeta(accounts.clock),
       getAccountMeta(accounts.oracleQueue),
       getAccountMeta(accounts.programIdentity),
@@ -475,16 +440,15 @@ export function getDrawCommunityChestCardInstruction<
       getAccountMeta(accounts.slotHashes),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getDrawCommunityChestCardInstructionDataEncoder().encode(
-      args as DrawCommunityChestCardInstructionDataArgs
+    data: getDrawChanceCardVrfHandlerInstructionDataEncoder().encode(
+      args as DrawChanceCardVrfHandlerInstructionDataArgs
     ),
     programAddress,
-  } as DrawCommunityChestCardInstruction<
+  } as DrawChanceCardVrfHandlerInstruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
-    TAccountRecentBlockhashes,
     TAccountClock,
     TAccountOracleQueue,
     TAccountProgramIdentity,
@@ -494,7 +458,7 @@ export function getDrawCommunityChestCardInstruction<
   >);
 }
 
-export type ParsedDrawCommunityChestCardInstruction<
+export type ParsedDrawChanceCardVrfHandlerInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -503,26 +467,25 @@ export type ParsedDrawCommunityChestCardInstruction<
     game: TAccountMetas[0];
     playerState: TAccountMetas[1];
     player: TAccountMetas[2];
-    recentBlockhashes: TAccountMetas[3];
-    clock: TAccountMetas[4];
-    oracleQueue: TAccountMetas[5];
-    programIdentity: TAccountMetas[6];
-    vrfProgram: TAccountMetas[7];
-    slotHashes: TAccountMetas[8];
-    systemProgram: TAccountMetas[9];
+    clock: TAccountMetas[3];
+    oracleQueue: TAccountMetas[4];
+    programIdentity: TAccountMetas[5];
+    vrfProgram: TAccountMetas[6];
+    slotHashes: TAccountMetas[7];
+    systemProgram: TAccountMetas[8];
   };
-  data: DrawCommunityChestCardInstructionData;
+  data: DrawChanceCardVrfHandlerInstructionData;
 };
 
-export function parseDrawCommunityChestCardInstruction<
+export function parseDrawChanceCardVrfHandlerInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
-): ParsedDrawCommunityChestCardInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 10) {
+): ParsedDrawChanceCardVrfHandlerInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 9) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -538,7 +501,6 @@ export function parseDrawCommunityChestCardInstruction<
       game: getNextAccount(),
       playerState: getNextAccount(),
       player: getNextAccount(),
-      recentBlockhashes: getNextAccount(),
       clock: getNextAccount(),
       oracleQueue: getNextAccount(),
       programIdentity: getNextAccount(),
@@ -546,7 +508,7 @@ export function parseDrawCommunityChestCardInstruction<
       slotHashes: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getDrawCommunityChestCardInstructionDataDecoder().decode(
+    data: getDrawChanceCardVrfHandlerInstructionDataDecoder().decode(
       instruction.data
     ),
   };

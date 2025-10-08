@@ -114,7 +114,7 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
       setRollingIndex(
         (prev) => (prev + 1) % Math.max(rollingCards.length || 1, 1)
       );
-    }, 120);
+    }, 200);
   }, [rollingCards.length]);
 
   const drawCard = async () => {
@@ -131,6 +131,7 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
       } else {
         await drawCommunityChestCard();
       }
+      // await new Promise((resolve) => setTimeout(resolve, 3000));
     } catch (error) {
       console.error("Error drawing card:", error);
       if (rollingTimerRef.current) {
@@ -174,10 +175,24 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
   const displayCard: CardData | null =
     drawnCard ?? (isDrawing ? cardDeck[rollingIndex] : null);
 
+  /* Type=Chance */
+
+  // width: 112px;
+  // height: 182px;
+
+  // background: #D9E8D6;
+  // border: 3.5px solid #000000;
+
+  // /* Inside auto layout */
+  // flex: none;
+  // order: 1;
+  // flex-grow: 0;
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent
-        className="!max-w-xs aspect-[3/4] w-full p-0 bg-board-bg"
+        className="!max-w-xs aspect-[3/4] w-full p-0 bg-board-bg border-[3.5px] border-black rounded-none"
+        overlayClassName="bg-black/50"
         showCloseButton={false}
       >
         <div
@@ -208,25 +223,35 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
 
           {/* Card front */}
           <div
-            className={`absolute inset-0 w-full h-full text-black bg-gradient-to-br bg-board-space rounded-none p-4 backface-hidden`}
+            className={`absolute inset-0 w-full h-full text-black bg-board-space rounded-none p-4 backface-hidden`}
             style={{
               backfaceVisibility: "hidden",
               transform: "rotateY(180deg)",
             }}
           >
-            <div className="h-full flex flex-col">
-              <div className="flex justify-between items-start mb-4">
+            <div className="w-full h-full text-center flex flex-col items-center justify-center">
+              <div className="p-4">
+                <h3 className="text-lg font-bold text-balance mb-4">
+                  {displayCard ? displayCard.title : "Drawing..."}
+                </h3>
+                <p className="text-sm">
+                  {displayCard
+                    ? displayCard.description
+                    : "Waiting for on-chain result..."}
+                </p>
+              </div>
+              {/* <div className="flex justify-between items-start mb-4">
                 <h3 className="text-lg font-bold text-balance">
                   {displayCard ? displayCard.title : "Drawing..."}
                 </h3>
                 <span className="text-sm px-2 py-1">
                   {cardType === "chance" ? "CHANCE" : "COMMUNITY CHEST"}
                 </span>
-              </div>
+              </div> */}
 
-              <div className="flex-1 rounded-lg p-3 mb-4">
+              {/* <div className="flex-1 rounded-lg p-3 mb-4">
                 <div className="w-full h-32 rounded mb-3 flex items-center justify-center">
-                  {/* Simple visual flourish while drawing */}
+                  Simple visual flourish while drawing
                   {animationPhase === "drawing" && !drawnCard ? (
                     <div className="flex items-center gap-2">
                       <span className="text-2xl animate-bounce">🎴</span>
@@ -238,9 +263,9 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
                     <span className="text-4xl opacity-70">🎴</span>
                   )}
                 </div>
-              </div>
+              </div> */}
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="font-semibold">
                     {displayCard
@@ -260,7 +285,7 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
                     ? displayCard.description
                     : "Waiting for on-chain result..."}
                 </p>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

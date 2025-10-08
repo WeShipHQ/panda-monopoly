@@ -199,14 +199,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
   }
 
   return (
-    <div
-      className="h-full w-full monopoly-board overflow-hidden relative"
-      // style={{
-      //   backgroundImage: 'url("/images/monopoly-bg.jpg")',
-      //   backgroundSize: "cover",
-      //   backgroundPosition: "center",
-      // }}
-    >
+    <div className="h-full w-full monopoly-board overflow-hidden relative">
       <div className="h-full w-full flex items-center justify-center p-2 sm:p-4">
         <div
           className="relative aspect-square bg-board-bg transition-transform duration-500 ease-in-out border-2

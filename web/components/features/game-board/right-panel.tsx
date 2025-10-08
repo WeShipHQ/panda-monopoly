@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export function RightPanel() {
+  const { setCardDrawType, setIsCardDrawModalOpen } = useGameContext();
   return (
     <div className="p-4 space-y-6 h-full overflow-auto">
       <TradeView />
@@ -26,17 +27,16 @@ export function RightPanel() {
       {envConfig.IS_DEVELOPMENT && (
         <div className="flex items-start w-full flex-col gap-2">
           <Button
-            onClick={() =>
-              toast("Event has been created", {
-                description: "Sunday, December 03, 2023 at 9:00 AM",
-                action: {
-                  label: "Undo",
-                  onClick: () => console.log("Undo"),
-                },
-              })
-            }
+            onClick={() => {
+              // setHasShownChanceModal(true);
+              setTimeout(() => {
+                console.log("Player needs to draw Chance card");
+                setCardDrawType("chance");
+                setIsCardDrawModalOpen(true);
+              }, 300);
+            }}
           >
-            Toast
+            CHANCE
           </Button>
           <DebugUI />
           <DiceTestForm />

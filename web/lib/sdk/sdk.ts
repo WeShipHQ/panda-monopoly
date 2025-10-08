@@ -28,7 +28,6 @@ import {
   getDeclinePropertyInstruction,
   getCommunityChestCardDrawnCodec,
   getChanceCardDrawnCodec,
-  getTestDiceHandlerInstructionAsync,
   getCreatePlatformConfigInstructionAsync,
   fetchPlatformConfig,
   GAME_STATE_DISCRIMINATOR,
@@ -53,6 +52,9 @@ import {
   getDeclareBankruptcyInstruction,
   getGameStatusEncoder,
   GameStatus,
+  getDrawChanceCardInstruction,
+  getDrawCommunityChestCardInstruction,
+  getDrawChanceCardVrfHandlerInstruction,
 } from "./generated";
 import {
   CreateGameIxs,
@@ -84,6 +86,7 @@ import {
   RejectTradeParams,
   CancelTradeParams,
   DeclareBankruptcyParams,
+  DrawChanceCardVrfParams,
 } from "./types";
 import {
   getGamePDA,
@@ -344,16 +347,16 @@ class MonopolyGameSDK {
     });
   }
 
-  async rollTestDiceIx(params: RollDiceParams): Promise<Instruction> {
-    return await getTestDiceHandlerInstructionAsync({
-      game: params.gameAddress,
-      player: params.player,
-      // oracleQueue: DEFAULT_EPHEMERAL_QUEUE,
-      diceRoll: params.diceRoll
-        ? some(params.diceRoll as unknown as ReadonlyUint8Array)
-        : none(),
-    });
-  }
+  // async rollTestDiceIx(params: RollDiceParams): Promise<Instruction> {
+  //   return await getTestDiceHandlerInstructionAsync({
+  //     game: params.gameAddress,
+  //     player: params.player,
+  //     // oracleQueue: DEFAULT_EPHEMERAL_QUEUE,
+  //     diceRoll: params.diceRoll
+  //       ? some(params.diceRoll as unknown as ReadonlyUint8Array)
+  //       : none(),
+  //   });
+  // }
 
   async rollDiceVrfIx(params: RollDiceParams): Promise<Instruction> {
     const [playerStatePda] = await getPlayerStatePDA(
@@ -363,13 +366,13 @@ class MonopolyGameSDK {
 
     const [programIdentityPda] = await getProgramIdentityPDA();
 
-    return await getRollDiceVrfHandlerInstruction({
+    return getRollDiceVrfHandlerInstruction({
       game: params.gameAddress,
       playerState: playerStatePda,
       player: params.player,
       oracleQueue: DEFAULT_EPHEMERAL_QUEUE,
       programIdentity: programIdentityPda,
-      seed: Math.floor(Math.random() * 6) + 1,
+      seed: Math.floor(Math.random() * 254) + 1,
       diceRoll: params.diceRoll
         ? some(params.diceRoll as unknown as ReadonlyUint8Array)
         : none(),
@@ -625,9 +628,37 @@ class MonopolyGameSDK {
    * Draw a Chance card
    */
   async drawChanceCardIx(params: DrawChanceCardParams): Promise<Instruction> {
-    return await getDrawChanceCardInstructionAsync({
+    const [playerStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.player.address
+    );
+
+    return getDrawChanceCardInstruction({
       game: params.gameAddress,
       player: params.player,
+      playerState: playerStateAddress,
+      cardIndex: params.index ? some(params.index) : none(),
+    });
+  }
+
+  async drawChanceCardVrfIx(
+    params: DrawChanceCardVrfParams
+  ): Promise<Instruction> {
+    const [playerStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.player.address
+    );
+
+    const [programIdentityPda] = await getProgramIdentityPDA();
+
+    return getDrawChanceCardVrfHandlerInstruction({
+      game: params.gameAddress,
+      player: params.player,
+      playerState: playerStateAddress,
+      oracleQueue: DEFAULT_EPHEMERAL_QUEUE,
+      programIdentity: programIdentityPda,
+      clientSeed: Math.floor(Math.random() * 254) + 1,
+      cardIndex: params.index ? some(params.index) : none(),
     });
   }
 
@@ -637,9 +668,21 @@ class MonopolyGameSDK {
   async drawCommunityChestCardIx(
     params: DrawCommunityChestCardParams
   ): Promise<Instruction> {
-    return await getDrawCommunityChestCardInstructionAsync({
+    const [playerStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.player.address
+    );
+
+    const [programIdentityPda] = await getProgramIdentityPDA();
+
+    return await getDrawCommunityChestCardInstruction({
       game: params.gameAddress,
       player: params.player,
+      playerState: playerStateAddress,
+      cardIndex: params.index ? some(params.index) : none(),
+      oracleQueue: DEFAULT_EPHEMERAL_QUEUE,
+      programIdentity: programIdentityPda,
+      clientSeed: Math.floor(Math.random() * 254) + 1,
     });
   }
 

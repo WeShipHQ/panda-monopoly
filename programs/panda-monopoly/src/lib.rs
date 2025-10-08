@@ -6,7 +6,6 @@ pub mod state;
 pub mod utils;
 
 use anchor_lang::prelude::*;
-// use ephemeral_rollups_sdk::anchor::ephemeral;
 use ephemeral_rollups_sdk::anchor::ephemeral;
 
 pub use constants::*;
@@ -97,8 +96,26 @@ pub mod panda_monopoly {
         instructions::dice::callback_roll_dice(ctx, randomness)
     }
 
-    pub fn test_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> Result<()> {
-        instructions::dice::test_dice_handler(ctx, dice_roll)
+    pub fn draw_chance_card_vrf_handler(
+        ctx: Context<DrawChanceCardVrf>,
+        client_seed: u8,
+        card_index: Option<u8>,
+    ) -> Result<()> {
+        instructions::special_spaces::draw_chance_card_vrf_handler(ctx, client_seed, card_index)
+    }
+
+    pub fn callback_draw_chance_card(
+        ctx: Context<CallbackDrawChanceCardCtx>,
+        randomness: [u8; 32],
+    ) -> Result<()> {
+        instructions::special_spaces::callback_draw_chance_card(ctx, randomness)
+    }
+
+    pub fn callback_draw_community_chest_card(
+        ctx: Context<CallbackDrawCommunityChestCardCtx>,
+        randomness: [u8; 32],
+    ) -> Result<()> {
+        instructions::special_spaces::callback_draw_community_chest_card(ctx, randomness)
     }
 
     pub fn end_turn(ctx: Context<EndTurn>) -> Result<()> {
@@ -128,12 +145,20 @@ pub mod panda_monopoly {
         instructions::special_spaces::pay_priority_fee_tax_handler(ctx)
     }
 
-    pub fn draw_chance_card(ctx: Context<DrawChanceCard>) -> Result<()> {
-        instructions::special_spaces::draw_chance_card_handler(ctx)
+    pub fn draw_chance_card(ctx: Context<DrawChanceCard>, card_index: Option<u8>) -> Result<()> {
+        instructions::special_spaces::draw_chance_card_handler(ctx, card_index)
     }
 
-    pub fn draw_community_chest_card(ctx: Context<DrawCommunityChestCard>) -> Result<()> {
-        instructions::special_spaces::draw_community_chest_card_handler(ctx)
+    pub fn draw_community_chest_card(
+        ctx: Context<DrawCommunityChestCard>,
+        client_seed: Option<u8>,
+        card_index: Option<u8>,
+    ) -> Result<()> {
+        instructions::special_spaces::draw_community_chest_card_handler(
+            ctx,
+            client_seed,
+            card_index,
+        )
     }
 
     pub fn collect_free_parking(ctx: Context<CollectFreeParking>) -> Result<()> {
@@ -241,3 +266,4 @@ pub mod panda_monopoly {
     //     instructions::auction::end_auction_handler(ctx)
     // }
 }
+

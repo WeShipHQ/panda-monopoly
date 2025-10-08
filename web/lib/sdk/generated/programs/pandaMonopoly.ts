@@ -19,6 +19,8 @@ import {
   type ParsedBuildHotelInstruction,
   type ParsedBuildHouseInstruction,
   type ParsedBuyPropertyInstruction,
+  type ParsedCallbackDrawChanceCardInstruction,
+  type ParsedCallbackDrawCommunityChestCardInstruction,
   type ParsedCallbackRollDiceInstruction,
   type ParsedCancelTradeInstruction,
   type ParsedCleanupExpiredTradesInstruction,
@@ -29,6 +31,7 @@ import {
   type ParsedDeclareBankruptcyInstruction,
   type ParsedDeclinePropertyInstruction,
   type ParsedDrawChanceCardInstruction,
+  type ParsedDrawChanceCardVrfHandlerInstruction,
   type ParsedDrawCommunityChestCardInstruction,
   type ParsedEndTurnInstruction,
   type ParsedInitializeGameInstruction,
@@ -45,7 +48,6 @@ import {
   type ParsedRollDiceVrfHandlerInstruction,
   type ParsedSellBuildingInstruction,
   type ParsedStartGameInstruction,
-  type ParsedTestDiceHandlerInstruction,
   type ParsedUndelegateGameHandlerInstruction,
   type ParsedUnmortgagePropertyInstruction,
   type ParsedUpdatePlatformConfigInstruction,
@@ -121,6 +123,8 @@ export enum PandaMonopolyInstruction {
   BuildHotel,
   BuildHouse,
   BuyProperty,
+  CallbackDrawChanceCard,
+  CallbackDrawCommunityChestCard,
   CallbackRollDice,
   CancelTrade,
   CleanupExpiredTrades,
@@ -131,6 +135,7 @@ export enum PandaMonopolyInstruction {
   DeclareBankruptcy,
   DeclineProperty,
   DrawChanceCard,
+  DrawChanceCardVrfHandler,
   DrawCommunityChestCard,
   EndTurn,
   InitPropertyHandler,
@@ -147,7 +152,6 @@ export enum PandaMonopolyInstruction {
   RollDiceVrfHandler,
   SellBuilding,
   StartGame,
-  TestDiceHandler,
   UndelegateGameHandler,
   UnmortgageProperty,
   UpdatePlatformConfig,
@@ -212,6 +216,28 @@ export function identifyPandaMonopolyInstruction(
     )
   ) {
     return PandaMonopolyInstruction.BuyProperty;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([109, 244, 66, 209, 239, 152, 209, 130])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.CallbackDrawChanceCard;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([54, 18, 35, 147, 213, 189, 83, 190])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.CallbackDrawCommunityChestCard;
   }
   if (
     containsBytes(
@@ -322,6 +348,17 @@ export function identifyPandaMonopolyInstruction(
     )
   ) {
     return PandaMonopolyInstruction.DrawChanceCard;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([246, 20, 32, 102, 233, 141, 32, 234])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.DrawChanceCardVrfHandler;
   }
   if (
     containsBytes(
@@ -503,17 +540,6 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([212, 231, 100, 61, 93, 111, 77, 171])
-      ),
-      0
-    )
-  ) {
-    return PandaMonopolyInstruction.TestDiceHandler;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([86, 199, 172, 9, 232, 51, 195, 189])
       ),
       0
@@ -578,6 +604,12 @@ export type ParsedPandaMonopolyInstruction<
       instructionType: PandaMonopolyInstruction.BuyProperty;
     } & ParsedBuyPropertyInstruction<TProgram>)
   | ({
+      instructionType: PandaMonopolyInstruction.CallbackDrawChanceCard;
+    } & ParsedCallbackDrawChanceCardInstruction<TProgram>)
+  | ({
+      instructionType: PandaMonopolyInstruction.CallbackDrawCommunityChestCard;
+    } & ParsedCallbackDrawCommunityChestCardInstruction<TProgram>)
+  | ({
       instructionType: PandaMonopolyInstruction.CallbackRollDice;
     } & ParsedCallbackRollDiceInstruction<TProgram>)
   | ({
@@ -607,6 +639,9 @@ export type ParsedPandaMonopolyInstruction<
   | ({
       instructionType: PandaMonopolyInstruction.DrawChanceCard;
     } & ParsedDrawChanceCardInstruction<TProgram>)
+  | ({
+      instructionType: PandaMonopolyInstruction.DrawChanceCardVrfHandler;
+    } & ParsedDrawChanceCardVrfHandlerInstruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.DrawCommunityChestCard;
     } & ParsedDrawCommunityChestCardInstruction<TProgram>)
@@ -655,9 +690,6 @@ export type ParsedPandaMonopolyInstruction<
   | ({
       instructionType: PandaMonopolyInstruction.StartGame;
     } & ParsedStartGameInstruction<TProgram>)
-  | ({
-      instructionType: PandaMonopolyInstruction.TestDiceHandler;
-    } & ParsedTestDiceHandlerInstruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.UndelegateGameHandler;
     } & ParsedUndelegateGameHandlerInstruction<TProgram>)

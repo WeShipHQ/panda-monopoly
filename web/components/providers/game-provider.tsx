@@ -199,7 +199,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   } = useGameState(gameAddress, {
     onCardDrawEvent: addCardDrawEvent,
   });
-  console.log("gameState", gameState);
 
   const currentPlayerAddress = useMemo(() => {
     return gameState?.players?.[gameState?.currentTurn] || null;
@@ -439,7 +438,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       try {
-        const instruction = await sdk.rollDiceIx({
+        const instruction = await sdk.rollDiceVrfIx({
           gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
           diceRoll: diceRoll as any,
@@ -603,7 +602,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[payRent] tx", signature);
 
-        // Play money pay sound for rent
         playPropertySound("rent");
 
         const propertyData = getTypedSpaceData(position, "property");
@@ -672,7 +670,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
     try {
       const instruction = await sdk.drawChanceCardIx({
-        rpc: erRpc,
         gameAddress: gameAddress,
         player: { address: address(wallet.address) } as TransactionSigner,
       });
@@ -709,7 +706,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
     try {
       const instruction = await sdk.drawCommunityChestCardIx({
-        rpc,
         gameAddress: gameAddress,
         player: { address: address(wallet.address) } as TransactionSigner,
       });
@@ -1214,12 +1210,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       // Priority 2: Handle jail-related actions
-      if (player.inJail && player.jailTurns > 0) {
-        console.log("Player is in jail");
-        // Don't auto-handle jail - let player choose to pay fine or roll dice
-        // This is handled by the ActionPanel component
-        return;
-      }
+      // if (player.inJail && player.jailTurns > 0) {
+      //   console.log("Player is in jail");
+      //   // Don't auto-handle jail - let player choose to pay fine or roll dice
+      //   // This is handled by the ActionPanel component
+      //   return;
+      // }
 
       // Priority 3: Handle dice rolling (if player hasn't rolled yet)
       // if (!player.hasRolledDice && !player.inJail) {

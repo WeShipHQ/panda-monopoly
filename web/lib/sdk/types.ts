@@ -147,17 +147,22 @@ export interface AttendFestivalParams {
   gameAddress: Address;
 }
 
-// Card-related instruction parameters
 export interface DrawChanceCardParams {
-  rpc: Rpc<GetAccountInfoApi>;
   player: TransactionSigner;
   gameAddress: Address;
+  index?: number;
+}
+
+export interface DrawChanceCardVrfParams {
+  player: TransactionSigner;
+  gameAddress: Address;
+  index?: number;
 }
 
 export interface DrawCommunityChestCardParams {
-  rpc: Rpc<GetAccountInfoApi>;
   player: TransactionSigner;
   gameAddress: Address;
+  index?: number;
 }
 
 // Tax instruction parameters
