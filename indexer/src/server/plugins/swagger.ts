@@ -30,16 +30,7 @@ async function swaggerGeneratorPlugin(fastify: FastifyInstance) {
           description: 'Production server'
         }
       ],
-      tags: [
-        { name: 'games', description: 'Game lifecycle and state management' },
-        { name: 'players', description: 'Player statistics, leaderboards, and actions' },
-        { name: 'properties', description: 'Property ownership and transactions' },
-        { name: 'trades', description: 'Trading and auction operations' },
-        { name: 'events', description: 'Game events and activity logs' },
-        { name: 'auctions', description: 'Property auction management' },
-        { name: 'leaderboard', description: 'Player rankings and achievements' },
-        { name: 'health', description: 'System health and monitoring' }
-      ],
+
       components: {
         securitySchemes: {
           apiKey: {
