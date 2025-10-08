@@ -462,7 +462,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       try {
-        const instruction = await sdk.rollDiceIx({
+        const instruction = await sdk.rollDiceVrfIx({
           gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
           diceRoll: diceRoll as any,
