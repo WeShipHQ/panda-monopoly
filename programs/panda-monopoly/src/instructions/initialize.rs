@@ -438,8 +438,15 @@ pub fn reset_game_handler<'c: 'info, 'info>(
         let clock = &ctx.accounts.clock;
 
         for _player_pubkey in game.players.iter() {
-            let mut player_account =
-                Account::<PlayerState>::try_from(next_account_info(remaining_accounts_iter)?)?;
+            let data_account_info = next_account_info(remaining_accounts_iter)?;
+            require_eq!(data_account_info.is_writable, true);
+            msg!(
+                "Player data account: {} and {}",
+                data_account_info.key(),
+                _player_pubkey
+            );
+
+            let mut player_account = Account::<PlayerState>::try_from(data_account_info)?;
 
             player_account.cash_balance = STARTING_MONEY as u64;
             player_account.position = 0;
@@ -462,6 +469,10 @@ pub fn reset_game_handler<'c: 'info, 'info>(
             player_account.needs_special_space_action = false;
             player_account.pending_special_space_position = None;
             player_account.card_drawn_at = None;
+
+            player_account.exit(&crate::ID)?;
+
+            msg!("Player {} reset", _player_pubkey);
         }
     }
 

@@ -39,6 +39,7 @@ import {
   showRentPaymentFallbackToast,
   showRentPaymentErrorToast,
 } from "@/lib/toast-utils";
+import { KeyedMutator } from "swr";
 
 interface GameContextType {
   gameAddress: Address | null;
@@ -123,6 +124,18 @@ interface GameContextType {
   // demo
   demoDices: number[] | null;
   setDemoDices: (dices: number[] | null) => void;
+  mutate: KeyedMutator<
+    | {
+        gameData: null;
+        players: never[];
+        properties: never[];
+      }
+    | {
+        gameData: GameAccount;
+        players: PlayerAccount[];
+        properties: PropertyAccount[];
+      }
+  >;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -198,6 +211,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     isLoading: gameLoading,
     error: gameError,
     refetch,
+    mutate,
   } = useGameState(gameAddress, {
     onCardDrawEvent: addCardDrawEvent,
   });
@@ -440,7 +454,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       try {
-        const instruction = await sdk.rollDiceVrfIx({
+        const instruction = await sdk.rollDiceIx({
           gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
           diceRoll: diceRoll as any,
@@ -1555,6 +1569,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     // demo
     demoDices,
     setDemoDices,
+    mutate,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

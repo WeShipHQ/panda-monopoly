@@ -8,6 +8,59 @@ import { useGameContext } from "@/components/providers/game-provider";
 import Link from "next/link";
 import { HomeIcon } from "lucide-react";
 import { useWallet } from "@/hooks/use-wallet";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
+
+interface BalanceChangeAnimationProps {
+  change: number;
+  onComplete: () => void;
+}
+
+function BalanceChangeAnimation({
+  change,
+  onComplete,
+}: BalanceChangeAnimationProps) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onComplete();
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
+  if (change === 0) return null;
+
+  const isPositive = change > 0;
+  const sign = isPositive ? "+" : "";
+  const colorClass = isPositive ? "text-green-600" : "text-red-600";
+
+  return (
+    <motion.div
+      initial={{
+        opacity: 1,
+        y: 0,
+        scale: 1,
+      }}
+      animate={{
+        opacity: [1, 1, 1, 0],
+        y: [0, 20, 25, 30],
+        scale: [1, 1.1, 1, 0.9],
+      }}
+      transition={{
+        duration: 2.5,
+        times: [0, 0.3, 0.8, 1],
+        ease: "easeOut",
+      }}
+      className={cn(
+        "absolute left-0 top-1/2 mt-1 text-xs font-bold z-10 pointer-events-none",
+        colorClass
+      )}
+    >
+      {sign}
+      {formatPrice(Math.abs(change))}
+    </motion.div>
+  );
+}
 
 interface PlayerItemProps {
   player: any;
@@ -17,6 +70,24 @@ interface PlayerItemProps {
 }
 
 function PlayerItem({ player, index, isCurrentTurn, isYou }: PlayerItemProps) {
+  const [previousBalance, setPreviousBalance] = useState<number | null>(null);
+  const [balanceChange, setBalanceChange] = useState<number>(0);
+  const [animationKey, setAnimationKey] = useState<number>(0);
+  const currentBalance = Number(player.cashBalance);
+
+  useEffect(() => {
+    if (previousBalance !== null && previousBalance !== currentBalance) {
+      const change = currentBalance - previousBalance;
+      setBalanceChange(change);
+      setAnimationKey((prev) => prev + 1); // Force new animation instance
+    }
+    setPreviousBalance(currentBalance);
+  }, [currentBalance, previousBalance]);
+
+  const handleAnimationComplete = () => {
+    setBalanceChange(0);
+  };
+
   return (
     <Card className={cn("py-3 relative", isCurrentTurn ? "bg-chart-3" : "")}>
       <CardContent className="px-3">
@@ -43,9 +114,31 @@ function PlayerItem({ player, index, isCurrentTurn, isYou }: PlayerItemProps) {
                 {isYou && <span className="text-xs text-main"> (You)</span>}
               </p>
             </div>
-            <p className="text-sm text-gray-600">
-              {formatPrice(Number(player.cashBalance))}
-            </p>
+            <div className="relative">
+              <motion.p
+                className="text-sm"
+                key={`balance-${animationKey}`}
+                initial={{ scale: 1 }}
+                animate={{
+                  scale: balanceChange !== 0 ? [1, 1.05, 1] : 1,
+                }}
+                transition={{
+                  duration: 0.3,
+                  times: [0, 0.5, 1],
+                }}
+              >
+                {formatPrice(currentBalance)}
+              </motion.p>
+              <AnimatePresence mode="wait">
+                {balanceChange !== 0 && (
+                  <BalanceChangeAnimation
+                    key={`change-${animationKey}`}
+                    change={balanceChange}
+                    onComplete={handleAnimationComplete}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
 
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center space-x-1 mt-1">
               {player.inJail && (
