@@ -1,5 +1,11 @@
 use anchor_lang::prelude::*;
 
+// Entry fee and vault constants
+pub const GAME_AUTHORITY_SEED: &[u8] = b"game_authority";
+pub const TOKEN_VAULT_SEED: &[u8] = b"token_vault";
+pub const WINNER_PERCENTAGE: u16 = 9500; // 95%
+pub const PLATFORM_PERCENTAGE: u16 = 100; // 1%
+
 // Game configuration constants
 pub const MAX_PLAYERS: u8 = 4;
 pub const MIN_PLAYERS: u8 = 2;

@@ -15,6 +15,9 @@ pub enum GameError {
     #[msg("Game has already ended")]
     GameAlreadyEnded,
 
+    #[msg("Game cannot end - multiple players still active")]
+    GameCannotEnd,
+
     #[msg("Maximum number of players reached")]
     MaxPlayersReached,
 
@@ -123,7 +126,7 @@ pub enum GameError {
     #[msg("Player rolled doubles too many times")]
     TooManyDoubles,
 
-    // Trading Errors
+    // Trade Errors
     #[msg("Trade not found")]
     TradeNotFound,
 
@@ -196,6 +199,9 @@ pub enum GameError {
     #[msg("Must roll doubles or pay fine to leave jail")]
     MustRollDoublesOrPayFine,
 
+    #[msg("Player has no Get Out of Jail cards")]
+    NoGetOutOfJailCards,
+
     // Special Space Errors
     #[msg("Invalid special space action")]
     InvalidSpecialSpaceAction,
@@ -242,7 +248,7 @@ pub enum GameError {
     #[msg("Invalid signer")]
     InvalidSigner,
 
-    // Calculation and Validation Errors
+    // Math Errors
     #[msg("Arithmetic overflow")]
     ArithmeticOverflow,
 
@@ -268,7 +274,7 @@ pub enum GameError {
     #[msg("Randomness unavailable")]
     RandomnessUnavailable,
 
-    // Time and Clock Errors
+    // Time Errors
     #[msg("Invalid timestamp")]
     InvalidTimestamp,
 
@@ -332,4 +338,23 @@ pub enum GameError {
 
     #[msg("Too many active trades")]
     TooManyActiveTrades,
+
+    // Token and Fee Errors
+    #[msg("Missing required token accounts for entry fee")]
+    MissingTokenAccounts,
+
+    #[msg("Invalid game authority PDA")]
+    InvalidGameAuthority,
+
+    #[msg("Invalid token vault PDA")]
+    InvalidTokenVault,
+
+    #[msg("Invalid token account")]
+    InvalidTokenAccount,
+
+    #[msg("Entry fee transfer failed")]
+    EntryFeeTransferFailed,
+
+    #[msg("Token accounts provided for free game")]
+    UnexpectedTokenAccounts,
 }

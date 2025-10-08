@@ -11,7 +11,7 @@ import {
 } from "@/types/schema";
 import { address, Address } from "@solana/kit";
 import { useCallback, useEffect, useRef } from "react";
-import useSWR from "swr";
+import useSWR, { KeyedMutator } from "swr";
 
 interface UseGameStateConfig {
   enabled?: boolean;
@@ -29,6 +29,18 @@ interface UseGameStateResult {
   refetch: () => Promise<void>;
   playerCount: number;
   isSubscribed: boolean;
+  mutate: KeyedMutator<
+    | {
+        gameData: null;
+        players: never[];
+        properties: never[];
+      }
+    | {
+        gameData: GameAccount;
+        players: PlayerAccount[];
+        properties: PropertyAccount[];
+      }
+  >;
 }
 
 export function useGameState(
@@ -318,5 +330,6 @@ export function useGameState(
     refetch,
     playerCount: data?.players?.length || 0,
     isSubscribed: isSubscribedRef.current,
+    mutate,
   };
 }

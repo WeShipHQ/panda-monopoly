@@ -1,7 +1,10 @@
 use crate::error::GameError;
-use crate::{constants::*, generate_card_index, send_player_to_jail_and_end_turn};
+use crate::{constants::*, generate_card_index, send_player_to_jail_and_end_turn, ID};
 use crate::{generate_random_seed, state::*};
 use anchor_lang::prelude::*;
+use ephemeral_vrf_sdk::anchor::vrf;
+use ephemeral_vrf_sdk::instructions::create_request_randomness_ix;
+use ephemeral_vrf_sdk::types::SerializableAccountMeta;
 
 #[derive(Accounts)]
 pub struct GoToJail<'info> {
@@ -75,7 +78,6 @@ pub fn go_to_jail_handler(ctx: Context<GoToJail>) -> Result<()> {
 pub struct DrawChanceCard<'info> {
     #[account(
         mut,
-        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
@@ -99,7 +101,10 @@ pub struct DrawChanceCard<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
-pub fn draw_chance_card_handler(ctx: Context<DrawChanceCard>) -> Result<()> {
+pub fn draw_chance_card_handler(
+    ctx: Context<DrawChanceCard>,
+    card_index: Option<u8>,
+) -> Result<()> {
     let game = &mut ctx.accounts.game;
     let player_state = &mut ctx.accounts.player_state;
     let player_pubkey = ctx.accounts.player.key();
@@ -119,12 +124,22 @@ pub fn draw_chance_card_handler(ctx: Context<DrawChanceCard>) -> Result<()> {
         return Err(GameError::InvalidSpecialSpaceAction.into());
     }
 
-    // Generate random card index using recent blockhash
-    let card_index = generate_card_index(
-        &ctx.accounts.recent_blockhashes,
-        clock.unix_timestamp,
-        CHANCE_CARDS.len(),
-    )?;
+    // Use provided card index for testing, otherwise generate random
+    let card_index = if let Some(index) = card_index {
+        index as usize
+    } else {
+        // Generate random card index using recent blockhash
+        generate_card_index(
+            &ctx.accounts.recent_blockhashes,
+            clock.unix_timestamp,
+            CHANCE_CARDS.len(),
+        )?
+    };
+
+    if card_index >= CHANCE_CARDS.len() {
+        return Err(GameError::InvalidParameter.into());
+    }
+
     let card = &CHANCE_CARDS[card_index];
 
     emit!(ChanceCardDrawn {
@@ -154,6 +169,7 @@ pub fn draw_chance_card_handler(ctx: Context<DrawChanceCard>) -> Result<()> {
     Ok(())
 }
 
+#[vrf]
 #[derive(Accounts)]
 pub struct DrawCommunityChestCard<'info> {
     #[account(
@@ -180,9 +196,17 @@ pub struct DrawCommunityChestCard<'info> {
     pub recent_blockhashes: UncheckedAccount<'info>,
 
     pub clock: Sysvar<'info, Clock>,
+
+    /// CHECK: The oracle queue (optional for VRF)
+    #[account(mut, address = ephemeral_vrf_sdk::consts::DEFAULT_EPHEMERAL_QUEUE)]
+    pub oracle_queue: AccountInfo<'info>,
 }
 
-pub fn draw_community_chest_card_handler(ctx: Context<DrawCommunityChestCard>) -> Result<()> {
+pub fn draw_community_chest_card_handler(
+    ctx: Context<DrawCommunityChestCard>,
+    client_seed: Option<u8>,
+    card_index: Option<u8>,
+) -> Result<()> {
     let game = &mut ctx.accounts.game;
     let player_state = &mut ctx.accounts.player_state;
     let player_pubkey = ctx.accounts.player.key();
@@ -205,12 +229,65 @@ pub fn draw_community_chest_card_handler(ctx: Context<DrawCommunityChestCard>) -
         return Err(GameError::InvalidSpecialSpaceAction.into());
     }
 
-    // Generate random card index using recent blockhash
-    let card_index = generate_card_index(
-        &ctx.accounts.recent_blockhashes,
-        clock.unix_timestamp,
-        COMMUNITY_CHEST_CARDS.len(),
-    )?;
+    if let Some(seed) = client_seed {
+        if card_index.is_none() {
+            msg!("Requesting randomness for community chest card...");
+
+            let ix = create_request_randomness_ix(
+                ephemeral_vrf_sdk::instructions::RequestRandomnessParams {
+                    payer: ctx.accounts.player.key(),
+                    oracle_queue: ctx.accounts.oracle_queue.key(),
+                    callback_program_id: ID,
+                    callback_discriminator:
+                        crate::instruction::CallbackDrawCommunityChestCard::DISCRIMINATOR.to_vec(),
+                    caller_seed: [seed; 32],
+                    accounts_metas: Some(vec![
+                        // game
+                        SerializableAccountMeta {
+                            pubkey: ctx.accounts.game.key(),
+                            is_signer: false,
+                            is_writable: true,
+                        },
+                        // player state
+                        SerializableAccountMeta {
+                            pubkey: ctx.accounts.player_state.key(),
+                            is_signer: false,
+                            is_writable: true,
+                        },
+                        // clock
+                        SerializableAccountMeta {
+                            pubkey: ctx.accounts.clock.key(),
+                            is_signer: false,
+                            is_writable: false,
+                        },
+                    ]),
+                    ..Default::default()
+                },
+            );
+
+            ctx.accounts
+                .invoke_signed_vrf(&ctx.accounts.player.to_account_info(), &ix)?;
+
+            return Ok(());
+        }
+    }
+
+    // Use provided card index for testing, otherwise generate random using recent blockhash
+    let card_index = if let Some(index) = card_index {
+        index as usize
+    } else {
+        // Generate random card index using recent blockhash
+        generate_card_index(
+            &ctx.accounts.recent_blockhashes,
+            clock.unix_timestamp,
+            COMMUNITY_CHEST_CARDS.len(),
+        )?
+    };
+
+    if card_index >= COMMUNITY_CHEST_CARDS.len() {
+        return Err(GameError::InvalidParameter.into());
+    }
+
     let card = &COMMUNITY_CHEST_CARDS[card_index];
 
     emit!(CommunityChestCardDrawn {
@@ -221,6 +298,8 @@ pub fn draw_community_chest_card_handler(ctx: Context<DrawCommunityChestCard>) -
         amount: card.amount,
         timestamp: clock.unix_timestamp,
     });
+
+    player_state.card_drawn_at = Some(clock.unix_timestamp);
 
     // Execute card effect
     execute_community_chest_card_effect(game, player_state, card, clock)?;
@@ -881,6 +960,293 @@ pub fn pay_priority_fee_tax_handler(ctx: Context<PayTax>) -> Result<()> {
 
     // Update game timestamp
     game.turn_started_at = clock.unix_timestamp;
+
+    Ok(())
+}
+
+// VRF Implementation for Chance Card Drawing
+
+#[vrf]
+#[derive(Accounts)]
+pub struct DrawChanceCardVrf<'info> {
+    #[account(
+        mut,
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        bump = game.bump,
+        constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
+    )]
+    pub game: Account<'info, GameState>,
+
+    #[account(
+        mut,
+        seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
+        bump
+    )]
+    pub player_state: Account<'info, PlayerState>,
+
+    #[account(mut)]
+    pub player: Signer<'info>,
+
+    pub clock: Sysvar<'info, Clock>,
+
+    /// CHECK: The oracle queue
+    #[account(mut, address = ephemeral_vrf_sdk::consts::DEFAULT_EPHEMERAL_QUEUE)]
+    pub oracle_queue: AccountInfo<'info>,
+}
+
+pub fn draw_chance_card_vrf_handler(
+    ctx: Context<DrawChanceCardVrf>,
+    client_seed: u8,
+    card_index: Option<u8>,
+) -> Result<()> {
+    let game = &mut ctx.accounts.game;
+    let player_state = &mut ctx.accounts.player_state;
+    let player_pubkey = ctx.accounts.player.key();
+    let clock = &ctx.accounts.clock;
+
+    let player_index = game
+        .players
+        .iter()
+        .position(|&p| p == player_pubkey)
+        .ok_or(GameError::PlayerNotFound)?;
+
+    if game.current_turn != player_index as u8 {
+        return Err(GameError::NotPlayerTurn.into());
+    }
+
+    if !player_state.needs_chance_card {
+        return Err(GameError::InvalidSpecialSpaceAction.into());
+    }
+
+    if card_index.is_none() {
+        msg!("Requesting randomness for chance card...");
+
+        let ix = create_request_randomness_ix(
+            ephemeral_vrf_sdk::instructions::RequestRandomnessParams {
+                payer: ctx.accounts.player.key(),
+                oracle_queue: ctx.accounts.oracle_queue.key(),
+                callback_program_id: ID,
+                callback_discriminator: crate::instruction::CallbackDrawChanceCard::DISCRIMINATOR
+                    .to_vec(),
+                caller_seed: [client_seed; 32],
+                accounts_metas: Some(vec![
+                    // game
+                    SerializableAccountMeta {
+                        pubkey: ctx.accounts.game.key(),
+                        is_signer: false,
+                        is_writable: true,
+                    },
+                    // player state
+                    SerializableAccountMeta {
+                        pubkey: ctx.accounts.player_state.key(),
+                        is_signer: false,
+                        is_writable: true,
+                    },
+                    // clock
+                    SerializableAccountMeta {
+                        pubkey: ctx.accounts.clock.key(),
+                        is_signer: false,
+                        is_writable: false,
+                    },
+                ]),
+                ..Default::default()
+            },
+        );
+
+        ctx.accounts
+            .invoke_signed_vrf(&ctx.accounts.player.to_account_info(), &ix)?;
+    } else {
+        // For testing - handle the card draw directly
+        let card_index = card_index.unwrap() as usize;
+
+        if card_index >= CHANCE_CARDS.len() {
+            return Err(GameError::InvalidParameter.into());
+        }
+
+        let card = &CHANCE_CARDS[card_index];
+
+        emit!(ChanceCardDrawn {
+            player: player_pubkey,
+            game: game.key(),
+            card_index: card_index as u8,
+            effect_type: u8::from(card.effect_type),
+            amount: card.amount,
+            timestamp: clock.unix_timestamp,
+        });
+
+        player_state.card_drawn_at = Some(clock.unix_timestamp);
+
+        // Execute card effect
+        execute_chance_card_effect(game, player_state, card, clock)?;
+
+        // Clear the chance card requirement
+        player_state.needs_chance_card = false;
+        player_state.needs_special_space_action = false;
+        player_state.pending_special_space_position = None;
+
+        // Update game timestamp
+        game.turn_started_at = clock.unix_timestamp;
+
+        msg!(
+            "Player {} drew Chance card (test): {}",
+            player_pubkey,
+            card.id
+        );
+    }
+
+    Ok(())
+}
+
+#[derive(Accounts)]
+pub struct CallbackDrawChanceCardCtx<'info> {
+    /// This check ensure that the vrf_program_identity (which is a PDA) is a singer
+    /// enforcing the callback is executed by the VRF program trough CPI
+    #[account(address = ephemeral_vrf_sdk::consts::VRF_PROGRAM_IDENTITY)]
+    pub vrf_program_identity: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        bump = game.bump,
+        constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
+    )]
+    pub game: Account<'info, GameState>,
+
+    #[account(
+        mut,
+        seeds = [b"player", player_state.game.as_ref(), player_state.wallet.as_ref()],
+        bump
+    )]
+    pub player_state: Account<'info, PlayerState>,
+
+    pub clock: Sysvar<'info, Clock>,
+}
+
+pub fn callback_draw_chance_card(
+    ctx: Context<CallbackDrawChanceCardCtx>,
+    randomness: [u8; 32],
+) -> Result<()> {
+    let card_index =
+        ephemeral_vrf_sdk::rnd::random_u8_with_range(&randomness, 0, CHANCE_CARDS.len() as u8 - 1)
+            as usize;
+    msg!("VRF generated chance card index: {}", card_index);
+
+    let game = &mut ctx.accounts.game;
+    let player_state = &mut ctx.accounts.player_state;
+    let clock = &ctx.accounts.clock;
+    let player_pubkey = player_state.wallet;
+
+    if card_index >= CHANCE_CARDS.len() {
+        return Err(GameError::InvalidParameter.into());
+    }
+
+    let card = &CHANCE_CARDS[card_index];
+
+    emit!(ChanceCardDrawn {
+        player: player_pubkey,
+        game: game.key(),
+        card_index: card_index as u8,
+        effect_type: u8::from(card.effect_type),
+        amount: card.amount,
+        timestamp: clock.unix_timestamp,
+    });
+
+    player_state.card_drawn_at = Some(clock.unix_timestamp);
+
+    // Execute card effect
+    execute_chance_card_effect(game, player_state, card, clock)?;
+
+    // Clear the chance card requirement
+    player_state.needs_chance_card = false;
+    player_state.needs_special_space_action = false;
+    player_state.pending_special_space_position = None;
+
+    // Update game timestamp
+    game.turn_started_at = clock.unix_timestamp;
+
+    msg!(
+        "Player {} drew Chance card via VRF: {}",
+        player_pubkey,
+        card.id
+    );
+
+    Ok(())
+}
+
+#[derive(Accounts)]
+pub struct CallbackDrawCommunityChestCardCtx<'info> {
+    /// This check ensure that the vrf_program_identity (which is a PDA) is a singer
+    /// enforcing the callback is executed by the VRF program trough CPI
+    #[account(address = ephemeral_vrf_sdk::consts::VRF_PROGRAM_IDENTITY)]
+    pub vrf_program_identity: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        bump = game.bump,
+        constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
+    )]
+    pub game: Account<'info, GameState>,
+
+    #[account(
+        mut,
+        seeds = [b"player", player_state.game.as_ref(), player_state.wallet.as_ref()],
+        bump
+    )]
+    pub player_state: Account<'info, PlayerState>,
+
+    pub clock: Sysvar<'info, Clock>,
+}
+
+pub fn callback_draw_community_chest_card(
+    ctx: Context<CallbackDrawCommunityChestCardCtx>,
+    randomness: [u8; 32],
+) -> Result<()> {
+    let card_index = ephemeral_vrf_sdk::rnd::random_u8_with_range(
+        &randomness,
+        0,
+        COMMUNITY_CHEST_CARDS.len() as u8 - 1,
+    ) as usize;
+    msg!("VRF generated community chest card index: {}", card_index);
+
+    let game = &mut ctx.accounts.game;
+    let player_state = &mut ctx.accounts.player_state;
+    let clock = &ctx.accounts.clock;
+    let player_pubkey = player_state.wallet;
+
+    if card_index >= COMMUNITY_CHEST_CARDS.len() {
+        return Err(GameError::InvalidParameter.into());
+    }
+
+    let card = &COMMUNITY_CHEST_CARDS[card_index];
+
+    emit!(CommunityChestCardDrawn {
+        player: player_pubkey,
+        game: game.key(),
+        card_index: card_index as u8,
+        effect_type: u8::from(card.effect_type),
+        amount: card.amount,
+        timestamp: clock.unix_timestamp,
+    });
+
+    player_state.card_drawn_at = Some(clock.unix_timestamp);
+
+    // Execute card effect
+    execute_community_chest_card_effect(game, player_state, card, clock)?;
+
+    // Clear the community chest card requirement
+    player_state.needs_community_chest_card = false;
+    player_state.needs_special_space_action = false;
+    player_state.pending_special_space_position = None;
+
+    // Update game timestamp
+    game.turn_started_at = clock.unix_timestamp;
+
+    msg!(
+        "Player {} drew Community Chest card via VRF: {}",
+        player_pubkey,
+        card.id
+    );
 
     Ok(())
 }

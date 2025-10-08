@@ -22,13 +22,11 @@ import {
 
 import { PlayerTokensContainer } from "./player-tokens";
 import { DiceProvider } from "./dice";
-// import { DiceProvider } from "@/components/dices";
 import { CardDrawModal } from "./card-draw-modal";
 import { useGameContext } from "@/components/providers/game-provider";
 import { PlayerActions } from "./player-actions";
 import { PropertyAccount } from "@/types/schema";
 import { BoardSpace } from "@/configs/board-data";
-import { EnhancedGameLogs } from "./game-logs";
 import {
   FreeParkingCorner,
   GoCorner,
@@ -63,6 +61,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
     payMevTax,
     payPriorityFeeTax,
     payJailFine,
+    useGetOutOfJailCard,
   } = useGameContext();
 
   // console.log("currentPlayerState", currentPlayerState);
@@ -156,6 +155,17 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
     }
   };
 
+  const handleGetOutOfJailCard = async () => {
+    setIsLoading("getOutOfJailCard");
+    try {
+      await useGetOutOfJailCard();
+    } catch (error) {
+      console.error("Failed to get out of jail card:", error);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
   const renderSpace = (space: BoardSpace, properties: PropertyAccount[]) => {
     const position = space.position;
     const key = `${space.name}-${position}`;
@@ -199,14 +209,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
   }
 
   return (
-    <div
-      className="h-full w-full monopoly-board overflow-hidden relative"
-      // style={{
-      //   backgroundImage: 'url("/images/monopoly-bg.jpg")',
-      //   backgroundSize: "cover",
-      //   backgroundPosition: "center",
-      // }}
-    >
+    <div className="h-full w-full monopoly-board overflow-hidden relative">
       <div className="h-full w-full flex items-center justify-center p-2 sm:p-4">
         <div
           className="relative aspect-square bg-board-bg transition-transform duration-500 ease-in-out border-2
@@ -239,6 +242,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
                       handlePayMevTax={handlePayMevTax}
                       handlePayPriorityFeeTax={handlePayPriorityFeeTax}
                       handlePayJailFine={handlePayJailFine}
+                      handleGetOutOfJailCard={handleGetOutOfJailCard}
                       isLoading={isLoading}
                       wallet={wallet}
                     />

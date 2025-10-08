@@ -26,7 +26,7 @@ import {
 
 export type PlayerPassedGo = {
   player: Address;
-  game: Address;
+  gameId: bigint;
   salaryCollected: bigint;
   newPosition: number;
   timestamp: bigint;
@@ -34,7 +34,7 @@ export type PlayerPassedGo = {
 
 export type PlayerPassedGoArgs = {
   player: Address;
-  game: Address;
+  gameId: number | bigint;
   salaryCollected: number | bigint;
   newPosition: number;
   timestamp: number | bigint;
@@ -43,7 +43,7 @@ export type PlayerPassedGoArgs = {
 export function getPlayerPassedGoEncoder(): FixedSizeEncoder<PlayerPassedGoArgs> {
   return getStructEncoder([
     ['player', getAddressEncoder()],
-    ['game', getAddressEncoder()],
+    ['gameId', getU64Encoder()],
     ['salaryCollected', getU64Encoder()],
     ['newPosition', getU8Encoder()],
     ['timestamp', getI64Encoder()],
@@ -53,7 +53,7 @@ export function getPlayerPassedGoEncoder(): FixedSizeEncoder<PlayerPassedGoArgs>
 export function getPlayerPassedGoDecoder(): FixedSizeDecoder<PlayerPassedGo> {
   return getStructDecoder([
     ['player', getAddressDecoder()],
-    ['game', getAddressDecoder()],
+    ['gameId', getU64Decoder()],
     ['salaryCollected', getU64Decoder()],
     ['newPosition', getU8Decoder()],
     ['timestamp', getI64Decoder()],

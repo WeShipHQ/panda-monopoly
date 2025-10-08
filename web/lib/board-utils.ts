@@ -200,7 +200,7 @@ export const getColorBarClasses = (side: BoardSide): string => {
 export const getOwnerIndicatorClasses = (side: BoardSide): string => {
   switch (side) {
     case "bottom":
-      return "absolute -top-3 left-0 w-full h-3";
+      return "absolute -translate-y-[110%] inset-x-0 w-full";
     case "left":
       return "absolute top-0 -right-3 h-full w-3";
     case "top":

@@ -95,7 +95,7 @@ pub struct TradeInfo {
 pub struct GameState {
     pub game_id: u64,
     pub config_id: Pubkey,
-    pub authority: Pubkey,   // 32 bytes - game creator
+    pub creator: Pubkey,   // 32 bytes - game creator
     pub bump: u8,            // 1 byte - PDA bump seed
     pub max_players: u8,     // 1 byte - maximum players (2-8)
     pub current_players: u8, // 1 byte - current player count
@@ -111,6 +111,12 @@ pub struct GameState {
     pub time_limit: Option<i64>, // 9 bytes - optional time limit
     pub winner: Option<Pubkey>, // 33 bytes - game winner
     pub turn_started_at: i64, // 8 bytes - when current turn started
+
+    // Entry fee fields
+    pub entry_fee: u64, // 8 bytes - entry fee amount (0 for free games)
+    pub token_mint: Option<Pubkey>, // 33 bytes - token mint for entry fee
+    pub token_vault: Option<Pubkey>, // 33 bytes - vault holding entry fees
+    pub total_prize_pool: u64, // 8 bytes - total collected fees
 
     #[max_len(20)]
     pub active_trades: Vec<TradeInfo>, // Vector of active trades

@@ -34,6 +34,12 @@ import { playPropertySound, playSound, SOUND_CONFIG } from "@/lib/soundUtil";
 import { toast } from "sonner";
 import soundUtil from "@/lib/soundUtil";
 import { BuildingType, GameStatus, TradeType } from "@/lib/sdk/generated";
+import {
+  showRentPaymentToast,
+  showRentPaymentFallbackToast,
+  showRentPaymentErrorToast,
+} from "@/lib/toast-utils";
+import { KeyedMutator } from "swr";
 
 interface GameContextType {
   gameAddress: Address | null;
@@ -65,6 +71,7 @@ interface GameContextType {
   drawChanceCard: () => Promise<void>;
   drawCommunityChestCard: () => Promise<void>;
   payJailFine: () => Promise<void>;
+  useGetOutOfJailCard: () => Promise<void>;
   buildHouse: (position: number) => Promise<void>;
   buildHotel: (position: number) => Promise<void>;
   sellBuilding: (position: number, buildingType: BuildingType) => Promise<void>;
@@ -97,6 +104,7 @@ interface GameContextType {
   showRollDice: boolean;
   showEndTurn: boolean;
   showPayJailFine: boolean;
+  showGetOutOfJailCard: boolean;
 
   // Game logs
   gameLogs: GameLogEntry[];
@@ -118,6 +126,18 @@ interface GameContextType {
   // demo
   demoDices: number[] | null;
   setDemoDices: (dices: number[] | null) => void;
+  mutate: KeyedMutator<
+    | {
+        gameData: null;
+        players: never[];
+        properties: never[];
+      }
+    | {
+        gameData: GameAccount;
+        players: PlayerAccount[];
+        properties: PropertyAccount[];
+      }
+  >;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -149,9 +169,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [cardDrawType, setCardDrawType] = useState<
     "chance" | "community-chest" | null
   >(null);
-
-  // Trade UI state
-  const [isTradeDialogOpen, setIsTradeDialogOpen] = useState(false);
 
   // Add these new state variables to track if modals have been shown
   const [hasShownChanceModal, setHasShownChanceModal] = useState(false);
@@ -196,10 +213,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     isLoading: gameLoading,
     error: gameError,
     refetch,
+    mutate,
   } = useGameState(gameAddress, {
     onCardDrawEvent: addCardDrawEvent,
   });
-  console.log("gameState", gameState);
 
   const currentPlayerAddress = useMemo(() => {
     return gameState?.players?.[gameState?.currentTurn] || null;
@@ -248,6 +265,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const showPayJailFine =
     isCurrentTurn && !!currentPlayerState && currentPlayerState.inJail;
   // currentPlayerState.cashBalance >= JAIL_FINE; -> display on UI
+
+  const showGetOutOfJailCard =
+    isCurrentTurn &&
+    !!currentPlayerState &&
+    currentPlayerState.inJail &&
+    currentPlayerState.getOutOfJailCards > 0;
 
   const getPropertyByPosition = useCallback(
     (position: number): PropertyAccount | null => {
@@ -603,7 +626,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[payRent] tx", signature);
 
-        // Play money pay sound for rent
         playPropertySound("rent");
 
         const propertyData = getTypedSpaceData(position, "property");
@@ -672,9 +694,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
     try {
       const instruction = await sdk.drawChanceCardIx({
-        rpc: erRpc,
         gameAddress: gameAddress,
         player: { address: address(wallet.address) } as TransactionSigner,
+        index: 4,
       });
 
       const signature = await buildAndSendTransactionWithPrivy(
@@ -709,9 +731,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
     try {
       const instruction = await sdk.drawCommunityChestCardIx({
-        rpc,
         gameAddress: gameAddress,
         player: { address: address(wallet.address) } as TransactionSigner,
+        index: 0,
       });
 
       const signature = await buildAndSendTransactionWithPrivy(
@@ -770,6 +792,33 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.log("[payJailFine] tx", signature);
     } catch (error) {
       console.error("Error paying jail fine:", error);
+      throw error;
+    }
+  }, [gameAddress, wallet, addGameLog]);
+
+  const useGetOutOfJailCard = useCallback(async (): Promise<void> => {
+    if (!gameAddress || !wallet?.address || !wallet.delegated) {
+      throw new Error("Game address or player signer not available");
+    }
+
+    try {
+      const instruction = await sdk.useGetOutOfJailCardIx({
+        gameAddress,
+        player: { address: address(wallet.address) } as TransactionSigner,
+      });
+
+      const signature = await buildAndSendTransactionWithPrivy(
+        erRpc,
+        [instruction],
+        wallet,
+        [],
+        "confirmed",
+        true
+      );
+
+      console.log("[useGetOutOfJailCard] tx", signature);
+    } catch (error) {
+      console.error("Error using get out of jail card:", error);
       throw error;
     }
   }, [gameAddress, wallet, addGameLog]);
@@ -1214,12 +1263,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       // Priority 2: Handle jail-related actions
-      if (player.inJail && player.jailTurns > 0) {
-        console.log("Player is in jail");
-        // Don't auto-handle jail - let player choose to pay fine or roll dice
-        // This is handled by the ActionPanel component
-        return;
-      }
+      // if (player.inJail && player.jailTurns > 0) {
+      //   console.log("Player is in jail");
+      //   // Don't auto-handle jail - let player choose to pay fine or roll dice
+      //   // This is handled by the ActionPanel component
+      //   return;
+      // }
 
       // Priority 3: Handle dice rolling (if player hasn't rolled yet)
       // if (!player.hasRolledDice && !player.inJail) {
@@ -1263,24 +1312,22 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
               const propertyData = getBoardSpaceData(property.position);
               const propertyName = propertyData?.name || "Property";
 
-              toast.info(
-                `${formatAddress(
-                  player.wallet
-                )} paid $${rentAmount} rent to ${formatAddress(
-                  property.owner
-                )} for ${propertyName}`
-              );
+              showRentPaymentToast({
+                rentAmount,
+                ownerAddress: property.owner,
+                propertyName,
+              });
+            } else {
+              // Fallback toast if owner player data is not available
+              const propertyData = getBoardSpaceData(property.position);
+              showRentPaymentFallbackToast({
+                ownerAddress: property.owner,
+                propertyName: propertyData?.name || "Property",
+              });
             }
-            // else {
-            //   const propertyData = getBoardSpaceData(property.position);
-            //   toast.info(
-            //     `${formatAddress(player.wallet)} paid rent to ${formatAddress(
-            //       property.owner
-            //     )} for ${propertyData?.name || "Property"}`
-            //   );
-            // }
           } catch (error) {
             console.error("Error auto-paying rent:", error);
+            showRentPaymentErrorToast();
           }
           return;
         }
@@ -1509,6 +1556,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     drawChanceCard,
     drawCommunityChestCard,
     payJailFine,
+    useGetOutOfJailCard,
     buildHouse,
     buildHotel,
     sellBuilding,
@@ -1537,6 +1585,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     showRollDice,
     showEndTurn,
     showPayJailFine,
+    showGetOutOfJailCard,
 
     // Game logs
     gameLogs,
@@ -1559,6 +1608,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     // demo
     demoDices,
     setDemoDices,
+    mutate,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

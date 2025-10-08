@@ -13,8 +13,6 @@ import {
   getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
-  getOptionDecoder,
-  getOptionEncoder,
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
@@ -22,14 +20,12 @@ import {
   type AccountMeta,
   type AccountSignerMeta,
   type Address,
-  type Codec,
-  type Decoder,
-  type Encoder,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
-  type Option,
-  type OptionOrNullable,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
@@ -43,24 +39,21 @@ import {
   type ResolvedAccount,
 } from '../shared';
 
-export const TEST_DICE_HANDLER_DISCRIMINATOR = new Uint8Array([
-  212, 231, 100, 61, 93, 111, 77, 171,
+export const USE_GET_OUT_OF_JAIL_CARD_DISCRIMINATOR = new Uint8Array([
+  212, 24, 245, 226, 137, 199, 25, 148,
 ]);
 
-export function getTestDiceHandlerDiscriminatorBytes() {
+export function getUseGetOutOfJailCardDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    TEST_DICE_HANDLER_DISCRIMINATOR
+    USE_GET_OUT_OF_JAIL_CARD_DISCRIMINATOR
   );
 }
 
-export type TestDiceHandlerInstruction<
+export type UseGetOutOfJailCardInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountGame extends string | AccountMeta<string> = string,
   TAccountPlayerState extends string | AccountMeta<string> = string,
   TAccountPlayer extends string | AccountMeta<string> = string,
-  TAccountRecentBlockhashes extends
-    | string
-    | AccountMeta<string> = 'SysvarRecentB1ockHashes11111111111111111111',
   TAccountClock extends
     | string
     | AccountMeta<string> = 'SysvarC1ock11111111111111111111111111111111',
@@ -79,9 +72,6 @@ export type TestDiceHandlerInstruction<
         ? WritableSignerAccount<TAccountPlayer> &
             AccountSignerMeta<TAccountPlayer>
         : TAccountPlayer,
-      TAccountRecentBlockhashes extends string
-        ? ReadonlyAccount<TAccountRecentBlockhashes>
-        : TAccountRecentBlockhashes,
       TAccountClock extends string
         ? ReadonlyAccount<TAccountClock>
         : TAccountClock,
@@ -89,80 +79,70 @@ export type TestDiceHandlerInstruction<
     ]
   >;
 
-export type TestDiceHandlerInstructionData = {
+export type UseGetOutOfJailCardInstructionData = {
   discriminator: ReadonlyUint8Array;
-  diceRoll: Option<ReadonlyUint8Array>;
 };
 
-export type TestDiceHandlerInstructionDataArgs = {
-  diceRoll: OptionOrNullable<ReadonlyUint8Array>;
-};
+export type UseGetOutOfJailCardInstructionDataArgs = {};
 
-export function getTestDiceHandlerInstructionDataEncoder(): Encoder<TestDiceHandlerInstructionDataArgs> {
+export function getUseGetOutOfJailCardInstructionDataEncoder(): FixedSizeEncoder<UseGetOutOfJailCardInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['diceRoll', getOptionEncoder(fixEncoderSize(getBytesEncoder(), 2))],
-    ]),
-    (value) => ({ ...value, discriminator: TEST_DICE_HANDLER_DISCRIMINATOR })
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    (value) => ({
+      ...value,
+      discriminator: USE_GET_OUT_OF_JAIL_CARD_DISCRIMINATOR,
+    })
   );
 }
 
-export function getTestDiceHandlerInstructionDataDecoder(): Decoder<TestDiceHandlerInstructionData> {
+export function getUseGetOutOfJailCardInstructionDataDecoder(): FixedSizeDecoder<UseGetOutOfJailCardInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['diceRoll', getOptionDecoder(fixDecoderSize(getBytesDecoder(), 2))],
   ]);
 }
 
-export function getTestDiceHandlerInstructionDataCodec(): Codec<
-  TestDiceHandlerInstructionDataArgs,
-  TestDiceHandlerInstructionData
+export function getUseGetOutOfJailCardInstructionDataCodec(): FixedSizeCodec<
+  UseGetOutOfJailCardInstructionDataArgs,
+  UseGetOutOfJailCardInstructionData
 > {
   return combineCodec(
-    getTestDiceHandlerInstructionDataEncoder(),
-    getTestDiceHandlerInstructionDataDecoder()
+    getUseGetOutOfJailCardInstructionDataEncoder(),
+    getUseGetOutOfJailCardInstructionDataDecoder()
   );
 }
 
-export type TestDiceHandlerAsyncInput<
+export type UseGetOutOfJailCardAsyncInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountPlayer extends string = string,
-  TAccountRecentBlockhashes extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
   playerState?: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
-  recentBlockhashes?: Address<TAccountRecentBlockhashes>;
   clock?: Address<TAccountClock>;
-  diceRoll: TestDiceHandlerInstructionDataArgs['diceRoll'];
 };
 
-export async function getTestDiceHandlerInstructionAsync<
+export async function getUseGetOutOfJailCardInstructionAsync<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountPlayer extends string,
-  TAccountRecentBlockhashes extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: TestDiceHandlerAsyncInput<
+  input: UseGetOutOfJailCardAsyncInput<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
-    TAccountRecentBlockhashes,
     TAccountClock
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
-  TestDiceHandlerInstruction<
+  UseGetOutOfJailCardInstruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
-    TAccountRecentBlockhashes,
     TAccountClock
   >
 > {
@@ -175,19 +155,12 @@ export async function getTestDiceHandlerInstructionAsync<
     game: { value: input.game ?? null, isWritable: true },
     playerState: { value: input.playerState ?? null, isWritable: true },
     player: { value: input.player ?? null, isWritable: true },
-    recentBlockhashes: {
-      value: input.recentBlockhashes ?? null,
-      isWritable: false,
-    },
     clock: { value: input.clock ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
-
-  // Original args.
-  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.playerState.value) {
@@ -200,10 +173,6 @@ export async function getTestDiceHandlerInstructionAsync<
       ],
     });
   }
-  if (!accounts.recentBlockhashes.value) {
-    accounts.recentBlockhashes.value =
-      'SysvarRecentB1ockHashes11111111111111111111' as Address<'SysvarRecentB1ockHashes11111111111111111111'>;
-  }
   if (!accounts.clock.value) {
     accounts.clock.value =
       'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
@@ -215,60 +184,50 @@ export async function getTestDiceHandlerInstructionAsync<
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.playerState),
       getAccountMeta(accounts.player),
-      getAccountMeta(accounts.recentBlockhashes),
       getAccountMeta(accounts.clock),
     ],
-    data: getTestDiceHandlerInstructionDataEncoder().encode(
-      args as TestDiceHandlerInstructionDataArgs
-    ),
+    data: getUseGetOutOfJailCardInstructionDataEncoder().encode({}),
     programAddress,
-  } as TestDiceHandlerInstruction<
+  } as UseGetOutOfJailCardInstruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
-    TAccountRecentBlockhashes,
     TAccountClock
   >);
 }
 
-export type TestDiceHandlerInput<
+export type UseGetOutOfJailCardInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountPlayer extends string = string,
-  TAccountRecentBlockhashes extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
   playerState: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
-  recentBlockhashes?: Address<TAccountRecentBlockhashes>;
   clock?: Address<TAccountClock>;
-  diceRoll: TestDiceHandlerInstructionDataArgs['diceRoll'];
 };
 
-export function getTestDiceHandlerInstruction<
+export function getUseGetOutOfJailCardInstruction<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountPlayer extends string,
-  TAccountRecentBlockhashes extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: TestDiceHandlerInput<
+  input: UseGetOutOfJailCardInput<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
-    TAccountRecentBlockhashes,
     TAccountClock
   >,
   config?: { programAddress?: TProgramAddress }
-): TestDiceHandlerInstruction<
+): UseGetOutOfJailCardInstruction<
   TProgramAddress,
   TAccountGame,
   TAccountPlayerState,
   TAccountPlayer,
-  TAccountRecentBlockhashes,
   TAccountClock
 > {
   // Program address.
@@ -280,10 +239,6 @@ export function getTestDiceHandlerInstruction<
     game: { value: input.game ?? null, isWritable: true },
     playerState: { value: input.playerState ?? null, isWritable: true },
     player: { value: input.player ?? null, isWritable: true },
-    recentBlockhashes: {
-      value: input.recentBlockhashes ?? null,
-      isWritable: false,
-    },
     clock: { value: input.clock ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -291,14 +246,7 @@ export function getTestDiceHandlerInstruction<
     ResolvedAccount
   >;
 
-  // Original args.
-  const args = { ...input };
-
   // Resolve default values.
-  if (!accounts.recentBlockhashes.value) {
-    accounts.recentBlockhashes.value =
-      'SysvarRecentB1ockHashes11111111111111111111' as Address<'SysvarRecentB1ockHashes11111111111111111111'>;
-  }
   if (!accounts.clock.value) {
     accounts.clock.value =
       'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
@@ -310,24 +258,20 @@ export function getTestDiceHandlerInstruction<
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.playerState),
       getAccountMeta(accounts.player),
-      getAccountMeta(accounts.recentBlockhashes),
       getAccountMeta(accounts.clock),
     ],
-    data: getTestDiceHandlerInstructionDataEncoder().encode(
-      args as TestDiceHandlerInstructionDataArgs
-    ),
+    data: getUseGetOutOfJailCardInstructionDataEncoder().encode({}),
     programAddress,
-  } as TestDiceHandlerInstruction<
+  } as UseGetOutOfJailCardInstruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
-    TAccountRecentBlockhashes,
     TAccountClock
   >);
 }
 
-export type ParsedTestDiceHandlerInstruction<
+export type ParsedUseGetOutOfJailCardInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -336,21 +280,20 @@ export type ParsedTestDiceHandlerInstruction<
     game: TAccountMetas[0];
     playerState: TAccountMetas[1];
     player: TAccountMetas[2];
-    recentBlockhashes: TAccountMetas[3];
-    clock: TAccountMetas[4];
+    clock: TAccountMetas[3];
   };
-  data: TestDiceHandlerInstructionData;
+  data: UseGetOutOfJailCardInstructionData;
 };
 
-export function parseTestDiceHandlerInstruction<
+export function parseUseGetOutOfJailCardInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
-): ParsedTestDiceHandlerInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+): ParsedUseGetOutOfJailCardInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -366,9 +309,10 @@ export function parseTestDiceHandlerInstruction<
       game: getNextAccount(),
       playerState: getNextAccount(),
       player: getNextAccount(),
-      recentBlockhashes: getNextAccount(),
       clock: getNextAccount(),
     },
-    data: getTestDiceHandlerInstructionDataDecoder().decode(instruction.data),
+    data: getUseGetOutOfJailCardInstructionDataDecoder().decode(
+      instruction.data
+    ),
   };
 }
