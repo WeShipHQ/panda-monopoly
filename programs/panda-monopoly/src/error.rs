@@ -113,7 +113,7 @@ pub enum GameError {
     #[msg("Not enough hotels available in bank")]
     NotEnoughHotelsInBank,
 
-    // Dice and Movement Errors
+    // Movement and Dice Errors
     #[msg("Invalid dice roll")]
     InvalidDiceRoll,
 
