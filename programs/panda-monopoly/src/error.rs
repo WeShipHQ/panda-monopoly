@@ -110,7 +110,7 @@ pub enum GameError {
     #[msg("Not enough hotels available in bank")]
     NotEnoughHotelsInBank,
 
-    // Movement and Dice Errors
+    // Dice and Movement Errors
     #[msg("Invalid dice roll")]
     InvalidDiceRoll,
 
@@ -196,6 +196,9 @@ pub enum GameError {
     #[msg("Must roll doubles or pay fine to leave jail")]
     MustRollDoublesOrPayFine,
 
+    #[msg("Player has no Get Out of Jail cards")]
+    NoGetOutOfJailCards,
+
     // Special Space Errors
     #[msg("Invalid special space action")]
     InvalidSpecialSpaceAction,
@@ -242,7 +245,7 @@ pub enum GameError {
     #[msg("Invalid signer")]
     InvalidSigner,
 
-    // Calculation and Validation Errors
+    // Math Errors
     #[msg("Arithmetic overflow")]
     ArithmeticOverflow,
 
@@ -268,7 +271,7 @@ pub enum GameError {
     #[msg("Randomness unavailable")]
     RandomnessUnavailable,
 
-    // Time and Clock Errors
+    // Time Errors
     #[msg("Invalid timestamp")]
     InvalidTimestamp,
 

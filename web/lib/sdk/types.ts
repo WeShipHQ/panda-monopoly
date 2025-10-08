@@ -63,6 +63,11 @@ export interface PayJailFineParams {
   gameAddress: Address;
 }
 
+export interface UseGetOutOfJailCardParams {
+  player: TransactionSigner;
+  gameAddress: Address;
+}
+
 // Property-related instruction parameters
 export interface BuyPropertyParams {
   player: TransactionSigner;

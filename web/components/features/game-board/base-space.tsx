@@ -1,4 +1,5 @@
 import React from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
   getBorderClasses,
@@ -28,7 +29,7 @@ export const BaseSpace: React.FC<BaseSpaceComponentProps> = ({
   contentContainerclassName = "",
   ...rest
 }) => {
-  const { ownerMeta } = useSpaceOwner(onChainProperty);
+  const { ownerMeta, ownerAddress } = useSpaceOwner(onChainProperty);
   const side = getBoardSide(position);
 
   const borderClasses = getBorderClasses(position);
@@ -55,11 +56,27 @@ export const BaseSpace: React.FC<BaseSpaceComponentProps> = ({
       )}
 
       {/* Owner indicator */}
-      {ownerMeta && (
+      {ownerMeta && ownerAddress && (
         <div
-          className={cn(ownerIndicatorClasses)}
-          style={{ backgroundColor: ownerMeta.color || "red" }}
-        />
+          className={cn(
+            "flex items-center justify-center",
+            ownerIndicatorClasses
+          )}
+          // style={{ backgroundColor: ownerMeta.color || "red" }}
+        >
+          <Avatar className="size-6">
+            <AvatarImage
+              walletAddress={ownerMeta.name}
+              alt={`Player ${ownerMeta.name}`}
+            />
+            <AvatarFallback
+              walletAddress={ownerAddress}
+              className="text-white font-semibold"
+            >
+              {ownerAddress}
+            </AvatarFallback>
+          </Avatar>
+        </div>
       )}
 
       {/* Content container with proper text positioning */}

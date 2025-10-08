@@ -151,6 +151,7 @@ export const PlayerActions = ({
   handlePayMevTax,
   handlePayPriorityFeeTax,
   handlePayJailFine,
+  handleGetOutOfJailCard,
   isLoading,
 }: {
   wallet: WalletWithMetadata;
@@ -162,6 +163,7 @@ export const PlayerActions = ({
   handlePayPriorityFeeTax: () => void;
   handleEndTurn: () => void;
   handlePayJailFine: () => void;
+  handleGetOutOfJailCard: () => void;
   isLoading: string | null;
 }) => {
   const {
@@ -172,6 +174,7 @@ export const PlayerActions = ({
     isCurrentTurn,
     showEndTurn,
     showPayJailFine,
+    showGetOutOfJailCard,
     setCardDrawType,
     setIsCardDrawModalOpen,
   } = useGameContext();
@@ -228,34 +231,6 @@ export const PlayerActions = ({
       {isStarted && isCurrentTurn && (
         <>
           <div className="flex items-center gap-2 mt-8 mb-4">
-            {/* {!hasPendingActions &&
-              (!currentPlayerState.hasRolledDice || isDouble) &&
-              !currentPlayerState.inJail && (
-                <Button
-                  disabled={!canRoll || isRolling}
-                  onClick={handleRollDice}
-                  size="sm"
-                  loading={isRolling}
-                >
-                  Roll dice
-                </Button>
-              )} */}
-
-            {/* {((!hasPendingActions && !currentPlayerState.hasRolledDice) ||
-              (!hasPendingActions &&
-                currentPlayerState.hasRolledDice &&
-                isDouble &&
-                !currentPlayerState.inJail)) && (
-              <Button
-                disabled={!canRoll || isRolling}
-                onClick={handleRollDice}
-                size="sm"
-                loading={isRolling}
-              >
-                Roll dice
-              </Button>
-            )} */}
-
             {showRollDice && (
               <Button
                 disabled={!canRoll || isRolling}
@@ -278,12 +253,15 @@ export const PlayerActions = ({
               </Button>
             )}
 
-            {/* {currentPlayerState?.inJail && (
-              <PlayerInJailAlert
-                player={currentPlayerState}
-                handleEndTurn={handleEndTurn}
-              />
-            )} */}
+            {showGetOutOfJailCard && (
+              <Button
+                onClick={handleGetOutOfJailCard}
+                size="sm"
+                loading={isLoading === "getOutOfJailCard"}
+              >
+                Use Get Out of Jail Card
+              </Button>
+            )}
 
             {currentPlayerState?.needsBankruptcyCheck && (
               <BankruptcyAction player={currentPlayerState} />

@@ -51,6 +51,7 @@ import {
   type ParsedUndelegateGameHandlerInstruction,
   type ParsedUnmortgagePropertyInstruction,
   type ParsedUpdatePlatformConfigInstruction,
+  type ParsedUseGetOutOfJailCardInstruction,
   type ParsedVisitBeachResortInstruction,
 } from '../instructions';
 
@@ -155,6 +156,7 @@ export enum PandaMonopolyInstruction {
   UndelegateGameHandler,
   UnmortgageProperty,
   UpdatePlatformConfig,
+  UseGetOutOfJailCard,
   VisitBeachResort,
 }
 
@@ -573,6 +575,17 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([212, 24, 245, 226, 137, 199, 25, 148])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.UseGetOutOfJailCard;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([29, 144, 200, 42, 23, 132, 255, 15])
       ),
       0
@@ -699,6 +712,9 @@ export type ParsedPandaMonopolyInstruction<
   | ({
       instructionType: PandaMonopolyInstruction.UpdatePlatformConfig;
     } & ParsedUpdatePlatformConfigInstruction<TProgram>)
+  | ({
+      instructionType: PandaMonopolyInstruction.UseGetOutOfJailCard;
+    } & ParsedUseGetOutOfJailCardInstruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.VisitBeachResort;
     } & ParsedVisitBeachResortInstruction<TProgram>);

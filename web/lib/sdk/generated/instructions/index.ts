@@ -43,4 +43,5 @@ export * from './startGame';
 export * from './undelegateGameHandler';
 export * from './unmortgageProperty';
 export * from './updatePlatformConfig';
+export * from './useGetOutOfJailCard';
 export * from './visitBeachResort';

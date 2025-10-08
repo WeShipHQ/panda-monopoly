@@ -55,6 +55,8 @@ import {
   getDrawChanceCardInstruction,
   getDrawCommunityChestCardInstruction,
   getDrawChanceCardVrfHandlerInstruction,
+  getUseGetOutOfJailCardInstruction,
+  getPayJailFineInstruction,
 } from "./generated";
 import {
   CreateGameIxs,
@@ -87,6 +89,7 @@ import {
   CancelTradeParams,
   DeclareBankruptcyParams,
   DrawChanceCardVrfParams,
+  UseGetOutOfJailCardParams,
 } from "./types";
 import {
   getGamePDA,
@@ -347,17 +350,6 @@ class MonopolyGameSDK {
     });
   }
 
-  // async rollTestDiceIx(params: RollDiceParams): Promise<Instruction> {
-  //   return await getTestDiceHandlerInstructionAsync({
-  //     game: params.gameAddress,
-  //     player: params.player,
-  //     // oracleQueue: DEFAULT_EPHEMERAL_QUEUE,
-  //     diceRoll: params.diceRoll
-  //       ? some(params.diceRoll as unknown as ReadonlyUint8Array)
-  //       : none(),
-  //   });
-  // }
-
   async rollDiceVrfIx(params: RollDiceParams): Promise<Instruction> {
     const [playerStatePda] = await getPlayerStatePDA(
       params.gameAddress,
@@ -398,13 +390,32 @@ class MonopolyGameSDK {
    * Pay jail fine to get out of jail
    */
   async payJailFineIx(params: PayJailFineParams): Promise<Instruction> {
-    return await getPayJailFineInstructionAsync({
+    const [playerStatePda] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.player.address
+    );
+
+    return await getPayJailFineInstruction({
       game: params.gameAddress,
       player: params.player,
+      playerState: playerStatePda,
     });
   }
 
-  // Property-related methods
+  async useGetOutOfJailCardIx(
+    params: UseGetOutOfJailCardParams
+  ): Promise<Instruction> {
+    const [playerStatePda] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.player.address
+    );
+
+    return await getUseGetOutOfJailCardInstruction({
+      game: params.gameAddress,
+      player: params.player,
+      playerState: playerStatePda,
+    });
+  }
 
   /**
    * Buy a property at the specified position

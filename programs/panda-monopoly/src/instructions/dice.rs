@@ -330,61 +330,61 @@ fn handle_special_space(
     Ok(())
 }
 
-#[derive(Accounts)]
-pub struct PayJailFine<'info> {
-    #[account(
-        mut,
-        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
-        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
-        bump = game.bump,
-        constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
-    )]
-    pub game: Account<'info, GameState>,
+// #[derive(Accounts)]
+// pub struct PayJailFine<'info> {
+//     #[account(
+//         mut,
+//         // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+//         seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+//         bump = game.bump,
+//         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
+//     )]
+//     pub game: Account<'info, GameState>,
 
-    #[account(
-        mut,
-        seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
-        bump
-    )]
-    pub player_state: Account<'info, PlayerState>,
+//     #[account(
+//         mut,
+//         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
+//         bump
+//     )]
+//     pub player_state: Account<'info, PlayerState>,
 
-    #[account(mut)]
-    pub player: Signer<'info>,
+//     #[account(mut)]
+//     pub player: Signer<'info>,
 
-    pub clock: Sysvar<'info, Clock>,
-}
+//     pub clock: Sysvar<'info, Clock>,
+// }
 
-pub fn pay_jail_fine_handler(ctx: Context<PayJailFine>) -> Result<()> {
-    let game = &mut ctx.accounts.game;
-    let player_state = &mut ctx.accounts.player_state;
-    let player_pubkey = ctx.accounts.player.key();
-    let clock = &ctx.accounts.clock;
+// pub fn pay_jail_fine_handler(ctx: Context<PayJailFine>) -> Result<()> {
+//     let game = &mut ctx.accounts.game;
+//     let player_state = &mut ctx.accounts.player_state;
+//     let player_pubkey = ctx.accounts.player.key();
+//     let clock = &ctx.accounts.clock;
 
-    if !player_state.in_jail {
-        return Err(GameError::PlayerNotInJail.into());
-    }
+//     if !player_state.in_jail {
+//         return Err(GameError::PlayerNotInJail.into());
+//     }
 
-    // Check if player has enough money
-    if player_state.cash_balance < JAIL_FINE as u64 {
-        player_state.needs_bankruptcy_check = true;
-        return Ok(());
-    }
+//     // Check if player has enough money
+//     if player_state.cash_balance < JAIL_FINE as u64 {
+//         player_state.needs_bankruptcy_check = true;
+//         return Ok(());
+//     }
 
-    // Pay fine and release from jail
-    player_state.cash_balance -= JAIL_FINE as u64;
-    player_state.in_jail = false;
-    player_state.jail_turns = 0;
+//     // Pay fine and release from jail
+//     player_state.cash_balance -= JAIL_FINE as u64;
+//     player_state.in_jail = false;
+//     player_state.jail_turns = 0;
 
-    game.turn_started_at = clock.unix_timestamp;
+//     game.turn_started_at = clock.unix_timestamp;
 
-    msg!(
-        "Player {} paid ${} jail fine and is released!",
-        player_pubkey,
-        JAIL_FINE
-    );
+//     msg!(
+//         "Player {} paid ${} jail fine and is released!",
+//         player_pubkey,
+//         JAIL_FINE
+//     );
 
-    Ok(())
-}
+//     Ok(())
+// }
 
 #[vrf]
 #[derive(Accounts)]

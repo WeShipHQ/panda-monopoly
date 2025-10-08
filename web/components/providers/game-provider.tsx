@@ -71,6 +71,7 @@ interface GameContextType {
   drawChanceCard: () => Promise<void>;
   drawCommunityChestCard: () => Promise<void>;
   payJailFine: () => Promise<void>;
+  useGetOutOfJailCard: () => Promise<void>;
   buildHouse: (position: number) => Promise<void>;
   buildHotel: (position: number) => Promise<void>;
   sellBuilding: (position: number, buildingType: BuildingType) => Promise<void>;
@@ -103,6 +104,7 @@ interface GameContextType {
   showRollDice: boolean;
   showEndTurn: boolean;
   showPayJailFine: boolean;
+  showGetOutOfJailCard: boolean;
 
   // Game logs
   gameLogs: GameLogEntry[];
@@ -263,6 +265,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const showPayJailFine =
     isCurrentTurn && !!currentPlayerState && currentPlayerState.inJail;
   // currentPlayerState.cashBalance >= JAIL_FINE; -> display on UI
+
+  const showGetOutOfJailCard =
+    isCurrentTurn &&
+    !!currentPlayerState &&
+    currentPlayerState.inJail &&
+    currentPlayerState.getOutOfJailCards > 0;
 
   const getPropertyByPosition = useCallback(
     (position: number): PropertyAccount | null => {
@@ -688,6 +696,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       const instruction = await sdk.drawChanceCardIx({
         gameAddress: gameAddress,
         player: { address: address(wallet.address) } as TransactionSigner,
+        index: 4,
       });
 
       const signature = await buildAndSendTransactionWithPrivy(
@@ -724,6 +733,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       const instruction = await sdk.drawCommunityChestCardIx({
         gameAddress: gameAddress,
         player: { address: address(wallet.address) } as TransactionSigner,
+        index: 0,
       });
 
       const signature = await buildAndSendTransactionWithPrivy(
@@ -782,6 +792,33 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.log("[payJailFine] tx", signature);
     } catch (error) {
       console.error("Error paying jail fine:", error);
+      throw error;
+    }
+  }, [gameAddress, wallet, addGameLog]);
+
+  const useGetOutOfJailCard = useCallback(async (): Promise<void> => {
+    if (!gameAddress || !wallet?.address || !wallet.delegated) {
+      throw new Error("Game address or player signer not available");
+    }
+
+    try {
+      const instruction = await sdk.useGetOutOfJailCardIx({
+        gameAddress,
+        player: { address: address(wallet.address) } as TransactionSigner,
+      });
+
+      const signature = await buildAndSendTransactionWithPrivy(
+        erRpc,
+        [instruction],
+        wallet,
+        [],
+        "confirmed",
+        true
+      );
+
+      console.log("[useGetOutOfJailCard] tx", signature);
+    } catch (error) {
+      console.error("Error using get out of jail card:", error);
       throw error;
     }
   }, [gameAddress, wallet, addGameLog]);
@@ -1519,6 +1556,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     drawChanceCard,
     drawCommunityChestCard,
     payJailFine,
+    useGetOutOfJailCard,
     buildHouse,
     buildHotel,
     sellBuilding,
@@ -1547,6 +1585,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     showRollDice,
     showEndTurn,
     showPayJailFine,
+    showGetOutOfJailCard,
 
     // Game logs
     gameLogs,

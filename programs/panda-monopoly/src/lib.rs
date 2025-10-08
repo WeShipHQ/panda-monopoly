@@ -123,7 +123,11 @@ pub mod panda_monopoly {
     }
 
     pub fn pay_jail_fine(ctx: Context<PayJailFine>) -> Result<()> {
-        instructions::dice::pay_jail_fine_handler(ctx)
+        instructions::jail::pay_jail_fine_handler(ctx)
+    }
+
+    pub fn use_get_out_of_jail_card(ctx: Context<UseGetOutOfJailCard>) -> Result<()> {
+        instructions::jail::use_get_out_of_jail_card_handler(ctx)
     }
 
     // Bankruptcy instructions
@@ -266,4 +270,3 @@ pub mod panda_monopoly {
     //     instructions::auction::end_auction_handler(ctx)
     // }
 }
-
