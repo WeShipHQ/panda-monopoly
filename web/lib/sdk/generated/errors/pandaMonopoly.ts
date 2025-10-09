@@ -22,210 +22,224 @@ export const PANDA_MONOPOLY_ERROR__GAME_ALREADY_INITIALIZED = 0x1771; // 6001
 export const PANDA_MONOPOLY_ERROR__GAME_NOT_IN_PROGRESS = 0x1772; // 6002
 /** GameAlreadyEnded: Game has already ended */
 export const PANDA_MONOPOLY_ERROR__GAME_ALREADY_ENDED = 0x1773; // 6003
+/** GameCannotEnd: Game cannot end - multiple players still active */
+export const PANDA_MONOPOLY_ERROR__GAME_CANNOT_END = 0x1774; // 6004
 /** MaxPlayersReached: Maximum number of players reached */
-export const PANDA_MONOPOLY_ERROR__MAX_PLAYERS_REACHED = 0x1774; // 6004
+export const PANDA_MONOPOLY_ERROR__MAX_PLAYERS_REACHED = 0x1775; // 6005
 /** MinPlayersNotMet: Minimum number of players not met */
-export const PANDA_MONOPOLY_ERROR__MIN_PLAYERS_NOT_MET = 0x1775; // 6005
+export const PANDA_MONOPOLY_ERROR__MIN_PLAYERS_NOT_MET = 0x1776; // 6006
 /** CannotStartGame: Game cannot start with current player count */
-export const PANDA_MONOPOLY_ERROR__CANNOT_START_GAME = 0x1776; // 6006
+export const PANDA_MONOPOLY_ERROR__CANNOT_START_GAME = 0x1777; // 6007
 /** PlayerNotFound: Player not found in game */
-export const PANDA_MONOPOLY_ERROR__PLAYER_NOT_FOUND = 0x1777; // 6007
+export const PANDA_MONOPOLY_ERROR__PLAYER_NOT_FOUND = 0x1778; // 6008
 /** PlayerAlreadyExists: Player already exists in game */
-export const PANDA_MONOPOLY_ERROR__PLAYER_ALREADY_EXISTS = 0x1778; // 6008
+export const PANDA_MONOPOLY_ERROR__PLAYER_ALREADY_EXISTS = 0x1779; // 6009
 /** NotPlayerTurn: Not player's turn */
-export const PANDA_MONOPOLY_ERROR__NOT_PLAYER_TURN = 0x1779; // 6009
+export const PANDA_MONOPOLY_ERROR__NOT_PLAYER_TURN = 0x177a; // 6010
 /** PlayerInJail: Player is in jail */
-export const PANDA_MONOPOLY_ERROR__PLAYER_IN_JAIL = 0x177a; // 6010
+export const PANDA_MONOPOLY_ERROR__PLAYER_IN_JAIL = 0x177b; // 6011
 /** PlayerNotInJail: Player is not in jail */
-export const PANDA_MONOPOLY_ERROR__PLAYER_NOT_IN_JAIL = 0x177b; // 6011
+export const PANDA_MONOPOLY_ERROR__PLAYER_NOT_IN_JAIL = 0x177c; // 6012
 /** PlayerBankrupt: Player is bankrupt */
-export const PANDA_MONOPOLY_ERROR__PLAYER_BANKRUPT = 0x177c; // 6012
+export const PANDA_MONOPOLY_ERROR__PLAYER_BANKRUPT = 0x177d; // 6013
 /** InsufficientFunds: Player has insufficient funds */
-export const PANDA_MONOPOLY_ERROR__INSUFFICIENT_FUNDS = 0x177d; // 6013
+export const PANDA_MONOPOLY_ERROR__INSUFFICIENT_FUNDS = 0x177e; // 6014
 /** AlreadyRolledDice: Player already rolled dice this turn */
-export const PANDA_MONOPOLY_ERROR__ALREADY_ROLLED_DICE = 0x177e; // 6014
+export const PANDA_MONOPOLY_ERROR__ALREADY_ROLLED_DICE = 0x177f; // 6015
 /** HasNotRolledDice: Player has not rolled dice yet */
-export const PANDA_MONOPOLY_ERROR__HAS_NOT_ROLLED_DICE = 0x177f; // 6015
+export const PANDA_MONOPOLY_ERROR__HAS_NOT_ROLLED_DICE = 0x1780; // 6016
 /** MustPayRent: Player must pay rent before ending turn */
-export const PANDA_MONOPOLY_ERROR__MUST_PAY_RENT = 0x1780; // 6016
+export const PANDA_MONOPOLY_ERROR__MUST_PAY_RENT = 0x1781; // 6017
 /** MustHandleSpecialSpace: Player must handle special space before ending turn */
-export const PANDA_MONOPOLY_ERROR__MUST_HANDLE_SPECIAL_SPACE = 0x1781; // 6017
+export const PANDA_MONOPOLY_ERROR__MUST_HANDLE_SPECIAL_SPACE = 0x1782; // 6018
 /** PropertyNotFound: Property not found */
-export const PANDA_MONOPOLY_ERROR__PROPERTY_NOT_FOUND = 0x1782; // 6018
+export const PANDA_MONOPOLY_ERROR__PROPERTY_NOT_FOUND = 0x1783; // 6019
 /** PropertyNotPurchasable: Property is not purchasable */
-export const PANDA_MONOPOLY_ERROR__PROPERTY_NOT_PURCHASABLE = 0x1783; // 6019
+export const PANDA_MONOPOLY_ERROR__PROPERTY_NOT_PURCHASABLE = 0x1784; // 6020
 /** PropertyAlreadyOwned: Property already owned */
-export const PANDA_MONOPOLY_ERROR__PROPERTY_ALREADY_OWNED = 0x1784; // 6020
+export const PANDA_MONOPOLY_ERROR__PROPERTY_ALREADY_OWNED = 0x1785; // 6021
 /** PropertyNotOwnedByPlayer: Property not owned by player */
-export const PANDA_MONOPOLY_ERROR__PROPERTY_NOT_OWNED_BY_PLAYER = 0x1785; // 6021
+export const PANDA_MONOPOLY_ERROR__PROPERTY_NOT_OWNED_BY_PLAYER = 0x1786; // 6022
 /** PropertyMortgaged: Property is mortgaged */
-export const PANDA_MONOPOLY_ERROR__PROPERTY_MORTGAGED = 0x1786; // 6022
+export const PANDA_MONOPOLY_ERROR__PROPERTY_MORTGAGED = 0x1787; // 6023
 /** PropertyNotMortgaged: Property is not mortgaged */
-export const PANDA_MONOPOLY_ERROR__PROPERTY_NOT_MORTGAGED = 0x1787; // 6023
+export const PANDA_MONOPOLY_ERROR__PROPERTY_NOT_MORTGAGED = 0x1788; // 6024
 /** CannotMortgageWithBuildings: Cannot mortgage property with buildings */
-export const PANDA_MONOPOLY_ERROR__CANNOT_MORTGAGE_WITH_BUILDINGS = 0x1788; // 6024
+export const PANDA_MONOPOLY_ERROR__CANNOT_MORTGAGE_WITH_BUILDINGS = 0x1789; // 6025
 /** DoesNotOwnColorGroup: Player does not own all properties in color group */
-export const PANDA_MONOPOLY_ERROR__DOES_NOT_OWN_COLOR_GROUP = 0x1789; // 6025
+export const PANDA_MONOPOLY_ERROR__DOES_NOT_OWN_COLOR_GROUP = 0x178a; // 6026
 /** CannotBuildOnPropertyType: Cannot build on this property type */
-export const PANDA_MONOPOLY_ERROR__CANNOT_BUILD_ON_PROPERTY_TYPE = 0x178a; // 6026
+export const PANDA_MONOPOLY_ERROR__CANNOT_BUILD_ON_PROPERTY_TYPE = 0x178b; // 6027
 /** MaxHousesReached: Maximum houses reached on property */
-export const PANDA_MONOPOLY_ERROR__MAX_HOUSES_REACHED = 0x178b; // 6027
+export const PANDA_MONOPOLY_ERROR__MAX_HOUSES_REACHED = 0x178c; // 6028
 /** PropertyHasHotel: Property already has hotel */
-export const PANDA_MONOPOLY_ERROR__PROPERTY_HAS_HOTEL = 0x178c; // 6028
+export const PANDA_MONOPOLY_ERROR__PROPERTY_HAS_HOTEL = 0x178d; // 6029
 /** MustBuildEvenly: Must build houses evenly across color group */
-export const PANDA_MONOPOLY_ERROR__MUST_BUILD_EVENLY = 0x178d; // 6029
+export const PANDA_MONOPOLY_ERROR__MUST_BUILD_EVENLY = 0x178e; // 6030
 /** MustSellEvenly: Must sell houses evenly across color group */
-export const PANDA_MONOPOLY_ERROR__MUST_SELL_EVENLY = 0x178e; // 6030
+export const PANDA_MONOPOLY_ERROR__MUST_SELL_EVENLY = 0x178f; // 6031
 /** NoHousesToSell: No houses to sell on property */
-export const PANDA_MONOPOLY_ERROR__NO_HOUSES_TO_SELL = 0x178f; // 6031
+export const PANDA_MONOPOLY_ERROR__NO_HOUSES_TO_SELL = 0x1790; // 6032
 /** NoHotelToSell: No hotel to sell on property */
-export const PANDA_MONOPOLY_ERROR__NO_HOTEL_TO_SELL = 0x1790; // 6032
+export const PANDA_MONOPOLY_ERROR__NO_HOTEL_TO_SELL = 0x1791; // 6033
 /** NotEnoughHousesInBank: Not enough houses available in bank */
-export const PANDA_MONOPOLY_ERROR__NOT_ENOUGH_HOUSES_IN_BANK = 0x1791; // 6033
+export const PANDA_MONOPOLY_ERROR__NOT_ENOUGH_HOUSES_IN_BANK = 0x1792; // 6034
 /** NotEnoughHotelsInBank: Not enough hotels available in bank */
-export const PANDA_MONOPOLY_ERROR__NOT_ENOUGH_HOTELS_IN_BANK = 0x1792; // 6034
+export const PANDA_MONOPOLY_ERROR__NOT_ENOUGH_HOTELS_IN_BANK = 0x1793; // 6035
 /** InvalidDiceRoll: Invalid dice roll */
-export const PANDA_MONOPOLY_ERROR__INVALID_DICE_ROLL = 0x1793; // 6035
+export const PANDA_MONOPOLY_ERROR__INVALID_DICE_ROLL = 0x1794; // 6036
 /** InvalidBoardPosition: Invalid board position */
-export const PANDA_MONOPOLY_ERROR__INVALID_BOARD_POSITION = 0x1794; // 6036
+export const PANDA_MONOPOLY_ERROR__INVALID_BOARD_POSITION = 0x1795; // 6037
 /** InvalidPropertyPosition: Invalid property position */
-export const PANDA_MONOPOLY_ERROR__INVALID_PROPERTY_POSITION = 0x1795; // 6037
+export const PANDA_MONOPOLY_ERROR__INVALID_PROPERTY_POSITION = 0x1796; // 6038
 /** TooManyDoubles: Player rolled doubles too many times */
-export const PANDA_MONOPOLY_ERROR__TOO_MANY_DOUBLES = 0x1796; // 6038
+export const PANDA_MONOPOLY_ERROR__TOO_MANY_DOUBLES = 0x1797; // 6039
 /** TradeNotFound: Trade not found */
-export const PANDA_MONOPOLY_ERROR__TRADE_NOT_FOUND = 0x1797; // 6039
+export const PANDA_MONOPOLY_ERROR__TRADE_NOT_FOUND = 0x1798; // 6040
 /** TradeAlreadyExists: Trade already exists */
-export const PANDA_MONOPOLY_ERROR__TRADE_ALREADY_EXISTS = 0x1798; // 6040
+export const PANDA_MONOPOLY_ERROR__TRADE_ALREADY_EXISTS = 0x1799; // 6041
 /** CannotTradeWithSelf: Cannot trade with yourself */
-export const PANDA_MONOPOLY_ERROR__CANNOT_TRADE_WITH_SELF = 0x1799; // 6041
+export const PANDA_MONOPOLY_ERROR__CANNOT_TRADE_WITH_SELF = 0x179a; // 6042
 /** TradeExpired: Trade has expired */
-export const PANDA_MONOPOLY_ERROR__TRADE_EXPIRED = 0x179a; // 6042
+export const PANDA_MONOPOLY_ERROR__TRADE_EXPIRED = 0x179b; // 6043
 /** TradeAlreadyAccepted: Trade already accepted */
-export const PANDA_MONOPOLY_ERROR__TRADE_ALREADY_ACCEPTED = 0x179b; // 6043
+export const PANDA_MONOPOLY_ERROR__TRADE_ALREADY_ACCEPTED = 0x179c; // 6044
 /** TradeAlreadyRejected: Trade already rejected */
-export const PANDA_MONOPOLY_ERROR__TRADE_ALREADY_REJECTED = 0x179c; // 6044
+export const PANDA_MONOPOLY_ERROR__TRADE_ALREADY_REJECTED = 0x179d; // 6045
 /** NotAuthorizedForTrade: Not authorized to accept/reject trade */
-export const PANDA_MONOPOLY_ERROR__NOT_AUTHORIZED_FOR_TRADE = 0x179d; // 6045
+export const PANDA_MONOPOLY_ERROR__NOT_AUTHORIZED_FOR_TRADE = 0x179e; // 6046
 /** CannotTradeMortgagedProperties: Cannot trade mortgaged properties */
-export const PANDA_MONOPOLY_ERROR__CANNOT_TRADE_MORTGAGED_PROPERTIES = 0x179e; // 6046
+export const PANDA_MONOPOLY_ERROR__CANNOT_TRADE_MORTGAGED_PROPERTIES = 0x179f; // 6047
 /** InvalidTradeProposal: Invalid trade proposal */
-export const PANDA_MONOPOLY_ERROR__INVALID_TRADE_PROPOSAL = 0x179f; // 6047
+export const PANDA_MONOPOLY_ERROR__INVALID_TRADE_PROPOSAL = 0x17a0; // 6048
 /** AuctionNotFound: Auction not found */
-export const PANDA_MONOPOLY_ERROR__AUCTION_NOT_FOUND = 0x17a0; // 6048
+export const PANDA_MONOPOLY_ERROR__AUCTION_NOT_FOUND = 0x17a1; // 6049
 /** AuctionAlreadyExists: Auction already exists */
-export const PANDA_MONOPOLY_ERROR__AUCTION_ALREADY_EXISTS = 0x17a1; // 6049
+export const PANDA_MONOPOLY_ERROR__AUCTION_ALREADY_EXISTS = 0x17a2; // 6050
 /** AuctionExpired: Auction has expired */
-export const PANDA_MONOPOLY_ERROR__AUCTION_EXPIRED = 0x17a2; // 6050
+export const PANDA_MONOPOLY_ERROR__AUCTION_EXPIRED = 0x17a3; // 6051
 /** AuctionAlreadyEnded: Auction has already ended */
-export const PANDA_MONOPOLY_ERROR__AUCTION_ALREADY_ENDED = 0x17a3; // 6051
+export const PANDA_MONOPOLY_ERROR__AUCTION_ALREADY_ENDED = 0x17a4; // 6052
 /** BidTooLow: Bid amount too low */
-export const PANDA_MONOPOLY_ERROR__BID_TOO_LOW = 0x17a4; // 6052
+export const PANDA_MONOPOLY_ERROR__BID_TOO_LOW = 0x17a5; // 6053
 /** CannotBidOnOwnAuction: Cannot bid on own auction */
-export const PANDA_MONOPOLY_ERROR__CANNOT_BID_ON_OWN_AUCTION = 0x17a5; // 6053
+export const PANDA_MONOPOLY_ERROR__CANNOT_BID_ON_OWN_AUCTION = 0x17a6; // 6054
 /** AlreadyHighestBidder: Player already highest bidder */
-export const PANDA_MONOPOLY_ERROR__ALREADY_HIGHEST_BIDDER = 0x17a6; // 6054
+export const PANDA_MONOPOLY_ERROR__ALREADY_HIGHEST_BIDDER = 0x17a7; // 6055
 /** NoRentOwed: No rent owed */
-export const PANDA_MONOPOLY_ERROR__NO_RENT_OWED = 0x17a7; // 6055
+export const PANDA_MONOPOLY_ERROR__NO_RENT_OWED = 0x17a8; // 6056
 /** RentAlreadyPaid: Rent already paid */
-export const PANDA_MONOPOLY_ERROR__RENT_ALREADY_PAID = 0x17a8; // 6056
+export const PANDA_MONOPOLY_ERROR__RENT_ALREADY_PAID = 0x17a9; // 6057
 /** CannotCollectRentFromOwnProperty: Cannot collect rent from own property */
-export const PANDA_MONOPOLY_ERROR__CANNOT_COLLECT_RENT_FROM_OWN_PROPERTY = 0x17a9; // 6057
+export const PANDA_MONOPOLY_ERROR__CANNOT_COLLECT_RENT_FROM_OWN_PROPERTY = 0x17aa; // 6058
 /** CannotCollectRentOnMortgagedProperty: Cannot collect rent on mortgaged property */
-export const PANDA_MONOPOLY_ERROR__CANNOT_COLLECT_RENT_ON_MORTGAGED_PROPERTY = 0x17aa; // 6058
+export const PANDA_MONOPOLY_ERROR__CANNOT_COLLECT_RENT_ON_MORTGAGED_PROPERTY = 0x17ab; // 6059
 /** CannotPayJailFineWhenNotInJail: Cannot pay jail fine when not in jail */
-export const PANDA_MONOPOLY_ERROR__CANNOT_PAY_JAIL_FINE_WHEN_NOT_IN_JAIL = 0x17ab; // 6059
+export const PANDA_MONOPOLY_ERROR__CANNOT_PAY_JAIL_FINE_WHEN_NOT_IN_JAIL = 0x17ac; // 6060
 /** MaxJailTurnsExceeded: Maximum jail turns exceeded */
-export const PANDA_MONOPOLY_ERROR__MAX_JAIL_TURNS_EXCEEDED = 0x17ac; // 6060
+export const PANDA_MONOPOLY_ERROR__MAX_JAIL_TURNS_EXCEEDED = 0x17ad; // 6061
 /** MustRollDoublesOrPayFine: Must roll doubles or pay fine to leave jail */
-export const PANDA_MONOPOLY_ERROR__MUST_ROLL_DOUBLES_OR_PAY_FINE = 0x17ad; // 6061
+export const PANDA_MONOPOLY_ERROR__MUST_ROLL_DOUBLES_OR_PAY_FINE = 0x17ae; // 6062
 /** NoGetOutOfJailCards: Player has no Get Out of Jail cards */
-export const PANDA_MONOPOLY_ERROR__NO_GET_OUT_OF_JAIL_CARDS = 0x17ae; // 6062
+export const PANDA_MONOPOLY_ERROR__NO_GET_OUT_OF_JAIL_CARDS = 0x17af; // 6063
 /** InvalidSpecialSpaceAction: Invalid special space action */
-export const PANDA_MONOPOLY_ERROR__INVALID_SPECIAL_SPACE_ACTION = 0x17af; // 6063
+export const PANDA_MONOPOLY_ERROR__INVALID_SPECIAL_SPACE_ACTION = 0x17b0; // 6064
 /** ChanceCardNotImplemented: Chance card not implemented */
-export const PANDA_MONOPOLY_ERROR__CHANCE_CARD_NOT_IMPLEMENTED = 0x17b0; // 6064
+export const PANDA_MONOPOLY_ERROR__CHANCE_CARD_NOT_IMPLEMENTED = 0x17b1; // 6065
 /** CommunityChestCardNotImplemented: Community chest card not implemented */
-export const PANDA_MONOPOLY_ERROR__COMMUNITY_CHEST_CARD_NOT_IMPLEMENTED = 0x17b1; // 6065
+export const PANDA_MONOPOLY_ERROR__COMMUNITY_CHEST_CARD_NOT_IMPLEMENTED = 0x17b2; // 6066
 /** TaxCalculationError: Tax amount calculation error */
-export const PANDA_MONOPOLY_ERROR__TAX_CALCULATION_ERROR = 0x17b2; // 6066
+export const PANDA_MONOPOLY_ERROR__TAX_CALCULATION_ERROR = 0x17b3; // 6067
 /** CannotPayTax: Cannot pay tax with insufficient funds */
-export const PANDA_MONOPOLY_ERROR__CANNOT_PAY_TAX = 0x17b3; // 6067
+export const PANDA_MONOPOLY_ERROR__CANNOT_PAY_TAX = 0x17b4; // 6068
 /** MustDeclareBankruptcy: Player must declare bankruptcy */
-export const PANDA_MONOPOLY_ERROR__MUST_DECLARE_BANKRUPTCY = 0x17b4; // 6068
+export const PANDA_MONOPOLY_ERROR__MUST_DECLARE_BANKRUPTCY = 0x17b5; // 6069
 /** CannotDeclareBankruptcyWithAssets: Cannot declare bankruptcy with sufficient assets */
-export const PANDA_MONOPOLY_ERROR__CANNOT_DECLARE_BANKRUPTCY_WITH_ASSETS = 0x17b5; // 6069
+export const PANDA_MONOPOLY_ERROR__CANNOT_DECLARE_BANKRUPTCY_WITH_ASSETS = 0x17b6; // 6070
 /** BankruptcyAlreadyStarted: Bankruptcy process already started */
-export const PANDA_MONOPOLY_ERROR__BANKRUPTCY_ALREADY_STARTED = 0x17b6; // 6070
+export const PANDA_MONOPOLY_ERROR__BANKRUPTCY_ALREADY_STARTED = 0x17b7; // 6071
 /** BankruptcyNotRequired: Bankruptcy check not required */
-export const PANDA_MONOPOLY_ERROR__BANKRUPTCY_NOT_REQUIRED = 0x17b7; // 6071
+export const PANDA_MONOPOLY_ERROR__BANKRUPTCY_NOT_REQUIRED = 0x17b8; // 6072
 /** Unauthorized: Unauthorized action */
-export const PANDA_MONOPOLY_ERROR__UNAUTHORIZED = 0x17b8; // 6072
+export const PANDA_MONOPOLY_ERROR__UNAUTHORIZED = 0x17b9; // 6073
 /** InvalidAccount: Invalid account provided */
-export const PANDA_MONOPOLY_ERROR__INVALID_ACCOUNT = 0x17b9; // 6073
+export const PANDA_MONOPOLY_ERROR__INVALID_ACCOUNT = 0x17ba; // 6074
 /** AccountAlreadyInitialized: Account already initialized */
-export const PANDA_MONOPOLY_ERROR__ACCOUNT_ALREADY_INITIALIZED = 0x17ba; // 6074
+export const PANDA_MONOPOLY_ERROR__ACCOUNT_ALREADY_INITIALIZED = 0x17bb; // 6075
 /** AccountNotInitialized: Account not initialized */
-export const PANDA_MONOPOLY_ERROR__ACCOUNT_NOT_INITIALIZED = 0x17bb; // 6075
+export const PANDA_MONOPOLY_ERROR__ACCOUNT_NOT_INITIALIZED = 0x17bc; // 6076
 /** InvalidSigner: Invalid signer */
-export const PANDA_MONOPOLY_ERROR__INVALID_SIGNER = 0x17bc; // 6076
+export const PANDA_MONOPOLY_ERROR__INVALID_SIGNER = 0x17bd; // 6077
 /** ArithmeticOverflow: Arithmetic overflow */
-export const PANDA_MONOPOLY_ERROR__ARITHMETIC_OVERFLOW = 0x17bd; // 6077
+export const PANDA_MONOPOLY_ERROR__ARITHMETIC_OVERFLOW = 0x17be; // 6078
 /** ArithmeticUnderflow: Arithmetic underflow */
-export const PANDA_MONOPOLY_ERROR__ARITHMETIC_UNDERFLOW = 0x17be; // 6078
+export const PANDA_MONOPOLY_ERROR__ARITHMETIC_UNDERFLOW = 0x17bf; // 6079
 /** DivisionByZero: Division by zero */
-export const PANDA_MONOPOLY_ERROR__DIVISION_BY_ZERO = 0x17bf; // 6079
+export const PANDA_MONOPOLY_ERROR__DIVISION_BY_ZERO = 0x17c0; // 6080
 /** InvalidParameter: Invalid parameter */
-export const PANDA_MONOPOLY_ERROR__INVALID_PARAMETER = 0x17c0; // 6080
+export const PANDA_MONOPOLY_ERROR__INVALID_PARAMETER = 0x17c1; // 6081
 /** InvalidGameConfiguration: Invalid game configuration */
-export const PANDA_MONOPOLY_ERROR__INVALID_GAME_CONFIGURATION = 0x17c1; // 6081
+export const PANDA_MONOPOLY_ERROR__INVALID_GAME_CONFIGURATION = 0x17c2; // 6082
 /** RandomnessGenerationFailed: Failed to generate random number */
-export const PANDA_MONOPOLY_ERROR__RANDOMNESS_GENERATION_FAILED = 0x17c2; // 6082
+export const PANDA_MONOPOLY_ERROR__RANDOMNESS_GENERATION_FAILED = 0x17c3; // 6083
 /** InvalidRandomnessSource: Invalid randomness source */
-export const PANDA_MONOPOLY_ERROR__INVALID_RANDOMNESS_SOURCE = 0x17c3; // 6083
+export const PANDA_MONOPOLY_ERROR__INVALID_RANDOMNESS_SOURCE = 0x17c4; // 6084
 /** RandomnessUnavailable: Randomness unavailable */
-export const PANDA_MONOPOLY_ERROR__RANDOMNESS_UNAVAILABLE = 0x17c4; // 6084
+export const PANDA_MONOPOLY_ERROR__RANDOMNESS_UNAVAILABLE = 0x17c5; // 6085
 /** InvalidTimestamp: Invalid timestamp */
-export const PANDA_MONOPOLY_ERROR__INVALID_TIMESTAMP = 0x17c5; // 6085
+export const PANDA_MONOPOLY_ERROR__INVALID_TIMESTAMP = 0x17c6; // 6086
 /** ClockNotAvailable: Clock not available */
-export const PANDA_MONOPOLY_ERROR__CLOCK_NOT_AVAILABLE = 0x17c6; // 6086
+export const PANDA_MONOPOLY_ERROR__CLOCK_NOT_AVAILABLE = 0x17c7; // 6087
 /** ActionTimeoutExceeded: Action timeout exceeded */
-export const PANDA_MONOPOLY_ERROR__ACTION_TIMEOUT_EXCEEDED = 0x17c7; // 6087
+export const PANDA_MONOPOLY_ERROR__ACTION_TIMEOUT_EXCEEDED = 0x17c8; // 6088
 /** OperationNotAllowed: Operation not allowed in current game state */
-export const PANDA_MONOPOLY_ERROR__OPERATION_NOT_ALLOWED = 0x17c8; // 6088
+export const PANDA_MONOPOLY_ERROR__OPERATION_NOT_ALLOWED = 0x17c9; // 6089
 /** FeatureNotImplemented: Feature not implemented */
-export const PANDA_MONOPOLY_ERROR__FEATURE_NOT_IMPLEMENTED = 0x17c9; // 6089
+export const PANDA_MONOPOLY_ERROR__FEATURE_NOT_IMPLEMENTED = 0x17ca; // 6090
 /** InternalError: Internal error occurred */
-export const PANDA_MONOPOLY_ERROR__INTERNAL_ERROR = 0x17ca; // 6090
+export const PANDA_MONOPOLY_ERROR__INTERNAL_ERROR = 0x17cb; // 6091
 /** InvalidInputData: Invalid input data */
-export const PANDA_MONOPOLY_ERROR__INVALID_INPUT_DATA = 0x17cb; // 6091
+export const PANDA_MONOPOLY_ERROR__INVALID_INPUT_DATA = 0x17cc; // 6092
 /** ResourceNotAvailable: Resource not available */
-export const PANDA_MONOPOLY_ERROR__RESOURCE_NOT_AVAILABLE = 0x17cc; // 6092
+export const PANDA_MONOPOLY_ERROR__RESOURCE_NOT_AVAILABLE = 0x17cd; // 6093
 /** PropertyNotOwned: Property not owned */
-export const PANDA_MONOPOLY_ERROR__PROPERTY_NOT_OWNED = 0x17cd; // 6093
+export const PANDA_MONOPOLY_ERROR__PROPERTY_NOT_OWNED = 0x17ce; // 6094
 /** InvalidPropertyOwner: Invalid property owner */
-export const PANDA_MONOPOLY_ERROR__INVALID_PROPERTY_OWNER = 0x17ce; // 6094
+export const PANDA_MONOPOLY_ERROR__INVALID_PROPERTY_OWNER = 0x17cf; // 6095
 /** InvalidHouseCount: Invalid house count */
-export const PANDA_MONOPOLY_ERROR__INVALID_HOUSE_COUNT = 0x17cf; // 6095
+export const PANDA_MONOPOLY_ERROR__INVALID_HOUSE_COUNT = 0x17d0; // 6096
 /** PropertyAlreadyMortgaged: Property already mortgaged */
-export const PANDA_MONOPOLY_ERROR__PROPERTY_ALREADY_MORTGAGED = 0x17d0; // 6096
+export const PANDA_MONOPOLY_ERROR__PROPERTY_ALREADY_MORTGAGED = 0x17d1; // 6097
 /** DiceRollError: Dice roll error */
-export const PANDA_MONOPOLY_ERROR__DICE_ROLL_ERROR = 0x17d1; // 6097
+export const PANDA_MONOPOLY_ERROR__DICE_ROLL_ERROR = 0x17d2; // 6098
 /** TradeNotPending: Trade is not pending */
-export const PANDA_MONOPOLY_ERROR__TRADE_NOT_PENDING = 0x17d2; // 6098
+export const PANDA_MONOPOLY_ERROR__TRADE_NOT_PENDING = 0x17d3; // 6099
 /** NotTradeTarget: Not the trade target */
-export const PANDA_MONOPOLY_ERROR__NOT_TRADE_TARGET = 0x17d3; // 6099
+export const PANDA_MONOPOLY_ERROR__NOT_TRADE_TARGET = 0x17d4; // 6100
 /** NotTradeProposer: Not the trade proposer */
-export const PANDA_MONOPOLY_ERROR__NOT_TRADE_PROPOSER = 0x17d4; // 6100
+export const PANDA_MONOPOLY_ERROR__NOT_TRADE_PROPOSER = 0x17d5; // 6101
 /** InvalidTradeType: Invalid trade type */
-export const PANDA_MONOPOLY_ERROR__INVALID_TRADE_TYPE = 0x17d5; // 6101
+export const PANDA_MONOPOLY_ERROR__INVALID_TRADE_TYPE = 0x17d6; // 6102
 /** AuctionNotActive: Auction is not active */
-export const PANDA_MONOPOLY_ERROR__AUCTION_NOT_ACTIVE = 0x17d6; // 6102
+export const PANDA_MONOPOLY_ERROR__AUCTION_NOT_ACTIVE = 0x17d7; // 6103
 /** AuctionEnded: Auction has ended */
-export const PANDA_MONOPOLY_ERROR__AUCTION_ENDED = 0x17d7; // 6103
+export const PANDA_MONOPOLY_ERROR__AUCTION_ENDED = 0x17d8; // 6104
 /** AuctionStillActive: Auction is still active */
-export const PANDA_MONOPOLY_ERROR__AUCTION_STILL_ACTIVE = 0x17d8; // 6104
+export const PANDA_MONOPOLY_ERROR__AUCTION_STILL_ACTIVE = 0x17d9; // 6105
 /** TooManyActiveTrades: Too many active trades */
-export const PANDA_MONOPOLY_ERROR__TOO_MANY_ACTIVE_TRADES = 0x17d9; // 6105
+export const PANDA_MONOPOLY_ERROR__TOO_MANY_ACTIVE_TRADES = 0x17da; // 6106
+/** MissingTokenAccounts: Missing required token accounts for entry fee */
+export const PANDA_MONOPOLY_ERROR__MISSING_TOKEN_ACCOUNTS = 0x17db; // 6107
+/** InvalidGameAuthority: Invalid game authority PDA */
+export const PANDA_MONOPOLY_ERROR__INVALID_GAME_AUTHORITY = 0x17dc; // 6108
+/** InvalidTokenVault: Invalid token vault PDA */
+export const PANDA_MONOPOLY_ERROR__INVALID_TOKEN_VAULT = 0x17dd; // 6109
+/** InvalidTokenAccount: Invalid token account */
+export const PANDA_MONOPOLY_ERROR__INVALID_TOKEN_ACCOUNT = 0x17de; // 6110
+/** EntryFeeTransferFailed: Entry fee transfer failed */
+export const PANDA_MONOPOLY_ERROR__ENTRY_FEE_TRANSFER_FAILED = 0x17df; // 6111
+/** UnexpectedTokenAccounts: Token accounts provided for free game */
+export const PANDA_MONOPOLY_ERROR__UNEXPECTED_TOKEN_ACCOUNTS = 0x17e0; // 6112
 
 export type PandaMonopolyError =
   | typeof PANDA_MONOPOLY_ERROR__ACCOUNT_ALREADY_INITIALIZED
@@ -262,9 +276,11 @@ export type PandaMonopolyError =
   | typeof PANDA_MONOPOLY_ERROR__DICE_ROLL_ERROR
   | typeof PANDA_MONOPOLY_ERROR__DIVISION_BY_ZERO
   | typeof PANDA_MONOPOLY_ERROR__DOES_NOT_OWN_COLOR_GROUP
+  | typeof PANDA_MONOPOLY_ERROR__ENTRY_FEE_TRANSFER_FAILED
   | typeof PANDA_MONOPOLY_ERROR__FEATURE_NOT_IMPLEMENTED
   | typeof PANDA_MONOPOLY_ERROR__GAME_ALREADY_ENDED
   | typeof PANDA_MONOPOLY_ERROR__GAME_ALREADY_INITIALIZED
+  | typeof PANDA_MONOPOLY_ERROR__GAME_CANNOT_END
   | typeof PANDA_MONOPOLY_ERROR__GAME_NOT_INITIALIZED
   | typeof PANDA_MONOPOLY_ERROR__GAME_NOT_IN_PROGRESS
   | typeof PANDA_MONOPOLY_ERROR__HAS_NOT_ROLLED_DICE
@@ -273,6 +289,7 @@ export type PandaMonopolyError =
   | typeof PANDA_MONOPOLY_ERROR__INVALID_ACCOUNT
   | typeof PANDA_MONOPOLY_ERROR__INVALID_BOARD_POSITION
   | typeof PANDA_MONOPOLY_ERROR__INVALID_DICE_ROLL
+  | typeof PANDA_MONOPOLY_ERROR__INVALID_GAME_AUTHORITY
   | typeof PANDA_MONOPOLY_ERROR__INVALID_GAME_CONFIGURATION
   | typeof PANDA_MONOPOLY_ERROR__INVALID_HOUSE_COUNT
   | typeof PANDA_MONOPOLY_ERROR__INVALID_INPUT_DATA
@@ -283,12 +300,15 @@ export type PandaMonopolyError =
   | typeof PANDA_MONOPOLY_ERROR__INVALID_SIGNER
   | typeof PANDA_MONOPOLY_ERROR__INVALID_SPECIAL_SPACE_ACTION
   | typeof PANDA_MONOPOLY_ERROR__INVALID_TIMESTAMP
+  | typeof PANDA_MONOPOLY_ERROR__INVALID_TOKEN_ACCOUNT
+  | typeof PANDA_MONOPOLY_ERROR__INVALID_TOKEN_VAULT
   | typeof PANDA_MONOPOLY_ERROR__INVALID_TRADE_PROPOSAL
   | typeof PANDA_MONOPOLY_ERROR__INVALID_TRADE_TYPE
   | typeof PANDA_MONOPOLY_ERROR__MAX_HOUSES_REACHED
   | typeof PANDA_MONOPOLY_ERROR__MAX_JAIL_TURNS_EXCEEDED
   | typeof PANDA_MONOPOLY_ERROR__MAX_PLAYERS_REACHED
   | typeof PANDA_MONOPOLY_ERROR__MIN_PLAYERS_NOT_MET
+  | typeof PANDA_MONOPOLY_ERROR__MISSING_TOKEN_ACCOUNTS
   | typeof PANDA_MONOPOLY_ERROR__MUST_BUILD_EVENLY
   | typeof PANDA_MONOPOLY_ERROR__MUST_DECLARE_BANKRUPTCY
   | typeof PANDA_MONOPOLY_ERROR__MUST_HANDLE_SPECIAL_SPACE
@@ -333,7 +353,8 @@ export type PandaMonopolyError =
   | typeof PANDA_MONOPOLY_ERROR__TRADE_EXPIRED
   | typeof PANDA_MONOPOLY_ERROR__TRADE_NOT_FOUND
   | typeof PANDA_MONOPOLY_ERROR__TRADE_NOT_PENDING
-  | typeof PANDA_MONOPOLY_ERROR__UNAUTHORIZED;
+  | typeof PANDA_MONOPOLY_ERROR__UNAUTHORIZED
+  | typeof PANDA_MONOPOLY_ERROR__UNEXPECTED_TOKEN_ACCOUNTS;
 
 let pandaMonopolyErrorMessages: Record<PandaMonopolyError, string> | undefined;
 if (process.env.NODE_ENV !== 'production') {
@@ -372,9 +393,11 @@ if (process.env.NODE_ENV !== 'production') {
     [PANDA_MONOPOLY_ERROR__DICE_ROLL_ERROR]: `Dice roll error`,
     [PANDA_MONOPOLY_ERROR__DIVISION_BY_ZERO]: `Division by zero`,
     [PANDA_MONOPOLY_ERROR__DOES_NOT_OWN_COLOR_GROUP]: `Player does not own all properties in color group`,
+    [PANDA_MONOPOLY_ERROR__ENTRY_FEE_TRANSFER_FAILED]: `Entry fee transfer failed`,
     [PANDA_MONOPOLY_ERROR__FEATURE_NOT_IMPLEMENTED]: `Feature not implemented`,
     [PANDA_MONOPOLY_ERROR__GAME_ALREADY_ENDED]: `Game has already ended`,
     [PANDA_MONOPOLY_ERROR__GAME_ALREADY_INITIALIZED]: `Game has already been initialized`,
+    [PANDA_MONOPOLY_ERROR__GAME_CANNOT_END]: `Game cannot end - multiple players still active`,
     [PANDA_MONOPOLY_ERROR__GAME_NOT_INITIALIZED]: `Game has not been initialized`,
     [PANDA_MONOPOLY_ERROR__GAME_NOT_IN_PROGRESS]: `Game is not in progress`,
     [PANDA_MONOPOLY_ERROR__HAS_NOT_ROLLED_DICE]: `Player has not rolled dice yet`,
@@ -383,6 +406,7 @@ if (process.env.NODE_ENV !== 'production') {
     [PANDA_MONOPOLY_ERROR__INVALID_ACCOUNT]: `Invalid account provided`,
     [PANDA_MONOPOLY_ERROR__INVALID_BOARD_POSITION]: `Invalid board position`,
     [PANDA_MONOPOLY_ERROR__INVALID_DICE_ROLL]: `Invalid dice roll`,
+    [PANDA_MONOPOLY_ERROR__INVALID_GAME_AUTHORITY]: `Invalid game authority PDA`,
     [PANDA_MONOPOLY_ERROR__INVALID_GAME_CONFIGURATION]: `Invalid game configuration`,
     [PANDA_MONOPOLY_ERROR__INVALID_HOUSE_COUNT]: `Invalid house count`,
     [PANDA_MONOPOLY_ERROR__INVALID_INPUT_DATA]: `Invalid input data`,
@@ -393,12 +417,15 @@ if (process.env.NODE_ENV !== 'production') {
     [PANDA_MONOPOLY_ERROR__INVALID_SIGNER]: `Invalid signer`,
     [PANDA_MONOPOLY_ERROR__INVALID_SPECIAL_SPACE_ACTION]: `Invalid special space action`,
     [PANDA_MONOPOLY_ERROR__INVALID_TIMESTAMP]: `Invalid timestamp`,
+    [PANDA_MONOPOLY_ERROR__INVALID_TOKEN_ACCOUNT]: `Invalid token account`,
+    [PANDA_MONOPOLY_ERROR__INVALID_TOKEN_VAULT]: `Invalid token vault PDA`,
     [PANDA_MONOPOLY_ERROR__INVALID_TRADE_PROPOSAL]: `Invalid trade proposal`,
     [PANDA_MONOPOLY_ERROR__INVALID_TRADE_TYPE]: `Invalid trade type`,
     [PANDA_MONOPOLY_ERROR__MAX_HOUSES_REACHED]: `Maximum houses reached on property`,
     [PANDA_MONOPOLY_ERROR__MAX_JAIL_TURNS_EXCEEDED]: `Maximum jail turns exceeded`,
     [PANDA_MONOPOLY_ERROR__MAX_PLAYERS_REACHED]: `Maximum number of players reached`,
     [PANDA_MONOPOLY_ERROR__MIN_PLAYERS_NOT_MET]: `Minimum number of players not met`,
+    [PANDA_MONOPOLY_ERROR__MISSING_TOKEN_ACCOUNTS]: `Missing required token accounts for entry fee`,
     [PANDA_MONOPOLY_ERROR__MUST_BUILD_EVENLY]: `Must build houses evenly across color group`,
     [PANDA_MONOPOLY_ERROR__MUST_DECLARE_BANKRUPTCY]: `Player must declare bankruptcy`,
     [PANDA_MONOPOLY_ERROR__MUST_HANDLE_SPECIAL_SPACE]: `Player must handle special space before ending turn`,
@@ -444,6 +471,7 @@ if (process.env.NODE_ENV !== 'production') {
     [PANDA_MONOPOLY_ERROR__TRADE_NOT_FOUND]: `Trade not found`,
     [PANDA_MONOPOLY_ERROR__TRADE_NOT_PENDING]: `Trade is not pending`,
     [PANDA_MONOPOLY_ERROR__UNAUTHORIZED]: `Unauthorized action`,
+    [PANDA_MONOPOLY_ERROR__UNEXPECTED_TOKEN_ACCOUNTS]: `Token accounts provided for free game`,
   };
 }
 

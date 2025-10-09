@@ -15,7 +15,6 @@ import {
 } from '@solana/kit';
 import {
   type ParsedAcceptTradeInstruction,
-  type ParsedAttendFestivalInstruction,
   type ParsedBuildHotelInstruction,
   type ParsedBuildHouseInstruction,
   type ParsedBuyPropertyInstruction,
@@ -25,14 +24,13 @@ import {
   type ParsedCancelTradeInstruction,
   type ParsedCleanupExpiredTradesInstruction,
   type ParsedCloseGameHandlerInstruction,
-  type ParsedCollectFreeParkingInstruction,
   type ParsedCreatePlatformConfigInstruction,
   type ParsedCreateTradeInstruction,
   type ParsedDeclareBankruptcyInstruction,
   type ParsedDeclinePropertyInstruction,
   type ParsedDrawChanceCardInstruction,
-  type ParsedDrawChanceCardVrfHandlerInstruction,
   type ParsedDrawCommunityChestCardInstruction,
+  type ParsedEndGameInstruction,
   type ParsedEndTurnInstruction,
   type ParsedInitializeGameInstruction,
   type ParsedInitPropertyHandlerInstruction,
@@ -45,14 +43,12 @@ import {
   type ParsedRejectTradeInstruction,
   type ParsedResetGameHandlerInstruction,
   type ParsedRollDiceInstruction,
-  type ParsedRollDiceVrfHandlerInstruction,
   type ParsedSellBuildingInstruction,
   type ParsedStartGameInstruction,
   type ParsedUndelegateGameHandlerInstruction,
   type ParsedUnmortgagePropertyInstruction,
   type ParsedUpdatePlatformConfigInstruction,
   type ParsedUseGetOutOfJailCardInstruction,
-  type ParsedVisitBeachResortInstruction,
 } from '../instructions';
 
 export const PANDA_MONOPOLY_PROGRAM_ADDRESS =
@@ -120,7 +116,6 @@ export function identifyPandaMonopolyAccount(
 
 export enum PandaMonopolyInstruction {
   AcceptTrade,
-  AttendFestival,
   BuildHotel,
   BuildHouse,
   BuyProperty,
@@ -130,14 +125,13 @@ export enum PandaMonopolyInstruction {
   CancelTrade,
   CleanupExpiredTrades,
   CloseGameHandler,
-  CollectFreeParking,
   CreatePlatformConfig,
   CreateTrade,
   DeclareBankruptcy,
   DeclineProperty,
   DrawChanceCard,
-  DrawChanceCardVrfHandler,
   DrawCommunityChestCard,
+  EndGame,
   EndTurn,
   InitPropertyHandler,
   InitializeGame,
@@ -150,14 +144,12 @@ export enum PandaMonopolyInstruction {
   RejectTrade,
   ResetGameHandler,
   RollDice,
-  RollDiceVrfHandler,
   SellBuilding,
   StartGame,
   UndelegateGameHandler,
   UnmortgageProperty,
   UpdatePlatformConfig,
   UseGetOutOfJailCard,
-  VisitBeachResort,
 }
 
 export function identifyPandaMonopolyInstruction(
@@ -174,17 +166,6 @@ export function identifyPandaMonopolyInstruction(
     )
   ) {
     return PandaMonopolyInstruction.AcceptTrade;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([110, 226, 182, 147, 161, 173, 227, 152])
-      ),
-      0
-    )
-  ) {
-    return PandaMonopolyInstruction.AttendFestival;
   }
   if (
     containsBytes(
@@ -289,17 +270,6 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([134, 219, 194, 3, 42, 240, 237, 196])
-      ),
-      0
-    )
-  ) {
-    return PandaMonopolyInstruction.CollectFreeParking;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([176, 90, 196, 175, 253, 113, 220, 20])
       ),
       0
@@ -355,23 +325,23 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([246, 20, 32, 102, 233, 141, 32, 234])
-      ),
-      0
-    )
-  ) {
-    return PandaMonopolyInstruction.DrawChanceCardVrfHandler;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([33, 118, 197, 172, 171, 175, 39, 117])
       ),
       0
     )
   ) {
     return PandaMonopolyInstruction.DrawCommunityChestCard;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([224, 135, 245, 99, 67, 175, 121, 252])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.EndGame;
   }
   if (
     containsBytes(
@@ -509,17 +479,6 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([39, 65, 195, 145, 53, 169, 192, 6])
-      ),
-      0
-    )
-  ) {
-    return PandaMonopolyInstruction.RollDiceVrfHandler;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([81, 56, 161, 40, 97, 140, 191, 123])
       ),
       0
@@ -582,17 +541,6 @@ export function identifyPandaMonopolyInstruction(
   ) {
     return PandaMonopolyInstruction.UseGetOutOfJailCard;
   }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([29, 144, 200, 42, 23, 132, 255, 15])
-      ),
-      0
-    )
-  ) {
-    return PandaMonopolyInstruction.VisitBeachResort;
-  }
   throw new Error(
     'The provided instruction could not be identified as a pandaMonopoly instruction.'
   );
@@ -604,9 +552,6 @@ export type ParsedPandaMonopolyInstruction<
   | ({
       instructionType: PandaMonopolyInstruction.AcceptTrade;
     } & ParsedAcceptTradeInstruction<TProgram>)
-  | ({
-      instructionType: PandaMonopolyInstruction.AttendFestival;
-    } & ParsedAttendFestivalInstruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.BuildHotel;
     } & ParsedBuildHotelInstruction<TProgram>)
@@ -635,9 +580,6 @@ export type ParsedPandaMonopolyInstruction<
       instructionType: PandaMonopolyInstruction.CloseGameHandler;
     } & ParsedCloseGameHandlerInstruction<TProgram>)
   | ({
-      instructionType: PandaMonopolyInstruction.CollectFreeParking;
-    } & ParsedCollectFreeParkingInstruction<TProgram>)
-  | ({
       instructionType: PandaMonopolyInstruction.CreatePlatformConfig;
     } & ParsedCreatePlatformConfigInstruction<TProgram>)
   | ({
@@ -653,11 +595,11 @@ export type ParsedPandaMonopolyInstruction<
       instructionType: PandaMonopolyInstruction.DrawChanceCard;
     } & ParsedDrawChanceCardInstruction<TProgram>)
   | ({
-      instructionType: PandaMonopolyInstruction.DrawChanceCardVrfHandler;
-    } & ParsedDrawChanceCardVrfHandlerInstruction<TProgram>)
-  | ({
       instructionType: PandaMonopolyInstruction.DrawCommunityChestCard;
     } & ParsedDrawCommunityChestCardInstruction<TProgram>)
+  | ({
+      instructionType: PandaMonopolyInstruction.EndGame;
+    } & ParsedEndGameInstruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.EndTurn;
     } & ParsedEndTurnInstruction<TProgram>)
@@ -695,9 +637,6 @@ export type ParsedPandaMonopolyInstruction<
       instructionType: PandaMonopolyInstruction.RollDice;
     } & ParsedRollDiceInstruction<TProgram>)
   | ({
-      instructionType: PandaMonopolyInstruction.RollDiceVrfHandler;
-    } & ParsedRollDiceVrfHandlerInstruction<TProgram>)
-  | ({
       instructionType: PandaMonopolyInstruction.SellBuilding;
     } & ParsedSellBuildingInstruction<TProgram>)
   | ({
@@ -714,7 +653,4 @@ export type ParsedPandaMonopolyInstruction<
     } & ParsedUpdatePlatformConfigInstruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.UseGetOutOfJailCard;
-    } & ParsedUseGetOutOfJailCardInstruction<TProgram>)
-  | ({
-      instructionType: PandaMonopolyInstruction.VisitBeachResort;
-    } & ParsedVisitBeachResortInstruction<TProgram>);
+    } & ParsedUseGetOutOfJailCardInstruction<TProgram>);

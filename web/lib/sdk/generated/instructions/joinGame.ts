@@ -52,6 +52,16 @@ export type JoinGameInstruction<
   TAccountGame extends string | AccountMeta<string> = string,
   TAccountPlayerState extends string | AccountMeta<string> = string,
   TAccountPlayer extends string | AccountMeta<string> = string,
+  TAccountGameAuthority extends string | AccountMeta<string> = string,
+  TAccountTokenMint extends string | AccountMeta<string> = string,
+  TAccountPlayerTokenAccount extends string | AccountMeta<string> = string,
+  TAccountTokenVault extends string | AccountMeta<string> = string,
+  TAccountTokenProgram extends
+    | string
+    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+  TAccountAssociatedTokenProgram extends
+    | string
+    | AccountMeta<string> = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
   TAccountSystemProgram extends
     | string
     | AccountMeta<string> = '11111111111111111111111111111111',
@@ -73,6 +83,24 @@ export type JoinGameInstruction<
         ? WritableSignerAccount<TAccountPlayer> &
             AccountSignerMeta<TAccountPlayer>
         : TAccountPlayer,
+      TAccountGameAuthority extends string
+        ? ReadonlyAccount<TAccountGameAuthority>
+        : TAccountGameAuthority,
+      TAccountTokenMint extends string
+        ? ReadonlyAccount<TAccountTokenMint>
+        : TAccountTokenMint,
+      TAccountPlayerTokenAccount extends string
+        ? WritableAccount<TAccountPlayerTokenAccount>
+        : TAccountPlayerTokenAccount,
+      TAccountTokenVault extends string
+        ? WritableAccount<TAccountTokenVault>
+        : TAccountTokenVault,
+      TAccountTokenProgram extends string
+        ? ReadonlyAccount<TAccountTokenProgram>
+        : TAccountTokenProgram,
+      TAccountAssociatedTokenProgram extends string
+        ? ReadonlyAccount<TAccountAssociatedTokenProgram>
+        : TAccountAssociatedTokenProgram,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -114,12 +142,24 @@ export type JoinGameAsyncInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountPlayer extends string = string,
+  TAccountGameAuthority extends string = string,
+  TAccountTokenMint extends string = string,
+  TAccountPlayerTokenAccount extends string = string,
+  TAccountTokenVault extends string = string,
+  TAccountTokenProgram extends string = string,
+  TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
   playerState?: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
+  gameAuthority: Address<TAccountGameAuthority>;
+  tokenMint: Address<TAccountTokenMint>;
+  playerTokenAccount?: Address<TAccountPlayerTokenAccount>;
+  tokenVault?: Address<TAccountTokenVault>;
+  tokenProgram?: Address<TAccountTokenProgram>;
+  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   clock?: Address<TAccountClock>;
 };
@@ -128,6 +168,12 @@ export async function getJoinGameInstructionAsync<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountPlayer extends string,
+  TAccountGameAuthority extends string,
+  TAccountTokenMint extends string,
+  TAccountPlayerTokenAccount extends string,
+  TAccountTokenVault extends string,
+  TAccountTokenProgram extends string,
+  TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
@@ -136,6 +182,12 @@ export async function getJoinGameInstructionAsync<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
+    TAccountGameAuthority,
+    TAccountTokenMint,
+    TAccountPlayerTokenAccount,
+    TAccountTokenVault,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
     TAccountClock
   >,
@@ -146,6 +198,12 @@ export async function getJoinGameInstructionAsync<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
+    TAccountGameAuthority,
+    TAccountTokenMint,
+    TAccountPlayerTokenAccount,
+    TAccountTokenVault,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
     TAccountClock
   >
@@ -159,6 +217,18 @@ export async function getJoinGameInstructionAsync<
     game: { value: input.game ?? null, isWritable: true },
     playerState: { value: input.playerState ?? null, isWritable: true },
     player: { value: input.player ?? null, isWritable: true },
+    gameAuthority: { value: input.gameAuthority ?? null, isWritable: false },
+    tokenMint: { value: input.tokenMint ?? null, isWritable: false },
+    playerTokenAccount: {
+      value: input.playerTokenAccount ?? null,
+      isWritable: true,
+    },
+    tokenVault: { value: input.tokenVault ?? null, isWritable: true },
+    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    associatedTokenProgram: {
+      value: input.associatedTokenProgram ?? null,
+      isWritable: false,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     clock: { value: input.clock ?? null, isWritable: false },
   };
@@ -178,6 +248,36 @@ export async function getJoinGameInstructionAsync<
       ],
     });
   }
+  if (!accounts.tokenProgram.value) {
+    accounts.tokenProgram.value =
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  }
+  if (!accounts.playerTokenAccount.value) {
+    accounts.playerTokenAccount.value = await getProgramDerivedAddress({
+      programAddress:
+        'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>,
+      seeds: [
+        getAddressEncoder().encode(expectAddress(accounts.player.value)),
+        getAddressEncoder().encode(expectAddress(accounts.tokenProgram.value)),
+        getAddressEncoder().encode(expectAddress(accounts.tokenMint.value)),
+      ],
+    });
+  }
+  if (!accounts.tokenVault.value) {
+    accounts.tokenVault.value = await getProgramDerivedAddress({
+      programAddress:
+        'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>,
+      seeds: [
+        getAddressEncoder().encode(expectAddress(accounts.gameAuthority.value)),
+        getAddressEncoder().encode(expectAddress(accounts.tokenProgram.value)),
+        getAddressEncoder().encode(expectAddress(accounts.tokenMint.value)),
+      ],
+    });
+  }
+  if (!accounts.associatedTokenProgram.value) {
+    accounts.associatedTokenProgram.value =
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -193,6 +293,12 @@ export async function getJoinGameInstructionAsync<
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.playerState),
       getAccountMeta(accounts.player),
+      getAccountMeta(accounts.gameAuthority),
+      getAccountMeta(accounts.tokenMint),
+      getAccountMeta(accounts.playerTokenAccount),
+      getAccountMeta(accounts.tokenVault),
+      getAccountMeta(accounts.tokenProgram),
+      getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.clock),
     ],
@@ -203,6 +309,12 @@ export async function getJoinGameInstructionAsync<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
+    TAccountGameAuthority,
+    TAccountTokenMint,
+    TAccountPlayerTokenAccount,
+    TAccountTokenVault,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
     TAccountClock
   >);
@@ -212,12 +324,24 @@ export type JoinGameInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountPlayer extends string = string,
+  TAccountGameAuthority extends string = string,
+  TAccountTokenMint extends string = string,
+  TAccountPlayerTokenAccount extends string = string,
+  TAccountTokenVault extends string = string,
+  TAccountTokenProgram extends string = string,
+  TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
   playerState: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
+  gameAuthority: Address<TAccountGameAuthority>;
+  tokenMint: Address<TAccountTokenMint>;
+  playerTokenAccount: Address<TAccountPlayerTokenAccount>;
+  tokenVault: Address<TAccountTokenVault>;
+  tokenProgram?: Address<TAccountTokenProgram>;
+  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   clock?: Address<TAccountClock>;
 };
@@ -226,6 +350,12 @@ export function getJoinGameInstruction<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountPlayer extends string,
+  TAccountGameAuthority extends string,
+  TAccountTokenMint extends string,
+  TAccountPlayerTokenAccount extends string,
+  TAccountTokenVault extends string,
+  TAccountTokenProgram extends string,
+  TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
@@ -234,6 +364,12 @@ export function getJoinGameInstruction<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
+    TAccountGameAuthority,
+    TAccountTokenMint,
+    TAccountPlayerTokenAccount,
+    TAccountTokenVault,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
     TAccountClock
   >,
@@ -243,6 +379,12 @@ export function getJoinGameInstruction<
   TAccountGame,
   TAccountPlayerState,
   TAccountPlayer,
+  TAccountGameAuthority,
+  TAccountTokenMint,
+  TAccountPlayerTokenAccount,
+  TAccountTokenVault,
+  TAccountTokenProgram,
+  TAccountAssociatedTokenProgram,
   TAccountSystemProgram,
   TAccountClock
 > {
@@ -255,6 +397,18 @@ export function getJoinGameInstruction<
     game: { value: input.game ?? null, isWritable: true },
     playerState: { value: input.playerState ?? null, isWritable: true },
     player: { value: input.player ?? null, isWritable: true },
+    gameAuthority: { value: input.gameAuthority ?? null, isWritable: false },
+    tokenMint: { value: input.tokenMint ?? null, isWritable: false },
+    playerTokenAccount: {
+      value: input.playerTokenAccount ?? null,
+      isWritable: true,
+    },
+    tokenVault: { value: input.tokenVault ?? null, isWritable: true },
+    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    associatedTokenProgram: {
+      value: input.associatedTokenProgram ?? null,
+      isWritable: false,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     clock: { value: input.clock ?? null, isWritable: false },
   };
@@ -264,6 +418,14 @@ export function getJoinGameInstruction<
   >;
 
   // Resolve default values.
+  if (!accounts.tokenProgram.value) {
+    accounts.tokenProgram.value =
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  }
+  if (!accounts.associatedTokenProgram.value) {
+    accounts.associatedTokenProgram.value =
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -279,6 +441,12 @@ export function getJoinGameInstruction<
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.playerState),
       getAccountMeta(accounts.player),
+      getAccountMeta(accounts.gameAuthority),
+      getAccountMeta(accounts.tokenMint),
+      getAccountMeta(accounts.playerTokenAccount),
+      getAccountMeta(accounts.tokenVault),
+      getAccountMeta(accounts.tokenProgram),
+      getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.clock),
     ],
@@ -289,6 +457,12 @@ export function getJoinGameInstruction<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
+    TAccountGameAuthority,
+    TAccountTokenMint,
+    TAccountPlayerTokenAccount,
+    TAccountTokenVault,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
     TAccountClock
   >);
@@ -303,8 +477,14 @@ export type ParsedJoinGameInstruction<
     game: TAccountMetas[0];
     playerState: TAccountMetas[1];
     player: TAccountMetas[2];
-    systemProgram: TAccountMetas[3];
-    clock: TAccountMetas[4];
+    gameAuthority: TAccountMetas[3];
+    tokenMint: TAccountMetas[4];
+    playerTokenAccount: TAccountMetas[5];
+    tokenVault: TAccountMetas[6];
+    tokenProgram: TAccountMetas[7];
+    associatedTokenProgram: TAccountMetas[8];
+    systemProgram: TAccountMetas[9];
+    clock: TAccountMetas[10];
   };
   data: JoinGameInstructionData;
 };
@@ -317,7 +497,7 @@ export function parseJoinGameInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedJoinGameInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+  if (instruction.accounts.length < 11) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -333,6 +513,12 @@ export function parseJoinGameInstruction<
       game: getNextAccount(),
       playerState: getNextAccount(),
       player: getNextAccount(),
+      gameAuthority: getNextAccount(),
+      tokenMint: getNextAccount(),
+      playerTokenAccount: getNextAccount(),
+      tokenVault: getNextAccount(),
+      tokenProgram: getNextAccount(),
+      associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
       clock: getNextAccount(),
     },

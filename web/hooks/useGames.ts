@@ -30,7 +30,7 @@ export function useGames(config: UseGamesConfig = {}): UseGamesResult {
         sdk.getGameAccounts(rpc),
         sdk.getGameAccounts(erRpc),
       ]);
-
+      console.log(allGames);
       return allGames.flat().sort((a, b) => {
         if (a.createdAt > b.createdAt) {
           return -1;

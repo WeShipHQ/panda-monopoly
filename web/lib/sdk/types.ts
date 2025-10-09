@@ -4,6 +4,7 @@ import {
   TransactionSigner,
   Instruction,
   GetAccountInfoApi,
+  SolanaRpcApi,
 } from "@solana/kit";
 import {
   BuildingType,
@@ -19,28 +20,29 @@ export interface CreatePlatformParams {
 }
 
 export interface CreateGameParams {
-  rpc: Rpc<GetAccountInfoApi>;
+  rpc: Rpc<SolanaRpcApi>;
   creator: TransactionSigner;
   platformId: Address;
 }
 
 export interface CreateGameIxs {
-  instruction: Instruction;
+  instructions: Instruction[];
   gameAccountAddress: Address;
 }
 
 export interface JoinGameParams {
-  rpc: Rpc<GetAccountInfoApi>;
+  rpc: Rpc<SolanaRpcApi>;
   player: TransactionSigner;
   gameAddress: Address;
 }
 
 export interface JoinGameIxs {
-  instruction: Instruction;
+  instructions: Instruction[];
   playerStateAddress: Address;
 }
 
 export interface StartGameParams {
+  rpc: Rpc<SolanaRpcApi>;
   authority: TransactionSigner;
   gameAddress: Address;
   players: Address[];
@@ -49,6 +51,7 @@ export interface StartGameParams {
 export interface RollDiceParams {
   player: TransactionSigner;
   gameAddress: Address;
+  useVrf: boolean;
   diceRoll: number[] | null;
 }
 
@@ -155,6 +158,7 @@ export interface AttendFestivalParams {
 export interface DrawChanceCardParams {
   player: TransactionSigner;
   gameAddress: Address;
+  useVrf: boolean;
   index?: number;
 }
 
@@ -167,6 +171,7 @@ export interface DrawChanceCardVrfParams {
 export interface DrawCommunityChestCardParams {
   player: TransactionSigner;
   gameAddress: Address;
+  useVrf: boolean;
   index?: number;
 }
 

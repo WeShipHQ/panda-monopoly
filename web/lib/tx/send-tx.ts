@@ -14,6 +14,7 @@ import {
   getBase58Decoder,
   address,
   getTransactionDecoder,
+  signTransactionMessageWithSigners,
 } from "@solana/kit";
 import { buildTransaction, buildTransactionLegacy } from "./build-tx";
 import { WalletWithMetadata } from "@privy-io/react-auth";

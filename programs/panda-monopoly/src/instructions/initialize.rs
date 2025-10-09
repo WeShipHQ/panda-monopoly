@@ -44,13 +44,21 @@ pub struct InitializeGame<'info> {
     )]
     pub config: Account<'info, PlatformConfig>,
 
+    // pub game_authority: Option<UncheckedAccount<'info>>,
     /// CHECK: game authority PDA
-    pub game_authority: Option<UncheckedAccount<'info>>,
+    #[account(
+        seeds = [
+            GAME_AUTHORITY_SEED.as_ref(),
+        ],
+        bump,
+    )]
+    pub game_authority: UncheckedAccount<'info>,
 
     #[account(
         mint::token_program = token_program,
     )]
-    pub token_mint: Option<InterfaceAccount<'info, Mint>>,
+    // pub token_mint: Option<InterfaceAccount<'info, Mint>>,
+    pub token_mint: InterfaceAccount<'info, Mint>,
 
     #[account(
         mut,
@@ -58,19 +66,34 @@ pub struct InitializeGame<'info> {
         associated_token::authority = creator,
         associated_token::token_program = token_program
     )]
-    pub creator_token_account: Option<InterfaceAccount<'info, TokenAccount>>,
+    // pub creator_token_account: Option<InterfaceAccount<'info, TokenAccount>>,
+    pub creator_token_account: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
+        // init,
+        // payer = creator,
+        // associated_token::mint = token_mint,
+        // associated_token::authority = game_authority,
+        // associated_token::token_program = token_program
         init,
+        seeds = [
+            TOKEN_VAULT_SEED.as_ref(),
+            token_mint.key().as_ref(),
+            game.key().as_ref(),
+        ],
+        token::mint = token_mint,
+        token::authority = game_authority,
+        token::token_program = token_program,
         payer = creator,
-        associated_token::mint = token_mint,
-        associated_token::authority = game_authority,
-        associated_token::token_program = token_program
+        bump
     )]
-    pub token_vault: Option<InterfaceAccount<'info, TokenAccount>>,
+    // pub token_vault: Option<InterfaceAccount<'info, TokenAccount>>,
+    pub token_vault: InterfaceAccount<'info, TokenAccount>,
 
-    pub token_program: Option<Interface<'info, TokenInterface>>,
-    pub associated_token_program: Option<Program<'info, AssociatedToken>>,
+    // pub token_program: Option<Interface<'info, TokenInterface>>,
+    pub token_program: Interface<'info, TokenInterface>,
+    // pub associated_token_program: Option<Program<'info, AssociatedToken>>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
 
     pub system_program: Program<'info, System>,
 
@@ -84,20 +107,24 @@ pub fn initialize_game_handler(ctx: Context<InitializeGame>, entry_fee: u64) -> 
     let clock = &ctx.accounts.clock;
 
     if entry_fee > 0 {
-        require!(
-            ctx.accounts.game_authority.is_some()
-                && ctx.accounts.token_mint.is_some()
-                && ctx.accounts.creator_token_account.is_some()
-                && ctx.accounts.token_vault.is_some()
-                && ctx.accounts.token_program.is_some()
-                && ctx.accounts.associated_token_program.is_some(),
-            GameError::MissingTokenAccounts
-        );
+        // require!(
+        //     ctx.accounts.game_authority.is_some()
+        //         && ctx.accounts.token_mint.is_some()
+        //         && ctx.accounts.creator_token_account.is_some()
+        //         && ctx.accounts.token_vault.is_some()
+        //         && ctx.accounts.token_program.is_some()
+        //         && ctx.accounts.associated_token_program.is_some(),
+        //     GameError::MissingTokenAccounts
+        // );
 
-        let token_mint = ctx.accounts.token_mint.as_ref().unwrap();
-        let creator_token_account = ctx.accounts.creator_token_account.as_ref().unwrap();
-        let token_vault = ctx.accounts.token_vault.as_ref().unwrap();
-        let game_authority = ctx.accounts.game_authority.as_ref().unwrap();
+        // let token_mint = ctx.accounts.token_mint.as_ref().unwrap();
+        let token_mint = &ctx.accounts.token_mint;
+        // let creator_token_account = ctx.accounts.creator_token_account.as_ref().unwrap();
+        let creator_token_account = &ctx.accounts.creator_token_account;
+        // let token_vault = ctx.accounts.token_vault.as_ref().unwrap();
+        let token_vault = &ctx.accounts.token_vault;
+        // let game_authority = ctx.accounts.game_authority.as_ref().unwrap();
+        let game_authority = &ctx.accounts.game_authority;
 
         // Validate game authority PDA
         let (expected_game_authority, _) =
@@ -138,7 +165,7 @@ pub fn initialize_game_handler(ctx: Context<InitializeGame>, entry_fee: u64) -> 
             ctx.accounts
                 .token_program
                 .as_ref()
-                .unwrap()
+                // .unwrap()
                 .to_account_info(),
             transfer_accounts,
         );
@@ -219,13 +246,21 @@ pub struct JoinGame<'info> {
     #[account(mut)]
     pub player: Signer<'info>,
 
+    // pub game_authority: Option<UncheckedAccount<'info>>,
     /// CHECK: game authority PDA - only required for paid games
-    pub game_authority: Option<UncheckedAccount<'info>>,
+    #[account(
+        seeds = [
+            GAME_AUTHORITY_SEED.as_ref(),
+        ],
+        bump,
+    )]
+    pub game_authority: UncheckedAccount<'info>,
 
     #[account(
         mint::token_program = token_program,
     )]
-    pub token_mint: Option<InterfaceAccount<'info, Mint>>,
+    // pub token_mint: Option<InterfaceAccount<'info, Mint>>,
+    pub token_mint: InterfaceAccount<'info, Mint>,
 
     #[account(
         mut,
@@ -233,18 +268,22 @@ pub struct JoinGame<'info> {
         associated_token::authority = player,
         associated_token::token_program = token_program
     )]
-    pub player_token_account: Option<InterfaceAccount<'info, TokenAccount>>,
+    // pub player_token_account: Option<InterfaceAccount<'info, TokenAccount>>,
+    pub player_token_account: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         mut,
-        associated_token::mint = token_mint,
-        associated_token::authority = game_authority,
-        associated_token::token_program = token_program
+        token::mint = token_mint,
+        token::authority = game_authority,
+        token::token_program = token_program,
     )]
-    pub token_vault: Option<InterfaceAccount<'info, TokenAccount>>,
+    // pub token_vault: Option<InterfaceAccount<'info, TokenAccount>>,
+    pub token_vault: InterfaceAccount<'info, TokenAccount>,
 
-    pub token_program: Option<Interface<'info, TokenInterface>>,
-    pub associated_token_program: Option<Program<'info, AssociatedToken>>,
+    // pub token_program: Option<Interface<'info, TokenInterface>>,
+    pub token_program: Interface<'info, TokenInterface>,
+    // pub associated_token_program: Option<Program<'info, AssociatedToken>>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
 
     pub system_program: Program<'info, System>,
     pub clock: Sysvar<'info, Clock>,
@@ -269,19 +308,20 @@ pub fn join_game_handler(ctx: Context<JoinGame>) -> Result<()> {
 
     // Handle entry fee payment if game has entry fee
     if game.entry_fee > 0 {
-        require!(
-            ctx.accounts.game_authority.is_some()
-                && ctx.accounts.token_mint.is_some()
-                && ctx.accounts.player_token_account.is_some()
-                && ctx.accounts.token_vault.is_some()
-                && ctx.accounts.token_program.is_some(),
-            GameError::MissingTokenAccounts
-        );
+        // require!(
+        //     ctx.accounts.game_authority.is_some()
+        //         && ctx.accounts.token_mint.is_some()
+        //         && ctx.accounts.player_token_account.is_some()
+        //         && ctx.accounts.token_vault.is_some()
+        //         && ctx.accounts.token_program.is_some(),
+        //     GameError::MissingTokenAccounts
+        // );
 
-        let token_mint = ctx.accounts.token_mint.as_ref().unwrap();
-        let player_token_account = ctx.accounts.player_token_account.as_ref().unwrap();
-        let token_vault = ctx.accounts.token_vault.as_ref().unwrap();
-        let game_authority = ctx.accounts.game_authority.as_ref().unwrap();
+        // let token_mint = ctx.accounts.token_mint.as_ref().unwrap();
+        let token_mint = &ctx.accounts.token_mint;
+        let player_token_account = &ctx.accounts.player_token_account;
+        let token_vault = &ctx.accounts.token_vault;
+        let game_authority = &ctx.accounts.game_authority;
 
         // Validate game authority PDA
         let (expected_game_authority, _) =
@@ -333,7 +373,7 @@ pub fn join_game_handler(ctx: Context<JoinGame>) -> Result<()> {
             ctx.accounts
                 .token_program
                 .as_ref()
-                .unwrap()
+                // .unwrap()
                 .to_account_info(),
             transfer_accounts,
         );
@@ -352,7 +392,7 @@ pub fn join_game_handler(ctx: Context<JoinGame>) -> Result<()> {
             player_pubkey
         );
         msg!("Total prize pool: {}", game.total_prize_pool);
-    } 
+    }
     // else {
     //     // For free games, ensure no token accounts are provided
     //     require!(
@@ -669,6 +709,15 @@ pub fn reset_game_handler<'c: 'info, 'info>(
             );
 
             let mut player_account = Account::<PlayerState>::try_from(data_account_info)?;
+
+            let owned_properties = player_account.properties_owned.clone();
+
+            for _i in 0..owned_properties.len() {
+                let data_account_info = next_account_info(remaining_accounts_iter)?;
+                require_eq!(data_account_info.is_writable, true);
+                let property_account = Account::<PropertyState>::try_from(data_account_info)?;
+                property_account.close(ctx.accounts.authority.to_account_info())?;
+            }
 
             player_account.cash_balance = STARTING_MONEY as u64;
             player_account.position = 0;

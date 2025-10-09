@@ -7,7 +7,6 @@
  */
 
 export * from './acceptTrade';
-export * from './attendFestival';
 export * from './buildHotel';
 export * from './buildHouse';
 export * from './buyProperty';
@@ -17,14 +16,13 @@ export * from './callbackRollDice';
 export * from './cancelTrade';
 export * from './cleanupExpiredTrades';
 export * from './closeGameHandler';
-export * from './collectFreeParking';
 export * from './createPlatformConfig';
 export * from './createTrade';
 export * from './declareBankruptcy';
 export * from './declineProperty';
 export * from './drawChanceCard';
-export * from './drawChanceCardVrfHandler';
 export * from './drawCommunityChestCard';
+export * from './endGame';
 export * from './endTurn';
 export * from './initializeGame';
 export * from './initPropertyHandler';
@@ -37,11 +35,9 @@ export * from './payRent';
 export * from './rejectTrade';
 export * from './resetGameHandler';
 export * from './rollDice';
-export * from './rollDiceVrfHandler';
 export * from './sellBuilding';
 export * from './startGame';
 export * from './undelegateGameHandler';
 export * from './unmortgageProperty';
 export * from './updatePlatformConfig';
 export * from './useGetOutOfJailCard';
-export * from './visitBeachResort';

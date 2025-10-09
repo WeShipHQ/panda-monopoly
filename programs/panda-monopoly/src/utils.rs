@@ -262,3 +262,30 @@ pub fn force_end_turn(game: &mut GameState, player_state: &mut PlayerState, cloc
 
     msg!("Turn automatically ended. Next turn: Player {}", next_turn);
 }
+
+pub fn random_two_u8_with_range(bytes: &[u8; 32], min_value: u8, max_value: u8) -> [u8; 2] {
+    let range = (max_value - min_value + 1) as u16;
+    let threshold = (256 / range * range) as u8;
+
+    // First value from the first half [0..16]
+    let mut first = None;
+    for &b in bytes[..16].iter().rev() {
+        if b < threshold {
+            first = Some(min_value + (b % range as u8));
+            break;
+        }
+    }
+    let die1 = first.unwrap_or_else(|| min_value + (bytes[15] % range as u8));
+
+    // Second value from the second half [16..32]
+    let mut second = None;
+    for &b in bytes[16..].iter().rev() {
+        if b < threshold {
+            second = Some(min_value + (b % range as u8));
+            break;
+        }
+    }
+    let die2 = second.unwrap_or_else(|| min_value + (bytes[31] % range as u8));
+
+    [die1, die2]
+}

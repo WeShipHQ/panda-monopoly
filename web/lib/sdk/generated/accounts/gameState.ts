@@ -69,7 +69,7 @@ export type GameState = {
   discriminator: ReadonlyUint8Array;
   gameId: bigint;
   configId: Address;
-  authority: Address;
+  creator: Address;
   bump: number;
   maxPlayers: number;
   currentPlayers: number;
@@ -84,6 +84,10 @@ export type GameState = {
   timeLimit: Option<bigint>;
   winner: Option<Address>;
   turnStartedAt: bigint;
+  entryFee: bigint;
+  tokenMint: Option<Address>;
+  tokenVault: Option<Address>;
+  totalPrizePool: bigint;
   activeTrades: Array<TradeInfo>;
   nextTradeId: number;
 };
@@ -91,7 +95,7 @@ export type GameState = {
 export type GameStateArgs = {
   gameId: number | bigint;
   configId: Address;
-  authority: Address;
+  creator: Address;
   bump: number;
   maxPlayers: number;
   currentPlayers: number;
@@ -106,6 +110,10 @@ export type GameStateArgs = {
   timeLimit: OptionOrNullable<number | bigint>;
   winner: OptionOrNullable<Address>;
   turnStartedAt: number | bigint;
+  entryFee: number | bigint;
+  tokenMint: OptionOrNullable<Address>;
+  tokenVault: OptionOrNullable<Address>;
+  totalPrizePool: number | bigint;
   activeTrades: Array<TradeInfoArgs>;
   nextTradeId: number;
 };
@@ -116,7 +124,7 @@ export function getGameStateEncoder(): Encoder<GameStateArgs> {
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['gameId', getU64Encoder()],
       ['configId', getAddressEncoder()],
-      ['authority', getAddressEncoder()],
+      ['creator', getAddressEncoder()],
       ['bump', getU8Encoder()],
       ['maxPlayers', getU8Encoder()],
       ['currentPlayers', getU8Encoder()],
@@ -131,6 +139,10 @@ export function getGameStateEncoder(): Encoder<GameStateArgs> {
       ['timeLimit', getOptionEncoder(getI64Encoder())],
       ['winner', getOptionEncoder(getAddressEncoder())],
       ['turnStartedAt', getI64Encoder()],
+      ['entryFee', getU64Encoder()],
+      ['tokenMint', getOptionEncoder(getAddressEncoder())],
+      ['tokenVault', getOptionEncoder(getAddressEncoder())],
+      ['totalPrizePool', getU64Encoder()],
       ['activeTrades', getArrayEncoder(getTradeInfoEncoder())],
       ['nextTradeId', getU8Encoder()],
     ]),
@@ -143,7 +155,7 @@ export function getGameStateDecoder(): Decoder<GameState> {
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['gameId', getU64Decoder()],
     ['configId', getAddressDecoder()],
-    ['authority', getAddressDecoder()],
+    ['creator', getAddressDecoder()],
     ['bump', getU8Decoder()],
     ['maxPlayers', getU8Decoder()],
     ['currentPlayers', getU8Decoder()],
@@ -158,6 +170,10 @@ export function getGameStateDecoder(): Decoder<GameState> {
     ['timeLimit', getOptionDecoder(getI64Decoder())],
     ['winner', getOptionDecoder(getAddressDecoder())],
     ['turnStartedAt', getI64Decoder()],
+    ['entryFee', getU64Decoder()],
+    ['tokenMint', getOptionDecoder(getAddressDecoder())],
+    ['tokenVault', getOptionDecoder(getAddressDecoder())],
+    ['totalPrizePool', getU64Decoder()],
     ['activeTrades', getArrayDecoder(getTradeInfoDecoder())],
     ['nextTradeId', getU8Decoder()],
   ]);

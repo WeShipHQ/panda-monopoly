@@ -57,7 +57,7 @@ export function GameList() {
     setJoining(true);
 
     try {
-      const { instruction } = await sdk.joinGameIx({
+      const { instructions } = await sdk.joinGameIx({
         rpc,
         player: { address: address(wallet.address) } as TransactionSigner,
         gameAddress: address(gameAddress),
@@ -65,7 +65,7 @@ export function GameList() {
 
       const signature = await buildAndSendTransactionWithPrivy(
         rpc,
-        [instruction],
+        instructions,
         wallet
       );
 
@@ -241,7 +241,7 @@ function CreateGameButton() {
     setLoading(true);
 
     try {
-      const { instruction, gameAccountAddress } = await sdk.createGameIx({
+      const { instructions, gameAccountAddress } = await sdk.createGameIx({
         rpc,
         creator: { address: address(wallet.address) } as TransactionSigner,
         platformId: PLATFORM_ID,
@@ -251,7 +251,7 @@ function CreateGameButton() {
 
       const signature = await buildAndSendTransactionWithPrivy(
         rpc,
-        [instruction],
+        instructions,
         wallet
       );
 

@@ -11,6 +11,8 @@ import {
   fixDecoderSize,
   fixEncoderSize,
   getAddressEncoder,
+  getBooleanDecoder,
+  getBooleanEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getOptionDecoder,
@@ -66,6 +68,19 @@ export type DrawChanceCardInstruction<
   TAccountClock extends
     | string
     | AccountMeta<string> = 'SysvarC1ock11111111111111111111111111111111',
+  TAccountOracleQueue extends
+    | string
+    | AccountMeta<string> = '5hBR571xnXppuCPveTrctfTU7tJLSN94nq7kv7FRK5Tc',
+  TAccountProgramIdentity extends string | AccountMeta<string> = string,
+  TAccountVrfProgram extends
+    | string
+    | AccountMeta<string> = 'Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz',
+  TAccountSlotHashes extends
+    | string
+    | AccountMeta<string> = 'SysvarS1otHashes111111111111111111111111111',
+  TAccountSystemProgram extends
+    | string
+    | AccountMeta<string> = '11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -87,16 +102,35 @@ export type DrawChanceCardInstruction<
       TAccountClock extends string
         ? ReadonlyAccount<TAccountClock>
         : TAccountClock,
+      TAccountOracleQueue extends string
+        ? WritableAccount<TAccountOracleQueue>
+        : TAccountOracleQueue,
+      TAccountProgramIdentity extends string
+        ? ReadonlyAccount<TAccountProgramIdentity>
+        : TAccountProgramIdentity,
+      TAccountVrfProgram extends string
+        ? ReadonlyAccount<TAccountVrfProgram>
+        : TAccountVrfProgram,
+      TAccountSlotHashes extends string
+        ? ReadonlyAccount<TAccountSlotHashes>
+        : TAccountSlotHashes,
+      TAccountSystemProgram extends string
+        ? ReadonlyAccount<TAccountSystemProgram>
+        : TAccountSystemProgram,
       ...TRemainingAccounts,
     ]
   >;
 
 export type DrawChanceCardInstructionData = {
   discriminator: ReadonlyUint8Array;
+  useVrf: boolean;
+  clientSeed: number;
   cardIndex: Option<number>;
 };
 
 export type DrawChanceCardInstructionDataArgs = {
+  useVrf: boolean;
+  clientSeed: number;
   cardIndex: OptionOrNullable<number>;
 };
 
@@ -104,6 +138,8 @@ export function getDrawChanceCardInstructionDataEncoder(): Encoder<DrawChanceCar
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['useVrf', getBooleanEncoder()],
+      ['clientSeed', getU8Encoder()],
       ['cardIndex', getOptionEncoder(getU8Encoder())],
     ]),
     (value) => ({ ...value, discriminator: DRAW_CHANCE_CARD_DISCRIMINATOR })
@@ -113,6 +149,8 @@ export function getDrawChanceCardInstructionDataEncoder(): Encoder<DrawChanceCar
 export function getDrawChanceCardInstructionDataDecoder(): Decoder<DrawChanceCardInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['useVrf', getBooleanDecoder()],
+    ['clientSeed', getU8Decoder()],
     ['cardIndex', getOptionDecoder(getU8Decoder())],
   ]);
 }
@@ -133,12 +171,24 @@ export type DrawChanceCardAsyncInput<
   TAccountPlayer extends string = string,
   TAccountRecentBlockhashes extends string = string,
   TAccountClock extends string = string,
+  TAccountOracleQueue extends string = string,
+  TAccountProgramIdentity extends string = string,
+  TAccountVrfProgram extends string = string,
+  TAccountSlotHashes extends string = string,
+  TAccountSystemProgram extends string = string,
 > = {
   game: Address<TAccountGame>;
   playerState?: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
   recentBlockhashes?: Address<TAccountRecentBlockhashes>;
   clock?: Address<TAccountClock>;
+  oracleQueue?: Address<TAccountOracleQueue>;
+  programIdentity?: Address<TAccountProgramIdentity>;
+  vrfProgram?: Address<TAccountVrfProgram>;
+  slotHashes?: Address<TAccountSlotHashes>;
+  systemProgram?: Address<TAccountSystemProgram>;
+  useVrf: DrawChanceCardInstructionDataArgs['useVrf'];
+  clientSeed: DrawChanceCardInstructionDataArgs['clientSeed'];
   cardIndex: DrawChanceCardInstructionDataArgs['cardIndex'];
 };
 
@@ -148,6 +198,11 @@ export async function getDrawChanceCardInstructionAsync<
   TAccountPlayer extends string,
   TAccountRecentBlockhashes extends string,
   TAccountClock extends string,
+  TAccountOracleQueue extends string,
+  TAccountProgramIdentity extends string,
+  TAccountVrfProgram extends string,
+  TAccountSlotHashes extends string,
+  TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
   input: DrawChanceCardAsyncInput<
@@ -155,7 +210,12 @@ export async function getDrawChanceCardInstructionAsync<
     TAccountPlayerState,
     TAccountPlayer,
     TAccountRecentBlockhashes,
-    TAccountClock
+    TAccountClock,
+    TAccountOracleQueue,
+    TAccountProgramIdentity,
+    TAccountVrfProgram,
+    TAccountSlotHashes,
+    TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
@@ -165,7 +225,12 @@ export async function getDrawChanceCardInstructionAsync<
     TAccountPlayerState,
     TAccountPlayer,
     TAccountRecentBlockhashes,
-    TAccountClock
+    TAccountClock,
+    TAccountOracleQueue,
+    TAccountProgramIdentity,
+    TAccountVrfProgram,
+    TAccountSlotHashes,
+    TAccountSystemProgram
   >
 > {
   // Program address.
@@ -182,6 +247,14 @@ export async function getDrawChanceCardInstructionAsync<
       isWritable: false,
     },
     clock: { value: input.clock ?? null, isWritable: false },
+    oracleQueue: { value: input.oracleQueue ?? null, isWritable: true },
+    programIdentity: {
+      value: input.programIdentity ?? null,
+      isWritable: false,
+    },
+    vrfProgram: { value: input.vrfProgram ?? null, isWritable: false },
+    slotHashes: { value: input.slotHashes ?? null, isWritable: false },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -210,6 +283,32 @@ export async function getDrawChanceCardInstructionAsync<
     accounts.clock.value =
       'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
   }
+  if (!accounts.oracleQueue.value) {
+    accounts.oracleQueue.value =
+      '5hBR571xnXppuCPveTrctfTU7tJLSN94nq7kv7FRK5Tc' as Address<'5hBR571xnXppuCPveTrctfTU7tJLSN94nq7kv7FRK5Tc'>;
+  }
+  if (!accounts.programIdentity.value) {
+    accounts.programIdentity.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([105, 100, 101, 110, 116, 105, 116, 121])
+        ),
+      ],
+    });
+  }
+  if (!accounts.vrfProgram.value) {
+    accounts.vrfProgram.value =
+      'Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz' as Address<'Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz'>;
+  }
+  if (!accounts.slotHashes.value) {
+    accounts.slotHashes.value =
+      'SysvarS1otHashes111111111111111111111111111' as Address<'SysvarS1otHashes111111111111111111111111111'>;
+  }
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -219,6 +318,11 @@ export async function getDrawChanceCardInstructionAsync<
       getAccountMeta(accounts.player),
       getAccountMeta(accounts.recentBlockhashes),
       getAccountMeta(accounts.clock),
+      getAccountMeta(accounts.oracleQueue),
+      getAccountMeta(accounts.programIdentity),
+      getAccountMeta(accounts.vrfProgram),
+      getAccountMeta(accounts.slotHashes),
+      getAccountMeta(accounts.systemProgram),
     ],
     data: getDrawChanceCardInstructionDataEncoder().encode(
       args as DrawChanceCardInstructionDataArgs
@@ -230,7 +334,12 @@ export async function getDrawChanceCardInstructionAsync<
     TAccountPlayerState,
     TAccountPlayer,
     TAccountRecentBlockhashes,
-    TAccountClock
+    TAccountClock,
+    TAccountOracleQueue,
+    TAccountProgramIdentity,
+    TAccountVrfProgram,
+    TAccountSlotHashes,
+    TAccountSystemProgram
   >);
 }
 
@@ -240,12 +349,24 @@ export type DrawChanceCardInput<
   TAccountPlayer extends string = string,
   TAccountRecentBlockhashes extends string = string,
   TAccountClock extends string = string,
+  TAccountOracleQueue extends string = string,
+  TAccountProgramIdentity extends string = string,
+  TAccountVrfProgram extends string = string,
+  TAccountSlotHashes extends string = string,
+  TAccountSystemProgram extends string = string,
 > = {
   game: Address<TAccountGame>;
   playerState: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
   recentBlockhashes?: Address<TAccountRecentBlockhashes>;
   clock?: Address<TAccountClock>;
+  oracleQueue?: Address<TAccountOracleQueue>;
+  programIdentity: Address<TAccountProgramIdentity>;
+  vrfProgram?: Address<TAccountVrfProgram>;
+  slotHashes?: Address<TAccountSlotHashes>;
+  systemProgram?: Address<TAccountSystemProgram>;
+  useVrf: DrawChanceCardInstructionDataArgs['useVrf'];
+  clientSeed: DrawChanceCardInstructionDataArgs['clientSeed'];
   cardIndex: DrawChanceCardInstructionDataArgs['cardIndex'];
 };
 
@@ -255,6 +376,11 @@ export function getDrawChanceCardInstruction<
   TAccountPlayer extends string,
   TAccountRecentBlockhashes extends string,
   TAccountClock extends string,
+  TAccountOracleQueue extends string,
+  TAccountProgramIdentity extends string,
+  TAccountVrfProgram extends string,
+  TAccountSlotHashes extends string,
+  TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
   input: DrawChanceCardInput<
@@ -262,7 +388,12 @@ export function getDrawChanceCardInstruction<
     TAccountPlayerState,
     TAccountPlayer,
     TAccountRecentBlockhashes,
-    TAccountClock
+    TAccountClock,
+    TAccountOracleQueue,
+    TAccountProgramIdentity,
+    TAccountVrfProgram,
+    TAccountSlotHashes,
+    TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): DrawChanceCardInstruction<
@@ -271,7 +402,12 @@ export function getDrawChanceCardInstruction<
   TAccountPlayerState,
   TAccountPlayer,
   TAccountRecentBlockhashes,
-  TAccountClock
+  TAccountClock,
+  TAccountOracleQueue,
+  TAccountProgramIdentity,
+  TAccountVrfProgram,
+  TAccountSlotHashes,
+  TAccountSystemProgram
 > {
   // Program address.
   const programAddress =
@@ -287,6 +423,14 @@ export function getDrawChanceCardInstruction<
       isWritable: false,
     },
     clock: { value: input.clock ?? null, isWritable: false },
+    oracleQueue: { value: input.oracleQueue ?? null, isWritable: true },
+    programIdentity: {
+      value: input.programIdentity ?? null,
+      isWritable: false,
+    },
+    vrfProgram: { value: input.vrfProgram ?? null, isWritable: false },
+    slotHashes: { value: input.slotHashes ?? null, isWritable: false },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -305,6 +449,22 @@ export function getDrawChanceCardInstruction<
     accounts.clock.value =
       'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
   }
+  if (!accounts.oracleQueue.value) {
+    accounts.oracleQueue.value =
+      '5hBR571xnXppuCPveTrctfTU7tJLSN94nq7kv7FRK5Tc' as Address<'5hBR571xnXppuCPveTrctfTU7tJLSN94nq7kv7FRK5Tc'>;
+  }
+  if (!accounts.vrfProgram.value) {
+    accounts.vrfProgram.value =
+      'Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz' as Address<'Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz'>;
+  }
+  if (!accounts.slotHashes.value) {
+    accounts.slotHashes.value =
+      'SysvarS1otHashes111111111111111111111111111' as Address<'SysvarS1otHashes111111111111111111111111111'>;
+  }
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -314,6 +474,11 @@ export function getDrawChanceCardInstruction<
       getAccountMeta(accounts.player),
       getAccountMeta(accounts.recentBlockhashes),
       getAccountMeta(accounts.clock),
+      getAccountMeta(accounts.oracleQueue),
+      getAccountMeta(accounts.programIdentity),
+      getAccountMeta(accounts.vrfProgram),
+      getAccountMeta(accounts.slotHashes),
+      getAccountMeta(accounts.systemProgram),
     ],
     data: getDrawChanceCardInstructionDataEncoder().encode(
       args as DrawChanceCardInstructionDataArgs
@@ -325,7 +490,12 @@ export function getDrawChanceCardInstruction<
     TAccountPlayerState,
     TAccountPlayer,
     TAccountRecentBlockhashes,
-    TAccountClock
+    TAccountClock,
+    TAccountOracleQueue,
+    TAccountProgramIdentity,
+    TAccountVrfProgram,
+    TAccountSlotHashes,
+    TAccountSystemProgram
   >);
 }
 
@@ -340,6 +510,11 @@ export type ParsedDrawChanceCardInstruction<
     player: TAccountMetas[2];
     recentBlockhashes: TAccountMetas[3];
     clock: TAccountMetas[4];
+    oracleQueue: TAccountMetas[5];
+    programIdentity: TAccountMetas[6];
+    vrfProgram: TAccountMetas[7];
+    slotHashes: TAccountMetas[8];
+    systemProgram: TAccountMetas[9];
   };
   data: DrawChanceCardInstructionData;
 };
@@ -352,7 +527,7 @@ export function parseDrawChanceCardInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedDrawChanceCardInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+  if (instruction.accounts.length < 10) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -370,6 +545,11 @@ export function parseDrawChanceCardInstruction<
       player: getNextAccount(),
       recentBlockhashes: getNextAccount(),
       clock: getNextAccount(),
+      oracleQueue: getNextAccount(),
+      programIdentity: getNextAccount(),
+      vrfProgram: getNextAccount(),
+      slotHashes: getNextAccount(),
+      systemProgram: getNextAccount(),
     },
     data: getDrawChanceCardInstructionDataDecoder().decode(instruction.data),
   };

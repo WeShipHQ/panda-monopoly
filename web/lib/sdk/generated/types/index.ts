@@ -10,6 +10,7 @@ export * from './buildingType';
 export * from './chanceCardDrawn';
 export * from './colorGroup';
 export * from './communityChestCardDrawn';
+export * from './gameEnded';
 export * from './gameStatus';
 export * from './playerPassedGo';
 export * from './propertyType';

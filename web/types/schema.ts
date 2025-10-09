@@ -21,7 +21,7 @@ export interface GameAccount {
   address: string;
   gameId: number | string;
   configId: string;
-  authority: string;
+  creator: string;
   bump: number;
   maxPlayers: number;
   currentPlayers: number;
@@ -37,6 +37,10 @@ export interface GameAccount {
   winner: string | null;
   turnStartedAt: number;
   activeTrades: TradeInfo[];
+  entryFee: number;
+  tokenMint: string | null;
+  tokenVault: string | null;
+  totalPrizePool: number;
 }
 
 export interface PlayerAccount {
@@ -132,7 +136,7 @@ export function mapGameStateToAccount(
     address: addressToString(address),
     gameId: bigintToString(gameState.gameId),
     configId: addressToString(gameState.configId),
-    authority: addressToString(gameState.authority),
+    creator: addressToString(gameState.creator),
     bump: gameState.bump,
     maxPlayers: gameState.maxPlayers,
     currentPlayers: gameState.currentPlayers,
@@ -152,6 +156,10 @@ export function mapGameStateToAccount(
       : null,
     turnStartedAt: bigintToNumber(gameState.turnStartedAt),
     activeTrades: gameState.activeTrades.map(mapTradeInfoToAccount),
+    entryFee: bigintToNumber(gameState.entryFee),
+    tokenMint: optionToNullable(gameState.tokenMint),
+    tokenVault: optionToNullable(gameState.tokenVault),
+    totalPrizePool: bigintToNumber(gameState.totalPrizePool),
   };
 }
 
