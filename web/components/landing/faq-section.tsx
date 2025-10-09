@@ -35,7 +35,7 @@ export default function FAQSection() {
     ]
 
     return (
-        <section className="relative py-24 md:py-36 px-6 md:px-12 lg:px-20 bg-[#fffef0]/90 border-t-8 border-black">
+        <section id="faq" className="relative py-24 md:py-36 px-6 md:px-12 lg:px-20 bg-[#fffef0]/90 border-t-8 border-black scroll-mt-20">
             <AnimatedGridBackground />
             <div className="max-w-6xl mx-auto relative z-10">
                 <h2 className="text-5xl md:text-7xl lg:text-8xl font-black uppercase mb-20 text-center text-black [text-shadow:10px_10px_0_#ffed00] hover:[text-shadow:14px_14px_0_#ffed00] transition-all duration-300">

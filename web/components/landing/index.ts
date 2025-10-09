@@ -1,4 +1,5 @@
 export { default as AnimatedGridBackground } from "./animated-grid-background"
+export { default as Header } from "./header"
 export { default as HeroSection } from "./hero-section"
 export { default as HowItWorksSection } from "./how-it-works-section"
 export { default as KeyFeaturesSection } from "./key-features-section"

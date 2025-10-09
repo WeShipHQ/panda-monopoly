@@ -1,11 +1,12 @@
 "use client"
 
-import { FAQSection, FooterSection, HeroSection, HowItWorksSection, KeyFeaturesSection, MarqueeBar, RoadmapSection } from "@/components/landing"
+import { Header, FAQSection, FooterSection, HeroSection, HowItWorksSection, KeyFeaturesSection, MarqueeBar, RoadmapSection } from "@/components/landing"
 
 
 export default function MonopolyLanding() {
     return (
         <div className="min-h-screen bg-[#fffef0] text-black font-mono overflow-x-hidden relative">
+            <Header />
             <HeroSection />
             <HowItWorksSection />
             <KeyFeaturesSection />

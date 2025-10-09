@@ -24,7 +24,7 @@ export default function KeyFeaturesSection() {
     ]
 
     return (
-        <section className="relative py-32 px-6 md:px-12 lg:px-20 bg-white/90 border-t-8 border-black">
+        <section id="features" className="relative py-32 px-6 md:px-12 lg:px-20 bg-white/90 border-t-8 border-black scroll-mt-20">
             <AnimatedGridBackground />
             <div className="max-w-7xl mx-auto relative z-10">
                 <h2 className="text-6xl md:text-8xl font-black uppercase mb-24 text-center text-black hover:scale-105 transition-transform duration-300 cursor-pointer">
