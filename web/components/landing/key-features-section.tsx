@@ -28,7 +28,7 @@ export default function KeyFeaturesSection() {
             <AnimatedGridBackground />
             <div className="max-w-7xl mx-auto relative z-10">
                 <h2 className="text-6xl md:text-8xl font-black uppercase mb-24 text-center text-black hover:scale-105 transition-transform duration-300 cursor-pointer">
-                    <span className="inline-block bg-[#9945ff] text-white px-8 py-4 border-6 border-black shadow-[12px_12px_0_#000] hover:shadow-[18px_18px_0_#000] hover:-translate-y-2 transition-all duration-300">
+                    <span className="inline-block bg-[#9945ff] text-black px-8 py-4 border-6 border-black shadow-[12px_12px_0_#000] hover:shadow-[18px_18px_0_#000] hover:-translate-y-2 transition-all duration-300">
                         KEY FEATURES
                     </span>
                 </h2>
@@ -52,10 +52,10 @@ export default function KeyFeaturesSection() {
                                     </AvatarFallback>
                                 </Avatar>
                             </div>
-                            <h3 className="text-4xl font-black uppercase mb-6 text-white [text-shadow:3px_3px_0_#000] relative z-10">
+                            <h3 className="text-4xl font-black uppercase mb-6 text-black [text-shadow:3px_3px_0_rgba(255,255,255,0.5)] relative z-10">
                                 {feature.title}
                             </h3>
-                            <p className="text-xl font-bold text-white [text-shadow:1px_1px_0_#000] relative z-10 leading-relaxed">
+                            <p className="text-xl font-bold text-black [text-shadow:1px_1px_0_rgba(255,255,255,0.5)] relative z-10 leading-relaxed">
                                 {feature.desc}
                             </p>
                         </div>

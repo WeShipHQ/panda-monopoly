@@ -67,15 +67,15 @@ export default function RoadmapSection() {
                             >
                                 <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
                                 <div className="flex-shrink-0 relative z-10">
-                                    <div className="text-4xl md:text-5xl font-black text-white [text-shadow:4px_4px_0_#000] group-hover:scale-110 transition-transform duration-300">
+                                    <div className="text-4xl md:text-5xl font-black text-black [text-shadow:4px_4px_0_rgba(255,255,255,0.5)] group-hover:scale-110 transition-transform duration-300">
                                         {item.phase}
                                     </div>
                                 </div>
                                 <div className="flex-1 relative z-10">
-                                    <h3 className="text-3xl md:text-4xl font-black uppercase mb-3 text-white [text-shadow:2px_2px_0_#000]">
+                                    <h3 className="text-3xl md:text-4xl font-black uppercase mb-3 text-black [text-shadow:2px_2px_0_rgba(255,255,255,0.5)]">
                                         {item.title}
                                     </h3>
-                                    <p className="text-xl md:text-2xl font-bold text-white [text-shadow:1px_1px_0_#000]">
+                                    <p className="text-xl md:text-2xl font-bold text-black [text-shadow:1px_1px_0_rgba(255,255,255,0.5)]">
                                         {item.desc}
                                     </p>
                                 </div>
