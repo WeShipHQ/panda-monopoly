@@ -668,25 +668,25 @@ pub const COMMUNITY_CHEST_CARDS: [CommunityChestCard; 5] = [
 ];
 
 // Festival effects (keeping original structure but updating for Solana theme)
-pub const FESTIVAL_EFFECTS: [FestivalEffect; 4] = [
-    FestivalEffect {
-        id: 1, // "Validator Performance Bonus"
-        amount: 100,
-        is_positive: true,
-    },
-    FestivalEffect {
-        id: 2, // "Successful DeFi Yield"
-        amount: 150,
-        is_positive: true,
-    },
-    FestivalEffect {
-        id: 3, // "NFT Royalty Income"
-        amount: 75,
-        is_positive: true,
-    },
-    FestivalEffect {
-        id: 4, // "Ecosystem Grant Awarded"
-        amount: 200,
-        is_positive: true,
-    },
-];
+// pub const FESTIVAL_EFFECTS: [FestivalEffect; 4] = [
+//     FestivalEffect {
+//         id: 1, // "Validator Performance Bonus"
+//         amount: 100,
+//         is_positive: true,
+//     },
+//     FestivalEffect {
+//         id: 2, // "Successful DeFi Yield"
+//         amount: 150,
+//         is_positive: true,
+//     },
+//     FestivalEffect {
+//         id: 3, // "NFT Royalty Income"
+//         amount: 75,
+//         is_positive: true,
+//     },
+//     FestivalEffect {
+//         id: 4, // "Ecosystem Grant Awarded"
+//         amount: 200,
+//         is_positive: true,
+//     },
+// ];

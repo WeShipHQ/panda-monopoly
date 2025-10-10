@@ -15,7 +15,7 @@ pub struct InitProperty<'info> {
         seeds = [b"property", game_key.as_ref(), position.to_le_bytes().as_ref()],
         bump
     )]
-    pub property_state: Account<'info, PropertyState>,
+    pub property_state: Box<Account<'info, PropertyState>>,
 
     /// CHECK: Validate by CPI
     #[account(mut)]
@@ -103,21 +103,21 @@ pub struct BuyProperty<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(
         mut,
         seeds = [b"property", property_state.game.as_ref(), property_state.position.to_le_bytes().as_ref()],
         bump
     )]
-    pub property_state: Account<'info, PropertyState>,
+    pub property_state: Box<Account<'info, PropertyState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -249,19 +249,18 @@ pub fn buy_property_handler(ctx: Context<BuyProperty>, position: u8) -> Result<(
 pub struct DeclineProperty<'info> {
     #[account(
         mut,
-        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -339,33 +338,32 @@ pub fn decline_property_handler(ctx: Context<DeclineProperty>, position: u8) -> 
 pub struct PayRent<'info> {
     #[account(
         mut,
-        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), payer.key().as_ref()],
         bump
     )]
-    pub payer_state: Account<'info, PlayerState>,
+    pub payer_state: Box<Account<'info, PlayerState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), property_owner.key().as_ref()],
         bump
     )]
-    pub owner_state: Account<'info, PlayerState>,
+    pub owner_state: Box<Account<'info, PlayerState>>,
 
     #[account(
         mut,
         seeds = [b"property", game.key().as_ref(), position.to_le_bytes().as_ref()],
         bump
     )]
-    pub property_state: Account<'info, PropertyState>,
+    pub property_state: Box<Account<'info, PropertyState>>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -478,14 +476,14 @@ pub struct BuildHouse<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,     
 
     #[account(
         mut,
@@ -497,7 +495,7 @@ pub struct BuildHouse<'info> {
         constraint = property_state.houses < MAX_HOUSES_PER_PROPERTY @ GameError::MaxHousesReached,
         constraint = !property_state.has_hotel @ GameError::PropertyHasHotel
     )]
-    pub property_state: Account<'info, PropertyState>,
+    pub property_state: Box<Account<'info, PropertyState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -592,14 +590,14 @@ pub struct BuildHotel<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(
         mut,
@@ -611,7 +609,7 @@ pub struct BuildHotel<'info> {
         constraint = property_state.houses == MAX_HOUSES_PER_PROPERTY @ GameError::InvalidHouseCount,
         constraint = !property_state.has_hotel @ GameError::PropertyHasHotel
     )]
-    pub property_state: Account<'info, PropertyState>,
+    pub property_state: Box<Account<'info, PropertyState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -695,14 +693,14 @@ pub struct SellBuilding<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(
         mut,
@@ -711,7 +709,7 @@ pub struct SellBuilding<'info> {
         constraint = property_state.owner == Some(player.key()) @ GameError::PropertyNotOwnedByPlayer,
         constraint = property_state.property_type == PropertyType::Street @ GameError::CannotBuildOnPropertyType
     )]
-    pub property_state: Account<'info, PropertyState>,
+    pub property_state: Box<Account<'info, PropertyState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -827,14 +825,14 @@ pub struct MortgageProperty<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(
         mut,
@@ -845,7 +843,7 @@ pub struct MortgageProperty<'info> {
         constraint = property_state.houses == 0 @ GameError::CannotMortgageWithBuildings,
         constraint = !property_state.has_hotel @ GameError::CannotMortgageWithBuildings
     )]
-    pub property_state: Account<'info, PropertyState>,
+    pub property_state: Box<Account<'info, PropertyState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -910,14 +908,14 @@ pub struct UnmortgageProperty<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(
         mut,
@@ -926,7 +924,7 @@ pub struct UnmortgageProperty<'info> {
         constraint = property_state.owner == Some(player.key()) @ GameError::PropertyNotOwnedByPlayer,
         constraint = property_state.is_mortgaged @ GameError::PropertyNotMortgaged
     )]
-    pub property_state: Account<'info, PropertyState>,
+    pub property_state: Box<Account<'info, PropertyState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -1000,14 +998,14 @@ pub struct BuyPropertyV2<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -1102,14 +1100,14 @@ pub struct SellBuildingV2<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -1237,14 +1235,14 @@ pub struct DeclinePropertyV2<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -1327,21 +1325,21 @@ pub struct PayRentV2<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), payer.key().as_ref()],
         bump
     )]
-    pub payer_state: Account<'info, PlayerState>,
+    pub payer_state: Box<Account<'info, PlayerState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), property_owner.key().as_ref()],
         bump
     )]
-    pub owner_state: Account<'info, PlayerState>,
+    pub owner_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -1465,14 +1463,14 @@ pub struct BuildHouseV2<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -1620,14 +1618,14 @@ pub struct BuildHotelV2<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -1729,14 +1727,14 @@ pub struct MortgagePropertyV2<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,

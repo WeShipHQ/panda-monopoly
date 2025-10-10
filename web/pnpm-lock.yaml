@@ -4183,10 +4183,6 @@ packages:
   motion-utils@12.23.6:
     resolution: {integrity: sha512-eAWoPgr4eFEOFfg2WjIsMoqJTW6Z8MTUCgn/GZ3VRpClWBdnbjryiA3ZSNLyxCTmCQx4RmYX6jX1iWHbenUPNQ==}
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 398e77d (balance animation)
   motion@12.23.22:
     resolution: {integrity: sha512-iSq6X9vLHbeYwmHvhK//+U74ROaPnZmBuy60XZzqNl0QtZkWfoZyMDHYnpKuWFv0sNMqHgED8aCXk94LCoQPGg==}
     peerDependencies:
@@ -4201,10 +4197,6 @@ packages:
       react-dom:
         optional: true
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 398e77d (balance animation)
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
@@ -11085,10 +11077,6 @@ snapshots:
 
   motion-utils@12.23.6: {}
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 398e77d (balance animation)
   motion@12.23.22(@emotion/is-prop-valid@1.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
       framer-motion: 12.23.22(@emotion/is-prop-valid@1.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -11098,10 +11086,6 @@ snapshots:
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 398e77d (balance animation)
   ms@2.1.3: {}
 
   multiformats@9.9.0: {}

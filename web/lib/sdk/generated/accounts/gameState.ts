@@ -49,10 +49,14 @@ import {
 import {
   getGameStatusDecoder,
   getGameStatusEncoder,
+  getPropertyInfoDecoder,
+  getPropertyInfoEncoder,
   getTradeInfoDecoder,
   getTradeInfoEncoder,
   type GameStatus,
   type GameStatusArgs,
+  type PropertyInfo,
+  type PropertyInfoArgs,
   type TradeInfo,
   type TradeInfoArgs,
 } from '../types';
@@ -90,6 +94,7 @@ export type GameState = {
   totalPrizePool: bigint;
   activeTrades: Array<TradeInfo>;
   nextTradeId: number;
+  properties: Array<PropertyInfo>;
 };
 
 export type GameStateArgs = {
@@ -116,6 +121,7 @@ export type GameStateArgs = {
   totalPrizePool: number | bigint;
   activeTrades: Array<TradeInfoArgs>;
   nextTradeId: number;
+  properties: Array<PropertyInfoArgs>;
 };
 
 export function getGameStateEncoder(): Encoder<GameStateArgs> {
@@ -145,6 +151,7 @@ export function getGameStateEncoder(): Encoder<GameStateArgs> {
       ['totalPrizePool', getU64Encoder()],
       ['activeTrades', getArrayEncoder(getTradeInfoEncoder())],
       ['nextTradeId', getU8Encoder()],
+      ['properties', getArrayEncoder(getPropertyInfoEncoder(), { size: 40 })],
     ]),
     (value) => ({ ...value, discriminator: GAME_STATE_DISCRIMINATOR })
   );
@@ -176,6 +183,7 @@ export function getGameStateDecoder(): Decoder<GameState> {
     ['totalPrizePool', getU64Decoder()],
     ['activeTrades', getArrayDecoder(getTradeInfoDecoder())],
     ['nextTradeId', getU8Decoder()],
+    ['properties', getArrayDecoder(getPropertyInfoDecoder(), { size: 40 })],
   ]);
 }
 

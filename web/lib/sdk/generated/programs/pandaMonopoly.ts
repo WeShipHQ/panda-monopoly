@@ -16,8 +16,11 @@ import {
 import {
   type ParsedAcceptTradeInstruction,
   type ParsedBuildHotelInstruction,
+  type ParsedBuildHotelV2Instruction,
   type ParsedBuildHouseInstruction,
+  type ParsedBuildHouseV2Instruction,
   type ParsedBuyPropertyInstruction,
+  type ParsedBuyPropertyV2Instruction,
   type ParsedCallbackDrawChanceCardInstruction,
   type ParsedCallbackDrawCommunityChestCardInstruction,
   type ParsedCallbackRollDiceInstruction,
@@ -28,6 +31,7 @@ import {
   type ParsedCreateTradeInstruction,
   type ParsedDeclareBankruptcyInstruction,
   type ParsedDeclinePropertyInstruction,
+  type ParsedDeclinePropertyV2Instruction,
   type ParsedDrawChanceCardInstruction,
   type ParsedDrawCommunityChestCardInstruction,
   type ParsedEndGameInstruction,
@@ -36,17 +40,21 @@ import {
   type ParsedInitPropertyHandlerInstruction,
   type ParsedJoinGameInstruction,
   type ParsedMortgagePropertyInstruction,
+  type ParsedMortgagePropertyV2Instruction,
   type ParsedPayJailFineInstruction,
   type ParsedPayMevTaxHandlerInstruction,
   type ParsedPayPriorityFeeTaxHandlerInstruction,
   type ParsedPayRentInstruction,
+  type ParsedPayRentV2Instruction,
   type ParsedRejectTradeInstruction,
   type ParsedResetGameHandlerInstruction,
   type ParsedRollDiceInstruction,
   type ParsedSellBuildingInstruction,
+  type ParsedSellBuildingV2Instruction,
   type ParsedStartGameInstruction,
   type ParsedUndelegateGameHandlerInstruction,
   type ParsedUnmortgagePropertyInstruction,
+  type ParsedUnmortgagePropertyV2Instruction,
   type ParsedUpdatePlatformConfigInstruction,
   type ParsedUseGetOutOfJailCardInstruction,
 } from '../instructions';
@@ -117,8 +125,11 @@ export function identifyPandaMonopolyAccount(
 export enum PandaMonopolyInstruction {
   AcceptTrade,
   BuildHotel,
+  BuildHotelV2,
   BuildHouse,
+  BuildHouseV2,
   BuyProperty,
+  BuyPropertyV2,
   CallbackDrawChanceCard,
   CallbackDrawCommunityChestCard,
   CallbackRollDice,
@@ -129,6 +140,7 @@ export enum PandaMonopolyInstruction {
   CreateTrade,
   DeclareBankruptcy,
   DeclineProperty,
+  DeclinePropertyV2,
   DrawChanceCard,
   DrawCommunityChestCard,
   EndGame,
@@ -137,17 +149,21 @@ export enum PandaMonopolyInstruction {
   InitializeGame,
   JoinGame,
   MortgageProperty,
+  MortgagePropertyV2,
   PayJailFine,
   PayMevTaxHandler,
   PayPriorityFeeTaxHandler,
   PayRent,
+  PayRentV2,
   RejectTrade,
   ResetGameHandler,
   RollDice,
   SellBuilding,
+  SellBuildingV2,
   StartGame,
   UndelegateGameHandler,
   UnmortgageProperty,
+  UnmortgagePropertyV2,
   UpdatePlatformConfig,
   UseGetOutOfJailCard,
 }
@@ -182,6 +198,17 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([70, 86, 39, 139, 169, 142, 237, 96])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.BuildHotelV2;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([33, 228, 252, 83, 54, 3, 25, 48])
       ),
       0
@@ -193,12 +220,34 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([129, 101, 111, 168, 249, 48, 111, 126])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.BuildHouseV2;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([128, 136, 62, 184, 252, 187, 128, 130])
       ),
       0
     )
   ) {
     return PandaMonopolyInstruction.BuyProperty;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([158, 42, 103, 199, 142, 65, 25, 181])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.BuyPropertyV2;
   }
   if (
     containsBytes(
@@ -314,6 +363,17 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([19, 110, 205, 24, 102, 198, 184, 133])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.DeclinePropertyV2;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([107, 94, 137, 232, 193, 242, 83, 212])
       ),
       0
@@ -402,6 +462,17 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([137, 149, 114, 104, 165, 44, 220, 2])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.MortgagePropertyV2;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([93, 72, 206, 3, 8, 70, 76, 112])
       ),
       0
@@ -441,6 +512,17 @@ export function identifyPandaMonopolyInstruction(
     )
   ) {
     return PandaMonopolyInstruction.PayRent;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([246, 75, 229, 52, 137, 161, 64, 64])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.PayRentV2;
   }
   if (
     containsBytes(
@@ -490,6 +572,17 @@ export function identifyPandaMonopolyInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([153, 60, 217, 193, 99, 139, 139, 11])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.SellBuildingV2;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([249, 47, 252, 172, 184, 162, 245, 14])
       ),
       0
@@ -518,6 +611,17 @@ export function identifyPandaMonopolyInstruction(
     )
   ) {
     return PandaMonopolyInstruction.UnmortgageProperty;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([215, 78, 195, 212, 104, 160, 85, 165])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.UnmortgagePropertyV2;
   }
   if (
     containsBytes(
@@ -556,11 +660,20 @@ export type ParsedPandaMonopolyInstruction<
       instructionType: PandaMonopolyInstruction.BuildHotel;
     } & ParsedBuildHotelInstruction<TProgram>)
   | ({
+      instructionType: PandaMonopolyInstruction.BuildHotelV2;
+    } & ParsedBuildHotelV2Instruction<TProgram>)
+  | ({
       instructionType: PandaMonopolyInstruction.BuildHouse;
     } & ParsedBuildHouseInstruction<TProgram>)
   | ({
+      instructionType: PandaMonopolyInstruction.BuildHouseV2;
+    } & ParsedBuildHouseV2Instruction<TProgram>)
+  | ({
       instructionType: PandaMonopolyInstruction.BuyProperty;
     } & ParsedBuyPropertyInstruction<TProgram>)
+  | ({
+      instructionType: PandaMonopolyInstruction.BuyPropertyV2;
+    } & ParsedBuyPropertyV2Instruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.CallbackDrawChanceCard;
     } & ParsedCallbackDrawChanceCardInstruction<TProgram>)
@@ -592,6 +705,9 @@ export type ParsedPandaMonopolyInstruction<
       instructionType: PandaMonopolyInstruction.DeclineProperty;
     } & ParsedDeclinePropertyInstruction<TProgram>)
   | ({
+      instructionType: PandaMonopolyInstruction.DeclinePropertyV2;
+    } & ParsedDeclinePropertyV2Instruction<TProgram>)
+  | ({
       instructionType: PandaMonopolyInstruction.DrawChanceCard;
     } & ParsedDrawChanceCardInstruction<TProgram>)
   | ({
@@ -616,6 +732,9 @@ export type ParsedPandaMonopolyInstruction<
       instructionType: PandaMonopolyInstruction.MortgageProperty;
     } & ParsedMortgagePropertyInstruction<TProgram>)
   | ({
+      instructionType: PandaMonopolyInstruction.MortgagePropertyV2;
+    } & ParsedMortgagePropertyV2Instruction<TProgram>)
+  | ({
       instructionType: PandaMonopolyInstruction.PayJailFine;
     } & ParsedPayJailFineInstruction<TProgram>)
   | ({
@@ -627,6 +746,9 @@ export type ParsedPandaMonopolyInstruction<
   | ({
       instructionType: PandaMonopolyInstruction.PayRent;
     } & ParsedPayRentInstruction<TProgram>)
+  | ({
+      instructionType: PandaMonopolyInstruction.PayRentV2;
+    } & ParsedPayRentV2Instruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.RejectTrade;
     } & ParsedRejectTradeInstruction<TProgram>)
@@ -640,6 +762,9 @@ export type ParsedPandaMonopolyInstruction<
       instructionType: PandaMonopolyInstruction.SellBuilding;
     } & ParsedSellBuildingInstruction<TProgram>)
   | ({
+      instructionType: PandaMonopolyInstruction.SellBuildingV2;
+    } & ParsedSellBuildingV2Instruction<TProgram>)
+  | ({
       instructionType: PandaMonopolyInstruction.StartGame;
     } & ParsedStartGameInstruction<TProgram>)
   | ({
@@ -648,6 +773,9 @@ export type ParsedPandaMonopolyInstruction<
   | ({
       instructionType: PandaMonopolyInstruction.UnmortgageProperty;
     } & ParsedUnmortgagePropertyInstruction<TProgram>)
+  | ({
+      instructionType: PandaMonopolyInstruction.UnmortgagePropertyV2;
+    } & ParsedUnmortgagePropertyV2Instruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.UpdatePlatformConfig;
     } & ParsedUpdatePlatformConfigInstruction<TProgram>)

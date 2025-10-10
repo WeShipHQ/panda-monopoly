@@ -13,6 +13,7 @@ export * from './communityChestCardDrawn';
 export * from './gameEnded';
 export * from './gameStatus';
 export * from './playerPassedGo';
+export * from './propertyInfo';
 export * from './propertyType';
 export * from './tradeAccepted';
 export * from './tradeCancelled';

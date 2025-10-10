@@ -171,7 +171,7 @@ export type InitializeGameAsyncInput<
   playerState?: Address<TAccountPlayerState>;
   creator: TransactionSigner<TAccountCreator>;
   config: Address<TAccountConfig>;
-  gameAuthority: Address<TAccountGameAuthority>;
+  gameAuthority?: Address<TAccountGameAuthority>;
   tokenMint: Address<TAccountTokenMint>;
   creatorTokenAccount?: Address<TAccountCreatorTokenAccount>;
   tokenVault?: Address<TAccountTokenVault>;
@@ -273,6 +273,18 @@ export async function getInitializeGameInstructionAsync<
       ],
     });
   }
+  if (!accounts.gameAuthority.value) {
+    accounts.gameAuthority.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([
+            103, 97, 109, 101, 95, 97, 117, 116, 104, 111, 114, 105, 116, 121,
+          ])
+        ),
+      ],
+    });
+  }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
@@ -290,12 +302,13 @@ export async function getInitializeGameInstructionAsync<
   }
   if (!accounts.tokenVault.value) {
     accounts.tokenVault.value = await getProgramDerivedAddress({
-      programAddress:
-        'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>,
+      programAddress,
       seeds: [
-        getAddressEncoder().encode(expectAddress(accounts.gameAuthority.value)),
-        getAddressEncoder().encode(expectAddress(accounts.tokenProgram.value)),
+        getBytesEncoder().encode(
+          new Uint8Array([116, 111, 107, 101, 110, 95, 118, 97, 117, 108, 116])
+        ),
         getAddressEncoder().encode(expectAddress(accounts.tokenMint.value)),
+        getAddressEncoder().encode(expectAddress(accounts.game.value)),
       ],
     });
   }

@@ -23,7 +23,7 @@ pub struct InitializeGame<'info> {
             ],
         bump
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         init,
@@ -32,7 +32,7 @@ pub struct InitializeGame<'info> {
         seeds = [b"player", game.key().as_ref(), creator.key().as_ref()],
         bump,
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub creator: Signer<'info>,
@@ -42,7 +42,7 @@ pub struct InitializeGame<'info> {
         seeds = [b"platform", config.id.as_ref()],
         bump = config.bump,
     )]
-    pub config: Account<'info, PlatformConfig>,
+    pub config: Box<Account<'info, PlatformConfig>>,
 
     // pub game_authority: Option<UncheckedAccount<'info>>,
     /// CHECK: game authority PDA
@@ -58,7 +58,7 @@ pub struct InitializeGame<'info> {
         mint::token_program = token_program,
     )]
     // pub token_mint: Option<InterfaceAccount<'info, Mint>>,
-    pub token_mint: InterfaceAccount<'info, Mint>,
+    pub token_mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
         mut,
@@ -67,7 +67,7 @@ pub struct InitializeGame<'info> {
         associated_token::token_program = token_program
     )]
     // pub creator_token_account: Option<InterfaceAccount<'info, TokenAccount>>,
-    pub creator_token_account: InterfaceAccount<'info, TokenAccount>,
+    pub creator_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         // init,
@@ -88,7 +88,7 @@ pub struct InitializeGame<'info> {
         bump
     )]
     // pub token_vault: Option<InterfaceAccount<'info, TokenAccount>>,
-    pub token_vault: InterfaceAccount<'info, TokenAccount>,
+    pub token_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     // pub token_program: Option<Interface<'info, TokenInterface>>,
     pub token_program: Interface<'info, TokenInterface>,
@@ -234,7 +234,7 @@ pub struct JoinGame<'info> {
         constraint = game.game_status == GameStatus::WaitingForPlayers @ GameError::GameNotInProgress,
         constraint = game.current_players < MAX_PLAYERS @ GameError::MaxPlayersReached
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         init,
@@ -243,7 +243,7 @@ pub struct JoinGame<'info> {
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -262,7 +262,7 @@ pub struct JoinGame<'info> {
         mint::token_program = token_program,
     )]
     // pub token_mint: Option<InterfaceAccount<'info, Mint>>,
-    pub token_mint: InterfaceAccount<'info, Mint>,
+    pub token_mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
         mut,
@@ -271,7 +271,7 @@ pub struct JoinGame<'info> {
         associated_token::token_program = token_program
     )]
     // pub player_token_account: Option<InterfaceAccount<'info, TokenAccount>>,
-    pub player_token_account: InterfaceAccount<'info, TokenAccount>,
+    pub player_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         mut,
@@ -280,7 +280,7 @@ pub struct JoinGame<'info> {
         token::token_program = token_program,
     )]
     // pub token_vault: Option<InterfaceAccount<'info, TokenAccount>>,
-    pub token_vault: InterfaceAccount<'info, TokenAccount>,
+    pub token_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     // pub token_program: Option<Interface<'info, TokenInterface>>,
     pub token_program: Interface<'info, TokenInterface>,
@@ -440,7 +440,7 @@ pub struct StartGame<'info> {
         constraint = authority.key() == game.creator @ GameError::Unauthorized,
         del
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -549,7 +549,7 @@ pub struct UndelegateGame<'info> {
         constraint = game.current_players >= MIN_PLAYERS @ GameError::MinPlayersNotMet,
         constraint = authority.key() == game.creator @ GameError::Unauthorized,
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -616,7 +616,7 @@ pub struct CloseGame<'info> {
         constraint = authority.key() == game.creator @ GameError::Unauthorized,
         close = authority
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -669,7 +669,7 @@ pub struct ResetGame<'info> {
         constraint = game.current_players >= MIN_PLAYERS @ GameError::MinPlayersNotMet,
         constraint = authority.key() == game.creator @ GameError::Unauthorized,
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -694,6 +694,14 @@ pub fn reset_game_handler<'c: 'info, 'info>(
         game.active_trades = vec![]; // First player starts
         game.next_trade_id = 0; // First player starts
         game.turn_started_at = clock.unix_timestamp;
+
+        // Reset all properties to unowned state
+        for property in game.properties.iter_mut() {
+            property.owner = None;
+            property.houses = 0;
+            property.has_hotel = false;
+            property.is_mortgaged = false;
+        }
     }
 
     {
@@ -711,15 +719,6 @@ pub fn reset_game_handler<'c: 'info, 'info>(
             );
 
             let mut player_account = Account::<PlayerState>::try_from(data_account_info)?;
-
-            let owned_properties = player_account.properties_owned.clone();
-
-            for _i in 0..owned_properties.len() {
-                let data_account_info = next_account_info(remaining_accounts_iter)?;
-                require_eq!(data_account_info.is_writable, true);
-                let property_account = Account::<PropertyState>::try_from(data_account_info)?;
-                property_account.close(ctx.accounts.authority.to_account_info())?;
-            }
 
             player_account.cash_balance = STARTING_MONEY as u64;
             player_account.position = 0;

@@ -187,6 +187,7 @@ export interface PayPriorityFeeTaxParams {
   gameAddress: Address;
 }
 
+// Enhanced GameEvent type to include all possible events
 export type GameEvent =
   | {
       type: "ChanceCardDrawn";
@@ -195,6 +196,77 @@ export type GameEvent =
   | {
       type: "CommunityChestCardDrawn";
       data: CommunityChestCardDrawn;
+    }
+  | {
+      type: "PlayerPassedGo";
+      data: {
+        player: Address;
+        gameId: bigint;
+        salaryCollected: bigint;
+        newPosition: number;
+        timestamp: bigint;
+      };
+    }
+  | {
+      type: "GameEnded";
+      data: {
+        gameId: bigint;
+        winner: Address | null;
+        endedAt: bigint;
+      };
+    }
+  | {
+      type: "TradeCreated";
+      data: {
+        game: Address;
+        tradeId: number;
+        proposer: Address;
+        receiver: Address;
+        tradeType: TradeType;
+        proposerMoney: bigint;
+        receiverMoney: bigint;
+        proposerProperty: number | null;
+        receiverProperty: number | null;
+        expiresAt: bigint;
+      };
+    }
+  | {
+      type: "TradeAccepted";
+      data: {
+        game: Address;
+        tradeId: number;
+        proposer: Address;
+        receiver: Address;
+        accepter: Address;
+      };
+    }
+  | {
+      type: "TradeRejected";
+      data: {
+        game: Address;
+        tradeId: number;
+        proposer: Address;
+        receiver: Address;
+        rejecter: Address;
+      };
+    }
+  | {
+      type: "TradeCancelled";
+      data: {
+        game: Address;
+        tradeId: number;
+        proposer: Address;
+        receiver: Address;
+        canceller: Address;
+      };
+    }
+  | {
+      type: "TradesCleanedUp";
+      data: {
+        game: Address;
+        tradesRemoved: number;
+        remainingTrades: number;
+      };
     };
 
 // trading

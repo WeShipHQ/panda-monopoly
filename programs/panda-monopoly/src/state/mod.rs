@@ -3,9 +3,7 @@ use anchor_lang::prelude::*;
 mod events;
 pub use events::*;
 
-use crate::{
-    error::GameError, get_color_group_properties, get_color_group_properties_enum, STARTING_MONEY,
-};
+use crate::{error::GameError, get_color_group_properties_enum, STARTING_MONEY};
 
 #[account]
 #[derive(InitSpace, Debug)]

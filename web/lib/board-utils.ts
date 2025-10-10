@@ -238,14 +238,15 @@ export const calculateRentForProperty = (
   diceResult: [number, number],
   allProperties: PropertyAccount[]
 ): number => {
+  // FIXME
   const propertyTypeMap = {
     [PropertyType.Street]: "Street",
     [PropertyType.Railroad]: "Railroad",
     [PropertyType.Utility]: "Utility",
+    // @ts-expect-error
     [PropertyType.Property]: "Street", // Fallback to Street for Property type
   };
 
-  // @ts-expect-error
   const propertyTypeString = propertyTypeMap[property.propertyType] || "Street";
 
   switch (propertyTypeString) {

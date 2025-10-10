@@ -46,6 +46,13 @@ import {
   getPayJailFineInstruction,
   getJoinGameInstruction,
   getRollDiceInstruction,
+  getBuyPropertyV2Instruction,
+  getDeclinePropertyV2Instruction,
+  getMortgagePropertyV2Instruction,
+  getUnmortgagePropertyV2Instruction,
+  getPayRentV2Instruction,
+  getBuildHotelV2Instruction,
+  getSellBuildingV2Instruction,
 } from "./generated";
 import {
   CreateGameIxs,
@@ -572,6 +579,20 @@ class MonopolyGameSDK {
     });
   }
 
+  async buyPropertyIxV2(params: BuyPropertyParams): Promise<Instruction> {
+    const [playerStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.player.address
+    );
+
+    return getBuyPropertyV2Instruction({
+      game: params.gameAddress,
+      player: params.player,
+      playerState: playerStateAddress,
+      position: params.position,
+    });
+  }
+
   async declinePropertyIx(params: DeclinePropertyParams): Promise<Instruction> {
     const [playerStateAddress] = await getPlayerStatePDA(
       params.gameAddress,
@@ -579,6 +600,22 @@ class MonopolyGameSDK {
     );
 
     return await getDeclinePropertyInstruction({
+      game: params.gameAddress,
+      playerState: playerStateAddress,
+      player: params.player,
+      position: params.position,
+    });
+  }
+
+  async declinePropertyIxV2(
+    params: DeclinePropertyParams
+  ): Promise<Instruction> {
+    const [playerStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.player.address
+    );
+
+    return await getDeclinePropertyV2Instruction({
       game: params.gameAddress,
       playerState: playerStateAddress,
       player: params.player,
@@ -605,6 +642,22 @@ class MonopolyGameSDK {
     });
   }
 
+  async mortgagePropertyIxV2(
+    params: MortgagePropertyParams
+  ): Promise<Instruction> {
+    const [playerStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.player.address
+    );
+
+    return getMortgagePropertyV2Instruction({
+      game: params.gameAddress,
+      player: params.player,
+      playerState: playerStateAddress,
+      position: params.position,
+    });
+  }
+
   /**
    * Unmortgage a property by paying the mortgage plus interest
    */
@@ -620,6 +673,22 @@ class MonopolyGameSDK {
       game: params.gameAddress,
       player: params.player,
       propertyState: propertyStateAddress,
+      position: params.position,
+    });
+  }
+
+  async unmortgagePropertyIxV2(
+    params: UnmortgagePropertyParams
+  ): Promise<Instruction> {
+    const [playerStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.player.address
+    );
+
+    return getUnmortgagePropertyV2Instruction({
+      game: params.gameAddress,
+      player: params.player,
+      playerState: playerStateAddress,
       position: params.position,
     });
   }
@@ -654,6 +723,32 @@ class MonopolyGameSDK {
     });
   }
 
+  async payRentIxV2(params: PayRentParams): Promise<Instruction> {
+    const [payerStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.player.address
+    );
+
+    const [owerStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.propertyOwner
+    );
+
+    const [propertyStateAddress] = await getPropertyStatePDA(
+      params.gameAddress,
+      params.position
+    );
+
+    return await getPayRentV2Instruction({
+      game: params.gameAddress,
+      payerState: payerStateAddress,
+      payer: params.player,
+      ownerState: owerStateAddress,
+      propertyOwner: params.propertyOwner,
+      position: params.position,
+    });
+  }
+
   // Building-related methods
 
   /**
@@ -673,19 +768,16 @@ class MonopolyGameSDK {
     });
   }
 
-  /**
-   * Build a hotel on a property (requires 4 houses)
-   */
-  async buildHotelIx(params: BuildHotelParams): Promise<Instruction> {
-    const [propertyStateAddress] = await getPropertyStatePDA(
+  async buildHouseIxV2(params: BuildHouseParams): Promise<Instruction> {
+    const [playerStateAddress] = await getPlayerStatePDA(
       params.gameAddress,
-      params.position
+      params.player.address
     );
 
-    return await getBuildHotelInstructionAsync({
+    return getBuildHotelV2Instruction({
       game: params.gameAddress,
       player: params.player,
-      propertyState: propertyStateAddress,
+      playerState: playerStateAddress,
       position: params.position,
     });
   }
@@ -708,27 +800,20 @@ class MonopolyGameSDK {
     });
   }
 
-  /**
-   * Collect money from Free Parking
-   */
-  // async collectFreeParkingIx(
-  //   params: CollectFreeParkingParams
-  // ): Promise<Instruction> {
-  //   return await getCollectFreeParkingInstructionAsync({
-  //     game: params.gameAddress,
-  //     player: params.player,
-  //   });
-  // }
+  async sellBuildingIxV2(params: SellBuildingParams): Promise<Instruction> {
+    const [playerStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.player.address
+    );
 
-  /**
-   * Attend festival (special space)
-   */
-  // async attendFestivalIx(params: AttendFestivalParams): Promise<Instruction> {
-  //   return await getAttendFestivalInstructionAsync({
-  //     game: params.gameAddress,
-  //     player: params.player,
-  //   });
-  // }
+    return getSellBuildingV2Instruction({
+      game: params.gameAddress,
+      player: params.player,
+      playerState: playerStateAddress,
+      position: params.position,
+      buildingType: params.buildingType,
+    });
+  }
 
   /**
    * Draw a Chance card
@@ -752,27 +837,6 @@ class MonopolyGameSDK {
       cardIndex: params.index ? some(params.index) : none(),
     });
   }
-
-  // async drawChanceCardVrfIx(
-  //   params: DrawChanceCardVrfParams
-  // ): Promise<Instruction> {
-  //   const [playerStateAddress] = await getPlayerStatePDA(
-  //     params.gameAddress,
-  //     params.player.address
-  //   );
-
-  //   const [programIdentityPda] = await getProgramIdentityPDA();
-
-  //   return getDrawChanceCardVrfHandlerInstruction({
-  //     game: params.gameAddress,
-  //     player: params.player,
-  //     playerState: playerStateAddress,
-  //     oracleQueue: DEFAULT_EPHEMERAL_QUEUE,
-  //     programIdentity: programIdentityPda,
-  //     clientSeed: Math.floor(Math.random() * 254) + 1,
-  //     cardIndex: params.index ? some(params.index) : none(),
-  //   });
-  // }
 
   /**
    * Draw a Community Chest card
@@ -898,29 +962,29 @@ class MonopolyGameSDK {
       params.player.address
     );
 
-    const ix = getDeclareBankruptcyInstruction({
+    return getDeclareBankruptcyInstruction({
       game: params.gameAddress,
       player: params.player,
       playerState: playerStateAddress,
     });
 
-    const addresses = await Promise.all(
-      params.propertiesOwned.map(async (position) =>
-        getPropertyStatePDA(params.gameAddress, position)
-      )
-    );
+    // const addresses = await Promise.all(
+    //   params.propertiesOwned.map(async (position) =>
+    //     getPropertyStatePDA(params.gameAddress, position)
+    //   )
+    // );
 
-    const remainingAccounts = addresses.map(
-      ([address, _]) =>
-        ({
-          address,
-          role: AccountRole.WRITABLE,
-        } as WritableAccount)
-    );
+    // const remainingAccounts = addresses.map(
+    //   ([address, _]) =>
+    //     ({
+    //       address,
+    //       role: AccountRole.WRITABLE,
+    //     } as WritableAccount)
+    // );
 
-    ix.accounts.push(...remainingAccounts);
+    // ix.accounts.push(...remainingAccounts);
 
-    return ix;
+    // return ix;
   }
 
   // Account fetching methods

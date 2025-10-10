@@ -154,10 +154,10 @@ export type JoinGameAsyncInput<
   game: Address<TAccountGame>;
   playerState?: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
-  gameAuthority: Address<TAccountGameAuthority>;
+  gameAuthority?: Address<TAccountGameAuthority>;
   tokenMint: Address<TAccountTokenMint>;
   playerTokenAccount?: Address<TAccountPlayerTokenAccount>;
-  tokenVault?: Address<TAccountTokenVault>;
+  tokenVault: Address<TAccountTokenVault>;
   tokenProgram?: Address<TAccountTokenProgram>;
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
@@ -248,6 +248,18 @@ export async function getJoinGameInstructionAsync<
       ],
     });
   }
+  if (!accounts.gameAuthority.value) {
+    accounts.gameAuthority.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([
+            103, 97, 109, 101, 95, 97, 117, 116, 104, 111, 114, 105, 116, 121,
+          ])
+        ),
+      ],
+    });
+  }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
@@ -258,17 +270,6 @@ export async function getJoinGameInstructionAsync<
         'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>,
       seeds: [
         getAddressEncoder().encode(expectAddress(accounts.player.value)),
-        getAddressEncoder().encode(expectAddress(accounts.tokenProgram.value)),
-        getAddressEncoder().encode(expectAddress(accounts.tokenMint.value)),
-      ],
-    });
-  }
-  if (!accounts.tokenVault.value) {
-    accounts.tokenVault.value = await getProgramDerivedAddress({
-      programAddress:
-        'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>,
-      seeds: [
-        getAddressEncoder().encode(expectAddress(accounts.gameAuthority.value)),
         getAddressEncoder().encode(expectAddress(accounts.tokenProgram.value)),
         getAddressEncoder().encode(expectAddress(accounts.tokenMint.value)),
       ],

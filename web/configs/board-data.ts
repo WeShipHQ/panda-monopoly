@@ -768,7 +768,7 @@ export const surpriseCards = [
     id: 2,
     title: "Rug Pull Alert! 💸",
     description:
-      "Your latest trade gets rugged. Pay 50 SOL to the bank for exit liquidity.",
+      "Your latest trade gets rugged. Pay $50 to the bank for exit liquidity.",
     action: "pay-money",
     value: 50,
   },
@@ -804,7 +804,7 @@ export const treasureCards = [
     id: 1,
     title: "Retroactive Airdrop! 🪂",
     description:
-      "You farmed early. Collect 50 SOL from every player – points paid off.",
+      "You farmed early. Collect $50 from every player – points paid off.",
     action: "collect-from-players",
     value: 50,
   },
@@ -812,7 +812,7 @@ export const treasureCards = [
     id: 2,
     title: "Staking Rewards 💰",
     description:
-      "Your validator performs. Collect 100 SOL from the bank – compounded yields.",
+      "Your validator performs. Collect $100 from the bank – compounded yields.",
     action: "collect-money",
     value: 100,
   },
@@ -836,7 +836,7 @@ export const treasureCards = [
     id: 5,
     title: "Wallet Drain Fee 🔒",
     description:
-      "Phishing attempt succeeds. Pay 50 SOL to the bank – always check your seeds!",
+      "Phishing attempt succeeds. Pay $50 to the bank – always check your seeds!",
     action: "pay-money",
     value: 50,
   },

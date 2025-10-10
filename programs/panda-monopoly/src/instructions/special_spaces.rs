@@ -14,14 +14,14 @@ pub struct GoToJail<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -83,14 +83,14 @@ pub struct DrawChanceCard<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -233,14 +233,14 @@ pub struct CallbackDrawChanceCardCtx<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", player_state.game.as_ref(), player_state.wallet.as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     pub clock: Sysvar<'info, Clock>,
 }
@@ -308,14 +308,14 @@ pub struct DrawCommunityChestCard<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -462,14 +462,14 @@ pub struct CallbackDrawCommunityChestCardCtx<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", player_state.game.as_ref(), player_state.wallet.as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     pub clock: Sysvar<'info, Clock>,
 }
@@ -638,15 +638,19 @@ fn execute_chance_card_effect(
             // Calculate repair costs: $25 per house, $100 per hotel
             let mut total_cost = 0u64;
 
-            // Count houses and hotels owned by player
+            // Count houses and hotels owned by player using GameState properties
             for &property_pos in &player_state.properties_owned {
-                // FIXME
                 if let Ok(property_data) = get_property_data(property_pos) {
                     if property_data.property_type == PropertyType::Street {
-                        // Street property
-                        // This would need access to PropertyState to count actual houses/hotels
-                        // For now, we'll use a simplified calculation
-                        total_cost += 25; // Assume 1 house per property for simplification
+                        // Get actual property info from GameState
+                        let property = game.get_property(property_pos)?;
+
+                        // Calculate cost based on actual buildings
+                        if property.has_hotel {
+                            total_cost += 100; // $100 per hotel
+                        } else {
+                            total_cost += property.houses as u64 * 25; // $25 per house
+                        }
                     }
                 }
             }
@@ -716,9 +720,26 @@ fn execute_community_chest_card_effect(
             player_state.position = new_position;
 
             // Set flags for handling the new space
-            if is_property_purchasable(new_position) {
-                player_state.needs_property_action = true;
-                player_state.pending_property_position = Some(new_position);
+            // if is_property_purchasable(new_position) {
+            //     player_state.needs_property_action = true;
+            //     player_state.pending_property_position = Some(new_position);
+            // } else {
+            //     player_state.needs_special_space_action = true;
+            //     player_state.pending_special_space_position = Some(new_position);
+            // }
+            // FIXME
+            if let Ok(property_data) = get_property_data(new_position) {
+                if property_data.property_type == PropertyType::Street
+                    || property_data.property_type == PropertyType::Railroad
+                    || property_data.property_type == PropertyType::Utility
+                {
+                    // Check if property is owned in GameState
+                    let property = game.get_property(new_position)?;
+                    if property.owner.is_none() {
+                        player_state.needs_property_action = true;
+                        player_state.pending_property_position = Some(new_position);
+                    }
+                }
             } else {
                 player_state.needs_special_space_action = true;
                 player_state.pending_special_space_position = Some(new_position);
@@ -736,18 +757,45 @@ fn execute_community_chest_card_effect(
             player_state.get_out_of_jail_cards += 1;
         }
         CardEffectType::PayPerProperty => {
+            // // Calculate street repair costs: $40 per house, $115 per hotel
+            // let mut total_cost = 0u64;
+
+            // // Count houses and hotels owned by player
+            // for &property_pos in &player_state.properties_owned {
+            //     // FIXME
+            //     if let Ok(property_data) = get_property_data(property_pos) {
+            //         if property_data.property_type == PropertyType::Street {
+            //             // Street property
+            //             // This would need access to PropertyState to count actual houses/hotels
+            //             // For now, we'll use a simplified calculation
+            //             total_cost += 40; // Assume 1 house per property for simplification
+            //         }
+            //     }
+            // }
+
+            // if player_state.cash_balance >= total_cost {
+            //     player_state.cash_balance -= total_cost;
+            // } else {
+            //     player_state.cash_balance = 0;
+            //     player_state.needs_bankruptcy_check = true;
+            // }
+
             // Calculate street repair costs: $40 per house, $115 per hotel
             let mut total_cost = 0u64;
 
-            // Count houses and hotels owned by player
+            // Count houses and hotels owned by player using GameState properties
             for &property_pos in &player_state.properties_owned {
-                // FIXME
                 if let Ok(property_data) = get_property_data(property_pos) {
                     if property_data.property_type == PropertyType::Street {
-                        // Street property
-                        // This would need access to PropertyState to count actual houses/hotels
-                        // For now, we'll use a simplified calculation
-                        total_cost += 40; // Assume 1 house per property for simplification
+                        // Get actual property info from GameState
+                        let property = game.get_property(property_pos)?;
+
+                        // Calculate cost based on actual buildings
+                        if property.has_hotel {
+                            total_cost += 115; // $115 per hotel
+                        } else {
+                            total_cost += property.houses as u64 * 40; // $40 per house
+                        }
                     }
                 }
             }
@@ -792,14 +840,14 @@ pub struct PayTax<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -914,4 +962,3 @@ pub fn pay_priority_fee_tax_handler(ctx: Context<PayTax>) -> Result<()> {
 
     Ok(())
 }
-
