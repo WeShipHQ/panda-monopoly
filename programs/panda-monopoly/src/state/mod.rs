@@ -3,7 +3,9 @@ use anchor_lang::prelude::*;
 mod events;
 pub use events::*;
 
-use crate::STARTING_MONEY;
+use crate::{
+    error::GameError, get_color_group_properties, get_color_group_properties_enum, STARTING_MONEY,
+};
 
 #[account]
 #[derive(InitSpace, Debug)]
@@ -54,9 +56,9 @@ pub enum ColorGroup {
     Special,
 }
 
-#[derive(Debug, InitSpace, AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, InitSpace, AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
 pub enum PropertyType {
-    Property,
+    // Property,
     Street,
     Railroad,
     Utility,
@@ -64,8 +66,8 @@ pub enum PropertyType {
     Chance,
     CommunityChest,
     Tax,
-    Beach,
-    Festival,
+    // Beach,
+    // Festival,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq)]
@@ -95,7 +97,7 @@ pub struct TradeInfo {
 pub struct GameState {
     pub game_id: u64,
     pub config_id: Pubkey,
-    pub creator: Pubkey,   // 32 bytes - game creator
+    pub creator: Pubkey,     // 32 bytes - game creator
     pub bump: u8,            // 1 byte - PDA bump seed
     pub max_players: u8,     // 1 byte - maximum players (2-8)
     pub current_players: u8, // 1 byte - current player count
@@ -122,9 +124,7 @@ pub struct GameState {
     pub active_trades: Vec<TradeInfo>, // Vector of active trades
     pub next_trade_id: u8, // Next trade ID to assign
 
-                           // #[max_len(40)]
-                           // pub active_properties: Vec<PropertyState>, // Vector of active properties
-                           // pub next_property_id: u8, // Next property ID to assign
+    pub properties: [PropertyInfo; 40], // Fixed array: 40 × 36 bytes = 1,440 bytes
 }
 
 impl GameState {
@@ -165,6 +165,106 @@ impl GameState {
         let id = self.next_trade_id;
         self.next_trade_id = self.next_trade_id.wrapping_add(1);
         id
+    }
+
+    // properties
+    pub fn initialize_properties(&mut self) {
+        self.properties = [PropertyInfo::default(); 40];
+    }
+
+    pub fn get_property(&self, position: u8) -> Result<&PropertyInfo> {
+        self.properties
+            .get(position as usize)
+            .ok_or(error!(GameError::InvalidPropertyPosition))
+    }
+
+    pub fn get_property_mut(&mut self, position: u8) -> Result<&mut PropertyInfo> {
+        self.properties
+            .get_mut(position as usize)
+            .ok_or(error!(GameError::InvalidPropertyPosition))
+    }
+
+    pub fn has_monopoly(&self, player: &Pubkey, color_group: ColorGroup) -> bool {
+        let group_positions = get_color_group_properties_enum(color_group);
+
+        group_positions.iter().all(|&pos| {
+            self.properties
+                .get(pos as usize)
+                .map(|p| p.owner.as_ref() == Some(player))
+                .unwrap_or(false)
+        })
+    }
+
+    pub fn get_player_properties(&self, player: &Pubkey) -> Vec<u8> {
+        self.properties
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, prop)| {
+                if prop.owner.as_ref() == Some(player) {
+                    Some(idx as u8)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    pub fn can_build_evenly(
+        &self,
+        player: &Pubkey,
+        color_group: ColorGroup,
+        position: u8,
+        new_house_count: u8,
+    ) -> bool {
+        let group_positions = get_color_group_properties_enum(color_group);
+
+        for &pos in &group_positions {
+            if pos == position {
+                continue; // Skip the property we're building on
+            }
+
+            if let Some(prop) = self.properties.get(pos as usize) {
+                if prop.owner.as_ref() != Some(player) {
+                    return false;
+                }
+
+                // New house count can't be more than 1 higher than other properties
+                if new_house_count > prop.houses + 1 {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
+    pub fn can_sell_evenly(
+        &self,
+        player: &Pubkey,
+        color_group: ColorGroup,
+        position: u8,
+        new_house_count: u8,
+    ) -> bool {
+        let group_positions = get_color_group_properties_enum(color_group);
+
+        for &pos in &group_positions {
+            if pos == position {
+                continue;
+            }
+
+            if let Some(prop) = self.properties.get(pos as usize) {
+                if prop.owner.as_ref() != Some(player) {
+                    return false;
+                }
+
+                // Can't sell if this would make us have less than others
+                if new_house_count < prop.houses.saturating_sub(1) {
+                    return false;
+                }
+            }
+        }
+
+        true
     }
 }
 
@@ -301,4 +401,30 @@ pub struct AuctionState {
     pub ends_at: i64,
     pub is_active: bool,
     pub bump: u8,
+}
+
+// ----- new struct
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, InitSpace, PartialEq, Eq)]
+pub struct PropertyInfo {
+    pub owner: Option<Pubkey>, // 33 bytes - who owns this property
+    pub houses: u8,            // 1 byte - number of houses (0-4)
+    pub has_hotel: bool,       // 1 byte - has hotel built
+    pub is_mortgaged: bool,    // 1 byte - mortgage status
+}
+
+impl Default for PropertyInfo {
+    fn default() -> Self {
+        Self {
+            owner: None,
+            houses: 0,
+            has_hotel: false,
+            is_mortgaged: false,
+        }
+    }
+}
+
+impl PropertyInfo {
+    pub fn initialize_all() -> Vec<PropertyInfo> {
+        vec![PropertyInfo::default(); 40]
+    }
 }

@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
 
+use crate::{error::GameError, ColorGroup, PropertyType};
+
 // Entry fee and vault constants
 pub const GAME_AUTHORITY_SEED: &[u8] = b"game_authority";
 pub const TOKEN_VAULT_SEED: &[u8] = b"token_vault";
@@ -76,8 +78,8 @@ pub struct PropertyData {
     pub rent: [u64; 6], // Base rent, 1 house, 2 houses, 3 houses, 4 houses, hotel
     pub house_cost: u64,
     pub mortgage_value: u64,
-    pub color_group: u8,
-    pub property_type: u8, // 0: Street, 1: Railroad, 2: Utility, 3: Special
+    pub color_group: ColorGroup,
+    pub property_type: PropertyType, // 0: Street, 1: Railroad, 2: Utility, 3: Special
 }
 
 // Board Layout - All 40 spaces
@@ -89,8 +91,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [0; 6],
         house_cost: 0,
         mortgage_value: 0,
-        color_group: 0,
-        property_type: 3, // Special
+        color_group: ColorGroup::Special,
+        property_type: PropertyType::Corner, // Special
     },
     // Position 1 - BONK Avenue (Brown Property)
     PropertyData {
@@ -99,8 +101,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [2, 10, 30, 90, 160, 250],
         house_cost: 50,
         mortgage_value: 30,
-        color_group: 1,   // Brown
-        property_type: 0, // Street
+        color_group: ColorGroup::Brown, // Brown
+        property_type: PropertyType::Street, // Street
     },
     // Position 2 - Airdrop Chest
     PropertyData {
@@ -109,8 +111,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [0; 6],
         house_cost: 0,
         mortgage_value: 0,
-        color_group: 0,
-        property_type: 3, // Special
+        color_group: ColorGroup::Special,
+        property_type: PropertyType::CommunityChest, // Special
     },
     // Position 3 - WIF Lane (Brown Property)
     PropertyData {
@@ -119,8 +121,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [4, 20, 60, 180, 320, 450],
         house_cost: 50,
         mortgage_value: 30,
-        color_group: 1,   // Brown
-        property_type: 0, // Street
+        color_group: ColorGroup::Brown, // Brown
+        property_type: PropertyType::Street, // Street
     },
     // Position 4 - MEV Tax
     PropertyData {
@@ -129,8 +131,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [0; 6],
         house_cost: 0,
         mortgage_value: 0,
-        color_group: 0,
-        property_type: 3, // Special
+        color_group: ColorGroup::Special,
+        property_type: PropertyType::Tax, // Special
     },
     // Position 5 - Wormhole Bridge (Railroad)
     PropertyData {
@@ -139,8 +141,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [25, 50, 100, 200, 0, 0],
         house_cost: 0,
         mortgage_value: 100,
-        color_group: 9,   // Railroad
-        property_type: 1, // Railroad
+        color_group: ColorGroup::Railroad, // Railroad
+        property_type: PropertyType::Railroad, // Railroad
     },
     // Position 6 - JUP Street (Light Blue Property)
     PropertyData {
@@ -149,8 +151,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [6, 30, 90, 270, 400, 550],
         house_cost: 50,
         mortgage_value: 50,
-        color_group: 2,   // Light Blue
-        property_type: 0, // Street
+        color_group: ColorGroup::LightBlue, // Light Blue
+        property_type: PropertyType::Street, // Street
     },
     // Position 7 - Pump.fun Surprise
     PropertyData {
@@ -159,8 +161,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [0; 6],
         house_cost: 0,
         mortgage_value: 0,
-        color_group: 0,
-        property_type: 3, // Special
+        color_group: ColorGroup::Special,
+        property_type: PropertyType::Chance, // Special
     },
     // Position 8 - RAY Boulevard (Light Blue Property)
     PropertyData {
@@ -169,8 +171,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [6, 30, 90, 270, 400, 550],
         house_cost: 50,
         mortgage_value: 50,
-        color_group: 2,   // Light Blue
-        property_type: 0, // Street
+        color_group: ColorGroup::LightBlue, // Light Blue
+        property_type: PropertyType::Street, // Street
     },
     // Position 9 - ORCA Way (Light Blue Property)
     PropertyData {
@@ -179,8 +181,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [8, 40, 100, 300, 450, 600],
         house_cost: 50,
         mortgage_value: 60,
-        color_group: 2,   // Light Blue
-        property_type: 0, // Street
+        color_group: ColorGroup::LightBlue, // Light Blue
+        property_type: PropertyType::Street, // Street
     },
     // Position 10 - Validator Jail
     PropertyData {
@@ -189,8 +191,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [0; 6],
         house_cost: 0,
         mortgage_value: 0,
-        color_group: 0,
-        property_type: 3, // Special
+        color_group: ColorGroup::Special,
+        property_type: PropertyType::Corner, // Special
     },
     // Position 11 - SAGA Place (Pink Property)
     PropertyData {
@@ -199,8 +201,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [10, 50, 150, 450, 625, 750],
         house_cost: 50,
         mortgage_value: 70,
-        color_group: 3,   // Pink
-        property_type: 0, // Street
+        color_group: ColorGroup::Pink, // Pink
+        property_type: PropertyType::Street, // Street
     },
     // Position 12 - Pyth Oracle (Utility)
     PropertyData {
@@ -209,8 +211,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [4, 10, 0, 0, 0, 0],
         house_cost: 0,
         mortgage_value: 75,
-        color_group: 10,  // Utility
-        property_type: 2, // Utility
+        color_group: ColorGroup::Utility, // Utility
+        property_type: PropertyType::Utility, // Utility
     },
     // Position 13 - TENSOR Avenue (Pink Property)
     PropertyData {
@@ -219,8 +221,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [10, 50, 150, 450, 625, 750],
         house_cost: 100,
         mortgage_value: 70,
-        color_group: 3,   // Pink
-        property_type: 0, // Street
+        color_group: ColorGroup::Pink, // Pink
+        property_type: PropertyType::Street, // Street
     },
     // Position 14 - MAGIC EDEN Street (Pink Property)
     PropertyData {
@@ -229,8 +231,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [12, 60, 180, 500, 700, 900],
         house_cost: 100,
         mortgage_value: 80,
-        color_group: 3,   // Pink
-        property_type: 0, // Street
+        color_group: ColorGroup::Pink, // Pink
+        property_type: PropertyType::Street, // Street
     },
     // Position 15 - Allbridge (Railroad)
     PropertyData {
@@ -239,8 +241,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [25, 50, 100, 200, 0, 0],
         house_cost: 0,
         mortgage_value: 100,
-        color_group: 9,   // Railroad
-        property_type: 1, // Railroad
+        color_group: ColorGroup::Railroad, // Railroad
+        property_type: PropertyType::Railroad, // Railroad
     },
     // Position 16 - HELIO Place (Orange Property)
     PropertyData {
@@ -249,8 +251,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [14, 70, 200, 550, 750, 950],
         house_cost: 100,
         mortgage_value: 90,
-        color_group: 4,   // Orange
-        property_type: 0, // Street
+        color_group: ColorGroup::Orange, // Orange
+        property_type: PropertyType::Street, // Street
     },
     // Position 17 - Airdrop Chest
     PropertyData {
@@ -259,8 +261,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [0; 6],
         house_cost: 0,
         mortgage_value: 0,
-        color_group: 0,
-        property_type: 3, // Special
+        color_group: ColorGroup::Special,
+        property_type: PropertyType::CommunityChest, // Special
     },
     // Position 18 - KAMINO Avenue (Orange Property)
     PropertyData {
@@ -269,8 +271,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [14, 70, 200, 550, 750, 950],
         house_cost: 100,
         mortgage_value: 90,
-        color_group: 4,   // Orange
-        property_type: 0, // Street
+        color_group: ColorGroup::Orange, // Orange
+        property_type: PropertyType::Street, // Street
     },
     // Position 19 - DRIFT Street (Orange Property)
     PropertyData {
@@ -279,8 +281,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [16, 80, 240, 600, 800, 1000],
         house_cost: 100,
         mortgage_value: 100,
-        color_group: 4,   // Orange
-        property_type: 0, // Street
+        color_group: ColorGroup::Orange, // Orange
+        property_type: PropertyType::Street, // Street
     },
     // Position 20 - Free Airdrop Parking
     PropertyData {
@@ -289,8 +291,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [0; 6],
         house_cost: 0,
         mortgage_value: 0,
-        color_group: 0,
-        property_type: 3, // Special
+        color_group: ColorGroup::Special,
+        property_type: PropertyType::Corner, // Special
     },
     // Position 21 - MANGO Markets (Red Property)
     PropertyData {
@@ -299,8 +301,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [18, 90, 270, 650, 850, 1050],
         house_cost: 150,
         mortgage_value: 110,
-        color_group: 5,   // Red
-        property_type: 0, // Street
+        color_group: ColorGroup::Red, // Red
+        property_type: PropertyType::Street, // Street
     },
     // Position 22 - Pump.fun Surprise
     PropertyData {
@@ -309,8 +311,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [0; 6],
         house_cost: 0,
         mortgage_value: 0,
-        color_group: 0,
-        property_type: 3, // Special
+        color_group: ColorGroup::Special,
+        property_type: PropertyType::Chance, // Special
     },
     // Position 23 - HUBBLE Avenue (Red Property)
     PropertyData {
@@ -319,8 +321,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [18, 90, 270, 650, 850, 1050],
         house_cost: 150,
         mortgage_value: 110,
-        color_group: 5,   // Red
-        property_type: 0, // Street
+        color_group: ColorGroup::Red, // Red
+        property_type: PropertyType::Street, // Street
     },
     // Position 24 - MARINADE Street (Red Property)
     PropertyData {
@@ -329,8 +331,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [20, 100, 300, 750, 950, 1100],
         house_cost: 150,
         mortgage_value: 120,
-        color_group: 5,   // Red
-        property_type: 0, // Street
+        color_group: ColorGroup::Red, // Red
+        property_type: PropertyType::Street, // Street
     },
     // Position 25 - LayerZero Bridge (Railroad)
     PropertyData {
@@ -339,8 +341,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [25, 50, 100, 200, 0, 0],
         house_cost: 0,
         mortgage_value: 100,
-        color_group: 9,   // Railroad
-        property_type: 1, // Railroad
+        color_group: ColorGroup::Railroad, // Railroad
+        property_type: PropertyType::Railroad, // Railroad
     },
     // Position 26 - BACKPACK Avenue (Yellow Property)
     PropertyData {
@@ -349,8 +351,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [22, 110, 330, 850, 1050, 1200],
         house_cost: 150,
         mortgage_value: 120,
-        color_group: 6,   // Yellow
-        property_type: 0, // Street
+        color_group: ColorGroup::Yellow, // Yellow
+        property_type: PropertyType::Street, // Street
     },
     // Position 27 - PHANTOM Street (Yellow Property)
     PropertyData {
@@ -359,8 +361,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [22, 110, 330, 850, 1050, 1200],
         house_cost: 150,
         mortgage_value: 130,
-        color_group: 6,   // Yellow
-        property_type: 0, // Street
+        color_group: ColorGroup::Yellow, // Yellow
+        property_type: PropertyType::Street, // Street
     },
     // Position 28 - Switchboard Oracle (Utility)
     PropertyData {
@@ -369,8 +371,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [4, 10, 0, 0, 0, 0],
         house_cost: 0,
         mortgage_value: 75,
-        color_group: 10,  // Utility
-        property_type: 2, // Utility
+        color_group: ColorGroup::Utility, // Utility
+        property_type: PropertyType::Utility, // Utility
     },
     // Position 29 - SOLFLARE Gardens (Yellow Property)
     PropertyData {
@@ -379,8 +381,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [24, 120, 360, 900, 1100, 1300],
         house_cost: 150,
         mortgage_value: 140,
-        color_group: 6,   // Yellow
-        property_type: 0, // Street
+        color_group: ColorGroup::Yellow, // Yellow
+        property_type: PropertyType::Street, // Street
     },
     // Position 30 - Go To Validator Jail
     PropertyData {
@@ -389,8 +391,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [0; 6],
         house_cost: 0,
         mortgage_value: 0,
-        color_group: 0,
-        property_type: 3, // Special
+        color_group: ColorGroup::Special,
+        property_type: PropertyType::Corner, // Special
     },
     // Position 31 - ANATOLY Avenue (Green Property)
     PropertyData {
@@ -399,8 +401,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [26, 130, 390, 900, 1100, 1300],
         house_cost: 200,
         mortgage_value: 150,
-        color_group: 7,   // Green
-        property_type: 0, // Street
+        color_group: ColorGroup::Green, // Green
+        property_type: PropertyType::Street, // Street
     },
     // Position 32 - RAJ Street (Green Property)
     PropertyData {
@@ -409,8 +411,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [26, 130, 390, 900, 1100, 1300],
         house_cost: 200,
         mortgage_value: 150,
-        color_group: 7,   // Green
-        property_type: 0, // Street
+        color_group: ColorGroup::Green, // Green
+        property_type: PropertyType::Street, // Street
     },
     // Position 33 - Airdrop Chest
     PropertyData {
@@ -419,8 +421,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [0; 6],
         house_cost: 0,
         mortgage_value: 0,
-        color_group: 0,
-        property_type: 3, // Special
+        color_group: ColorGroup::Special,
+        property_type: PropertyType::CommunityChest, // Special
     },
     // Position 34 - FIREDANCER Avenue (Green Property)
     PropertyData {
@@ -429,8 +431,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [28, 150, 450, 1000, 1200, 1400],
         house_cost: 200,
         mortgage_value: 160,
-        color_group: 7,   // Green
-        property_type: 0, // Street
+        color_group: ColorGroup::Green, // Green
+        property_type: PropertyType::Street, // Street
     },
     // Position 35 - deBridge (Railroad)
     PropertyData {
@@ -439,8 +441,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [25, 50, 100, 200, 0, 0],
         house_cost: 0,
         mortgage_value: 100,
-        color_group: 9,   // Railroad
-        property_type: 1, // Railroad
+        color_group: ColorGroup::Railroad, // Railroad
+        property_type: PropertyType::Railroad, // Railroad
     },
     // Position 36 - Pump.fun Surprise
     PropertyData {
@@ -449,8 +451,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [0; 6],
         house_cost: 0,
         mortgage_value: 0,
-        color_group: 0,
-        property_type: 3, // Special
+        color_group: ColorGroup::Special,
+        property_type: PropertyType::Chance, // Special
     },
     // Position 37 - SVM Place (Dark Blue Property)
     PropertyData {
@@ -459,8 +461,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [35, 175, 500, 1100, 1400, 1500],
         house_cost: 200,
         mortgage_value: 175,
-        color_group: 8,   // Dark Blue
-        property_type: 0, // Street
+        color_group: ColorGroup::DarkBlue, // Dark Blue
+        property_type: PropertyType::Street, // Street
     },
     // Position 38 - Priority Fee Tax
     PropertyData {
@@ -469,8 +471,8 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [0; 6],
         house_cost: 0,
         mortgage_value: 0,
-        color_group: 0,
-        property_type: 3, // Special
+        color_group: ColorGroup::Special,
+        property_type: PropertyType::Tax, // Special
     },
     // Position 39 - SAGA Boardwalk (Dark Blue Property)
     PropertyData {
@@ -479,22 +481,28 @@ pub const BOARD_SPACES: [PropertyData; 40] = [
         rent: [50, 200, 600, 1200, 1600, 2000],
         house_cost: 200,
         mortgage_value: 200,
-        color_group: 8,   // Dark Blue
-        property_type: 0, // Street
+        color_group: ColorGroup::DarkBlue, // Dark Blue
+        property_type: PropertyType::Street, // Street
     },
 ];
 
 // Helper functions
-pub fn get_property_data(position: u8) -> Option<&'static PropertyData> {
-    if position < BOARD_SIZE {
-        Some(&BOARD_SPACES[position as usize])
-    } else {
-        None
-    }
+// pub fn get_property_data(position: u8) -> Option<&'static PropertyData> {
+//     if position < BOARD_SIZE {
+//         Some(&BOARD_SPACES[position as usize])
+//     } else {
+//         None
+//     }
+// }
+
+pub fn get_property_data(position: u8) -> Result<&'static PropertyData> {
+    BOARD_SPACES
+        .get(position as usize)
+        .ok_or(error!(GameError::InvalidPropertyPosition))
 }
 
 pub fn is_property_purchasable(position: u8) -> bool {
-    if let Some(property) = get_property_data(position) {
+    if let Ok(property) = get_property_data(position) {
         property.price > 0
     } else {
         false
@@ -681,234 +689,4 @@ pub const FESTIVAL_EFFECTS: [FestivalEffect; 4] = [
         amount: 200,
         is_positive: true,
     },
-    //     FestivalEffect {
-    //         id: 5, // "Smart Contract Bug"
-    //         amount: 50,
-    //         is_positive: false,
-    //     },
-    //     FestivalEffect {
-    //         id: 6, // "Network Congestion Fee"
-    //         amount: 75,
-    //         is_positive: false,
-    //     },
-    //     FestivalEffect {
-    //         id: 7, // "Transaction Failed"
-    //         amount: 25,
-    //         is_positive: false,
-    //     },
-    //     FestivalEffect {
-    //         id: 8, // "MEV Bot Frontrun"
-    //         amount: 100,
-    //         is_positive: false,
-    //     },
-    // ];
-    // pub const CHANCE_CARDS: [ChanceCard; 16] = [
-    //     ChanceCard {
-    //         description: "Advance to GO (Collect $200)",
-    //         effect_type: CardEffectType::Move,
-    //         amount: 0,
-    //     },
-    //     ChanceCard {
-    //         description: "Advance to Illinois Avenue",
-    //         effect_type: CardEffectType::Move,
-    //         amount: 24,
-    //     },
-    //     ChanceCard {
-    //         description: "Advance to St. Charles Place",
-    //         effect_type: CardEffectType::Move,
-    //         amount: 11,
-    //     },
-    //     ChanceCard {
-    //         description: "Advance token to nearest Utility",
-    //         effect_type: CardEffectType::Move,
-    //         amount: 12, // Electric Company
-    //     },
-    //     ChanceCard {
-    //         description: "Advance token to nearest Railroad",
-    //         effect_type: CardEffectType::Move,
-    //         amount: 5, // Reading Railroad
-    //     },
-    //     ChanceCard {
-    //         description: "Bank pays you dividend of $50",
-    //         effect_type: CardEffectType::Money,
-    //         amount: 50,
-    //     },
-    //     ChanceCard {
-    //         description: "Get Out of Jail Free",
-    //         effect_type: CardEffectType::GetOutOfJailFree,
-    //         amount: 0,
-    //     },
-    //     ChanceCard {
-    //         description: "Go Back 3 Spaces",
-    //         effect_type: CardEffectType::Move,
-    //         amount: -3,
-    //     },
-    //     ChanceCard {
-    //         description: "Go to Jail",
-    //         effect_type: CardEffectType::GoToJail,
-    //         amount: 0,
-    //     },
-    //     ChanceCard {
-    //         description: "Make general repairs on all your property",
-    //         effect_type: CardEffectType::PayPerProperty,
-    //         amount: 25, // $25 per house, $100 per hotel
-    //     },
-    //     ChanceCard {
-    //         description: "Speeding fine $15",
-    //         effect_type: CardEffectType::Money,
-    //         amount: -15,
-    //     },
-    //     ChanceCard {
-    //         description: "Take a trip to Reading Railroad",
-    //         effect_type: CardEffectType::Move,
-    //         amount: 5,
-    //     },
-    //     ChanceCard {
-    //         description: "Take a walk on the Boardwalk",
-    //         effect_type: CardEffectType::Move,
-    //         amount: 39,
-    //     },
-    //     ChanceCard {
-    //         description: "You have been elected Chairman of the Board",
-    //         effect_type: CardEffectType::CollectFromPlayers,
-    //         amount: 50,
-    //     },
-    //     ChanceCard {
-    //         description: "Your building loan matures",
-    //         effect_type: CardEffectType::Money,
-    //         amount: 150,
-    //     },
-    //     ChanceCard {
-    //         description: "You have won a crossword competition",
-    //         effect_type: CardEffectType::Money,
-    //         amount: 100,
-    //     },
 ];
-
-// // Community Chest cards
-// pub const COMMUNITY_CHEST_CARDS: [CommunityChestCard; 16] = [
-//     CommunityChestCard {
-//         description: "Advance to GO (Collect $200)",
-//         effect_type: CardEffectType::Move,
-//         amount: 0,
-//     },
-//     CommunityChestCard {
-//         description: "Bank error in your favor",
-//         effect_type: CardEffectType::Money,
-//         amount: 200,
-//     },
-//     CommunityChestCard {
-//         description: "Doctor's fee",
-//         effect_type: CardEffectType::Money,
-//         amount: -50,
-//     },
-//     CommunityChestCard {
-//         description: "From sale of stock you get $50",
-//         effect_type: CardEffectType::Money,
-//         amount: 50,
-//     },
-//     CommunityChestCard {
-//         description: "Get Out of Jail Free",
-//         effect_type: CardEffectType::GetOutOfJailFree,
-//         amount: 0,
-//     },
-//     CommunityChestCard {
-//         description: "Go to Jail",
-//         effect_type: CardEffectType::GoToJail,
-//         amount: 0,
-//     },
-//     CommunityChestCard {
-//         description: "Holiday fund matures",
-//         effect_type: CardEffectType::Money,
-//         amount: 100,
-//     },
-//     CommunityChestCard {
-//         description: "Income tax refund",
-//         effect_type: CardEffectType::Money,
-//         amount: 20,
-//     },
-//     CommunityChestCard {
-//         description: "It is your birthday",
-//         effect_type: CardEffectType::CollectFromPlayers,
-//         amount: 10,
-//     },
-//     CommunityChestCard {
-//         description: "Life insurance matures",
-//         effect_type: CardEffectType::Money,
-//         amount: 100,
-//     },
-//     CommunityChestCard {
-//         description: "Pay hospital fees",
-//         effect_type: CardEffectType::Money,
-//         amount: -100,
-//     },
-//     CommunityChestCard {
-//         description: "Pay school fees",
-//         effect_type: CardEffectType::Money,
-//         amount: -50,
-//     },
-//     CommunityChestCard {
-//         description: "Receive $25 consultancy fee",
-//         effect_type: CardEffectType::Money,
-//         amount: 25,
-//     },
-//     CommunityChestCard {
-//         description: "You are assessed for street repair",
-//         effect_type: CardEffectType::PayPerProperty,
-//         amount: 40, // $40 per house, $115 per hotel
-//     },
-//     CommunityChestCard {
-//         description: "You have won second prize in a beauty contest",
-//         effect_type: CardEffectType::Money,
-//         amount: 10,
-//     },
-//     CommunityChestCard {
-//         description: "You inherit $100",
-//         effect_type: CardEffectType::Money,
-//         amount: 100,
-//     },
-// ];
-
-// // Festival effects
-// pub const FESTIVAL_EFFECTS: [FestivalEffect; 8] = [
-//     FestivalEffect {
-//         description: "Great performance! Earn tips",
-//         amount: 100,
-//         is_positive: true,
-//     },
-//     FestivalEffect {
-//         description: "Win dance competition",
-//         amount: 150,
-//         is_positive: true,
-//     },
-//     FestivalEffect {
-//         description: "Food vendor success",
-//         amount: 75,
-//         is_positive: true,
-//     },
-//     FestivalEffect {
-//         description: "Crowd loves your act",
-//         amount: 200,
-//         is_positive: true,
-//     },
-//     FestivalEffect {
-//         description: "Equipment malfunction",
-//         amount: 50,
-//         is_positive: false,
-//     },
-//     FestivalEffect {
-//         description: "Rain ruins your setup",
-//         amount: 75,
-//         is_positive: false,
-//     },
-//     FestivalEffect {
-//         description: "Permit fees",
-//         amount: 25,
-//         is_positive: false,
-//     },
-//     FestivalEffect {
-//         description: "Security deposit",
-//         amount: 100,
-//         is_positive: false,
-//     },
-// ];

@@ -206,6 +206,8 @@ pub fn initialize_game_handler(ctx: Context<InitializeGame>, entry_fee: u64) -> 
     game.next_trade_id = 0;
     game.entry_fee = entry_fee;
 
+    game.initialize_properties();
+
     // Initialize player state
     player_state.initialize_player_state(ctx.accounts.creator.key(), game.key(), clock);
 
