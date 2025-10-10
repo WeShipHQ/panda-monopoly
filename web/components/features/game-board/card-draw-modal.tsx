@@ -81,6 +81,7 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
       return;
     }
 
+    // @ts-expect-error
     const cardIndex = latestCardDraw.data.cardIndex ?? 0;
     const card = cardDeck[cardIndex];
 

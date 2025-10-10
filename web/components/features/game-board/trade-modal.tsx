@@ -161,8 +161,7 @@ export function CreateTradeDialog({
   open,
   onOpenChange,
 }: CreateTradeDialogProps) {
-  const { players, currentPlayerState, properties, createTrade } =
-    useGameContext();
+  const { players, properties, createTrade } = useGameContext();
   const { wallet } = useWallet();
 
   const [isRequesting, setIsRequesting] = useState(false);
@@ -175,12 +174,16 @@ export function CreateTradeDialog({
   const [requestProperty, setRequestProperty] = useState("");
 
   // Filter out current player from available players
+  const currentPlayerState = players.find(
+    (player) => player.wallet === wallet?.address
+  );
+
   const availablePlayers = players.filter(
-    (player) => player.wallet !== currentPlayerState?.wallet
+    (player) => player.wallet !== wallet?.address
   );
 
   const currentPlayerProperties = properties.filter(
-    (property) => property.owner === currentPlayerState?.wallet
+    (property) => property.owner === wallet?.address
   );
 
   const selectedPlayer = availablePlayers.find(

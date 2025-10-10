@@ -10,14 +10,14 @@ pub struct EndTurn<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,

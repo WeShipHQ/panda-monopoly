@@ -15,7 +15,7 @@ pub struct InitProperty<'info> {
         seeds = [b"property", game_key.as_ref(), position.to_le_bytes().as_ref()],
         bump
     )]
-    pub property_state: Account<'info, PropertyState>,
+    pub property_state: Box<Account<'info, PropertyState>>,
 
     /// CHECK: Validate by CPI
     #[account(mut)]
@@ -103,21 +103,21 @@ pub struct BuyProperty<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(
         mut,
         seeds = [b"property", property_state.game.as_ref(), property_state.position.to_le_bytes().as_ref()],
         bump
     )]
-    pub property_state: Account<'info, PropertyState>,
+    pub property_state: Box<Account<'info, PropertyState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -151,7 +151,7 @@ pub fn buy_property_handler(ctx: Context<BuyProperty>, position: u8) -> Result<(
         return Err(GameError::PropertyNotPurchasable.into());
     }
 
-    let property_data = get_property_data(position).ok_or(GameError::InvalidPropertyPosition)?;
+    let property_data = get_property_data(position)?;
 
     // Check if property is already owned
     if property_state.owner.is_some() {
@@ -167,25 +167,27 @@ pub fn buy_property_handler(ctx: Context<BuyProperty>, position: u8) -> Result<(
         // Not initialized
         property_state.init = true;
         property_state.price = property_data.price as u16;
-        property_state.color_group = match property_data.color_group {
-            1 => ColorGroup::Brown,
-            2 => ColorGroup::LightBlue,
-            3 => ColorGroup::Pink,
-            4 => ColorGroup::Orange,
-            5 => ColorGroup::Red,
-            6 => ColorGroup::Yellow,
-            7 => ColorGroup::Green,
-            8 => ColorGroup::DarkBlue,
-            9 => ColorGroup::Railroad,
-            10 => ColorGroup::Utility,
-            _ => ColorGroup::Special,
-        };
-        property_state.property_type = match property_data.property_type {
-            0 => PropertyType::Street,
-            1 => PropertyType::Railroad,
-            2 => PropertyType::Utility,
-            _ => PropertyType::Property,
-        };
+        property_state.color_group = property_data.color_group;
+        // property_state.color_group = match property_data.color_group {
+        //     1 => ColorGroup::Brown,
+        //     2 => ColorGroup::LightBlue,
+        //     3 => ColorGroup::Pink,
+        //     4 => ColorGroup::Orange,
+        //     5 => ColorGroup::Red,
+        //     6 => ColorGroup::Yellow,
+        //     7 => ColorGroup::Green,
+        //     8 => ColorGroup::DarkBlue,
+        //     9 => ColorGroup::Railroad,
+        //     10 => ColorGroup::Utility,
+        //     _ => ColorGroup::Special,
+        // };
+        property_state.property_type = property_data.property_type;
+        // property_state.property_type = match property_data.property_type {
+        //     0 => PropertyType::Street,
+        //     1 => PropertyType::Railroad,
+        //     2 => PropertyType::Utility,
+        //     _ => PropertyType::Property,
+        // };
         property_state.houses = 0;
         property_state.has_hotel = false;
         property_state.is_mortgaged = false;
@@ -247,19 +249,18 @@ pub fn buy_property_handler(ctx: Context<BuyProperty>, position: u8) -> Result<(
 pub struct DeclineProperty<'info> {
     #[account(
         mut,
-        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -305,7 +306,7 @@ pub fn decline_property_handler(ctx: Context<DeclineProperty>, position: u8) -> 
     }
 
     // Get property data for logging
-    let property_data = get_property_data(position).ok_or(GameError::InvalidPropertyPosition)?;
+    let property_data = get_property_data(position)?;
 
     // Clear property action flags
     player_state.needs_property_action = false;
@@ -337,33 +338,32 @@ pub fn decline_property_handler(ctx: Context<DeclineProperty>, position: u8) -> 
 pub struct PayRent<'info> {
     #[account(
         mut,
-        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), payer.key().as_ref()],
         bump
     )]
-    pub payer_state: Account<'info, PlayerState>,
+    pub payer_state: Box<Account<'info, PlayerState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), property_owner.key().as_ref()],
         bump
     )]
-    pub owner_state: Account<'info, PlayerState>,
+    pub owner_state: Box<Account<'info, PlayerState>>,
 
     #[account(
         mut,
         seeds = [b"property", game.key().as_ref(), position.to_le_bytes().as_ref()],
         bump
     )]
-    pub property_state: Account<'info, PropertyState>,
+    pub property_state: Box<Account<'info, PropertyState>>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -476,14 +476,14 @@ pub struct BuildHouse<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,     
 
     #[account(
         mut,
@@ -495,7 +495,7 @@ pub struct BuildHouse<'info> {
         constraint = property_state.houses < MAX_HOUSES_PER_PROPERTY @ GameError::MaxHousesReached,
         constraint = !property_state.has_hotel @ GameError::PropertyHasHotel
     )]
-    pub property_state: Account<'info, PropertyState>,
+    pub property_state: Box<Account<'info, PropertyState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -590,14 +590,14 @@ pub struct BuildHotel<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(
         mut,
@@ -609,7 +609,7 @@ pub struct BuildHotel<'info> {
         constraint = property_state.houses == MAX_HOUSES_PER_PROPERTY @ GameError::InvalidHouseCount,
         constraint = !property_state.has_hotel @ GameError::PropertyHasHotel
     )]
-    pub property_state: Account<'info, PropertyState>,
+    pub property_state: Box<Account<'info, PropertyState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -693,14 +693,14 @@ pub struct SellBuilding<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(
         mut,
@@ -709,7 +709,7 @@ pub struct SellBuilding<'info> {
         constraint = property_state.owner == Some(player.key()) @ GameError::PropertyNotOwnedByPlayer,
         constraint = property_state.property_type == PropertyType::Street @ GameError::CannotBuildOnPropertyType
     )]
-    pub property_state: Account<'info, PropertyState>,
+    pub property_state: Box<Account<'info, PropertyState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -825,14 +825,14 @@ pub struct MortgageProperty<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(
         mut,
@@ -843,7 +843,7 @@ pub struct MortgageProperty<'info> {
         constraint = property_state.houses == 0 @ GameError::CannotMortgageWithBuildings,
         constraint = !property_state.has_hotel @ GameError::CannotMortgageWithBuildings
     )]
-    pub property_state: Account<'info, PropertyState>,
+    pub property_state: Box<Account<'info, PropertyState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -908,14 +908,14 @@ pub struct UnmortgageProperty<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Account<'info, PlayerState>,
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(
         mut,
@@ -924,7 +924,7 @@ pub struct UnmortgageProperty<'info> {
         constraint = property_state.owner == Some(player.key()) @ GameError::PropertyNotOwnedByPlayer,
         constraint = property_state.is_mortgaged @ GameError::PropertyNotMortgaged
     )]
-    pub property_state: Account<'info, PropertyState>,
+    pub property_state: Box<Account<'info, PropertyState>>,
 
     #[account(mut)]
     pub player: Signer<'info>,
@@ -982,6 +982,885 @@ pub fn unmortgage_property_handler(ctx: Context<UnmortgageProperty>, position: u
         position,
         unmortgage_cost,
         mortgage_value,
+        interest
+    );
+
+    Ok(())
+}
+
+// v2 --------------------------
+
+#[derive(Accounts)]
+pub struct BuyPropertyV2<'info> {
+    #[account(
+        mut,
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes()],
+        bump = game.bump,
+        constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
+    )]
+    pub game: Box<Account<'info, GameState>>,
+
+    #[account(
+        mut,
+        seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
+        bump
+    )]
+    pub player_state: Box<Account<'info, PlayerState>>,
+
+    #[account(mut)]
+    pub player: Signer<'info>,
+
+    pub clock: Sysvar<'info, Clock>,
+}
+
+pub fn buy_property_v2_handler(ctx: Context<BuyPropertyV2>, position: u8) -> Result<()> {
+    let game = &mut ctx.accounts.game;
+    let player_state = &mut ctx.accounts.player_state;
+    let player_pubkey = ctx.accounts.player.key();
+    let clock = &ctx.accounts.clock;
+
+    // Validate player's turn
+    let player_index = game
+        .players
+        .iter()
+        .position(|&p| p == player_pubkey)
+        .ok_or(GameError::PlayerNotFound)?;
+
+    require!(
+        game.current_turn == player_index as u8,
+        GameError::NotPlayerTurn
+    );
+
+    // Validate player position
+    require!(
+        player_state.position == position,
+        GameError::InvalidPropertyPosition
+    );
+
+    // Get static property data
+    let property_data = get_property_data(position)?;
+
+    // Validate property is purchasable
+    require!(
+        is_property_purchasable(position),
+        GameError::PropertyNotPurchasable
+    );
+
+    let property = game.get_property_mut(position)?;
+
+    require!(property.owner.is_none(), GameError::PropertyAlreadyOwned);
+
+    require!(
+        player_state.cash_balance >= property_data.price,
+        GameError::InsufficientFunds
+    );
+
+    // Transfer ownership
+    property.owner = Some(player_pubkey);
+
+    // Deduct money
+    player_state.cash_balance = player_state
+        .cash_balance
+        .checked_sub(property_data.price)
+        .ok_or(GameError::ArithmeticUnderflow)?;
+
+    // Update player's properties list
+    if !player_state.properties_owned.contains(&position) {
+        player_state.properties_owned.push(position);
+    }
+
+    // Update net worth
+    player_state.net_worth = player_state
+        .net_worth
+        .checked_add(property_data.price)
+        .ok_or(GameError::ArithmeticOverflow)?;
+
+    // Clear flags
+    player_state.needs_property_action = false;
+    player_state.pending_property_position = None;
+
+    // Update timestamp
+    game.turn_started_at = clock.unix_timestamp;
+
+    msg!(
+        "Player {} purchased property {} for ${}",
+        player_pubkey,
+        position,
+        property_data.price
+    );
+
+    Ok(())
+}
+
+#[derive(Accounts)]
+pub struct SellBuildingV2<'info> {
+    #[account(
+        mut,
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes()],
+        bump = game.bump,
+        constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
+    )]
+    pub game: Box<Account<'info, GameState>>,
+
+    #[account(
+        mut,
+        seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
+        bump
+    )]
+    pub player_state: Box<Account<'info, PlayerState>>,
+
+    #[account(mut)]
+    pub player: Signer<'info>,
+
+    pub clock: Sysvar<'info, Clock>,
+}
+
+pub fn sell_building_v2_handler(
+    ctx: Context<SellBuildingV2>,
+    position: u8,
+    building_type: BuildingType,
+) -> Result<()> {
+    let game = &mut ctx.accounts.game;
+    let player_state = &mut ctx.accounts.player_state;
+    let player_pubkey = ctx.accounts.player.key();
+    let clock = &ctx.accounts.clock;
+
+    // Validate turn
+    let player_index = game
+        .players
+        .iter()
+        .position(|&p| p == player_pubkey)
+        .ok_or(GameError::PlayerNotFound)?;
+
+    require!(
+        game.current_turn == player_index as u8,
+        GameError::NotPlayerTurn
+    );
+
+    // Get static data
+    let static_data = get_property_data(position)?;
+
+    // Validate property type
+    require!(
+        static_data.property_type == PropertyType::Street,
+        GameError::CannotBuildOnPropertyType
+    );
+
+    // Get property
+    let property = game.get_property(position)?;
+
+    // Validate ownership
+    require!(
+        property.owner == Some(player_pubkey),
+        GameError::PropertyNotOwnedByPlayer
+    );
+
+    // Calculate sale price (half of building cost)
+    let sale_price = static_data.house_cost / 2;
+
+    match building_type {
+        BuildingType::House => {
+            // Validate has houses to sell
+            require!(property.houses > 0, GameError::NoHousesToSell);
+
+            // Check even selling rule
+            require!(
+                game.can_sell_evenly(
+                    &player_pubkey,
+                    static_data.color_group,
+                    position,
+                    property.houses - 1
+                ),
+                GameError::MustSellEvenly
+            );
+
+            // Sell house
+            let property_mut = game.get_property_mut(position)?;
+            property_mut.houses -= 1;
+            game.houses_remaining += 1;
+
+            msg!(
+                "Player {} sold a house from property {} for ${}",
+                player_pubkey,
+                position,
+                sale_price
+            );
+        }
+        BuildingType::Hotel => {
+            // Validate has hotel to sell
+            require!(property.has_hotel, GameError::NoHotelToSell);
+
+            // Check if enough houses in bank to convert back
+            require!(game.houses_remaining >= 4, GameError::NotEnoughHousesInBank);
+
+            // Sell hotel and convert back to 4 houses
+            let property_mut = game.get_property_mut(position)?;
+            property_mut.has_hotel = false;
+            property_mut.houses = 4;
+            game.hotels_remaining += 1;
+            game.houses_remaining -= 4;
+
+            msg!(
+                "Player {} sold a hotel from property {} for ${}",
+                player_pubkey,
+                position,
+                sale_price
+            );
+        }
+    }
+
+    // Add money to player
+    player_state.cash_balance = player_state
+        .cash_balance
+        .checked_add(sale_price)
+        .ok_or(GameError::ArithmeticOverflow)?;
+
+    // Update net worth
+    player_state.net_worth = player_state
+        .net_worth
+        .checked_sub(sale_price)
+        .ok_or(GameError::ArithmeticUnderflow)?;
+
+    // Update timestamp
+    game.turn_started_at = clock.unix_timestamp;
+
+    Ok(())
+}
+
+#[derive(Accounts)]
+pub struct DeclinePropertyV2<'info> {
+    #[account(
+        mut,
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes()],
+        bump = game.bump,
+        constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
+    )]
+    pub game: Box<Account<'info, GameState>>,
+
+    #[account(
+        mut,
+        seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
+        bump
+    )]
+    pub player_state: Box<Account<'info, PlayerState>>,
+
+    #[account(mut)]
+    pub player: Signer<'info>,
+
+    pub clock: Sysvar<'info, Clock>,
+}
+
+pub fn decline_property_v2_handler(ctx: Context<DeclinePropertyV2>, position: u8) -> Result<()> {
+    let game = &mut ctx.accounts.game;
+    let player_state = &mut ctx.accounts.player_state;
+    let player_pubkey = ctx.accounts.player.key();
+    let clock = &ctx.accounts.clock;
+
+    // Validate turn
+    let player_index = game
+        .players
+        .iter()
+        .position(|&p| p == player_pubkey)
+        .ok_or(GameError::PlayerNotFound)?;
+
+    require!(
+        game.current_turn == player_index as u8,
+        GameError::NotPlayerTurn
+    );
+
+    // Validate player position
+    require!(
+        player_state.position == position,
+        GameError::InvalidPropertyPosition
+    );
+
+    // Validate pending property action
+    require!(
+        player_state.needs_property_action,
+        GameError::InvalidSpecialSpaceAction
+    );
+
+    require!(
+        player_state.pending_property_position == Some(position),
+        GameError::InvalidPropertyPosition
+    );
+
+    // Validate property is purchasable
+    require!(
+        is_property_purchasable(position),
+        GameError::PropertyNotPurchasable
+    );
+
+    // Get property to verify it's unowned
+    let property = game.get_property(position)?;
+    require!(property.owner.is_none(), GameError::PropertyAlreadyOwned);
+
+    // Get static data for logging
+    let static_data = get_property_data(position)?;
+
+    // Clear flags
+    player_state.needs_property_action = false;
+    player_state.pending_property_position = None;
+
+    // Update timestamp
+    game.turn_started_at = clock.unix_timestamp;
+
+    msg!(
+        "Player {} declined to purchase property {} (${}) - property may go to auction",
+        player_pubkey,
+        position,
+        static_data.price
+    );
+
+    // Note: Auction system would be triggered here in full implementation
+
+    Ok(())
+}
+
+#[derive(Accounts)]
+pub struct PayRentV2<'info> {
+    #[account(
+        mut,
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes()],
+        bump = game.bump,
+        constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
+    )]
+    pub game: Box<Account<'info, GameState>>,
+
+    #[account(
+        mut,
+        seeds = [b"player", game.key().as_ref(), payer.key().as_ref()],
+        bump
+    )]
+    pub payer_state: Box<Account<'info, PlayerState>>,
+
+    #[account(
+        mut,
+        seeds = [b"player", game.key().as_ref(), property_owner.key().as_ref()],
+        bump
+    )]
+    pub owner_state: Box<Account<'info, PlayerState>>,
+
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    /// CHECK: Validated by property ownership
+    pub property_owner: UncheckedAccount<'info>,
+
+    pub clock: Sysvar<'info, Clock>,
+}
+
+pub fn pay_rent_v2_handler(ctx: Context<PayRentV2>, position: u8) -> Result<()> {
+    let game = &mut ctx.accounts.game;
+    let payer_state = &mut ctx.accounts.payer_state;
+    let owner_state = &mut ctx.accounts.owner_state;
+    let payer_pubkey = ctx.accounts.payer.key();
+    let property_owner_pubkey = ctx.accounts.property_owner.key();
+    let clock = &ctx.accounts.clock;
+
+    // Validate turn
+    let payer_index = game
+        .players
+        .iter()
+        .position(|&p| p == payer_pubkey)
+        .ok_or(GameError::PlayerNotFound)?;
+
+    require!(
+        game.current_turn == payer_index as u8,
+        GameError::NotPlayerTurn
+    );
+
+    require!(
+        payer_state.position == position,
+        GameError::InvalidPropertyPosition
+    );
+
+    // Get property
+    let property = game.get_property(position)?;
+
+    // Validate ownership
+    let owner = property.owner.ok_or(GameError::PropertyNotOwned)?;
+    require!(
+        owner == property_owner_pubkey,
+        GameError::InvalidPropertyOwner
+    );
+
+    // Can't pay rent to yourself
+    if payer_pubkey == owner {
+        return Ok(());
+    }
+
+    // No rent if mortgaged
+    if property.is_mortgaged {
+        return Ok(());
+    }
+
+    // Calculate rent
+    let rent_amount = calculate_rent(
+        game,
+        position,
+        &owner_state.properties_owned,
+        payer_state.last_dice_roll,
+    )?;
+
+    // Check funds
+    // require!(
+    //     payer_state.cash_balance >= rent_amount,
+    //     GameError::InsufficientFunds
+    // );
+    if payer_state.cash_balance < rent_amount {
+        // Set bankruptcy check flag
+        payer_state.needs_bankruptcy_check = true;
+        return Ok(());
+    }
+
+    // Transfer rent
+    payer_state.cash_balance = payer_state
+        .cash_balance
+        .checked_sub(rent_amount)
+        .ok_or(GameError::ArithmeticUnderflow)?;
+
+    owner_state.cash_balance = owner_state
+        .cash_balance
+        .checked_add(rent_amount)
+        .ok_or(GameError::ArithmeticOverflow)?;
+
+    // Update net worth
+    payer_state.net_worth = payer_state
+        .net_worth
+        .checked_sub(rent_amount)
+        .ok_or(GameError::ArithmeticUnderflow)?;
+
+    owner_state.net_worth = owner_state
+        .net_worth
+        .checked_add(rent_amount)
+        .ok_or(GameError::ArithmeticOverflow)?;
+
+    // Clear flags
+    payer_state.needs_property_action = false;
+
+    // Update timestamps
+    owner_state.last_rent_collected = clock.unix_timestamp;
+    game.turn_started_at = clock.unix_timestamp;
+
+    msg!(
+        "Player {} paid ${} rent to {} for property {}",
+        payer_pubkey,
+        rent_amount,
+        owner,
+        position
+    );
+
+    Ok(())
+}
+
+#[derive(Accounts)]
+#[instruction(position: u8)]
+pub struct BuildHouseV2<'info> {
+    #[account(
+        mut,
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes()],
+        bump = game.bump,
+        constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
+    )]
+    pub game: Box<Account<'info, GameState>>,
+
+    #[account(
+        mut,
+        seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
+        bump
+    )]
+    pub player_state: Box<Account<'info, PlayerState>>,
+
+    #[account(mut)]
+    pub player: Signer<'info>,
+
+    pub clock: Sysvar<'info, Clock>,
+}
+
+pub fn build_house_v2_handler(ctx: Context<BuildHouseV2>, position: u8) -> Result<()> {
+    let game = &mut ctx.accounts.game;
+    let player_state = &mut ctx.accounts.player_state;
+    let player_pubkey = ctx.accounts.player.key();
+    let clock = &ctx.accounts.clock;
+
+    // Validate turn
+    let player_index = game
+        .players
+        .iter()
+        .position(|&p| p == player_pubkey)
+        .ok_or(GameError::PlayerNotFound)?;
+
+    require!(
+        game.current_turn == player_index as u8,
+        GameError::NotPlayerTurn
+    );
+
+    // Get static data
+    let static_data = get_property_data(position)?;
+
+    // Validate property type
+    require!(
+        static_data.property_type == PropertyType::Street,
+        GameError::CannotBuildOnPropertyType
+    );
+
+    // // Get property
+    // let property = game.get_property(position)?;
+
+    // // Validate ownership
+    // require!(
+    //     property.owner == Some(player_pubkey),
+    //     GameError::PropertyNotOwnedByPlayer
+    // );
+
+    // require!(!property.is_mortgaged, GameError::PropertyMortgaged);
+    // require!(!property.has_hotel, GameError::PropertyHasHotel);
+    // require!(property.houses < 4, GameError::MaxHousesReached);
+
+    // // Check monopoly
+    // require!(
+    //     game.has_monopoly(&player_pubkey, static_data.color_group),
+    //     GameError::DoesNotOwnColorGroup
+    // );
+
+    // // Check even building
+    // require!(
+    //     game.can_build_evenly(
+    //         &player_pubkey,
+    //         static_data.color_group,
+    //         position,
+    //         property.houses + 1
+    //     ),
+    //     GameError::MustBuildEvenly
+    // );
+
+    // // Check houses available
+    // require!(game.houses_remaining > 0, GameError::NotEnoughHousesInBank);
+
+    // // Check funds
+    // require!(
+    //     player_state.cash_balance >= static_data.house_cost,
+    //     GameError::InsufficientFunds
+    // );
+
+    let houses = {
+        let property = game.get_property(position)?;
+
+        // Validate ownership
+        require!(
+            property.owner == Some(player_pubkey),
+            GameError::PropertyNotOwnedByPlayer
+        );
+
+        require!(!property.is_mortgaged, GameError::PropertyMortgaged);
+        require!(!property.has_hotel, GameError::PropertyHasHotel);
+        require!(property.houses < 4, GameError::MaxHousesReached);
+
+        property.houses
+    };
+
+    // Check monopoly
+    require!(
+        game.has_monopoly(&player_pubkey, static_data.color_group),
+        GameError::DoesNotOwnColorGroup
+    );
+
+    // Check even building
+    require!(
+        game.can_build_evenly(
+            &player_pubkey,
+            static_data.color_group,
+            position,
+            houses + 1
+        ),
+        GameError::MustBuildEvenly
+    );
+
+    // Check houses available
+    require!(game.houses_remaining > 0, GameError::NotEnoughHousesInBank);
+
+    // Check funds
+    require!(
+        player_state.cash_balance >= static_data.house_cost,
+        GameError::InsufficientFunds
+    );
+
+    // Build house
+    let property_mut = game.get_property_mut(position)?;
+    property_mut.houses += 1;
+    game.houses_remaining -= 1;
+
+    // Deduct money
+    player_state.cash_balance = player_state
+        .cash_balance
+        .checked_sub(static_data.house_cost)
+        .ok_or(GameError::ArithmeticUnderflow)?;
+
+    // Update net worth
+    player_state.net_worth = player_state
+        .net_worth
+        .checked_add(static_data.house_cost)
+        .ok_or(GameError::ArithmeticOverflow)?;
+
+    // Update timestamp
+    game.turn_started_at = clock.unix_timestamp;
+
+    Ok(())
+}
+
+#[derive(Accounts)]
+#[instruction(position: u8)]
+pub struct BuildHotelV2<'info> {
+    #[account(
+        mut,
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes()],
+        bump = game.bump,
+        constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
+    )]
+    pub game: Box<Account<'info, GameState>>,
+
+    #[account(
+        mut,
+        seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
+        bump
+    )]
+    pub player_state: Box<Account<'info, PlayerState>>,
+
+    #[account(mut)]
+    pub player: Signer<'info>,
+
+    pub clock: Sysvar<'info, Clock>,
+}
+
+pub fn build_hotel_v2_handler(ctx: Context<BuildHotelV2>, position: u8) -> Result<()> {
+    let game = &mut ctx.accounts.game;
+    let player_state = &mut ctx.accounts.player_state;
+    let player_pubkey = ctx.accounts.player.key();
+    let clock = &ctx.accounts.clock;
+
+    // Validate turn
+    let player_index = game
+        .players
+        .iter()
+        .position(|&p| p == player_pubkey)
+        .ok_or(GameError::PlayerNotFound)?;
+
+    require!(
+        game.current_turn == player_index as u8,
+        GameError::NotPlayerTurn
+    );
+
+    // Get static data
+    let static_data = get_property_data(position)?;
+
+    // Validate property type
+    require!(
+        static_data.property_type == PropertyType::Street,
+        GameError::CannotBuildOnPropertyType
+    );
+
+    // Get property
+    let property = game.get_property(position)?;
+
+    // Validate state
+    require!(
+        property.owner == Some(player_pubkey),
+        GameError::PropertyNotOwnedByPlayer
+    );
+    require!(!property.is_mortgaged, GameError::PropertyMortgaged);
+    require!(property.houses == 4, GameError::InvalidHouseCount);
+    require!(!property.has_hotel, GameError::PropertyHasHotel);
+
+    // Check monopoly
+    require!(
+        game.has_monopoly(&player_pubkey, static_data.color_group),
+        GameError::DoesNotOwnColorGroup
+    );
+
+    // Check hotels available
+    require!(game.hotels_remaining > 0, GameError::NotEnoughHotelsInBank);
+
+    // Check funds
+    require!(
+        player_state.cash_balance >= static_data.house_cost,
+        GameError::InsufficientFunds
+    );
+
+    // Build hotel
+    let property_mut = game.get_property_mut(position)?;
+    property_mut.houses = 0;
+    property_mut.has_hotel = true;
+    game.houses_remaining += 4; // Return 4 houses to bank
+    game.hotels_remaining -= 1;
+
+    // Deduct money
+    player_state.cash_balance = player_state
+        .cash_balance
+        .checked_sub(static_data.house_cost)
+        .ok_or(GameError::ArithmeticUnderflow)?;
+
+    // Update net worth
+    player_state.net_worth = player_state
+        .net_worth
+        .checked_add(static_data.house_cost)
+        .ok_or(GameError::ArithmeticOverflow)?;
+
+    // Update timestamp
+    game.turn_started_at = clock.unix_timestamp;
+
+    msg!(
+        "Player {} built a hotel on property {} for ${}",
+        player_pubkey,
+        position,
+        static_data.house_cost
+    );
+
+    Ok(())
+}
+
+#[derive(Accounts)]
+pub struct MortgagePropertyV2<'info> {
+    #[account(
+        mut,
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes()],
+        bump = game.bump,
+        constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
+    )]
+    pub game: Box<Account<'info, GameState>>,
+
+    #[account(
+        mut,
+        seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
+        bump
+    )]
+    pub player_state: Box<Account<'info, PlayerState>>,
+
+    #[account(mut)]
+    pub player: Signer<'info>,
+
+    pub clock: Sysvar<'info, Clock>,
+}
+
+pub fn mortgage_property_v2_handler(ctx: Context<MortgagePropertyV2>, position: u8) -> Result<()> {
+    let game = &mut ctx.accounts.game;
+    let player_state = &mut ctx.accounts.player_state;
+    let player_pubkey = ctx.accounts.player.key();
+    let clock = &ctx.accounts.clock;
+
+    // Validate turn
+    let player_index = game
+        .players
+        .iter()
+        .position(|&p| p == player_pubkey)
+        .ok_or(GameError::PlayerNotFound)?;
+
+    require!(
+        game.current_turn == player_index as u8,
+        GameError::NotPlayerTurn
+    );
+
+    // Get static data
+    let static_data = get_property_data(position)?;
+    require!(
+        is_property_purchasable(position),
+        GameError::PropertyNotPurchasable
+    );
+
+    // Get property
+    let property = game.get_property_mut(position)?;
+
+    // Validate state
+    require!(
+        property.owner == Some(player_pubkey),
+        GameError::PropertyNotOwnedByPlayer
+    );
+    require!(!property.is_mortgaged, GameError::PropertyAlreadyMortgaged);
+    require!(
+        property.houses == 0 && !property.has_hotel,
+        GameError::CannotMortgageWithBuildings
+    );
+
+    // Mortgage property
+    property.is_mortgaged = true;
+
+    // Give player money
+    player_state.cash_balance += static_data.mortgage_value;
+    player_state.net_worth -= static_data.mortgage_value;
+
+    // Update timestamp
+    game.turn_started_at = clock.unix_timestamp;
+
+    msg!(
+        "Player {} mortgaged property {} for ${}",
+        player_pubkey,
+        position,
+        static_data.mortgage_value
+    );
+
+    Ok(())
+}
+
+pub fn unmortgage_property_v2_handler(
+    ctx: Context<MortgagePropertyV2>,
+    position: u8,
+) -> Result<()> {
+    let game = &mut ctx.accounts.game;
+    let player_state = &mut ctx.accounts.player_state;
+    let player_pubkey = ctx.accounts.player.key();
+    let clock = &ctx.accounts.clock;
+
+    // Validate turn
+    let player_index = game
+        .players
+        .iter()
+        .position(|&p| p == player_pubkey)
+        .ok_or(GameError::PlayerNotFound)?;
+
+    require!(
+        game.current_turn == player_index as u8,
+        GameError::NotPlayerTurn
+    );
+
+    // Get static data
+    let static_data = get_property_data(position)?;
+
+    // Get property
+    let property = game.get_property_mut(position)?;
+
+    // Validate state
+    require!(
+        property.owner == Some(player_pubkey),
+        GameError::PropertyNotOwnedByPlayer
+    );
+    require!(property.is_mortgaged, GameError::PropertyNotMortgaged);
+
+    // Calculate unmortgage cost (mortgage + 10% interest)
+    let interest = static_data.mortgage_value / 10;
+    let unmortgage_cost = static_data.mortgage_value + interest;
+
+    // Check funds
+    require!(
+        player_state.cash_balance >= unmortgage_cost,
+        GameError::InsufficientFunds
+    );
+
+    // Unmortgage property
+    property.is_mortgaged = false;
+
+    // Deduct money
+    player_state.cash_balance -= unmortgage_cost;
+    player_state.net_worth += static_data.mortgage_value;
+
+    // Update timestamp
+    game.turn_started_at = clock.unix_timestamp;
+
+    msg!(
+        "Player {} unmortgaged property {} for ${} (mortgage: ${}, interest: ${})",
+        player_pubkey,
+        position,
+        unmortgage_cost,
+        static_data.mortgage_value,
         interest
     );
 

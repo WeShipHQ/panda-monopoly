@@ -4,6 +4,7 @@ import {
   TransactionSigner,
   Instruction,
   GetAccountInfoApi,
+  SolanaRpcApi,
 } from "@solana/kit";
 import {
   BuildingType,
@@ -19,28 +20,29 @@ export interface CreatePlatformParams {
 }
 
 export interface CreateGameParams {
-  rpc: Rpc<GetAccountInfoApi>;
+  rpc: Rpc<SolanaRpcApi>;
   creator: TransactionSigner;
   platformId: Address;
 }
 
 export interface CreateGameIxs {
-  instruction: Instruction;
+  instructions: Instruction[];
   gameAccountAddress: Address;
 }
 
 export interface JoinGameParams {
-  rpc: Rpc<GetAccountInfoApi>;
+  rpc: Rpc<SolanaRpcApi>;
   player: TransactionSigner;
   gameAddress: Address;
 }
 
 export interface JoinGameIxs {
-  instruction: Instruction;
+  instructions: Instruction[];
   playerStateAddress: Address;
 }
 
 export interface StartGameParams {
+  rpc: Rpc<SolanaRpcApi>;
   authority: TransactionSigner;
   gameAddress: Address;
   players: Address[];
@@ -49,6 +51,7 @@ export interface StartGameParams {
 export interface RollDiceParams {
   player: TransactionSigner;
   gameAddress: Address;
+  useVrf: boolean;
   diceRoll: number[] | null;
 }
 
@@ -155,6 +158,7 @@ export interface AttendFestivalParams {
 export interface DrawChanceCardParams {
   player: TransactionSigner;
   gameAddress: Address;
+  useVrf: boolean;
   index?: number;
 }
 
@@ -167,6 +171,7 @@ export interface DrawChanceCardVrfParams {
 export interface DrawCommunityChestCardParams {
   player: TransactionSigner;
   gameAddress: Address;
+  useVrf: boolean;
   index?: number;
 }
 
@@ -182,6 +187,7 @@ export interface PayPriorityFeeTaxParams {
   gameAddress: Address;
 }
 
+// Enhanced GameEvent type to include all possible events
 export type GameEvent =
   | {
       type: "ChanceCardDrawn";
@@ -190,6 +196,77 @@ export type GameEvent =
   | {
       type: "CommunityChestCardDrawn";
       data: CommunityChestCardDrawn;
+    }
+  | {
+      type: "PlayerPassedGo";
+      data: {
+        player: Address;
+        gameId: bigint;
+        salaryCollected: bigint;
+        newPosition: number;
+        timestamp: bigint;
+      };
+    }
+  | {
+      type: "GameEnded";
+      data: {
+        gameId: bigint;
+        winner: Address | null;
+        endedAt: bigint;
+      };
+    }
+  | {
+      type: "TradeCreated";
+      data: {
+        game: Address;
+        tradeId: number;
+        proposer: Address;
+        receiver: Address;
+        tradeType: TradeType;
+        proposerMoney: bigint;
+        receiverMoney: bigint;
+        proposerProperty: number | null;
+        receiverProperty: number | null;
+        expiresAt: bigint;
+      };
+    }
+  | {
+      type: "TradeAccepted";
+      data: {
+        game: Address;
+        tradeId: number;
+        proposer: Address;
+        receiver: Address;
+        accepter: Address;
+      };
+    }
+  | {
+      type: "TradeRejected";
+      data: {
+        game: Address;
+        tradeId: number;
+        proposer: Address;
+        receiver: Address;
+        rejecter: Address;
+      };
+    }
+  | {
+      type: "TradeCancelled";
+      data: {
+        game: Address;
+        tradeId: number;
+        proposer: Address;
+        receiver: Address;
+        canceller: Address;
+      };
+    }
+  | {
+      type: "TradesCleanedUp";
+      data: {
+        game: Address;
+        tradesRemoved: number;
+        remainingTrades: number;
+      };
     };
 
 // trading

@@ -66,8 +66,8 @@ export const BaseSpace: React.FC<BaseSpaceComponentProps> = ({
         >
           <Avatar className="size-6">
             <AvatarImage
-              walletAddress={ownerMeta.name}
-              alt={`Player ${ownerMeta.name}`}
+              walletAddress={ownerAddress}
+              alt={`Player ${ownerAddress}`}
             />
             <AvatarFallback
               walletAddress={ownerAddress}

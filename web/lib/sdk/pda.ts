@@ -88,3 +88,24 @@ export async function getProgramIdentityPDA(): Promise<ProgramDerivedAddress> {
     seeds: ["identity"],
   });
 }
+
+export async function getGameAuthorityPDA(): Promise<ProgramDerivedAddress> {
+  return await getProgramDerivedAddress({
+    programAddress: PANDA_MONOPOLY_PROGRAM_ADDRESS,
+    seeds: ["game_authority"],
+  });
+}
+
+export async function getTokenVaultPda(
+  mintAddress: Address,
+  gameAddress: Address
+): Promise<ProgramDerivedAddress> {
+  return await getProgramDerivedAddress({
+    programAddress: PANDA_MONOPOLY_PROGRAM_ADDRESS,
+    seeds: [
+      "token_vault",
+      getAddressEncoder().encode(mintAddress),
+      getAddressEncoder().encode(gameAddress),
+    ],
+  });
+}

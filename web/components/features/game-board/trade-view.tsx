@@ -70,8 +70,7 @@ const getOfferDisplay = (money: number | string, property: number | null) => {
 
 export function TradeView() {
   const { wallet } = useWallet();
-  const { gameState, isCurrentTurn, acceptTrade, rejectTrade, cancelTrade } =
-    useGameContext();
+  const { gameState, acceptTrade, rejectTrade, cancelTrade } = useGameContext();
   const activeTrades = gameState?.activeTrades || [];
 
   const [isCreateTradeOpen, setIsCreateTradeOpen] = useState(false);
@@ -108,12 +107,7 @@ export function TradeView() {
     <Card className="bg-white">
       <CardHeader className="flex items-center justify-between">
         <CardTitle>Trades</CardTitle>
-        <Button
-          size="sm"
-          className="h-8 px-3"
-          onClick={handleCreateTrade}
-          // disabled={!isCurrentTurn}
-        >
+        <Button size="sm" className="h-8 px-3" onClick={handleCreateTrade}>
           <Plus className="w-4 h-4 mr-1" />
           Create
         </Button>
