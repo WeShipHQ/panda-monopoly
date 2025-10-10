@@ -33,17 +33,17 @@ import {
 import { PANDA_MONOPOLY_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const CALLBACK_ROLL_DICE_DISCRIMINATOR = new Uint8Array([
-  129, 76, 217, 160, 252, 234, 19, 238,
+export const CALLBACK_DRAW_COMMUNITY_CHEST_CARD_DISCRIMINATOR = new Uint8Array([
+  54, 18, 35, 147, 213, 189, 83, 190,
 ]);
 
-export function getCallbackRollDiceDiscriminatorBytes() {
+export function getCallbackDrawCommunityChestCardDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CALLBACK_ROLL_DICE_DISCRIMINATOR
+    CALLBACK_DRAW_COMMUNITY_CHEST_CARD_DISCRIMINATOR
   );
 }
 
-export type CallbackRollDiceInstruction<
+export type CallbackDrawCommunityChestCardInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountVrfProgramIdentity extends
     | string
@@ -75,43 +75,46 @@ export type CallbackRollDiceInstruction<
     ]
   >;
 
-export type CallbackRollDiceInstructionData = {
+export type CallbackDrawCommunityChestCardInstructionData = {
   discriminator: ReadonlyUint8Array;
   randomness: ReadonlyUint8Array;
 };
 
-export type CallbackRollDiceInstructionDataArgs = {
+export type CallbackDrawCommunityChestCardInstructionDataArgs = {
   randomness: ReadonlyUint8Array;
 };
 
-export function getCallbackRollDiceInstructionDataEncoder(): FixedSizeEncoder<CallbackRollDiceInstructionDataArgs> {
+export function getCallbackDrawCommunityChestCardInstructionDataEncoder(): FixedSizeEncoder<CallbackDrawCommunityChestCardInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['randomness', fixEncoderSize(getBytesEncoder(), 32)],
     ]),
-    (value) => ({ ...value, discriminator: CALLBACK_ROLL_DICE_DISCRIMINATOR })
+    (value) => ({
+      ...value,
+      discriminator: CALLBACK_DRAW_COMMUNITY_CHEST_CARD_DISCRIMINATOR,
+    })
   );
 }
 
-export function getCallbackRollDiceInstructionDataDecoder(): FixedSizeDecoder<CallbackRollDiceInstructionData> {
+export function getCallbackDrawCommunityChestCardInstructionDataDecoder(): FixedSizeDecoder<CallbackDrawCommunityChestCardInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['randomness', fixDecoderSize(getBytesDecoder(), 32)],
   ]);
 }
 
-export function getCallbackRollDiceInstructionDataCodec(): FixedSizeCodec<
-  CallbackRollDiceInstructionDataArgs,
-  CallbackRollDiceInstructionData
+export function getCallbackDrawCommunityChestCardInstructionDataCodec(): FixedSizeCodec<
+  CallbackDrawCommunityChestCardInstructionDataArgs,
+  CallbackDrawCommunityChestCardInstructionData
 > {
   return combineCodec(
-    getCallbackRollDiceInstructionDataEncoder(),
-    getCallbackRollDiceInstructionDataDecoder()
+    getCallbackDrawCommunityChestCardInstructionDataEncoder(),
+    getCallbackDrawCommunityChestCardInstructionDataDecoder()
   );
 }
 
-export type CallbackRollDiceInput<
+export type CallbackDrawCommunityChestCardInput<
   TAccountVrfProgramIdentity extends string = string,
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
@@ -125,24 +128,24 @@ export type CallbackRollDiceInput<
   game: Address<TAccountGame>;
   playerState: Address<TAccountPlayerState>;
   clock?: Address<TAccountClock>;
-  randomness: CallbackRollDiceInstructionDataArgs['randomness'];
+  randomness: CallbackDrawCommunityChestCardInstructionDataArgs['randomness'];
 };
 
-export function getCallbackRollDiceInstruction<
+export function getCallbackDrawCommunityChestCardInstruction<
   TAccountVrfProgramIdentity extends string,
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: CallbackRollDiceInput<
+  input: CallbackDrawCommunityChestCardInput<
     TAccountVrfProgramIdentity,
     TAccountGame,
     TAccountPlayerState,
     TAccountClock
   >,
   config?: { programAddress?: TProgramAddress }
-): CallbackRollDiceInstruction<
+): CallbackDrawCommunityChestCardInstruction<
   TProgramAddress,
   TAccountVrfProgramIdentity,
   TAccountGame,
@@ -189,11 +192,11 @@ export function getCallbackRollDiceInstruction<
       getAccountMeta(accounts.playerState),
       getAccountMeta(accounts.clock),
     ],
-    data: getCallbackRollDiceInstructionDataEncoder().encode(
-      args as CallbackRollDiceInstructionDataArgs
+    data: getCallbackDrawCommunityChestCardInstructionDataEncoder().encode(
+      args as CallbackDrawCommunityChestCardInstructionDataArgs
     ),
     programAddress,
-  } as CallbackRollDiceInstruction<
+  } as CallbackDrawCommunityChestCardInstruction<
     TProgramAddress,
     TAccountVrfProgramIdentity,
     TAccountGame,
@@ -202,7 +205,7 @@ export function getCallbackRollDiceInstruction<
   >);
 }
 
-export type ParsedCallbackRollDiceInstruction<
+export type ParsedCallbackDrawCommunityChestCardInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -217,17 +220,17 @@ export type ParsedCallbackRollDiceInstruction<
     playerState: TAccountMetas[2];
     clock: TAccountMetas[3];
   };
-  data: CallbackRollDiceInstructionData;
+  data: CallbackDrawCommunityChestCardInstructionData;
 };
 
-export function parseCallbackRollDiceInstruction<
+export function parseCallbackDrawCommunityChestCardInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
-): ParsedCallbackRollDiceInstruction<TProgram, TAccountMetas> {
+): ParsedCallbackDrawCommunityChestCardInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
@@ -246,6 +249,8 @@ export function parseCallbackRollDiceInstruction<
       playerState: getNextAccount(),
       clock: getNextAccount(),
     },
-    data: getCallbackRollDiceInstructionDataDecoder().decode(instruction.data),
+    data: getCallbackDrawCommunityChestCardInstructionDataDecoder().decode(
+      instruction.data
+    ),
   };
 }

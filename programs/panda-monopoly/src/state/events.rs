@@ -24,10 +24,18 @@ pub struct CommunityChestCardDrawn {
 #[event]
 pub struct PlayerPassedGo {
     pub player: Pubkey,
-    pub game: Pubkey,
+    pub game_id: u64,
     pub salary_collected: u64,
     pub new_position: u8,
     pub timestamp: i64,
+}
+
+// Game ending event
+#[event]
+pub struct GameEnded {
+    pub game_id: u64,
+    pub winner: Option<Pubkey>,
+    pub ended_at: i64,
 }
 
 // New trade events for vector-based trading

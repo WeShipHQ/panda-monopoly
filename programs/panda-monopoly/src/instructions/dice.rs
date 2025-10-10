@@ -1,5 +1,5 @@
 use crate::error::GameError;
-use crate::{constants::*, ID};
+use crate::{constants::*, xorshift64star, ID};
 use crate::{force_end_turn, send_player_to_jail_and_end_turn, state::*};
 use anchor_lang::prelude::*;
 use ephemeral_vrf_sdk::anchor::vrf;
@@ -31,9 +31,6 @@ pub struct RollDice<'info> {
     pub recent_blockhashes: UncheckedAccount<'info>,
 
     pub clock: Sysvar<'info, Clock>,
-    // /// CHECK: The oracle queue
-    // #[account(mut, address = ephemeral_vrf_sdk::consts::DEFAULT_EPHEMERAL_QUEUE)]
-    // pub oracle_queue: AccountInfo<'info>,
 }
 
 pub fn roll_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> Result<()> {
@@ -112,7 +109,7 @@ pub fn roll_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> 
 
         emit!(PlayerPassedGo {
             player: player_pubkey,
-            game: game.key(),
+            game_id: game.game_id,
             salary_collected: GO_SALARY as u64,
             new_position,
             timestamp: clock.unix_timestamp,
@@ -136,70 +133,6 @@ pub fn roll_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> 
         dice_roll[1],
         old_position,
         new_position
-    );
-
-    Ok(())
-}
-
-pub fn test_dice_handler(ctx: Context<RollDice>, dice_roll: Option<[u8; 2]>) -> Result<()> {
-    let game = &mut ctx.accounts.game;
-    let player_state = &mut ctx.accounts.player_state;
-    let player_pubkey = ctx.accounts.player.key();
-    let clock = &ctx.accounts.clock;
-
-    // Find player index in game.players vector
-    let player_index = game
-        .players
-        .iter()
-        .position(|&p| p == player_pubkey)
-        .ok_or(GameError::PlayerNotFound)?;
-
-    // Verify it's the current player's turn
-    if game.current_turn != player_index as u8 {
-        return Err(GameError::NotPlayerTurn.into());
-    }
-
-    // Check if player has already rolled dice this turn
-    if player_state.has_rolled_dice {
-        return Err(GameError::AlreadyRolledDice.into());
-    }
-
-    // Check if player is in jail
-    // if player_state.in_jail {
-    //     return handle_jail_dice_roll(game, player_state, clock);
-    // }
-
-    // Generate secure random dice roll using recent blockhash
-    let dice_roll = dice_roll.unwrap_or_else(|| {
-        generate_dice_roll(&ctx.accounts.recent_blockhashes, clock.unix_timestamp).unwrap()
-    });
-
-    // Update player state
-    player_state.has_rolled_dice = true;
-    player_state.last_dice_roll = dice_roll;
-    game.turn_started_at = clock.unix_timestamp;
-
-    // Check for doubles
-    let is_doubles = dice_roll[0] == dice_roll[1];
-    if is_doubles {
-        player_state.doubles_count += 1;
-
-        // Three doubles in a row sends player to jail
-        if player_state.doubles_count >= 3 {
-            player_state.has_rolled_dice = true;
-            return Ok(());
-        }
-    } else {
-        // Reset doubles count if not doubles
-        player_state.doubles_count = 0;
-        player_state.has_rolled_dice = true;
-    }
-
-    msg!(
-        "Player {} rolled: {} and {}",
-        player_pubkey,
-        dice_roll[0],
-        dice_roll[1],
     );
 
     Ok(())
@@ -244,15 +177,6 @@ fn generate_dice_roll(recent_blockhashes: &UncheckedAccount, timestamp: i64) -> 
     let dice2 = ((rand2 % 6) + 1) as u8;
 
     Ok([dice1, dice2])
-}
-
-fn xorshift64star(seed: u64) -> u64 {
-    let mut x = seed;
-    x ^= x << 12;
-    x ^= x >> 25;
-    x ^= x << 27;
-    x = (x as u128 * 0x2545F4914F6CDD1D) as u64;
-    x
 }
 
 fn handle_jail_dice_roll(
@@ -312,6 +236,14 @@ fn handle_jail_dice_roll(
 
         if new_position < old_position {
             player_state.cash_balance += GO_SALARY as u64;
+
+            emit!(PlayerPassedGo {
+                player: player_state.wallet,
+                game_id: game.game_id,
+                salary_collected: GO_SALARY as u64,
+                new_position,
+                timestamp: clock.unix_timestamp,
+            });
 
             msg!("Player passed GO and collected ${}", GO_SALARY);
         }
@@ -398,63 +330,6 @@ fn handle_special_space(
     Ok(())
 }
 
-#[derive(Accounts)]
-pub struct PayJailFine<'info> {
-    #[account(
-        mut,
-        // seeds = [b"game", game.authority.as_ref(), &game.game_id.to_le_bytes().as_ref()],
-        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
-        bump = game.bump,
-        constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
-    )]
-    pub game: Account<'info, GameState>,
-
-    #[account(
-        mut,
-        seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
-        bump
-    )]
-    pub player_state: Account<'info, PlayerState>,
-
-    #[account(mut)]
-    pub player: Signer<'info>,
-
-    pub clock: Sysvar<'info, Clock>,
-}
-
-pub fn pay_jail_fine_handler(ctx: Context<PayJailFine>) -> Result<()> {
-    let game = &mut ctx.accounts.game;
-    let player_state = &mut ctx.accounts.player_state;
-    let player_pubkey = ctx.accounts.player.key();
-    let clock = &ctx.accounts.clock;
-
-    if !player_state.in_jail {
-        return Err(GameError::PlayerNotInJail.into());
-    }
-
-    // Check if player has enough money
-    if player_state.cash_balance < JAIL_FINE as u64 {
-        player_state.needs_bankruptcy_check = true;
-        return Ok(());
-    }
-
-    // Pay fine and release from jail
-    player_state.cash_balance -= JAIL_FINE as u64;
-    player_state.in_jail = false;
-    player_state.jail_turns = 0;
-
-    game.turn_started_at = clock.unix_timestamp;
-
-    msg!(
-        "Player {} paid ${} jail fine and is released!",
-        player_pubkey,
-        JAIL_FINE
-    );
-
-    Ok(())
-}
-
-// vrf
 #[vrf]
 #[derive(Accounts)]
 pub struct RollDiceVrf<'info> {
@@ -507,7 +382,7 @@ pub fn roll_dice_vrf_handler(
         return Err(GameError::AlreadyRolledDice.into());
     }
 
-    {
+    if dice_roll.is_none() {
         msg!("Requesting randomness...");
 
         let ix = create_request_randomness_ix(
@@ -518,7 +393,6 @@ pub fn roll_dice_vrf_handler(
                 callback_discriminator: crate::instruction::CallbackRollDice::DISCRIMINATOR
                     .to_vec(),
                 caller_seed: [client_seed; 32],
-                // Specify any account that is required by the callback
                 accounts_metas: Some(vec![
                     // game
                     SerializableAccountMeta {
@@ -532,12 +406,12 @@ pub fn roll_dice_vrf_handler(
                         is_signer: false,
                         is_writable: true,
                     },
-                    // player
-                    // SerializableAccountMeta {
-                    //     pubkey: ctx.accounts.player.key(),
-                    //     is_signer: false,
-                    //     is_writable: false,
-                    // },
+                    // clock
+                    SerializableAccountMeta {
+                        pubkey: ctx.accounts.clock.key(),
+                        is_signer: false,
+                        is_writable: false,
+                    },
                 ]),
                 ..Default::default()
             },
@@ -545,8 +419,82 @@ pub fn roll_dice_vrf_handler(
 
         ctx.accounts
             .invoke_signed_vrf(&ctx.accounts.player.to_account_info(), &ix)?;
+    } else {
+        // for test - handle the dice roll directly
+        let dice_roll = dice_roll.unwrap();
 
-        msg!("Randomness request sent with seed: {}", client_seed);
+        player_state.last_dice_roll = dice_roll;
+        game.turn_started_at = clock.unix_timestamp;
+
+        let is_doubles = dice_roll[0] == dice_roll[1];
+        if is_doubles {
+            player_state.doubles_count += 1;
+
+            // Three doubles in a row sends player to jail
+            if player_state.doubles_count >= 3 {
+                send_player_to_jail_and_end_turn(game, player_state, clock);
+
+                msg!(
+                    "Player {} rolled three doubles and goes to jail! Turn ended automatically.",
+                    player_pubkey
+                );
+                return Ok(());
+            }
+
+            msg!(
+                "Player {} rolled doubles ({}, {})! Gets another turn.",
+                player_pubkey,
+                dice_roll[0],
+                dice_roll[1]
+            );
+        } else {
+            // Reset doubles count if not doubles
+            player_state.doubles_count = 0;
+            player_state.has_rolled_dice = true;
+        }
+
+        msg!(
+            "Player {} rolled: {} and {}",
+            player_pubkey,
+            dice_roll[0],
+            dice_roll[1]
+        );
+
+        let dice_sum = dice_roll[0] + dice_roll[1];
+        let old_position = player_state.position;
+        let new_position = (old_position + dice_sum) % BOARD_SIZE;
+
+        // Check if player passed GO
+        if new_position < old_position {
+            player_state.cash_balance += GO_SALARY as u64;
+
+            emit!(PlayerPassedGo {
+                player: player_pubkey,
+                game_id: game.game_id,
+                salary_collected: GO_SALARY as u64,
+                new_position,
+                timestamp: clock.unix_timestamp,
+            });
+
+            msg!(
+                "Player {} passed GO and collected ${}",
+                player_pubkey,
+                GO_SALARY
+            );
+        }
+
+        player_state.position = new_position;
+
+        handle_space_landing(game, player_state, new_position, clock)?;
+
+        msg!(
+            "Player {} rolled: {} and {} - moved from {} to {}",
+            player_pubkey,
+            dice_roll[0],
+            dice_roll[1],
+            old_position,
+            new_position
+        );
     }
 
     Ok(())
@@ -554,6 +502,11 @@ pub fn roll_dice_vrf_handler(
 
 #[derive(Accounts)]
 pub struct CallbackRollDiceCtx<'info> {
+    /// This check ensure that the vrf_program_identity (which is a PDA) is a singer
+    /// enforcing the callback is executed by the VRF program trough CPI
+    #[account(address = ephemeral_vrf_sdk::consts::VRF_PROGRAM_IDENTITY)]
+    pub vrf_program_identity: Signer<'info>,
+
     #[account(
         mut,
         seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
@@ -569,11 +522,6 @@ pub struct CallbackRollDiceCtx<'info> {
     )]
     pub player_state: Account<'info, PlayerState>,
 
-    /// This check ensure that the vrf_program_identity (which is a PDA) is a singer
-    /// enforcing the callback is executed by the VRF program trough CPI
-    #[account(address = ephemeral_vrf_sdk::consts::VRF_PROGRAM_IDENTITY)]
-    pub vrf_program_identity: Signer<'info>,
-
     pub clock: Sysvar<'info, Clock>,
 }
 
@@ -584,25 +532,40 @@ pub fn callback_roll_dice(ctx: Context<CallbackRollDiceCtx>, randomness: [u8; 32
 
     let dice_roll = [roll_1, roll_2];
 
-    // test
     let game = &mut ctx.accounts.game;
     let player_state = &mut ctx.accounts.player_state;
     let clock = &ctx.accounts.clock;
+    let player_pubkey = player_state.wallet;
 
-    player_state.has_rolled_dice = true;
+    // Handle jail logic first if player is in jail
+    if player_state.in_jail {
+        return handle_jail_dice_roll_vrf(game, player_state, clock, dice_roll);
+    }
+
     player_state.last_dice_roll = dice_roll;
     game.turn_started_at = clock.unix_timestamp;
 
-    // Check for doubles
     let is_doubles = dice_roll[0] == dice_roll[1];
     if is_doubles {
         player_state.doubles_count += 1;
 
         // Three doubles in a row sends player to jail
         if player_state.doubles_count >= 3 {
-            player_state.has_rolled_dice = true;
+            send_player_to_jail_and_end_turn(game, player_state, clock);
+
+            msg!(
+                "Player {} rolled three doubles and goes to jail! Turn ended automatically.",
+                player_pubkey
+            );
             return Ok(());
         }
+
+        msg!(
+            "Player {} rolled doubles ({}, {})! Gets another turn.",
+            player_pubkey,
+            dice_roll[0],
+            dice_roll[1]
+        );
     } else {
         // Reset doubles count if not doubles
         player_state.doubles_count = 0;
@@ -611,95 +574,128 @@ pub fn callback_roll_dice(ctx: Context<CallbackRollDiceCtx>, randomness: [u8; 32
 
     msg!(
         "Player {} rolled: {} and {}",
-        player_state.wallet,
+        player_pubkey,
+        dice_roll[0],
+        dice_roll[1]
+    );
+
+    let dice_sum = dice_roll[0] + dice_roll[1];
+    let old_position = player_state.position;
+    let new_position = (old_position + dice_sum) % BOARD_SIZE;
+
+    // Check if player passed GO
+    if new_position < old_position {
+        player_state.cash_balance += GO_SALARY as u64;
+
+        emit!(PlayerPassedGo {
+            player: player_pubkey,
+            game_id: game.game_id,
+            salary_collected: GO_SALARY as u64,
+            new_position,
+            timestamp: clock.unix_timestamp,
+        });
+
+        msg!(
+            "Player {} passed GO and collected ${}",
+            player_pubkey,
+            GO_SALARY
+        );
+    }
+
+    player_state.position = new_position;
+
+    handle_space_landing(game, player_state, new_position, clock)?;
+
+    msg!(
+        "Player {} rolled: {} and {} - moved from {} to {}",
+        player_pubkey,
         dice_roll[0],
         dice_roll[1],
+        old_position,
+        new_position
     );
-    // test
 
-    // let game = &mut ctx.accounts.game;
-    // let player_state = &mut ctx.accounts.player_state;
-    // // let player_pubkey = ctx.accounts.player.key();
-    // let clock = &ctx.accounts.clock;
-    // // Update player state
-    // player_state.last_dice_roll = dice_roll;
-    // game.turn_started_at = clock.unix_timestamp;
+    Ok(())
+}
 
-    // // Check for doubles
-    // let is_doubles = dice_roll[0] == dice_roll[1];
-    // if is_doubles {
-    //     player_state.doubles_count += 1;
+fn handle_jail_dice_roll_vrf(
+    game: &mut GameState,
+    player_state: &mut PlayerState,
+    clock: &Sysvar<Clock>,
+    dice_roll: [u8; 2],
+) -> Result<()> {
+    player_state.jail_turns += 1;
+    player_state.last_dice_roll = dice_roll;
+    player_state.has_rolled_dice = true;
 
-    //     // Three doubles in a row sends player to jail
-    //     if player_state.doubles_count >= 3 {
-    //         send_player_to_jail(player_state);
-    //         player_state.has_rolled_dice = true;
+    let is_doubles = dice_roll[0] == dice_roll[1];
+    let mut player_escaped = false;
 
-    //         // msg!(
-    //         //     "Player {} rolled three doubles and goes to jail!",
-    //         //     player_pubkey
-    //         // );
-    //         return Ok(());
-    //     }
+    if is_doubles {
+        player_state.in_jail = false;
+        player_state.jail_turns = 0;
+        player_state.doubles_count = 0;
+        player_escaped = true;
 
-    //     msg!(
-    //         "Player {} rolled doubles ({}, {})! Gets another turn.",
-    //         player_state.wallet,
-    //         dice_roll[0],
-    //         dice_roll[1]
-    //     );
-    // } else {
-    //     // Reset doubles count if not doubles
-    //     player_state.doubles_count = 0;
-    //     player_state.has_rolled_dice = true;
-    // }
+        msg!("Player rolled doubles and escaped jail!");
+    } else if player_state.jail_turns >= MAX_JAIL_TURNS {
+        // Must pay fine after max turns
+        if player_state.cash_balance >= JAIL_FINE as u64 {
+            player_state.cash_balance -= JAIL_FINE as u64;
+            player_state.in_jail = false;
+            player_state.jail_turns = 0;
+            player_escaped = true;
 
-    // // msg!(
-    // //     "Player {} rolled: {} and {}",
-    // //     player_pubkey,
-    // //     dice_roll[0],
-    // //     dice_roll[1]
-    // // );
+            msg!("Player paid jail fine and is released!");
+        } else {
+            // Player can't afford jail fine - declare bankruptcy and end turn
+            player_state.cash_balance = 0;
+            player_state.is_bankrupt = true;
+            player_state.in_jail = false; // Remove from jail since they're bankrupt
+            player_state.jail_turns = 0;
 
-    // // Calculate movement
-    // let dice_sum = dice_roll[0] + dice_roll[1];
-    // let old_position = player_state.position;
-    // let new_position = (old_position + dice_sum) % BOARD_SIZE;
+            force_end_turn(game, player_state, clock);
 
-    // // Check if player passed GO
-    // if new_position < old_position {
-    //     player_state.cash_balance += GO_SALARY as u64;
+            msg!("Player cannot afford jail fine and is declared bankrupt. Turn ended automatically.");
+            return Ok(());
+        }
+    } else {
+        msg!("Player remains in jail. Turn {}/3", player_state.jail_turns);
+        force_end_turn(game, player_state, clock);
+        return Ok(());
+    }
 
-    //     // Emit event for frontend
-    //     emit!(PlayerPassedGo {
-    //         player: player_state.wallet,
-    //         game: game.key(),
-    //         salary_collected: GO_SALARY as u64,
-    //         new_position,
-    //         timestamp: clock.unix_timestamp,
-    //     });
+    if player_escaped {
+        // Calculate movement
+        let dice_sum = dice_roll[0] + dice_roll[1];
+        let old_position = player_state.position;
+        let new_position = (old_position + dice_sum) % BOARD_SIZE;
 
-    //     msg!(
-    //         "Player {} passed GO and collected ${}",
-    //         player_state.wallet,
-    //         GO_SALARY
-    //     );
-    // }
+        if new_position < old_position {
+            player_state.cash_balance += GO_SALARY as u64;
 
-    // // Update player position
-    // player_state.position = new_position;
+            emit!(PlayerPassedGo {
+                player: player_state.wallet,
+                game_id: game.game_id,
+                salary_collected: GO_SALARY as u64,
+                new_position,
+                timestamp: clock.unix_timestamp,
+            });
 
-    // // Process space action based on landing position
-    // handle_space_landing(player_state, new_position)?;
+            msg!("Player passed GO and collected ${}", GO_SALARY);
+        }
 
-    // msg!(
-    //     "Player {} rolled: {} and {} - moved from {} to {}",
-    //     player_state.wallet,
-    //     dice_roll[0],
-    //     dice_roll[1],
-    //     old_position,
-    //     new_position
-    // );
+        player_state.position = new_position;
 
+        handle_space_landing(game, player_state, new_position, clock)?;
+
+        msg!(
+            "Player escaped jail and moved from {} to {}",
+            old_position,
+            new_position
+        );
+    }
+
+    game.turn_started_at = clock.unix_timestamp;
     Ok(())
 }

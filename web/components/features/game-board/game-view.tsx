@@ -24,8 +24,7 @@ export function GameView() {
   if (gameLoading || !gameAddress || !gameState) {
     return (
       <div className="h-screen w-full flex items-center justify-center">
-        {/* <DiceLoading /> */}
-        loading...
+        <DiceLoading />
       </div>
     );
   }
@@ -41,7 +40,7 @@ export function GameView() {
   }
 
   return (
-    <div className="max-h-screen game-container w-full h-full overflow-hidden">
+    <div className="lg:max-h-screen game-container w-full h-full overflow-hidden">
       <div
         style={{
           gridArea: "left",
@@ -54,7 +53,7 @@ export function GameView() {
         style={{
           gridArea: "center",
         }}
-        className="w-[55vw]"
+        className="w-full lg:w-[55vw]"
       >
         <GameBoard />
       </div>

@@ -112,7 +112,7 @@ export function TradeView() {
           size="sm"
           className="h-8 px-3"
           onClick={handleCreateTrade}
-          disabled={!isCurrentTurn}
+          // disabled={!isCurrentTurn}
         >
           <Plus className="w-4 h-4 mr-1" />
           Create

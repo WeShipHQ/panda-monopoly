@@ -13,19 +13,25 @@ import {
   getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
+  getOptionDecoder,
+  getOptionEncoder,
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
+  getU8Decoder,
+  getU8Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
   type Address,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
+  type Codec,
+  type Decoder,
+  type Encoder,
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
+  type Option,
+  type OptionOrNullable,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
@@ -87,24 +93,31 @@ export type DrawChanceCardInstruction<
 
 export type DrawChanceCardInstructionData = {
   discriminator: ReadonlyUint8Array;
+  cardIndex: Option<number>;
 };
 
-export type DrawChanceCardInstructionDataArgs = {};
+export type DrawChanceCardInstructionDataArgs = {
+  cardIndex: OptionOrNullable<number>;
+};
 
-export function getDrawChanceCardInstructionDataEncoder(): FixedSizeEncoder<DrawChanceCardInstructionDataArgs> {
+export function getDrawChanceCardInstructionDataEncoder(): Encoder<DrawChanceCardInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['cardIndex', getOptionEncoder(getU8Encoder())],
+    ]),
     (value) => ({ ...value, discriminator: DRAW_CHANCE_CARD_DISCRIMINATOR })
   );
 }
 
-export function getDrawChanceCardInstructionDataDecoder(): FixedSizeDecoder<DrawChanceCardInstructionData> {
+export function getDrawChanceCardInstructionDataDecoder(): Decoder<DrawChanceCardInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['cardIndex', getOptionDecoder(getU8Decoder())],
   ]);
 }
 
-export function getDrawChanceCardInstructionDataCodec(): FixedSizeCodec<
+export function getDrawChanceCardInstructionDataCodec(): Codec<
   DrawChanceCardInstructionDataArgs,
   DrawChanceCardInstructionData
 > {
@@ -126,6 +139,7 @@ export type DrawChanceCardAsyncInput<
   player: TransactionSigner<TAccountPlayer>;
   recentBlockhashes?: Address<TAccountRecentBlockhashes>;
   clock?: Address<TAccountClock>;
+  cardIndex: DrawChanceCardInstructionDataArgs['cardIndex'];
 };
 
 export async function getDrawChanceCardInstructionAsync<
@@ -174,6 +188,9 @@ export async function getDrawChanceCardInstructionAsync<
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolve default values.
   if (!accounts.playerState.value) {
     accounts.playerState.value = await getProgramDerivedAddress({
@@ -203,7 +220,9 @@ export async function getDrawChanceCardInstructionAsync<
       getAccountMeta(accounts.recentBlockhashes),
       getAccountMeta(accounts.clock),
     ],
-    data: getDrawChanceCardInstructionDataEncoder().encode({}),
+    data: getDrawChanceCardInstructionDataEncoder().encode(
+      args as DrawChanceCardInstructionDataArgs
+    ),
     programAddress,
   } as DrawChanceCardInstruction<
     TProgramAddress,
@@ -227,6 +246,7 @@ export type DrawChanceCardInput<
   player: TransactionSigner<TAccountPlayer>;
   recentBlockhashes?: Address<TAccountRecentBlockhashes>;
   clock?: Address<TAccountClock>;
+  cardIndex: DrawChanceCardInstructionDataArgs['cardIndex'];
 };
 
 export function getDrawChanceCardInstruction<
@@ -273,6 +293,9 @@ export function getDrawChanceCardInstruction<
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolve default values.
   if (!accounts.recentBlockhashes.value) {
     accounts.recentBlockhashes.value =
@@ -292,7 +315,9 @@ export function getDrawChanceCardInstruction<
       getAccountMeta(accounts.recentBlockhashes),
       getAccountMeta(accounts.clock),
     ],
-    data: getDrawChanceCardInstructionDataEncoder().encode({}),
+    data: getDrawChanceCardInstructionDataEncoder().encode(
+      args as DrawChanceCardInstructionDataArgs
+    ),
     programAddress,
   } as DrawChanceCardInstruction<
     TProgramAddress,

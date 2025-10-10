@@ -14,10 +14,74 @@ import { BankruptcyButton } from "./bankruptcy-button";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import envConfig from "@/configs/env";
-import { cn } from "@/lib/utils";
+import { cn, formatAddress } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  showRentPaymentErrorToast,
+  showRentPaymentToast,
+  showRentPaymentFallbackToast,
+} from "@/lib/toast-utils";
 
 export function RightPanel() {
+  const { currentPlayerState, mutate, refetch } = useGameContext();
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleUpdateBalance = async () => {
+    const balanceChange = "100";
+
+    if (!currentPlayerState || !mutate || !balanceChange) {
+      toast.error("Missing required data for balance update");
+      return;
+    }
+
+    const changeAmount = parseInt(balanceChange);
+    if (isNaN(changeAmount)) {
+      toast.error("Please enter a valid number");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      // Update the cached data directly using mutate
+      await mutate((currentData: any) => {
+        console.log("currentData", currentData);
+        if (!currentData) return currentData;
+
+        // Create a deep copy of the current data
+        const updatedData = JSON.parse(JSON.stringify(currentData));
+
+        // Find and update the current player's balance
+        const playerIndex = updatedData.players.findIndex(
+          (player: any) => player.wallet === currentPlayerState.wallet
+        );
+        console.log("playerIndex", playerIndex);
+        if (playerIndex !== -1) {
+          const newBalance =
+            Number(updatedData.players[playerIndex].cashBalance) + changeAmount;
+          console.log("newBalance", newBalance);
+          updatedData.players[playerIndex].cashBalance = Math.max(
+            0,
+            newBalance
+          ); // Prevent negative balance
+        }
+
+        return updatedData;
+      }, false); // false means don't revalidate from server
+
+      // await refetch();
+
+      toast.success(
+        `Balance updated by ${changeAmount > 0 ? "+" : ""}${changeAmount}`
+      );
+      // setBalanceChange("");
+    } catch (error) {
+      console.error("Failed to update balance:", error);
+      toast.error("Failed to update balance");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div className="p-4 space-y-6 h-full overflow-auto">
       <TradeView />
@@ -26,17 +90,11 @@ export function RightPanel() {
       {envConfig.IS_DEVELOPMENT && (
         <div className="flex items-start w-full flex-col gap-2">
           <Button
-            onClick={() =>
-              toast("Event has been created", {
-                description: "Sunday, December 03, 2023 at 9:00 AM",
-                action: {
-                  label: "Undo",
-                  onClick: () => console.log("Undo"),
-                },
-              })
-            }
+            onClick={() => {
+              handleUpdateBalance();
+            }}
           >
-            Toast
+            CHANCE
           </Button>
           <DebugUI />
           <DiceTestForm />
