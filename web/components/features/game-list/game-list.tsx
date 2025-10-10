@@ -21,6 +21,7 @@ import { buildAndSendTransactionWithPrivy } from "@/lib/tx";
 import { address, TransactionSigner } from "@solana/kit";
 import { useGames } from "@/hooks/useGames";
 import { GameStatus } from "@/lib/sdk/generated";
+import { EntryFeeDialog } from "@/components/entry-fee-dialog";
 
 type GameStatusFilter = "all" | GameStatus;
 
@@ -221,8 +222,17 @@ function CreateGameButton() {
   const { rpc } = useRpcContext();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [showEntryFeeDialog, setShowEntryFeeDialog] = useState(false);
 
-  const handleCreateGame = async () => {
+  const handleOpenDialog = () => {
+    if (!wallet) {
+      toast.error("Please connect your wallet first.");
+      return;
+    }
+    setShowEntryFeeDialog(true);
+  };
+
+  const handleCreateGame = async (entryFee: number) => {
     if (!wallet) {
       toast.error("Please connect your wallet first.");
       return;
@@ -247,10 +257,12 @@ function CreateGameButton() {
 
       if (!signature) {
         toast.error("Failed to create game. Please try again.");
+        setLoading(false);
         return;
       }
 
-      toast.success("Game created successfully!");
+      toast.success(`Game created successfully with ${entryFee} SOL entry fee!`);
+      setShowEntryFeeDialog(false);
       router.push(`/game/${gameAccountAddress}`);
     } catch (error) {
       console.error("Failed to create game:", error);
@@ -261,14 +273,22 @@ function CreateGameButton() {
   };
 
   return (
-    <Button
-      onClick={handleCreateGame}
-      loading={loading}
-      className="gap-2 w-full sm:w-auto"
-    >
-      <Plus className="w-4 h-4" />
-      <span className="hidden xs:inline">Create Game</span>
-      <span className="xs:hidden">Create</span>
-    </Button>
+    <>
+      <Button
+        onClick={handleOpenDialog}
+        className="gap-2 w-full sm:w-auto"
+      >
+        <Plus className="w-4 h-4" />
+        <span className="hidden xs:inline">Create Game</span>
+        <span className="xs:hidden">Create</span>
+      </Button>
+
+      <EntryFeeDialog
+        isOpen={showEntryFeeDialog}
+        onClose={() => setShowEntryFeeDialog(false)}
+        onConfirm={handleCreateGame}
+        loading={loading}
+      />
+    </>
   );
 }
