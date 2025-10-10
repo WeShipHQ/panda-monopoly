@@ -77,7 +77,7 @@ export default function GameResultPage() {
                         </div>
                         <div>
                             <span className="text-gray-600">Final Balance:</span>{" "}
-                            <span className="text-black">15.75 SOL</span>
+                            <span className="text-black">15.75 $</span>
                         </div>
                         <div>
                             <span className="text-gray-600">Properties:</span>{" "}
