@@ -21,17 +21,17 @@ pub fn end_game_handler(ctx: Context<EndGame>) -> Result<()> {
 
     // Check if game should end (only one player remaining)
     let active_players = count_active_players(game);
-    
+
     if active_players <= 1 {
         // End the game
         game.game_status = GameStatus::Finished;
-        
+
         if active_players == 1 {
             // Find the remaining active player and declare them winner
             if let Some(winner_pubkey) = find_last_active_player(game) {
                 game.winner = Some(winner_pubkey);
                 msg!("Game ended. Winner: {}", winner_pubkey);
-                
+
                 emit!(GameEnded {
                     game_id: game.game_id,
                     winner: Some(winner_pubkey),
@@ -41,18 +41,25 @@ pub fn end_game_handler(ctx: Context<EndGame>) -> Result<()> {
         } else {
             // No players remaining (shouldn't happen in normal gameplay)
             msg!("Game ended with no remaining players");
-            
+
             emit!(GameEnded {
                 game_id: game.game_id,
                 winner: None,
                 ended_at: clock.unix_timestamp,
             });
         }
-        
+
         msg!("Game {} has ended", game.game_id);
     } else {
         return Err(GameError::GameCannotEnd.into());
     }
+
+    // Emit GameEnded event
+    emit!(GameEnded {
+        game_id: game.game_id,
+        winner: game.winner,
+        ended_at: clock.unix_timestamp,
+    });
 
     Ok(())
 }

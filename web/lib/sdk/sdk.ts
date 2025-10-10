@@ -53,6 +53,24 @@ import {
   getPayRentV2Instruction,
   getBuildHotelV2Instruction,
   getSellBuildingV2Instruction,
+  getPlayerPassedGoCodec,
+  getGameEndedCodec,
+  getTradeCreatedCodec,
+  getTradeAcceptedCodec,
+  getTradeRejectedCodec,
+  getTradeCancelledCodec,
+  getTradesCleanedUpCodec,
+  getPropertyPurchasedCodec,
+  getRentPaidCodec,
+  getHouseBuiltCodec,
+  getHotelBuiltCodec,
+  getBuildingSoldCodec,
+  getPropertyMortgagedCodec,
+  getPropertyUnmortgagedCodec,
+  getPlayerJoinedCodec,
+  getGameStartedCodec,
+  getSpecialSpaceActionCodec,
+  getPlayerBankruptCodec,
 } from "./generated";
 import {
   CreateGameIxs,
@@ -125,17 +143,38 @@ import {
   fetchToken,
 } from "@solana-program/token";
 import {
-  CHANCE_CARD_DRAWN_EVENT_DISCRIMINATOR,
-  COMMUNITY_CHEST_CARD_DRAWN_EVENT_DISCRIMINATOR,
-} from "./utils";
-import {
   DEFAULT_EPHEMERAL_QUEUE,
   DELEGATION_PROGRAM_ID,
   PLATFORM_ID,
+  CHANCE_CARD_DRAWN_EVENT_DISCRIMINATOR,
+  COMMUNITY_CHEST_CARD_DRAWN_EVENT_DISCRIMINATOR,
+  PLAYER_PASSED_GO_EVENT_DISCRIMINATOR,
+  GAME_ENDED_EVENT_DISCRIMINATOR,
+  TRADE_CREATED_EVENT_DISCRIMINATOR,
+  TRADE_ACCEPTED_EVENT_DISCRIMINATOR,
+  TRADE_REJECTED_EVENT_DISCRIMINATOR,
+  TRADE_CANCELLED_EVENT_DISCRIMINATOR,
+  TRADES_CLEANED_UP_EVENT_DISCRIMINATOR,
+  PROPERTY_PURCHASED_EVENT_DISCRIMINATOR,
+  RENT_PAID_EVENT_DISCRIMINATOR,
+  HOUSE_BUILT_EVENT_DISCRIMINATOR,
+  HOTEL_BUILT_EVENT_DISCRIMINATOR,
+  BUILDING_SOLD_EVENT_DISCRIMINATOR,
+  PROPERTY_MORTGAGED_EVENT_DISCRIMINATOR,
+  PROPERTY_UNMORTGAGED_EVENT_DISCRIMINATOR,
+  PLAYER_JOINED_EVENT_DISCRIMINATOR,
+  GAME_STARTED_EVENT_DISCRIMINATOR,
+  SPECIAL_SPACE_ACTION_EVENT_DISCRIMINATOR,
+  PLAYER_BANKRUPT_EVENT_DISCRIMINATOR,
 } from "@/configs/constants";
 import { GameAccount, mapGameStateToAccount } from "@/types/schema";
 
 const NATIVE_MINT = address("So11111111111111111111111111111111111111112");
+
+const PROGRAM_LOG = "Program log: ";
+const PROGRAM_DATA = "Program data: ";
+const PROGRAM_LOG_START_INDEX = PROGRAM_LOG.length;
+const PROGRAM_DATA_START_INDEX = PROGRAM_DATA.length;
 
 class MonopolyGameSDK {
   async createPlatformIx(params: CreatePlatformParams): Promise<any> {
@@ -365,27 +404,10 @@ class MonopolyGameSDK {
 
     for (const player of params.players) {
       const [playerPda] = await getPlayerStatePDA(params.gameAddress, player);
-
-      const playerAccount = await fetchPlayerState(params.rpc, playerPda);
-
       remainingAccounts.push({
         address: playerPda,
         role: AccountRole.WRITABLE,
       });
-
-      if (playerAccount.data.propertiesOwned.length > 0) {
-        const properties = Array.from(playerAccount.data.propertiesOwned);
-        for (const property of properties) {
-          const [propertyAddress] = await getPropertyStatePDA(
-            params.gameAddress,
-            property
-          );
-          remainingAccounts.push({
-            address: propertyAddress,
-            role: AccountRole.WRITABLE,
-          });
-        }
-      }
     }
     ix.accounts.push(...remainingAccounts);
 
@@ -451,27 +473,6 @@ class MonopolyGameSDK {
         : none(),
     });
   }
-
-  // async rollDiceVrfIx(params: RollDiceParams): Promise<Instruction> {
-  //   const [playerStatePda] = await getPlayerStatePDA(
-  //     params.gameAddress,
-  //     params.player.address
-  //   );
-
-  //   const [programIdentityPda] = await getProgramIdentityPDA();
-
-  //   return getRollDiceVrfHandlerInstruction({
-  //     game: params.gameAddress,
-  //     playerState: playerStatePda,
-  //     player: params.player,
-  //     oracleQueue: DEFAULT_EPHEMERAL_QUEUE,
-  //     programIdentity: programIdentityPda,
-  //     seed: Math.floor(Math.random() * 254) + 1,
-  //     diceRoll: params.diceRoll
-  //       ? some(params.diceRoll as unknown as ReadonlyUint8Array)
-  //       : none(),
-  //   });
-  // }
 
   /**
    * End current player's turn
@@ -1106,7 +1107,6 @@ class MonopolyGameSDK {
     rpcSubscriptions: RpcSubscriptions<SolanaRpcSubscriptionsApi>,
     accAddress: Address,
     onAccountChange: (accountInfo: MaybeEncodedAccount<string> | null) => void
-    // er: boolean = false
   ) {
     let ignoreFetch = false;
 
@@ -1257,10 +1257,7 @@ class MonopolyGameSDK {
     const notifications = await rpcSubscriptions
       .logsNotifications(
         {
-          mentions: [
-            // address("4vucUqMcXN4sgLsgnrXTUC9U7ACZ5DmoRBLbWt4vrnyR")
-            PANDA_MONOPOLY_PROGRAM_ADDRESS,
-          ],
+          mentions: [PANDA_MONOPOLY_PROGRAM_ADDRESS],
         },
         { commitment: "confirmed" }
       )
@@ -1280,6 +1277,7 @@ class MonopolyGameSDK {
             const trimmed = log.trim();
 
             if (trimmed.startsWith(PROGRAM_DATA)) {
+              console.log("xxx log", trimmed);
               const base64 = trimmed.slice(PROGRAM_DATA_START_INDEX);
               const buf = Buffer.from(base64, "base64");
 
@@ -1287,6 +1285,7 @@ class MonopolyGameSDK {
                 continue;
               }
               const discriminator = buf.subarray(0, 8);
+
               if (
                 discriminator.equals(
                   Buffer.from(CHANCE_CARD_DRAWN_EVENT_DISCRIMINATOR)
@@ -1303,6 +1302,138 @@ class MonopolyGameSDK {
                   buf.subarray(8)
                 );
                 onEvent({ type: "CommunityChestCardDrawn", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(PLAYER_PASSED_GO_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getPlayerPassedGoCodec().decode(buf.subarray(8));
+                onEvent({ type: "PlayerPassedGo", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(GAME_ENDED_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getGameEndedCodec().decode(buf.subarray(8));
+                onEvent({ type: "GameEnded", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(TRADE_CREATED_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getTradeCreatedCodec().decode(buf.subarray(8));
+                onEvent({ type: "TradeCreated", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(TRADE_ACCEPTED_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getTradeAcceptedCodec().decode(buf.subarray(8));
+                onEvent({ type: "TradeAccepted", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(TRADE_REJECTED_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getTradeRejectedCodec().decode(buf.subarray(8));
+                onEvent({ type: "TradeRejected", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(TRADE_CANCELLED_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getTradeCancelledCodec().decode(buf.subarray(8));
+                onEvent({ type: "TradeCancelled", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(TRADES_CLEANED_UP_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getTradesCleanedUpCodec().decode(buf.subarray(8));
+                onEvent({ type: "TradesCleanedUp", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(PROPERTY_PURCHASED_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getPropertyPurchasedCodec().decode(
+                  buf.subarray(8)
+                );
+                onEvent({ type: "PropertyPurchased", data });
+              } else if (
+                discriminator.equals(Buffer.from(RENT_PAID_EVENT_DISCRIMINATOR))
+              ) {
+                const data = getRentPaidCodec().decode(buf.subarray(8));
+                onEvent({ type: "RentPaid", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(HOUSE_BUILT_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getHouseBuiltCodec().decode(buf.subarray(8));
+                onEvent({ type: "HouseBuilt", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(HOTEL_BUILT_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getHotelBuiltCodec().decode(buf.subarray(8));
+                onEvent({ type: "HotelBuilt", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(BUILDING_SOLD_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getBuildingSoldCodec().decode(buf.subarray(8));
+                onEvent({ type: "BuildingSold", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(PROPERTY_MORTGAGED_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getPropertyMortgagedCodec().decode(
+                  buf.subarray(8)
+                );
+                onEvent({ type: "PropertyMortgaged", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(PROPERTY_UNMORTGAGED_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getPropertyUnmortgagedCodec().decode(
+                  buf.subarray(8)
+                );
+                onEvent({ type: "PropertyUnmortgaged", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(PLAYER_JOINED_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getPlayerJoinedCodec().decode(buf.subarray(8));
+                onEvent({ type: "PlayerJoined", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(GAME_STARTED_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getGameStartedCodec().decode(buf.subarray(8));
+                onEvent({ type: "GameStarted", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(SPECIAL_SPACE_ACTION_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getSpecialSpaceActionCodec().decode(
+                  buf.subarray(8)
+                );
+                onEvent({ type: "SpecialSpaceAction", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(PLAYER_BANKRUPT_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getPlayerBankruptCodec().decode(buf.subarray(8));
+                onEvent({ type: "PlayerBankrupt", data });
               }
             }
           }
@@ -1339,11 +1470,6 @@ class MonopolyGameSDK {
   //   }
   // }
 }
-
-const PROGRAM_LOG = "Program log: ";
-const PROGRAM_DATA = "Program data: ";
-const PROGRAM_LOG_START_INDEX = PROGRAM_LOG.length;
-const PROGRAM_DATA_START_INDEX = PROGRAM_DATA.length;
 
 // function parseEvent<T>(
 //   logs: readonly string[],

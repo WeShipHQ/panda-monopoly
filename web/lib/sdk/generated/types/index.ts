@@ -6,15 +6,26 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './buildingSold';
 export * from './buildingType';
 export * from './chanceCardDrawn';
 export * from './colorGroup';
 export * from './communityChestCardDrawn';
 export * from './gameEnded';
+export * from './gameStarted';
 export * from './gameStatus';
+export * from './hotelBuilt';
+export * from './houseBuilt';
+export * from './playerBankrupt';
+export * from './playerJoined';
 export * from './playerPassedGo';
 export * from './propertyInfo';
+export * from './propertyMortgaged';
+export * from './propertyPurchased';
 export * from './propertyType';
+export * from './propertyUnmortgaged';
+export * from './rentPaid';
+export * from './specialSpaceAction';
 export * from './tradeAccepted';
 export * from './tradeCancelled';
 export * from './tradeCreated';

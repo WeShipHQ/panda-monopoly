@@ -1,7 +1,7 @@
 use crate::constants::get_property_data;
 use crate::error::GameError;
 use crate::instructions::end_game::check_game_end_condition;
-use crate::state::*;
+use crate::{state::*, PlayerBankrupt};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
@@ -188,6 +188,14 @@ pub fn declare_bankruptcy_handler(ctx: Context<DeclareBankruptcy>) -> Result<()>
             game.current_turn = 0;
         }
     }
+
+    emit!(PlayerBankrupt {
+        game: game.key(),
+        player: player_pubkey,
+        liquidation_value: total_liquidation_value,
+        cash_transferred: remaining_cash,
+        timestamp: clock.unix_timestamp,
+    });
 
     Ok(())
 }

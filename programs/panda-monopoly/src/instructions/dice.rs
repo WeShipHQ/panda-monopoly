@@ -536,7 +536,6 @@ fn handle_special_space(
 }
 
 // --- for test
-
 fn handle_jail_dice_roll_without_vrf(
     game: &mut GameState,
     player_state: &mut PlayerState,

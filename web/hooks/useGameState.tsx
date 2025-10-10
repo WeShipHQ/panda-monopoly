@@ -57,7 +57,7 @@ export function useGameState(
   const isSubscribedRef = useRef(false);
   const currentGameAddressRef = useRef<string | null>(null);
   const currentPlayerAddressesRef = useRef<string[]>([]);
-  const currentEventSubscriptionRef = useRef<(() => void) | null>(null);
+  // const currentEventSubscriptionRef = useRef<(() => void) | null>(null);
 
   const { rpc, erRpc, rpcSubscriptions, erRpcSubscriptions } = useRpcContext();
 
@@ -188,10 +188,10 @@ export function useGameState(
     });
     playerSubscriptionsRef.current.clear();
 
-    if (currentEventSubscriptionRef.current) {
-      currentEventSubscriptionRef.current();
-      currentEventSubscriptionRef.current = null;
-    }
+    // if (currentEventSubscriptionRef.current) {
+    //   currentEventSubscriptionRef.current();
+    //   currentEventSubscriptionRef.current = null;
+    // }
 
     isSubscribedRef.current = false;
   }, []);
@@ -246,21 +246,21 @@ export function useGameState(
         }
       }
 
-      const eventUnsubscribe = await sdk.subscribeToEvents(
-        // isInProgress ? erRpc : rpc,
-        isInProgress ? erRpcSubscriptions : rpcSubscriptions,
-        async (event) => {
-          console.log(`Event ${event.type} received, refreshing data...`);
-          onCardDrawEvent?.(event);
-        }
-      );
+      // const eventUnsubscribe = await sdk.subscribeToEvents(
+      //   // isInProgress ? erRpc : rpc,
+      //   isInProgress ? erRpcSubscriptions : rpcSubscriptions,
+      //   async (event) => {
+      //     console.log(`Event ${event.type} received, refreshing data...`);
+      //     onCardDrawEvent?.(event);
+      //   }
+      // );
 
       isSubscribedRef.current = true;
       currentGameAddressRef.current = gameAddress.toString();
       currentPlayerAddressesRef.current = playerAddresses.map((addr) =>
         addr.toString()
       );
-      currentEventSubscriptionRef.current = eventUnsubscribe || null;
+      // currentEventSubscriptionRef.current = eventUnsubscribe || null;
     } catch (error) {
       console.error("Error setting up subscriptions:", error);
     }

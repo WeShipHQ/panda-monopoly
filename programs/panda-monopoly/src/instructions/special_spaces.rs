@@ -568,6 +568,14 @@ fn execute_chance_card_effect(
             // Check if passing GO (only for forward movement)
             if card.amount >= 0 && (new_position < old_position || new_position == 0) {
                 player_state.cash_balance += GO_SALARY as u64;
+
+                emit!(PlayerPassedGo {
+                    player: player_state.wallet,
+                    game_id: game.game_id,
+                    salary_collected: GO_SALARY as u64,
+                    new_position,
+                    timestamp: clock.unix_timestamp,
+                });
             }
 
             player_state.position = new_position;
@@ -614,6 +622,14 @@ fn execute_chance_card_effect(
             // Check if passing GO
             if new_position < old_position {
                 player_state.cash_balance += GO_SALARY as u64;
+
+                emit!(PlayerPassedGo {
+                    player: player_state.wallet,
+                    game_id: game.game_id,
+                    salary_collected: GO_SALARY as u64,
+                    new_position,
+                    timestamp: clock.unix_timestamp,
+                });
             }
 
             player_state.position = new_position;
@@ -715,6 +731,14 @@ fn execute_community_chest_card_effect(
             // Check if passing GO
             if new_position < old_position || new_position == 0 {
                 player_state.cash_balance += GO_SALARY as u64;
+
+                emit!(PlayerPassedGo {
+                    player: player_state.wallet,
+                    game_id: game.game_id,
+                    salary_collected: GO_SALARY as u64,
+                    new_position,
+                    timestamp: clock.unix_timestamp,
+                });
             }
 
             player_state.position = new_position;

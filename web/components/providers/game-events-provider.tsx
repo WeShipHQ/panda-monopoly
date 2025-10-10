@@ -15,6 +15,7 @@ import { useWallet } from "@/hooks/use-wallet";
 import { toast } from "sonner";
 import { formatAddress } from "@/lib/utils";
 import { playSound } from "@/lib/soundUtil";
+import { useGameContext } from "./game-provider";
 
 type EventHandler<T = any> = (event: T, context: GameEventContext) => void;
 
@@ -51,13 +52,14 @@ export const useGameEventsContext = () => {
 
 interface GameEventsProviderProps {
   children: ReactNode;
-  gameAddress?: Address;
+  // gameAddress?: Address;
 }
 
 export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
   children,
-  gameAddress,
+  // gameAddress,
 }) => {
+  const { gameAddress, gameState } = useGameContext();
   const { wallet } = useWallet();
   const [eventHandlers, setEventHandlers] = useState<
     Map<string, Set<EventHandler>>
@@ -67,6 +69,7 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
 
   // Use the events hook
   const { isSubscribed } = useGameEvents(gameAddress, {
+    gameData: gameState,
     onEvent: useCallback(
       (event: GameEvent) => {
         console.log("GameEventsProvider received event:", event);
@@ -96,6 +99,8 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
       [eventHandlers, gameAddress, wallet?.address]
     ),
   });
+
+  console.log("isSubscribed", isSubscribed);
 
   // Register event handler function
   const registerEventHandler = useCallback(
