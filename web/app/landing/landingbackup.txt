@@ -1,0 +1,768 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+
+export default function MonopolyLanding() {
+    const [gameCode, setGameCode] = useState("")
+    const [email, setEmail] = useState("")
+    const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+    const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null)
+    const [hoveredCard, setHoveredCard] = useState<number | null>(null)
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            setMousePosition({ x: e.clientX, y: e.clientY })
+        }
+        window.addEventListener("mousemove", handleMouseMove)
+        return () => window.removeEventListener("mousemove", handleMouseMove)
+    }, [])
+
+    const handleJoinGame = () => {
+        if (gameCode.trim()) {
+            alert(`Joining game with code: ${gameCode}`)
+        }
+    }
+
+    const handleEmailSignup = () => {
+        if (email.trim()) {
+            alert(`Subscribed: ${email}`)
+        }
+    }
+
+    return (
+        <div className="min-h-screen bg-[#fffef0] text-black font-mono overflow-x-hidden relative">
+            {/* Global Animated grid background */}
+            {/* <div className="fixed inset-0 overflow-hidden opacity-10 pointer-events-none z-0">
+                <div className="grid grid-cols-16 h-full" style={{ gridTemplateRows: 'repeat(auto-fill, 60px)' }}>
+                    {[...Array(400)].map((_, i) => (
+                        <div
+                            key={i}
+                            className="border border-black/20 transition-all duration-700"
+                            style={{
+                            
+                              
+                                backgroundColor:
+                                    i % 7 === 0
+                                        ? "#ff008015"
+                                        : i % 7 === 1
+                                            ? "#9945ff15"
+                                            : i % 7 === 2
+                                                ? "#14f19515"
+                                                : i % 7 === 3
+                                                    ? "#ffed0015"
+                                                    : "transparent",
+                            }}
+                        />
+                    ))}
+                </div>
+            </div> */}
+
+            <div className="relative min-h-screen flex flex-col bg-white/90 border-b-8 border-black">
+                {/* Animated grid background */}
+                <div className="absolute inset-0 overflow-hidden opacity-20">
+                    <div className="grid grid-cols-12 grid-rows-12 h-full">
+                        {[...Array(144)].map((_, i) => (
+                            <div
+                                key={i}
+                                className="border border-black/20 transition-all duration-700 hover:bg-[#ff0080] hover:scale-150 hover:rotate-12 hover:z-10 cursor-pointer"
+                                style={{
+
+                                    backgroundColor:
+                                        i % 7 === 0
+                                            ? "#ff008015"
+                                            : i % 7 === 1
+                                                ? "#9945ff15"
+                                                : i % 7 === 2
+                                                    ? "#14f19515"
+                                                    : i % 7 === 3
+                                                        ? "#ffed0015"
+                                                        : "transparent",
+                                }}
+                            />
+                        ))}
+                    </div>
+                </div>
+
+                {/* Floating decorative elements with parallax */}
+                <div
+                    className="absolute top-[15%] right-[10%] z-10 hidden lg:block"
+                    style={{
+                        transform: `translate(${mousePosition.x * 0.02}px, ${mousePosition.y * 0.02}px)`,
+                        transition: "transform 0.3s ease-out",
+                    }}
+                >
+                    <div className="w-32 h-32 bg-[#9945ff] border-6 border-black shadow-[16px_16px_0_#000] rotate-12 hover:rotate-45 hover:scale-125 hover:shadow-[24px_24px_0_#000] transition-all duration-700 cursor-pointer animate-[float_6s_ease-in-out_infinite] group">
+                        <div className="absolute inset-0 bg-[#14f195] opacity-0 group-hover:opacity-30 transition-opacity duration-500" />
+                    </div>
+                </div>
+
+
+                {/* Main hero content */}
+                <div className="relative z-10 flex-1 flex flex-col justify-center px-6 md:px-8 lg:px-24 py-20 w-full">
+                    <div className="mb-8 animate-[slide-in-top_0.8s_ease-out] animate-fill-both">
+                        <div className="bg-[#ff0080] border-5 border-black shadow-[8px_8px_0_#000] px-6 py-3 inline-block hover:shadow-[12px_12px_0_#000] hover:-translate-y-1 hover:rotate-2 transition-all duration-300 cursor-pointer">
+                            <span className="text-white font-black text-sm md:text-lg uppercase tracking-wider">
+                                ⚡ BETA V1.0 - LIVE ON DEVNET
+                            </span>
+                        </div>
+                    </div>
+
+                    <h1 className="text-6xl md:text-8xl lg:text-[10rem] font-black uppercase leading-[0.85] mb-12 max-w-6xl">
+                        <span className="block text-black hover:text-[#ff0080] transition-colors duration-300 animate-[slide-in-left_0.8s_ease-out] animate-fill-both cursor-pointer">
+                            MONOPOLY
+                        </span>
+                        <span className="block text-black hover:text-[#9945ff] transition-colors duration-300 animate-[slide-in-left_0.9s_ease-out] animate-fill-both cursor-pointer">
+                            ON{" "}
+                            <span className="inline-block bg-[#14f195] px-4 border-6 border-black shadow-[8px_8px_0_#000] hover:shadow-[12px_12px_0_#000] hover:-translate-y-2 transition-all duration-300">
+                                SOLANA
+                            </span>
+                        </span>
+                    </h1>
+
+                    <div className="bg-[#ffed00] text-black border-6 border-black shadow-[14px_14px_0_#000] px-10 py-10 max-w-3xl mb-14 hover:shadow-[20px_20px_0_#000] hover:-translate-y-3 hover:rotate-1 transition-all duration-500 animate-[slide-in-right_0.8s_ease-out_0.3s] animate-fill-both group cursor-pointer relative overflow-hidden">
+                        <div className="absolute inset-0 bg-[#ff0080] translate-x-full group-hover:translate-x-0 transition-transform duration-700" />
+                        <p className="text-xl md:text-3xl font-black uppercase leading-tight relative z-10 group-hover:text-white transition-colors duration-700">
+                            Classic Monopoly meets Solana speed—Buy NFTs, Earn SOL, Crush opponents in decentralized chaos! 🎲
+                        </p>
+                    </div>
+
+                    <button className="bg-[#9945ff] text-white border-6 border-black shadow-[16px_16px_0_#000] px-12 py-8 text-2xl md:text-4xl font-black uppercase max-w-fit transition-all duration-500 hover:bg-[#14f195] hover:text-black hover:scale-110 hover:rotate-3 hover:shadow-[24px_24px_0_#000] active:scale-95 active:shadow-[10px_10px_0_#000] animate-[slide-in-bottom_0.8s_ease-out_0.5s] animate-fill-both group relative overflow-hidden">
+                        <span className="relative z-10">🚀 CONNECT WALLET & PLAY</span>
+                        <div className="absolute inset-0 bg-[#ff0080] translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                    </button>
+
+                    <div className="absolute top-[12%] right-[8%] z-10 hidden md:block animate-[float_4s_ease-in-out_infinite]">
+                        <div className="w-28 h-28 lg:w-36 lg:h-36 bg-white border-6 border-black shadow-[12px_12px_0_#000] relative hover:shadow-[20px_20px_0_#000] hover:-translate-y-3 hover:rotate-12 transition-all duration-500 cursor-pointer group">
+                            <div className="absolute inset-0 bg-[#9945ff] opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
+                            <div className="absolute top-[15%] left-[15%] w-[20%] h-[20%] bg-black rounded-full animate-[pulse_2s_ease-in-out_infinite]" />
+                            <div className="absolute top-[40%] left-[40%] w-[20%] h-[20%] bg-black rounded-full animate-[pulse_2s_ease-in-out_infinite_0.3s]" />
+                            <div className="absolute top-[65%] left-[65%] w-[20%] h-[20%] bg-black rounded-full animate-[pulse_2s_ease-in-out_infinite_0.6s]" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="relative z-10 border-t-6 border-b-6 border-black bg-[#14f195] py-6 overflow-hidden">
+                    <div className="flex whitespace-nowrap animate-[marquee_20s_linear_infinite]">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="flex items-center shrink-0">
+                                <span className="text-3xl md:text-5xl font-black uppercase text-white mx-8 [text-shadow:4px_4px_0_#000]">
+                                    ROLL THE DICE
+                                </span>
+                                <span className="text-4xl mx-8">🎲</span>
+                                <span className="text-3xl md:text-5xl font-black uppercase text-white mx-8 [text-shadow:4px_4px_0_#000]">
+                                    BUY PROPERTIES
+                                </span>
+                                <span className="text-4xl mx-8">🏠</span>
+                                <span className="text-3xl md:text-5xl font-black uppercase text-white mx-8 [text-shadow:4px_4px_0_#000]">
+                                    COLLECT RENT
+                                </span>
+                                <span className="text-4xl mx-8">💰</span>
+                                <span className="text-3xl md:text-5xl font-black uppercase text-white mx-8 [text-shadow:4px_4px_0_#000]">
+                                    WIN SOL
+                                </span>
+                                <span className="text-4xl mx-8">◎</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            <section className="relative py-24 md:py-36 px-6 md:px-12 lg:px-20 bg-white/90 border-t-8 border-black">
+                <div className="absolute inset-0 overflow-hidden opacity-20">
+                    <div className="grid grid-cols-12 grid-rows-12 h-full">
+                        {[...Array(144)].map((_, i) => (
+                            <div
+                                key={i}
+                                className="border border-black/20 transition-all duration-700 hover:bg-[#ff0080] hover:scale-150 hover:rotate-12 hover:z-10 cursor-pointer"
+                                style={{
+
+                                    backgroundColor:
+                                        i % 7 === 0
+                                            ? "#ff008015"
+                                            : i % 7 === 1
+                                                ? "#9945ff15"
+                                                : i % 7 === 2
+                                                    ? "#14f19515"
+                                                    : i % 7 === 3
+                                                        ? "#ffed0015"
+                                                        : "transparent",
+                                }}
+                            />
+                        ))}
+                    </div>
+                </div>
+                <div className="max-w-7xl mx-auto relative z-10">
+                    <h2 className="text-5xl md:text-7xl lg:text-8xl font-black uppercase mb-20 text-center text-black [text-shadow:10px_10px_0_#ff0080] hover:[text-shadow:14px_14px_0_#ff0080] transition-all duration-300">
+                        HOW IT WORKS
+                    </h2>
+
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {[
+                            {
+                                num: "01",
+                                title: "CONNECT WALLET",
+                                desc: "Link your Solana wallet to start playing",
+                                color: "#ff0080",
+                            },
+                            { num: "02", title: "ROLL DICE", desc: "Roll the dice and move around the board", color: "#9945ff" },
+                            { num: "03", title: "BUY PROPERTIES", desc: "Purchase NFT properties with SOL", color: "#14f195" },
+                            {
+                                num: "04",
+                                title: "COLLECT RENT",
+                                desc: "Earn SOL when opponents land on your properties",
+                                color: "#ffed00",
+                            },
+                        ].map((step, i) => (
+                            <div
+                                key={i}
+                                className="border-6 border-black shadow-[12px_12px_0_#000] p-8 hover:shadow-[18px_18px_0_#000] hover:-translate-y-3 hover:rotate-2 hover:scale-105 transition-all duration-500 animate-[slide-in-bottom_0.6s_ease-out] animate-fill-both cursor-pointer group relative overflow-hidden"
+                                style={{
+                                    backgroundColor: step.color,
+                                    animationDelay: `${i * 0.15}s`,
+                                }}
+                                onMouseEnter={() => setHoveredCard(i)}
+                                onMouseLeave={() => setHoveredCard(null)}
+                            >
+                                <div
+                                    className={`absolute inset-0 bg-white opacity-0 ${hoveredCard === i ? "opacity-20" : ""} transition-opacity duration-300`}
+                                />
+                                <div className="text-7xl md:text-8xl font-black text-white mb-6 [text-shadow:5px_5px_0_#000] group-hover:scale-110 transition-transform duration-300 relative z-10">
+                                    {step.num}
+                                </div>
+                                <h3 className="text-2xl md:text-3xl font-black uppercase mb-4 text-white [text-shadow:2px_2px_0_#000] relative z-10">
+                                    {step.title}
+                                </h3>
+                                <p className="text-lg md:text-xl font-bold text-white [text-shadow:1px_1px_0_#000] relative z-10">
+                                    {step.desc}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            <section className="relative py-32 px-6 md:px-12 lg:px-20 bg-white/90 border-t-8 border-black">
+                <div className="absolute inset-0 overflow-hidden opacity-20">
+                    <div className="grid grid-cols-12 grid-rows-12 h-full">
+                        {[...Array(144)].map((_, i) => (
+                            <div
+                                key={i}
+                                className="border border-black/20 transition-all duration-700 hover:bg-[#ff0080] hover:scale-150 hover:rotate-12 hover:z-10 cursor-pointer"
+                                style={{
+
+                                    backgroundColor:
+                                        i % 7 === 0
+                                            ? "#ff008015"
+                                            : i % 7 === 1
+                                                ? "#9945ff15"
+                                                : i % 7 === 2
+                                                    ? "#14f19515"
+                                                    : i % 7 === 3
+                                                        ? "#ffed0015"
+                                                        : "transparent",
+                                }}
+                            />
+                        ))}
+                    </div>
+                </div>
+                <div className="max-w-7xl mx-auto relative z-10">
+                    <h2 className="text-6xl md:text-8xl font-black uppercase mb-24 text-center text-black hover:scale-105 transition-transform duration-300 cursor-pointer">
+                        <span className="inline-block bg-[#9945ff] text-white px-8 py-4 border-6 border-black shadow-[12px_12px_0_#000] hover:shadow-[18px_18px_0_#000] hover:-translate-y-2 transition-all duration-300">
+                            KEY FEATURES
+                        </span>
+                    </h2>
+
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {[
+                            {
+                                icon: "",
+                                title: "MAGICBLOCK",
+                                desc: "Lightning-fast gameplay powered by MagicBlock's ephemeral rollups for instant transactions",
+                                color: "#9945ff",
+                            },
+                            {
+                                icon: "",
+                                title: "INDEXER",
+                                desc: "Real-time game state tracking with advanced indexing for seamless multiplayer experience",
+                                color: "#14f195",
+                            },
+                            {
+                                icon: "",
+                                title: "SOLANA",
+                                desc: "Built on Solana for ultra-low fees and blazing-fast transactions. Play without breaking the bank",
+                                color: "#ffed00",
+                            },
+                        ].map((feature, i) => (
+                            <div
+                                key={i}
+                                className="border-6 border-black shadow-[16px_16px_0_#000] p-12 hover:shadow-[24px_24px_0_#000] hover:-translate-y-5 hover:scale-105 hover:rotate-2 transition-all duration-700 cursor-pointer group relative overflow-hidden"
+                                style={{ backgroundColor: feature.color }}
+                            >
+                                <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
+                                <div className="text-8xl mb-8 group-hover:scale-125 group-hover:rotate-12 transition-all duration-700 relative z-10">
+                                    {feature.icon}
+                                </div>
+                                <h3 className="text-4xl font-black uppercase mb-6 text-white [text-shadow:3px_3px_0_#000] relative z-10">
+                                    {feature.title}
+                                </h3>
+                                <p className="text-xl font-bold text-white [text-shadow:1px_1px_0_#000] relative z-10 leading-relaxed">
+                                    {feature.desc}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Roadmap Section */}
+            <section className="relative py-24 md:py-36 px-6 md:px-12 lg:px-20 bg-white/90 border-t-8 border-black">
+                <div className="absolute inset-0 overflow-hidden opacity-20">
+                    <div className="grid grid-cols-12 grid-rows-12 h-full">
+                        {[...Array(144)].map((_, i) => (
+                            <div
+                                key={i}
+                                className="border border-black/20 transition-all duration-700 hover:bg-[#ff0080] hover:scale-150 hover:rotate-12 hover:z-10 cursor-pointer"
+                                style={{
+
+                                    backgroundColor:
+                                        i % 7 === 0
+                                            ? "#ff008015"
+                                            : i % 7 === 1
+                                                ? "#9945ff15"
+                                                : i % 7 === 2
+                                                    ? "#14f19515"
+                                                    : i % 7 === 3
+                                                        ? "#ffed0015"
+                                                        : "transparent",
+                                }}
+                            />
+                        ))}
+                    </div>
+                </div>
+                <div className="max-w-6xl mx-auto relative z-10">
+                    <h2 className="text-5xl md:text-7xl lg:text-8xl font-black uppercase mb-20 text-center text-black [text-shadow:10px_10px_0_#ff0080] hover:[text-shadow:14px_14px_0_#ff0080] transition-all duration-300">
+                        ROADMAP
+                    </h2>
+
+                    <div className="flex gap-12 items-start relative">
+                        {/* Vertical Progress Indicator Bar */}
+                        <div className="flex-shrink-0 flex items-start gap-6 sticky top-24">
+                            <div className="flex flex-col justify-between h-full py-2" style={{ height: '100%', minHeight: '600px' }}>
+                                {["Q1", "Q2", "Q3", "Q4"].map((q, i) => (
+                                    <div
+                                        key={i}
+                                        className="text-2xl font-black text-black hover:scale-125 transition-transform duration-300 cursor-pointer"
+                                    >
+                                        {q}
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="w-4 bg-white border-4 border-black relative overflow-hidden self-stretch">
+                                <div className="absolute inset-0 bg-[#14f195] animate-[scroll-progress-vertical_3s_ease-in-out_infinite]"></div>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 space-y-10">
+                            {[
+                                {
+                                    phase: "Q1 2025",
+                                    title: "BETA LAUNCH",
+                                    status: "LIVE",
+                                    desc: "Devnet release with core gameplay",
+                                    color: "#14f195",
+                                },
+                                {
+                                    phase: "Q2 2025",
+                                    title: "MAINNET",
+                                    status: "COMING",
+                                    desc: "Full mainnet launch with tournaments",
+                                    color: "#9945ff",
+                                },
+                                {
+                                    phase: "Q3 2025",
+                                    title: "NFT MARKETPLACE",
+                                    status: "PLANNED",
+                                    desc: "Trade properties on secondary market",
+                                    color: "#ff0080",
+                                },
+                                {
+                                    phase: "Q4 2025",
+                                    title: "MOBILE APP",
+                                    status: "PLANNED",
+                                    desc: "iOS & Android native apps",
+                                    color: "#ffed00",
+                                },
+                            ].map((item, i) => (
+                                <div
+                                    key={i}
+                                    className="border-6 border-black shadow-[12px_12px_0_#000] p-8 md:p-10 hover:shadow-[18px_18px_0_#000] hover:-translate-x-3 hover:scale-[1.02] transition-all duration-500 flex flex-col md:flex-row md:items-center gap-8 cursor-pointer group relative overflow-hidden"
+                                    style={{ backgroundColor: item.color }}
+                                >
+                                    <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
+                                    <div className="flex-shrink-0 relative z-10">
+                                        <div className="text-4xl md:text-5xl font-black text-white [text-shadow:4px_4px_0_#000] group-hover:scale-110 transition-transform duration-300">
+                                            {item.phase}
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 relative z-10">
+                                        <h3 className="text-3xl md:text-4xl font-black uppercase mb-3 text-white [text-shadow:2px_2px_0_#000]">
+                                            {item.title}
+                                        </h3>
+                                        <p className="text-xl md:text-2xl font-bold text-white [text-shadow:1px_1px_0_#000]">{item.desc}</p>
+                                    </div>
+                                    <div className="flex-shrink-0 relative z-10">
+                                        <div className="bg-black border-5 border-white shadow-[6px_6px_0_rgba(0,0,0,0.3)] px-6 py-3 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                                            <span className="text-white font-black text-lg uppercase">{item.status}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className="relative py-24 md:py-36 px-6 md:px-12 lg:px-20 bg-[#fffef0]/90 border-t-8 border-black">
+                <div className="absolute inset-0 overflow-hidden opacity-20">
+                    <div className="grid grid-cols-12 grid-rows-12 h-full">
+                        {[...Array(144)].map((_, i) => (
+                            <div
+                                key={i}
+                                className="border border-black/20 transition-all duration-700 hover:bg-[#ff0080] hover:scale-150 hover:rotate-12 hover:z-10 cursor-pointer"
+                                style={{
+
+                                    backgroundColor:
+                                        i % 7 === 0
+                                            ? "#ff008015"
+                                            : i % 7 === 1
+                                                ? "#9945ff15"
+                                                : i % 7 === 2
+                                                    ? "#14f19515"
+                                                    : i % 7 === 3
+                                                        ? "#ffed0015"
+                                                        : "transparent",
+                                }}
+                            />
+                        ))}
+                    </div>
+                </div>
+                <div className="max-w-6xl mx-auto relative z-10">
+                    <h2 className="text-5xl md:text-7xl lg:text-8xl font-black uppercase mb-20 text-center text-black [text-shadow:10px_10px_0_#ffed00] hover:[text-shadow:14px_14px_0_#ffed00] transition-all duration-300">
+                        FAQ
+                    </h2>
+
+                    <div className="space-y-8">
+                        {[
+                            {
+                                q: "How much does it cost to play?",
+                                a: "Currently FREE on devnet! Mainnet will have minimal SOL fees for transactions.",
+                                color: "#ff0080",
+                            },
+                            {
+                                q: "Do I need crypto experience?",
+                                a: "No! Just connect a Solana wallet and start playing. We'll guide you through everything.",
+                                color: "#9945ff",
+                            },
+                            {
+                                q: "Can I play with friends?",
+                                a: "Yes! Create private games or join public tournaments with players worldwide.",
+                                color: "#14f195",
+                            },
+                            {
+                                q: "What happens to my NFT properties?",
+                                a: "You own them! Trade, sell, or hold your properties as real NFTs on Solana.",
+                                color: "#ffed00",
+                            },
+                            {
+                                q: "Is this official Monopoly?",
+                                a: "This is an independent blockchain game inspired by classic board game mechanics.",
+                                color: "#ff0080",
+                            },
+                        ].map((faq, i) => {
+                            const isOpen = openFaqIndex === i
+                            return (
+                                <div
+                                    key={i}
+                                    onClick={() => setOpenFaqIndex(isOpen ? null : i)}
+                                    className="border-6 border-black shadow-[10px_10px_0_#000] hover:shadow-[16px_16px_0_#000] hover:-translate-y-2 hover:rotate-1 transition-all duration-500 cursor-pointer group relative overflow-hidden"
+                                    style={{ backgroundColor: faq.color }}
+                                >
+                                    <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
+                                    <div className="p-8 md:p-10 flex justify-between items-center gap-4">
+                                        <h3 className="text-2xl md:text-3xl font-black uppercase text-white [text-shadow:2px_2px_0_#000] relative z-10">
+                                            {faq.q}
+                                        </h3>
+                                        <div className={`text-4xl font-black text-white transition-transform duration-300 ${isOpen ? 'rotate-45' : 'rotate-0'}`}>
+                                            +
+                                        </div>
+                                    </div>
+                                    <div
+                                        className={`overflow-hidden transition-all duration-500 ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
+                                    >
+                                        <p className="text-xl md:text-2xl font-bold text-white [text-shadow:1px_1px_0_#000] relative z-10 px-8 md:px-10 pb-8 md:pb-10">
+                                            {faq.a}
+                                        </p>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            </section>
+
+            {/* <section className="relative py-24 md:py-36 px-6 md:px-12 lg:px-20 bg-white/90 border-t-8 border-black">
+                <div className="max-w-6xl mx-auto relative z-10">
+                    <h2 className="text-5xl md:text-7xl lg:text-8xl font-black uppercase mb-12 text-center text-black [text-shadow:10px_10px_0_#14f195] hover:[text-shadow:14px_14px_0_#14f195] transition-all duration-300">
+                        STAY UPDATED
+                    </h2>
+
+                    <div className="bg-[#14f195] border-6 border-black shadow-[14px_14px_0_#000] p-10 md:p-14 mb-16 hover:shadow-[20px_20px_0_#000] hover:-translate-y-2 transition-all duration-500">
+                        <p className="text-2xl md:text-4xl font-black uppercase text-white mb-8 text-center [text-shadow:3px_3px_0_#000]">
+                            GET THE LATEST NEWS & UPDATES
+                        </p>
+                        <div className="flex flex-col md:flex-row gap-6">
+                            <Input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="YOUR EMAIL..."
+                                className="flex-1 bg-white text-black border-5 border-black shadow-[8px_8px_0_#000] px-8 py-8 text-xl font-bold uppercase placeholder:text-gray-500 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[12px_12px_0_#000] focus-visible:-translate-y-1 transition-all duration-300"
+                            />
+                            <Button
+                                onClick={handleEmailSignup}
+                                className="bg-[#9945ff] text-white border-5 border-black shadow-[10px_10px_0_#000] px-10 py-8 text-xl md:text-2xl font-black uppercase hover:bg-[#ffed00] hover:shadow-[14px_14px_0_#000] hover:-translate-y-2 hover:scale-105 transition-all duration-300"
+                            >
+                                SUBSCRIBE
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                        {[
+                            { emoji: "💬", text: "DISCORD", color: "#9945ff" },
+                            { emoji: "🐦", text: "TWITTER", color: "#14f195" },
+                            { emoji: "✈️", text: "TELEGRAM", color: "#ff0080" },
+                            { emoji: "📖", text: "DOCS", color: "#ffed00" },
+                        ].map((social, i) => (
+                            <a
+                                key={i}
+                                href="#"
+                                className="border-6 border-black shadow-[10px_10px_0_#000] p-8 text-center hover:shadow-[16px_16px_0_#000] hover:-translate-y-3 hover:scale-110 hover:rotate-6 transition-all duration-500 cursor-pointer group"
+                                style={{ backgroundColor: social.color }}
+                            >
+                                <div className="text-5xl mb-4 group-hover:scale-125 transition-transform duration-300">
+                                    {social.emoji}
+                                </div>
+                                <div className="text-xl md:text-2xl font-black uppercase text-white [text-shadow:2px_2px_0_#000]">
+                                    {social.text}
+                                </div>
+                            </a>
+                        ))}
+                    </div>
+                </div>
+            </section> */}
+
+            <div className="relative z-10 border-t-6 border-b-6 border-black bg-[#14f195] py-6 overflow-hidden">
+                <div className="flex whitespace-nowrap animate-marquee">
+                    {[...Array(3)].map((_, i) => (
+                        <div key={i} className="flex items-center">
+                            <span className="text-3xl md:text-5xl font-black uppercase text-white mx-8 [text-shadow:4px_4px_0_#000]">
+                                ROLL THE DICE
+                            </span>
+                            <span className="text-4xl mx-8">🎲</span>
+                            <span className="text-3xl md:text-5xl font-black uppercase text-white mx-8 [text-shadow:4px_4px_0_#000]">
+                                BUY PROPERTIES
+                            </span>
+                            <span className="text-4xl mx-8">🏠</span>
+                            <span className="text-3xl md:text-5xl font-black uppercase text-white mx-8 [text-shadow:4px_4px_0_#000]">
+                                COLLECT RENT
+                            </span>
+                            <span className="text-4xl mx-8">💰</span>
+                            <span className="text-3xl md:text-5xl font-black uppercase text-white mx-8 [text-shadow:4px_4px_0_#000]">
+                                WIN SOL
+                            </span>
+                            <span className="text-4xl mx-8">◎</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <footer className="relative bg-white/90 border-t-8 border-black py-16 md:py-20">
+
+                <div className="absolute inset-0 overflow-hidden opacity-20">
+                    <div className="grid grid-cols-12 grid-rows-12 h-full">
+                        {[...Array(144)].map((_, i) => (
+                            <div
+                                key={i}
+                                className="border border-black/20 transition-all duration-700 hover:bg-[#ff0080] hover:scale-150 hover:rotate-12 hover:z-10 cursor-pointer"
+                                style={{
+
+                                    backgroundColor:
+                                        i % 7 === 0
+                                            ? "#ff008015"
+                                            : i % 7 === 1
+                                                ? "#9945ff15"
+                                                : i % 7 === 2
+                                                    ? "#14f19515"
+                                                    : i % 7 === 3
+                                                        ? "#ffed0015"
+                                                        : "transparent",
+                                }}
+                            />
+                        ))}
+                    </div>
+                </div>
+                <div className="max-w-5xl mx-auto px-6 md:px-12 relative z-10">
+                    <div className="bg-[#ff0080] text-white border-6 border-black shadow-[10px_10px_0_#000] px-8 py-6 mb-12 text-center hover:shadow-[16px_16px_0_#000] hover:-translate-y-2 transition-all duration-500 animate-[pulse_3s_ease-in-out_infinite] cursor-pointer">
+                        <p className="text-xl md:text-3xl font-black uppercase [text-shadow:3px_3px_0_#000]">
+                            Game đang ở devnet, chơi không phí
+                        </p>
+                    </div>
+
+                    <div className="bg-[#14f195] border-6 border-black shadow-[14px_14px_0_#000] p-10 md:p-12 hover:shadow-[20px_20px_0_#000] hover:-translate-y-2 transition-all duration-500">
+                        <h3 className="text-white text-3xl md:text-4xl font-black uppercase mb-8 text-center [text-shadow:4px_4px_0_#000]">
+                            Nhập mã để join game
+                        </h3>
+
+                        <div className="flex flex-col md:flex-row gap-6">
+                            <Input
+                                type="text"
+                                value={gameCode}
+                                onChange={(e) => setGameCode(e.target.value)}
+                                placeholder="NHẬP MÃ GAME..."
+                                className="flex-1 bg-white text-black border-5 border-black shadow-[8px_8px_0_#000] px-8 py-8 text-xl md:text-2xl font-bold uppercase placeholder:text-gray-500 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[12px_12px_0_#000] focus-visible:-translate-y-1 transition-all duration-300"
+                                onKeyDown={(e) => e.key === "Enter" && handleJoinGame()}
+                            />
+
+                            <Button
+                                onClick={handleJoinGame}
+                                className="bg-[#9945ff] text-white border-5 border-black shadow-[10px_10px_0_#000] px-10 py-8 text-xl md:text-2xl font-black uppercase hover:bg-[#ffed00] hover:shadow-[14px_14px_0_#000] hover:-translate-y-2 hover:scale-105 active:scale-95 transition-all duration-300"
+                            >
+                                JOIN NOW
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="mt-12 text-center">
+                        <p className="text-black text-lg md:text-xl font-black uppercase [text-shadow:2px_2px_0_#9945ff]">
+                            POWERED BY SOLANA BLOCKCHAIN
+                        </p>
+                    </div>
+                </div>
+            </footer>
+
+            <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-25px) rotate(5deg); }
+        }
+        
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        
+        @keyframes slide-in-left {
+          from { 
+            opacity: 0;
+            transform: translateX(-100px);
+          }
+          to { 
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes slide-in-right {
+          from { 
+            opacity: 0;
+            transform: translateX(100px);
+          }
+          to { 
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes slide-in-bottom {
+          from { 
+            opacity: 0;
+            transform: translateY(50px);
+          }
+          to { 
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes slide-in-top {
+          from { 
+            opacity: 0;
+            transform: translateY(-50px);
+          }
+          to { 
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+        }
+        
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        
+        @keyframes scroll-progress {
+          0% { 
+            transform: translateX(-100%);
+            background: #14f195;
+          }
+          25% {
+            background: #9945ff;
+          }
+          50% {
+            background: #ff0080;
+          }
+          75% {
+            background: #ffed00;
+          }
+          100% { 
+            transform: translateX(100%);
+            background: #14f195;
+          }
+        }
+        
+        @keyframes scroll-progress-vertical {
+          0% { 
+            transform: translateY(-100%);
+            background: #14f195;
+          }
+          25% {
+            background: #9945ff;
+          }
+          50% {
+            background: #ff0080;
+          }
+          75% {
+            background: #ffed00;
+          }
+          100% { 
+            transform: translateY(100%);
+            background: #14f195;
+          }
+        }
+        
+        .animate-fill-both {
+          animation-fill-mode: both;
+        }
+      `}</style>
+        </div>
+    )
+}
+v
