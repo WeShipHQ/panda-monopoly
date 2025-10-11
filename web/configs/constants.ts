@@ -21,9 +21,7 @@ export const PLATFORM_ID = address(
 export const MEV_TAX_POSITION = 4;
 export const PRIORITY_FEE_TAX_POSITION = 38;
 export const JAIL_FINE = 50;
-
 export const USE_VRF = false;
-
 
 export const API_CONFIG = {
   BASE_URL: envConfig.NEXT_PUBLIC_INDEXER_API_URL,
@@ -55,7 +53,6 @@ export const GAME_LOG_CONFIG = {
   BATCH_SIZE: 20,
   AUTO_REFRESH_INTERVAL: 30000,
 } as const;
-
 
 export const ERROR_MESSAGES = {
   GAME_ID_REQUIRED: "Game ID is required",
