@@ -224,8 +224,7 @@ class MonopolyGameSDK {
     let ixs: Instruction[] = [];
 
     try {
-      const acc = await fetchToken(params.rpc, creatorTokenAccount);
-      console.log("token detail", acc);
+      await fetchToken(params.rpc, creatorTokenAccount);
     } catch (error) {
       console.log("Creator token account not found, creating a new one");
 
@@ -254,6 +253,7 @@ class MonopolyGameSDK {
       creatorTokenAccount,
       tokenVault: vaultTokenAccount,
       entryFee: 0,
+      timeLimitSeconds: none()
     });
 
     ixs.push(instruction);

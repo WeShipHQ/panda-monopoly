@@ -186,9 +186,17 @@ export const PlayerActions = ({
   }
 
   const isStarted = game.gameStatus === GameStatus.InProgress;
-  // const isEnded = game?.gameStatus  === GameStatus.Finished;
+  const isEnded = game?.gameStatus === GameStatus.Finished;
   const isCreator = game.creator === wallet.address;
   const isInGame = wallet.address && game.players.includes(wallet.address);
+
+  if (isEnded) {
+    return (
+      <>
+      
+      </>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center">

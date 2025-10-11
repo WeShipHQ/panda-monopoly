@@ -10,6 +10,11 @@ pub mod property;
 pub mod special_spaces;
 pub mod test;
 pub mod trading;
+pub mod claim_reward;
+pub mod leave_game;
+pub mod cancel_game;
+
+
 
 // pub use auction::*;
 pub use bankruptcy::*;
@@ -23,3 +28,6 @@ pub use property::*;
 pub use special_spaces::*;
 pub use test::*;
 pub use trading::*;
+pub use claim_reward::*;
+pub use leave_game::*;
+pub use cancel_game::*;

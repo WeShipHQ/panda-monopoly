@@ -42,6 +42,7 @@ export interface CreateGameParams {
   rpc: Rpc<SolanaRpcApi>;
   creator: TransactionSigner;
   platformId: Address;
+  entryFee: number;
 }
 
 export interface CreateGameIxs {

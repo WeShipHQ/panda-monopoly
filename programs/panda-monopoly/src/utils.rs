@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    error::GameError, get_property_data, ColorGroup, GameState, PlayerState, PropertyState, PropertyType, JAIL_POSITION
+    error::GameError, get_property_data, ColorGroup, GameState, PlayerState, PropertyState,
+    PropertyType, SpecialSpaceAction, JAIL_POSITION,
 };
 
 // Helper function for rent calculation
@@ -194,8 +195,8 @@ pub fn xorshift64star(seed: u64) -> u64 {
 
 // Replace the existing send_player_to_jail function with this enhanced version
 pub fn send_player_to_jail_and_end_turn(
-    game: &mut GameState,
-    player_state: &mut PlayerState,
+    game: &mut Box<Account<'_, GameState>>,
+    player_state: &mut Box<Account<'_, PlayerState>>,
     clock: &Sysvar<Clock>,
 ) {
     // Send player to jail
@@ -224,6 +225,14 @@ pub fn send_player_to_jail_and_end_turn(
         "Player sent to jail and turn ended automatically. Next turn: Player {}",
         next_turn
     );
+
+    emit!(SpecialSpaceAction {
+        game: game.key(),
+        player: player_state.wallet,
+        space_type: 2, // Go To Jail
+        position: JAIL_POSITION,
+        timestamp: clock.unix_timestamp,
+    });
 }
 
 pub fn send_player_to_jail(player_state: &mut PlayerState) {

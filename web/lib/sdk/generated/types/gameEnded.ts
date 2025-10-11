@@ -25,16 +25,26 @@ import {
   type Option,
   type OptionOrNullable,
 } from '@solana/kit';
+import {
+  getGameEndReasonDecoder,
+  getGameEndReasonEncoder,
+  type GameEndReason,
+  type GameEndReasonArgs,
+} from '.';
 
 export type GameEnded = {
   gameId: bigint;
   winner: Option<Address>;
+  reason: GameEndReason;
+  winnerNetWorth: Option<bigint>;
   endedAt: bigint;
 };
 
 export type GameEndedArgs = {
   gameId: number | bigint;
   winner: OptionOrNullable<Address>;
+  reason: GameEndReasonArgs;
+  winnerNetWorth: OptionOrNullable<number | bigint>;
   endedAt: number | bigint;
 };
 
@@ -42,6 +52,8 @@ export function getGameEndedEncoder(): Encoder<GameEndedArgs> {
   return getStructEncoder([
     ['gameId', getU64Encoder()],
     ['winner', getOptionEncoder(getAddressEncoder())],
+    ['reason', getGameEndReasonEncoder()],
+    ['winnerNetWorth', getOptionEncoder(getU64Encoder())],
     ['endedAt', getI64Encoder()],
   ]);
 }
@@ -50,6 +62,8 @@ export function getGameEndedDecoder(): Decoder<GameEnded> {
   return getStructDecoder([
     ['gameId', getU64Decoder()],
     ['winner', getOptionDecoder(getAddressDecoder())],
+    ['reason', getGameEndReasonDecoder()],
+    ['winnerNetWorth', getOptionDecoder(getU64Decoder())],
     ['endedAt', getI64Decoder()],
   ]);
 }

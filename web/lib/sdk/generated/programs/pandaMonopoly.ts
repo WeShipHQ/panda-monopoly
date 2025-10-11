@@ -25,6 +25,7 @@ import {
   type ParsedCallbackDrawCommunityChestCardInstruction,
   type ParsedCallbackRollDiceInstruction,
   type ParsedCancelTradeInstruction,
+  type ParsedClaimRewardInstruction,
   type ParsedCleanupExpiredTradesInstruction,
   type ParsedCloseGameHandlerInstruction,
   type ParsedCreatePlatformConfigInstruction,
@@ -39,6 +40,7 @@ import {
   type ParsedInitializeGameInstruction,
   type ParsedInitPropertyHandlerInstruction,
   type ParsedJoinGameInstruction,
+  type ParsedLeaveGameInstruction,
   type ParsedMortgagePropertyInstruction,
   type ParsedMortgagePropertyV2Instruction,
   type ParsedPayJailFineInstruction,
@@ -134,6 +136,7 @@ export enum PandaMonopolyInstruction {
   CallbackDrawCommunityChestCard,
   CallbackRollDice,
   CancelTrade,
+  ClaimReward,
   CleanupExpiredTrades,
   CloseGameHandler,
   CreatePlatformConfig,
@@ -148,6 +151,7 @@ export enum PandaMonopolyInstruction {
   InitPropertyHandler,
   InitializeGame,
   JoinGame,
+  LeaveGame,
   MortgageProperty,
   MortgagePropertyV2,
   PayJailFine,
@@ -292,6 +296,17 @@ export function identifyPandaMonopolyInstruction(
     )
   ) {
     return PandaMonopolyInstruction.CancelTrade;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([149, 95, 181, 242, 94, 90, 158, 162])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.ClaimReward;
   }
   if (
     containsBytes(
@@ -446,6 +461,17 @@ export function identifyPandaMonopolyInstruction(
     )
   ) {
     return PandaMonopolyInstruction.JoinGame;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([218, 226, 6, 0, 243, 34, 125, 201])
+      ),
+      0
+    )
+  ) {
+    return PandaMonopolyInstruction.LeaveGame;
   }
   if (
     containsBytes(
@@ -687,6 +713,9 @@ export type ParsedPandaMonopolyInstruction<
       instructionType: PandaMonopolyInstruction.CancelTrade;
     } & ParsedCancelTradeInstruction<TProgram>)
   | ({
+      instructionType: PandaMonopolyInstruction.ClaimReward;
+    } & ParsedClaimRewardInstruction<TProgram>)
+  | ({
       instructionType: PandaMonopolyInstruction.CleanupExpiredTrades;
     } & ParsedCleanupExpiredTradesInstruction<TProgram>)
   | ({
@@ -728,6 +757,9 @@ export type ParsedPandaMonopolyInstruction<
   | ({
       instructionType: PandaMonopolyInstruction.JoinGame;
     } & ParsedJoinGameInstruction<TProgram>)
+  | ({
+      instructionType: PandaMonopolyInstruction.LeaveGame;
+    } & ParsedLeaveGameInstruction<TProgram>)
   | ({
       instructionType: PandaMonopolyInstruction.MortgageProperty;
     } & ParsedMortgagePropertyInstruction<TProgram>)

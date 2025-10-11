@@ -547,8 +547,8 @@ pub fn callback_draw_community_chest_card(
 
 // Helper function to execute chance card effects
 fn execute_chance_card_effect(
-    game: &mut GameState,
-    player_state: &mut PlayerState,
+    game: &mut Box<Account<'_, GameState>>,
+    player_state: &mut Box<Account<'_, PlayerState>>,
     card: &ChanceCard,
     clock: &Sysvar<Clock>,
 ) -> Result<()> {
@@ -722,8 +722,8 @@ fn execute_chance_card_effect(
 
 // Helper function to execute community chest card effects
 fn execute_community_chest_card_effect(
-    game: &mut GameState,
-    player_state: &mut PlayerState,
+    game: &mut Box<Account<'_, GameState>>,
+    player_state: &mut Box<Account<'_, PlayerState>>,
     card: &CommunityChestCard,
     clock: &Sysvar<Clock>,
 ) -> Result<()> {

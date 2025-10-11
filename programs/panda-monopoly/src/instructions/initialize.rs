@@ -99,7 +99,11 @@ pub struct InitializeGame<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
-pub fn initialize_game_handler(ctx: Context<InitializeGame>, entry_fee: u64) -> Result<()> {
+pub fn initialize_game_handler(
+    ctx: Context<InitializeGame>,
+    entry_fee: u64,
+    time_limit_seconds: Option<i64>,
+) -> Result<()> {
     let config = &mut ctx.accounts.config;
     let game = &mut ctx.accounts.game;
     let player_state = &mut ctx.accounts.player_state;
@@ -198,7 +202,9 @@ pub fn initialize_game_handler(ctx: Context<InitializeGame>, entry_fee: u64) -> 
     game.hotels_remaining = TOTAL_HOTELS;
     game.created_at = clock.unix_timestamp;
     game.bank_balance = 1_000_000; // Initial bank balance
-    game.time_limit = None;
+    game.time_limit = time_limit_seconds.unwrap_or(60 * 60);
+    game.game_end_time = None;
+    game.is_ending = false;
     game.winner = None;
     game.turn_started_at = clock.unix_timestamp;
     game.active_trades = vec![];
@@ -466,6 +472,24 @@ pub fn start_game_handler<'c: 'info, 'info>(
         game.game_status = GameStatus::InProgress;
         game.current_turn = 0; // First player starts
         game.turn_started_at = clock.unix_timestamp;
+
+        // if let Some(limit) = game.time_limit {
+
+        // } else {
+        //     game.game_end_time = None;
+        //     msg!("Game has no time limit");
+        // }
+
+        game.game_end_time = Some(
+            clock
+                .unix_timestamp
+                .checked_add(game.time_limit)
+                .ok_or(GameError::ArithmeticOverflow)?,
+        );
+        msg!(
+            "Game will end at timestamp: {}",
+            game.game_end_time.unwrap()
+        );
 
         msg!("Game started! Player {} goes first.", game.players[0]);
         msg!("Total players in game: {}", game.current_players);

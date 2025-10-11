@@ -389,8 +389,8 @@ pub fn callback_roll_dice(ctx: Context<CallbackRollDiceCtx>, randomness: [u8; 32
 }
 
 fn handle_jail_dice_roll(
-    game: &mut GameState,
-    player_state: &mut PlayerState,
+    game: &mut Box<Account<'_, GameState>>,
+    player_state: &mut Box<Account<'_, PlayerState>>,
     clock: &Sysvar<Clock>,
     dice_roll: [u8; 2],
 ) -> Result<()> {
@@ -471,8 +471,8 @@ fn handle_jail_dice_roll(
 }
 
 fn handle_space_landing(
-    game: &mut GameState,
-    player_state: &mut PlayerState,
+    game: &mut Box<Account<'_, GameState>>,
+    player_state: &mut Box<Account<'_, PlayerState>>,
     position: u8,
     clock: &Sysvar<Clock>,
 ) -> Result<()> {
@@ -502,8 +502,8 @@ fn handle_space_landing(
 }
 
 fn handle_special_space(
-    game: &mut GameState,
-    player_state: &mut PlayerState,
+    game: &mut Box<Account<'_, GameState>>,
+    player_state: &mut Box<Account<'_, PlayerState>>,
     position: u8,
     clock: &Sysvar<Clock>,
 ) -> Result<()> {
@@ -537,8 +537,8 @@ fn handle_special_space(
 
 // --- for test
 fn handle_jail_dice_roll_without_vrf(
-    game: &mut GameState,
-    player_state: &mut PlayerState,
+    game: &mut Box<Account<'_, GameState>>,
+    player_state: &mut Box<Account<'_, PlayerState>>,
     clock: &Sysvar<Clock>,
     recent_blockhashes: &UncheckedAccount,
 ) -> Result<()> {

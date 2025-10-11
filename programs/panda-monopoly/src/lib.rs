@@ -44,12 +44,20 @@ pub mod panda_monopoly {
     }
 
     // Game management instructions
-    pub fn initialize_game(ctx: Context<InitializeGame>, entry_fee: u64) -> Result<()> {
-        instructions::initialize::initialize_game_handler(ctx, entry_fee)
+    pub fn initialize_game(
+        ctx: Context<InitializeGame>,
+        entry_fee: u64,
+        time_limit_seconds: Option<i64>,
+    ) -> Result<()> {
+        instructions::initialize::initialize_game_handler(ctx, entry_fee, time_limit_seconds)
     }
 
     pub fn join_game(ctx: Context<JoinGame>) -> Result<()> {
         instructions::initialize::join_game_handler(ctx)
+    }
+
+    pub fn leave_game(ctx: Context<LeaveGame>) -> Result<()> {
+        instructions::leave_game::leave_game_handler(ctx)
     }
 
     pub fn start_game<'c: 'info, 'info>(
@@ -59,7 +67,9 @@ pub mod panda_monopoly {
     }
 
     // Game ending instruction
-    pub fn end_game(ctx: Context<EndGame>) -> Result<()> {
+    pub fn end_game<'c: 'info, 'info>(
+        ctx: Context<'_, '_, 'c, 'info, EndGame<'info>>,
+    ) -> Result<()> {
         instructions::end_game::end_game_handler(ctx)
     }
 
@@ -220,6 +230,10 @@ pub mod panda_monopoly {
 
     pub fn cleanup_expired_trades(ctx: Context<CleanupExpiredTrades>) -> Result<()> {
         instructions::trading::cleanup_expired_trades_handler(ctx)
+    }
+
+    pub fn claim_reward(ctx: Context<ClaimReward>) -> Result<()> {
+        instructions::claim_reward::claim_reward_handler(ctx)
     }
 
     // for test

@@ -12,11 +12,17 @@ import { Address } from "@solana/kit";
 import { GameEvent } from "@/lib/sdk/types";
 import { useGameEvents } from "@/hooks/useGameEvents";
 import { useWallet } from "@/hooks/use-wallet";
-import { toast } from "sonner";
-import { formatAddress } from "@/lib/utils";
 import { playSound } from "@/lib/soundUtil";
 import { useGameContext } from "./game-provider";
-import { showTaxPaidToast, showPlayerPassedGoToast } from "@/lib/toast-utils";
+import {
+  showTaxPaidToast,
+  showPlayerPassedGoToast,
+  showPlayerJoinedToast,
+  showGameStartedToast,
+  showChanceCardDrawnToast,
+  showCommunityChestCardDrawnToast,
+  showGoToJailToast,
+} from "@/lib/toast-utils";
 
 type EventHandler<T = any> = (event: T, context: GameEventContext) => void;
 
@@ -66,7 +72,6 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
   const [lastEvent, setLastEvent] = useState<GameEvent | null>(null);
   const [eventHistory, setEventHistory] = useState<GameEvent[]>([]);
 
-  // Use the events hook
   const { isSubscribed } = useGameEvents(gameAddress, {
     gameData: gameState,
     onEvent: useCallback(
@@ -75,15 +80,15 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
         setLastEvent(event);
         setEventHistory((prev) => [...prev, event].slice(-100)); // Keep last 100 events
 
-        // Execute registered handlers for this event type
         const handlers = eventHandlers.get(event.type);
 
         if (handlers) {
+          console.log("CHECK XXXX heheheh", event.type, wallet?.address);
           const context: GameEventContext = {
             gameAddress: gameAddress || null,
             currentPlayerAddress: wallet?.address || null,
             isCurrentPlayer: (playerAddress: Address) =>
-              wallet?.address === playerAddress,
+              wallet?.address === playerAddress.toString(),
           };
 
           handlers.forEach((handler) => {
@@ -113,7 +118,6 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
         return newMap;
       });
 
-      // Return cleanup function
       return () => {
         setEventHandlers((prev) => {
           const newMap = new Map(prev);
@@ -136,19 +140,16 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
     setLastEvent(null);
   }, []);
 
-  // Built-in event handlers
   useEffect(() => {
     const unsubscribeTaxPaid = registerEventHandler(
       "TaxPaid",
       (data, context) => {
-        if (context.isCurrentPlayer(data.player)) {
+        if (!context.isCurrentPlayer(data.player)) {
           showTaxPaidToast({
             taxType: data.taxType,
             amount: data.amount,
             position: data.position,
           });
-
-          playSound("button-click");
         }
       }
     );
@@ -166,9 +167,76 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
       }
     );
 
+    const unsubscribePlayerJoined = registerEventHandler(
+      "PlayerJoined",
+      (data, context) => {
+        if (!context.isCurrentPlayer(data.player)) {
+          showPlayerJoinedToast({
+            playerAddress: data.player,
+            playerIndex: data.playerIndex,
+            totalPlayers: data.totalPlayers,
+          });
+        }
+      }
+    );
+
+    const unsubscribeGameStarted = registerEventHandler(
+      "GameStarted",
+      (data) => {
+        showGameStartedToast({
+          totalPlayers: data.totalPlayers,
+          firstPlayer: data.firstPlayer,
+        });
+      }
+    );
+
+    const unsubscribeChanceCard = registerEventHandler(
+      "ChanceCardDrawn",
+      (data, context) => {
+        if (!context.isCurrentPlayer(data.player)) {
+          showChanceCardDrawnToast({
+            playerAddress: data.player,
+            cardIndex: data.cardIndex,
+            isCurrentPlayer: context.isCurrentPlayer(data.player),
+          });
+        }
+      }
+    );
+
+    const unsubscribeCommunityChestCard = registerEventHandler(
+      "CommunityChestCardDrawn",
+      (data, context) => {
+        if (!context.isCurrentPlayer(data.player)) {
+          showCommunityChestCardDrawnToast({
+            playerAddress: data.player,
+            cardIndex: data.cardIndex,
+            isCurrentPlayer: context.isCurrentPlayer(data.player),
+          });
+        }
+      }
+    );
+
+    const unsubscribeSpecialSpaceAction = registerEventHandler(
+      "SpecialSpaceAction",
+      (data, context) => {
+        console.log("CHECK XXXX SpecialSpaceAction", data, context);
+        if (data.spaceType === 2) {
+          showGoToJailToast({
+            playerAddress: data.player,
+            isCurrentPlayer: context.isCurrentPlayer(data.player),
+          });
+        }
+      }
+    );
+
     return () => {
       unsubscribeTaxPaid();
       unsubscribePlayerPassedGo();
+      unsubscribePlayerJoined();
+      unsubscribeGameStarted();
+      unsubscribeChanceCard();
+      unsubscribeCommunityChestCard();
+      unsubscribeSpecialSpaceAction();
     };
   }, [registerEventHandler]);
 
@@ -187,23 +255,3 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
     </GameEventsContext.Provider>
   );
 };
-
-// Helper function to describe card effects
-function getCardEffectDescription(effectType: number, amount: number): string {
-  switch (effectType) {
-    case 0: // Money
-      return amount > 0 ? `Gain $${amount}` : `Pay $${Math.abs(amount)}`;
-    case 1: // Move
-      return `Move ${amount} spaces`;
-    case 2: // GoToJail
-      return "Go to Jail";
-    case 3: // GetOutOfJailFree
-      return "Get Out of Jail Free card";
-    case 4: // PayPerProperty
-      return `Pay $${amount} per property`;
-    case 5: // CollectFromPlayers
-      return `Collect $${amount} from each player`;
-    default:
-      return "Unknown effect";
-  }
-}

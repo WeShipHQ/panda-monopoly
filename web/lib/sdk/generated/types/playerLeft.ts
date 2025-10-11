@@ -14,6 +14,8 @@ import {
   getI64Encoder,
   getStructDecoder,
   getStructEncoder,
+  getU64Decoder,
+  getU64Encoder,
   getU8Decoder,
   getU8Encoder,
   type Address,
@@ -22,48 +24,45 @@ import {
   type FixedSizeEncoder,
 } from '@solana/kit';
 
-export type SpecialSpaceAction = {
+export type PlayerLeft = {
   game: Address;
   player: Address;
-  spaceType: number;
-  position: number;
+  refundAmount: bigint;
+  remainingPlayers: number;
   timestamp: bigint;
 };
 
-export type SpecialSpaceActionArgs = {
+export type PlayerLeftArgs = {
   game: Address;
   player: Address;
-  spaceType: number;
-  position: number;
+  refundAmount: number | bigint;
+  remainingPlayers: number;
   timestamp: number | bigint;
 };
 
-export function getSpecialSpaceActionEncoder(): FixedSizeEncoder<SpecialSpaceActionArgs> {
+export function getPlayerLeftEncoder(): FixedSizeEncoder<PlayerLeftArgs> {
   return getStructEncoder([
     ['game', getAddressEncoder()],
     ['player', getAddressEncoder()],
-    ['spaceType', getU8Encoder()],
-    ['position', getU8Encoder()],
+    ['refundAmount', getU64Encoder()],
+    ['remainingPlayers', getU8Encoder()],
     ['timestamp', getI64Encoder()],
   ]);
 }
 
-export function getSpecialSpaceActionDecoder(): FixedSizeDecoder<SpecialSpaceAction> {
+export function getPlayerLeftDecoder(): FixedSizeDecoder<PlayerLeft> {
   return getStructDecoder([
     ['game', getAddressDecoder()],
     ['player', getAddressDecoder()],
-    ['spaceType', getU8Decoder()],
-    ['position', getU8Decoder()],
+    ['refundAmount', getU64Decoder()],
+    ['remainingPlayers', getU8Decoder()],
     ['timestamp', getI64Decoder()],
   ]);
 }
 
-export function getSpecialSpaceActionCodec(): FixedSizeCodec<
-  SpecialSpaceActionArgs,
-  SpecialSpaceAction
+export function getPlayerLeftCodec(): FixedSizeCodec<
+  PlayerLeftArgs,
+  PlayerLeft
 > {
-  return combineCodec(
-    getSpecialSpaceActionEncoder(),
-    getSpecialSpaceActionDecoder()
-  );
+  return combineCodec(getPlayerLeftEncoder(), getPlayerLeftDecoder());
 }
