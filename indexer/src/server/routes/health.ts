@@ -58,7 +58,7 @@ export default async function (fastify: FastifyInstance) {
     '/health',
     {
       schema: {
-        tags: ['health'],
+        tags: ['Health'],
         summary: 'System health check',
         description: 'Check the health status of the Monopoly indexer and its dependencies',
         response: {
@@ -68,8 +68,6 @@ export default async function (fastify: FastifyInstance) {
       }
     },
     async (_request, reply) => {
-      const startTime = Date.now()
-
       // Check database connectivity
       let dbStatus = 'healthy'
       let dbResponseTime: number | undefined
@@ -85,9 +83,9 @@ export default async function (fastify: FastifyInstance) {
           dbStatus = 'degraded'
           dbDetails = 'Slow response time'
         }
-      } catch (error) {
+      } catch (err) {
         dbStatus = 'unhealthy'
-        dbDetails = error instanceof Error ? error.message : 'Unknown error'
+        dbDetails = err instanceof Error ? err.message : 'Unknown error'
       }
 
       // Check indexer status (simplified)
@@ -119,7 +117,7 @@ export default async function (fastify: FastifyInstance) {
           indexerStatus = 'unhealthy'
           indexerDetails = 'No sync status found'
         }
-      } catch (error) {
+      } catch {
         indexerStatus = 'unhealthy'
         indexerDetails = 'Failed to check sync status'
       }
@@ -162,7 +160,7 @@ export default async function (fastify: FastifyInstance) {
     '/stats',
     {
       schema: {
-        tags: ['health'],
+        tags: ['Health'],
         summary: 'Business statistics',
         description: 'Get current business metrics and statistics for games, players, etc.',
         response: {
@@ -239,8 +237,8 @@ export default async function (fastify: FastifyInstance) {
             requestsPerMinute: 0 // Would need to implement request counting
           }
         }
-      } catch (error) {
-        fastify.log.error(error, 'Failed to gather business statistics')
+      } catch (err) {
+        fastify.log.error(err, 'Failed to gather business statistics')
         return reply.code(500).send({
           error: 'Failed to gather business statistics',
           games: { total: 0, active: 0, finished: 0 },

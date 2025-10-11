@@ -1,6 +1,6 @@
 import { env } from '#config'
 import { bullJobDefaults, bullLimiter } from '#config/env'
-import { Queue, Worker, QueueEvents, JobsOptions, QueueOptions, WorkerOptions } from 'bullmq'
+import { Queue, Worker, QueueEvents, QueueOptions, WorkerOptions } from 'bullmq'
 import IORedis from 'ioredis'
 
 export const connection = new IORedis(env.redis.url, {

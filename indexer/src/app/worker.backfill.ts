@@ -11,7 +11,6 @@ export async function runBackfill(programIdStr: string, startBeforeSig?: string)
   const programKey = new PublicKey(programIdStr)
 
   let before: string | undefined = startBeforeSig
-  let fetched = 0
 
   while (true) {
     try {
@@ -21,7 +20,6 @@ export async function runBackfill(programIdStr: string, startBeforeSig?: string)
 
       for (const s of batch) {
         await backfillQueue.add('bf', { signature: s.signature }, { jobId: s.signature })
-        fetched++
       }
 
       before = batch[batch.length - 1].signature
@@ -31,7 +29,8 @@ export async function runBackfill(programIdStr: string, startBeforeSig?: string)
       // if (fetched >= env.tune.backfillLimit) break
     } catch (e: any) {
       // NEW: Solana JSON RPC long-term storage (-32019) → dừng nhã
-      if (e?.code === -32019 || /long-term storage/i.test(String(e?.message))) {
+      const error = e as { code?: number; message?: string }
+      if (error?.code === -32019 || /long-term storage/i.test(String(error?.message))) {
         logger.warn('Backfill reached long-term storage boundary; stopping gracefully.')
         break
       }

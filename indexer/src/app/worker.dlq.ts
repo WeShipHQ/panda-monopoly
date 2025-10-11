@@ -14,8 +14,8 @@ export function startDlqReplayer() {
   const worker = new Worker(
     'writer-dlq',
     async (job) => {
-      const data: any = job.data || {}
-      const reason = data.__dlq_reason || ''
+      const data: Record<string, any> = job.data || {}
+      const reason = String(data.__dlq_reason || '')
       const replayed = Number(data.__dlq_replayed ?? 0)
 
       if (isPermanentError(reason)) {
@@ -30,9 +30,10 @@ export function startDlqReplayer() {
       }
 
       const replayData = { ...data, __dlq_replayed: replayed + 1 }
+      const record = data.record as { data?: { pubkey?: string } } | undefined
       await writerQueue.add('write', replayData, {
         delay: REPLAY_DELAY_MS,
-        jobId: data.record?.data?.pubkey ?? undefined // idempotent nếu có pubkey
+        jobId: record?.data?.pubkey ?? undefined // idempotent nếu có pubkey
       })
       metrics.incr('dlq:requeued')
     },

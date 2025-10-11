@@ -8,7 +8,7 @@ export default async function metricsRoutes(fastify: FastifyInstance) {
     '/metrics',
     {
       schema: {
-        tags: ['monitoring'],
+        tags: ['Monitoring'],
         summary: 'Prometheus metrics',
         description: 'Expose Prometheus format metrics for infrastructure monitoring',
         response: {

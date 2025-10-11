@@ -25,7 +25,7 @@ async function requestContextPlugin(fastify: FastifyInstance) {
     reply.header('x-request-id', reqId)
   })
 
-  fastify.addHook('onResponse', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.addHook('onResponse', async () => {
     clearRequestId()
   })
 }

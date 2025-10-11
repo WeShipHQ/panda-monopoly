@@ -13,7 +13,14 @@ import { startRedisHousekeeping } from '#app/maintenance.cleanup'
 
 async function main() {
   const db = new DrizzleAdapter()
-  await db.init()
+
+  // Temporarily skip DB init if connection fails
+  try {
+    await db.init()
+    console.log('✅ Database connected successfully')
+  } catch (error) {
+    console.warn('⚠️ Database connection failed, continuing without DB:', (error as Error).message)
+  }
 
   const { fastify, graceful } = await createServer(db)
 
