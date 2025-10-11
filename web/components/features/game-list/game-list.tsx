@@ -22,6 +22,8 @@ import { address, TransactionSigner } from "@solana/kit";
 import { useGames } from "@/hooks/useGames";
 import { GameStatus } from "@/lib/sdk/generated";
 import { EntryFeeDialog } from "@/components/entry-fee-dialog";
+import { CreateGameWalletDialog } from "@/components/create-game-wallet-dialog";
+import { useGameWalletCheck } from "@/hooks/use-game-wallet-check";
 
 type GameStatusFilter = "all" | GameStatus;
 
@@ -38,6 +40,8 @@ export function GameList() {
   const { wallet } = useWallet();
   const { rpc } = useRpcContext();
   const [joining, setJoining] = useState(false);
+  const [showCreateWalletDialog, setShowCreateWalletDialog] = useState(false);
+  const { checkGameWallet } = useGameWalletCheck();
 
   const { data: games, isLoading } = useGames();
 
@@ -49,14 +53,18 @@ export function GameList() {
   }, [games, statusFilter]);
 
   const handleJoinGame = async (gameAddress: string) => {
-    if (!wallet) {
-      toast.error("Please connect your wallet first.");
+    if (!checkGameWallet(() => setShowCreateWalletDialog(true))) {
       return;
     }
 
     setJoining(true);
 
     try {
+      if (!wallet) {
+        toast.error("Wallet not found");
+        return;
+      }
+
       const { instructions } = await sdk.joinGameIx({
         rpc,
         player: { address: address(wallet.address) } as TransactionSigner,
@@ -213,6 +221,13 @@ export function GameList() {
           ))}
         </div>
       )}
+
+      {showCreateWalletDialog && (
+        <CreateGameWalletDialog 
+          isOpen={showCreateWalletDialog}
+          onClose={() => setShowCreateWalletDialog(false)}
+        />
+      )}
     </div>
   );
 }
@@ -223,10 +238,11 @@ function CreateGameButton() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showEntryFeeDialog, setShowEntryFeeDialog] = useState(false);
+  const [showCreateWalletDialog, setShowCreateWalletDialog] = useState(false);
+  const { checkGameWallet } = useGameWalletCheck();
 
   const handleOpenDialog = () => {
-    if (!wallet) {
-      toast.error("Please connect your wallet first.");
+    if (!checkGameWallet(() => setShowCreateWalletDialog(true))) {
       return;
     }
     setShowEntryFeeDialog(true);
@@ -289,6 +305,13 @@ function CreateGameButton() {
         onConfirm={handleCreateGame}
         loading={loading}
       />
+
+      {showCreateWalletDialog && (
+        <CreateGameWalletDialog 
+          isOpen={showCreateWalletDialog}
+          onClose={() => setShowCreateWalletDialog(false)}
+        />
+      )}
     </>
   );
 }
