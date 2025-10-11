@@ -37,6 +37,7 @@ import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import {
   useExportWallet,
 } from "@privy-io/react-auth/solana";
+import { BalanceButton } from "./balance-button";
 
 export function ConnectWalletButton() {
   const { ready, authenticated, user, wallet } = useWallet();
@@ -90,9 +91,12 @@ export function ConnectWalletButton() {
             </DropdownMenuContent>
           </DropdownMenu>
           {wallet && (
-            <Button size="icon" onClick={() => copyToClipboard(wallet.address)}>
-              {isCopied ? <CheckIcon /> : <CopyIcon />}
-            </Button>
+            <>
+              <BalanceButton walletAddress={wallet.address} />
+              <Button size="icon" onClick={() => copyToClipboard(wallet.address)}>
+                {isCopied ? <CheckIcon /> : <CopyIcon />}
+              </Button>
+            </>
           )}
           {/* <Button
             onClick={async () => {
