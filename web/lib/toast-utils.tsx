@@ -13,6 +13,16 @@ interface RentPaymentFallbackToastProps {
   propertyName: string;
 }
 
+interface TaxPaidToastProps {
+  taxType: number;
+  amount: bigint;
+  position: number;
+}
+
+interface PlayerPassedGoToastProps {
+  salaryCollected: bigint;
+}
+
 export const showRentPaymentToast = ({
   rentAmount,
   ownerAddress,
@@ -84,6 +94,55 @@ export const showRentPaymentErrorToast = () => {
       <span className="font-semibold">
         Failed to pay rent. Please try again.
       </span>
+    </div>
+  );
+};
+
+export const showTaxPaidToast = ({
+  taxType,
+  amount,
+  position,
+}: TaxPaidToastProps) => {
+  const taxTypeName =
+    taxType === 1 ? "MEV Tax" : taxType === 2 ? "Priority Fee Tax" : "Tax";
+
+  toast.warning(
+    <div className="flex flex-col">
+      <div className="text-sm">
+        You paid{" "}
+        <span
+          className="font-bold px-2 py-0.5 rounded-md text-white"
+          style={{ backgroundColor: "var(--chart-1)" }}
+        >
+          ${amount.toString()}
+        </span>{" "}
+        in{" "}
+        <span
+          className="font-bold px-2 py-0.5 rounded-md text-white"
+          style={{ backgroundColor: "var(--chart-4)" }}
+        >
+          {taxTypeName}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+export const showPlayerPassedGoToast = ({
+  salaryCollected,
+}: PlayerPassedGoToastProps) => {
+  toast.success(
+    <div className="flex flex-col gap-1.5">
+      <div className="text-sm">
+        🎉 You passed GO and collected{" "}
+        <span
+          className="font-bold px-2 py-0.5 rounded-md text-white"
+          style={{ backgroundColor: "var(--chart-1)" }}
+        >
+          ${salaryCollected.toString()}
+        </span>
+      </div>
+      <div className="text-xs text-muted-foreground">Keep going! 💰</div>
     </div>
   );
 };

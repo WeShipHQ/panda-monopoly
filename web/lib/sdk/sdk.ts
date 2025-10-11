@@ -71,6 +71,7 @@ import {
   getGameStartedCodec,
   getSpecialSpaceActionCodec,
   getPlayerBankruptCodec,
+  getTaxPaidCodec,
 } from "./generated";
 import {
   CreateGameIxs,
@@ -166,6 +167,7 @@ import {
   GAME_STARTED_EVENT_DISCRIMINATOR,
   SPECIAL_SPACE_ACTION_EVENT_DISCRIMINATOR,
   PLAYER_BANKRUPT_EVENT_DISCRIMINATOR,
+  TAX_PAID_EVENT_DISCRIMINATOR,
 } from "@/configs/constants";
 import { GameAccount, mapGameStateToAccount } from "@/types/schema";
 
@@ -1434,6 +1436,11 @@ class MonopolyGameSDK {
               ) {
                 const data = getPlayerBankruptCodec().decode(buf.subarray(8));
                 onEvent({ type: "PlayerBankrupt", data });
+              } else if (
+                discriminator.equals(Buffer.from(TAX_PAID_EVENT_DISCRIMINATOR))
+              ) {
+                const data = getTaxPaidCodec().decode(buf.subarray(8));
+                onEvent({ type: "TaxPaid", data });
               }
             }
           }

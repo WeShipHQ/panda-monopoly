@@ -29,6 +29,7 @@ import {
   TradeCancelled,
   TradesCleanedUp,
   PlayerBankrupt,
+  TaxPaid,
 } from "./generated";
 
 export interface CreatePlatformParams {
@@ -323,4 +324,8 @@ export type GameEvent =
   | {
       type: "PlayerBankrupt";
       data: PlayerBankrupt;
+    }
+  | {
+      type: "TaxPaid";
+      data: TaxPaid;
     };

@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { formatAddress } from "@/lib/utils";
 import { playSound } from "@/lib/soundUtil";
 import { useGameContext } from "./game-provider";
+import { showTaxPaidToast, showPlayerPassedGoToast } from "@/lib/toast-utils";
 
 type EventHandler<T = any> = (event: T, context: GameEventContext) => void;
 
@@ -52,12 +53,10 @@ export const useGameEventsContext = () => {
 
 interface GameEventsProviderProps {
   children: ReactNode;
-  // gameAddress?: Address;
 }
 
 export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
   children,
-  // gameAddress,
 }) => {
   const { gameAddress, gameState } = useGameContext();
   const { wallet } = useWallet();
@@ -100,9 +99,6 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
     ),
   });
 
-  console.log("isSubscribed", isSubscribed);
-
-  // Register event handler function
   const registerEventHandler = useCallback(
     <T extends GameEvent["type"]>(
       eventType: T,
@@ -142,47 +138,37 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
 
   // Built-in event handlers
   useEffect(() => {
-    // Handler for ChanceCardDrawn events
-    const unsubscribeChance = registerEventHandler(
-      "ChanceCardDrawn",
+    const unsubscribeTaxPaid = registerEventHandler(
+      "TaxPaid",
       (data, context) => {
-        const playerName = context.isCurrentPlayer(data.player)
-          ? "You"
-          : formatAddress(data.player);
+        if (context.isCurrentPlayer(data.player)) {
+          showTaxPaidToast({
+            taxType: data.taxType,
+            amount: data.amount,
+            position: data.position,
+          });
 
-        toast.success(`${playerName} drew a Chance card!`, {
-          description: `Card effect: ${getCardEffectDescription(
-            data.effectType,
-            data.amount
-          )}`,
-        });
-
-        playSound("button-click");
+          playSound("button-click");
+        }
       }
     );
 
-    // Handler for CommunityChestCardDrawn events
-    const unsubscribeCommunity = registerEventHandler(
-      "CommunityChestCardDrawn",
+    const unsubscribePlayerPassedGo = registerEventHandler(
+      "PlayerPassedGo",
       (data, context) => {
-        const playerName = context.isCurrentPlayer(data.player)
-          ? "You"
-          : formatAddress(data.player);
+        if (context.isCurrentPlayer(data.player)) {
+          showPlayerPassedGoToast({
+            salaryCollected: data.salaryCollected,
+          });
 
-        toast.success(`${playerName} drew a Community Chest card!`, {
-          description: `Card effect: ${getCardEffectDescription(
-            data.effectType,
-            data.amount
-          )}`,
-        });
-
-        playSound("button-click");
+          playSound("money-receive");
+        }
       }
     );
 
     return () => {
-      unsubscribeChance();
-      unsubscribeCommunity();
+      unsubscribeTaxPaid();
+      unsubscribePlayerPassedGo();
     };
   }, [registerEventHandler]);
 

@@ -6,9 +6,8 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
-use ephemeral_rollups_sdk::anchor::{commit, delegate};
+use ephemeral_rollups_sdk::anchor::delegate;
 use ephemeral_rollups_sdk::cpi::DelegateConfig;
-use ephemeral_rollups_sdk::ephem::commit_and_undelegate_accounts;
 
 #[derive(Accounts)]
 pub struct InitializeGame<'info> {

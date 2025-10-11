@@ -277,7 +277,7 @@ pub struct PlayerState {
     pub jail_turns: u8,    // 1 byte - turns in jail
     pub doubles_count: u8, // 1 byte - consecutive doubles
     pub is_bankrupt: bool, // 1 byte - bankruptcy status
-    #[max_len(50)]
+    #[max_len(40)]
     pub properties_owned: Vec<u8>, // variable - owned property positions
     pub get_out_of_jail_cards: u8, // 1 byte - jail cards owned
     pub net_worth: u64,    // 8 bytes - total asset value

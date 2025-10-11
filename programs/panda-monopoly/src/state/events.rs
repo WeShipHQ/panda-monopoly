@@ -183,3 +183,13 @@ pub struct SpecialSpaceAction {
     pub position: u8,
     pub timestamp: i64,
 }
+
+#[event]
+pub struct TaxPaid {
+    pub game: Pubkey,
+    pub player: Pubkey,
+    pub tax_type: u8, // 1=mev Tax, 2=Priority Fee Tax
+    pub amount: u64,
+    pub position: u8,
+    pub timestamp: i64,
+}

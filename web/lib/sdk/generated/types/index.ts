@@ -26,6 +26,7 @@ export * from './propertyType';
 export * from './propertyUnmortgaged';
 export * from './rentPaid';
 export * from './specialSpaceAction';
+export * from './taxPaid';
 export * from './tradeAccepted';
 export * from './tradeCancelled';
 export * from './tradeCreated';

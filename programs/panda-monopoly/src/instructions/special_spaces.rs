@@ -293,6 +293,15 @@ pub fn callback_draw_chance_card(
         card.id
     );
 
+    emit!(ChanceCardDrawn {
+        player: player_pubkey,
+        game: game.key(),
+        card_index: card_index as u8,
+        effect_type: u8::from(card.effect_type),
+        amount: card.amount,
+        timestamp: clock.unix_timestamp,
+    });
+
     Ok(())
 }
 
@@ -523,6 +532,15 @@ pub fn callback_draw_community_chest_card(
         player_pubkey,
         card.id
     );
+
+    emit!(CommunityChestCardDrawn {
+        player: player_pubkey,
+        game: game.key(),
+        card_index: card_index as u8,
+        effect_type: u8::from(card.effect_type),
+        amount: card.amount,
+        timestamp: clock.unix_timestamp,
+    });
 
     Ok(())
 }
@@ -925,6 +943,15 @@ pub fn pay_mev_tax_handler(ctx: Context<PayTax>) -> Result<()> {
     // Update game timestamp
     game.turn_started_at = clock.unix_timestamp;
 
+    emit!(TaxPaid {
+        game: game.key(),
+        player: player_pubkey,
+        tax_type: 1, // 1=mev Tax
+        amount: MEV_TAX as u64,
+        position: MEV_TAX_POSITION,
+        timestamp: clock.unix_timestamp,
+    });
+
     Ok(())
 }
 
@@ -983,6 +1010,15 @@ pub fn pay_priority_fee_tax_handler(ctx: Context<PayTax>) -> Result<()> {
 
     // Update game timestamp
     game.turn_started_at = clock.unix_timestamp;
+
+    emit!(TaxPaid {
+        game: game.key(),
+        player: player_pubkey,
+        tax_type: 2, // 2=Priority Fee Tax
+        amount: PRIORITY_FEE_TAX as u64,
+        position: PRIORITY_FEE_TAX_POSITION,
+        timestamp: clock.unix_timestamp,
+    });
 
     Ok(())
 }

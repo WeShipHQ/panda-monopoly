@@ -103,3 +103,7 @@ export const SPECIAL_SPACE_ACTION_EVENT_DISCRIMINATOR = new Uint8Array([
 export const PLAYER_BANKRUPT_EVENT_DISCRIMINATOR = new Uint8Array([
   242, 72, 207, 196, 238, 112, 23, 47,
 ]);
+
+export const TAX_PAID_EVENT_DISCRIMINATOR = new Uint8Array([
+  4, 134, 57, 255, 63, 46, 212, 238,
+]);
