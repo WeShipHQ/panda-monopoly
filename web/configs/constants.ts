@@ -24,6 +24,7 @@ export const JAIL_FINE = 50;
 
 export const USE_VRF = false;
 
+
 export const API_CONFIG = {
   BASE_URL: envConfig.NEXT_PUBLIC_INDEXER_API_URL,
   ENDPOINTS: {
