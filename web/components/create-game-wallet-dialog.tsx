@@ -21,8 +21,13 @@ import envConfig from "@/configs/env";
 
 type Step = "create" | "delegate" | "complete";
 
-export function CreateGameWalletDialog() {
-  const [isOpen, setIsOpen] = useState(false);
+interface CreateGameWalletDialogProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function CreateGameWalletDialog({ isOpen: externalIsOpen, onClose: externalOnClose }: CreateGameWalletDialogProps = {}) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<Step>("create");
   const [isCreating, setIsCreating] = useState(false);
   const [isDelegating, setIsDelegating] = useState(false);
@@ -31,13 +36,24 @@ export function CreateGameWalletDialog() {
   const { createWallet } = useSolanaWallets();
   const { addSessionSigners } = useSessionSigners();
 
+  // Use external isOpen if provided, otherwise use internal state
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+  
+  const handleClose = () => {
+    if (externalOnClose) {
+      externalOnClose();
+    } else {
+      setInternalIsOpen(false);
+    }
+  };
+
   useEffect(() => {
-    if (authenticated && ready && !wallet?.delegated) {
+    if (authenticated && ready && !wallet?.delegated && externalIsOpen === undefined) {
       setTimeout(() => {
-        setIsOpen(true);
+        setInternalIsOpen(true);
       }, 300);
     }
-  }, [authenticated, ready, wallet]);
+  }, [authenticated, ready, wallet, externalIsOpen]);
 
   useEffect(() => {
     if (wallet && !wallet.delegated) {
@@ -84,7 +100,7 @@ export function CreateGameWalletDialog() {
       setCurrentStep("complete");
 
       setTimeout(() => {
-        setIsOpen(false);
+        handleClose();
       }, 500);
     } catch (error) {
       console.error("Failed to delegate game wallet:", error);
@@ -97,11 +113,11 @@ export function CreateGameWalletDialog() {
   const handleSkipDelegation = () => {
     setCurrentStep("complete");
     setTimeout(() => {
-      setIsOpen(false);
+      handleClose();
     }, 500);
   };
 
-  if (wallet && wallet.delegated) return null;
+  if (externalIsOpen === undefined && wallet && wallet.delegated) return null;
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -254,7 +270,7 @@ export function CreateGameWalletDialog() {
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={() => setIsOpen(false)} className="w-full">
+              <Button onClick={handleClose} className="w-full">
                 Start Playing!
               </Button>
             </DialogFooter>
@@ -267,7 +283,7 @@ export function CreateGameWalletDialog() {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent
         className="sm:max-w-[500px]"
         onInteractOutside={(e) => e.preventDefault()}

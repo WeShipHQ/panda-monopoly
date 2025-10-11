@@ -10,7 +10,7 @@ pub struct EndGame<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     pub clock: Sysvar<'info, Clock>,
 }

@@ -40,7 +40,7 @@ export function GameView() {
   }
 
   return (
-    <div className="lg:max-h-screen game-container w-full h-full overflow-hidden">
+    <div className="max-h-screen game-container w-full h-full">
       <div
         style={{
           gridArea: "left",
@@ -53,7 +53,7 @@ export function GameView() {
         style={{
           gridArea: "center",
         }}
-        className="w-full lg:w-[55vw]"
+        className="bg-green-200 aspect-square w-[100vw] lg:w-[55vw]"
       >
         <GameBoard />
       </div>

@@ -16,6 +16,8 @@ import {
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
+  getU8Decoder,
+  getU8Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
@@ -39,17 +41,17 @@ import {
   type ResolvedAccount,
 } from '../shared';
 
-export const COLLECT_FREE_PARKING_DISCRIMINATOR = new Uint8Array([
-  134, 219, 194, 3, 42, 240, 237, 196,
+export const BUILD_HOTEL_V2_DISCRIMINATOR = new Uint8Array([
+  70, 86, 39, 139, 169, 142, 237, 96,
 ]);
 
-export function getCollectFreeParkingDiscriminatorBytes() {
+export function getBuildHotelV2DiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    COLLECT_FREE_PARKING_DISCRIMINATOR
+    BUILD_HOTEL_V2_DISCRIMINATOR
   );
 }
 
-export type CollectFreeParkingInstruction<
+export type BuildHotelV2Instruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountGame extends string | AccountMeta<string> = string,
   TAccountPlayerState extends string | AccountMeta<string> = string,
@@ -79,36 +81,41 @@ export type CollectFreeParkingInstruction<
     ]
   >;
 
-export type CollectFreeParkingInstructionData = {
+export type BuildHotelV2InstructionData = {
   discriminator: ReadonlyUint8Array;
+  position: number;
 };
 
-export type CollectFreeParkingInstructionDataArgs = {};
+export type BuildHotelV2InstructionDataArgs = { position: number };
 
-export function getCollectFreeParkingInstructionDataEncoder(): FixedSizeEncoder<CollectFreeParkingInstructionDataArgs> {
+export function getBuildHotelV2InstructionDataEncoder(): FixedSizeEncoder<BuildHotelV2InstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: COLLECT_FREE_PARKING_DISCRIMINATOR })
+    getStructEncoder([
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['position', getU8Encoder()],
+    ]),
+    (value) => ({ ...value, discriminator: BUILD_HOTEL_V2_DISCRIMINATOR })
   );
 }
 
-export function getCollectFreeParkingInstructionDataDecoder(): FixedSizeDecoder<CollectFreeParkingInstructionData> {
+export function getBuildHotelV2InstructionDataDecoder(): FixedSizeDecoder<BuildHotelV2InstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['position', getU8Decoder()],
   ]);
 }
 
-export function getCollectFreeParkingInstructionDataCodec(): FixedSizeCodec<
-  CollectFreeParkingInstructionDataArgs,
-  CollectFreeParkingInstructionData
+export function getBuildHotelV2InstructionDataCodec(): FixedSizeCodec<
+  BuildHotelV2InstructionDataArgs,
+  BuildHotelV2InstructionData
 > {
   return combineCodec(
-    getCollectFreeParkingInstructionDataEncoder(),
-    getCollectFreeParkingInstructionDataDecoder()
+    getBuildHotelV2InstructionDataEncoder(),
+    getBuildHotelV2InstructionDataDecoder()
   );
 }
 
-export type CollectFreeParkingAsyncInput<
+export type BuildHotelV2AsyncInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountPlayer extends string = string,
@@ -118,16 +125,17 @@ export type CollectFreeParkingAsyncInput<
   playerState?: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
   clock?: Address<TAccountClock>;
+  position: BuildHotelV2InstructionDataArgs['position'];
 };
 
-export async function getCollectFreeParkingInstructionAsync<
+export async function getBuildHotelV2InstructionAsync<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountPlayer extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: CollectFreeParkingAsyncInput<
+  input: BuildHotelV2AsyncInput<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
@@ -135,7 +143,7 @@ export async function getCollectFreeParkingInstructionAsync<
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
-  CollectFreeParkingInstruction<
+  BuildHotelV2Instruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
@@ -158,6 +166,9 @@ export async function getCollectFreeParkingInstructionAsync<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
+
+  // Original args.
+  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.playerState.value) {
@@ -183,9 +194,11 @@ export async function getCollectFreeParkingInstructionAsync<
       getAccountMeta(accounts.player),
       getAccountMeta(accounts.clock),
     ],
-    data: getCollectFreeParkingInstructionDataEncoder().encode({}),
+    data: getBuildHotelV2InstructionDataEncoder().encode(
+      args as BuildHotelV2InstructionDataArgs
+    ),
     programAddress,
-  } as CollectFreeParkingInstruction<
+  } as BuildHotelV2Instruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
@@ -194,7 +207,7 @@ export async function getCollectFreeParkingInstructionAsync<
   >);
 }
 
-export type CollectFreeParkingInput<
+export type BuildHotelV2Input<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountPlayer extends string = string,
@@ -204,23 +217,24 @@ export type CollectFreeParkingInput<
   playerState: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
   clock?: Address<TAccountClock>;
+  position: BuildHotelV2InstructionDataArgs['position'];
 };
 
-export function getCollectFreeParkingInstruction<
+export function getBuildHotelV2Instruction<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountPlayer extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: CollectFreeParkingInput<
+  input: BuildHotelV2Input<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
     TAccountClock
   >,
   config?: { programAddress?: TProgramAddress }
-): CollectFreeParkingInstruction<
+): BuildHotelV2Instruction<
   TProgramAddress,
   TAccountGame,
   TAccountPlayerState,
@@ -243,6 +257,9 @@ export function getCollectFreeParkingInstruction<
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolve default values.
   if (!accounts.clock.value) {
     accounts.clock.value =
@@ -257,9 +274,11 @@ export function getCollectFreeParkingInstruction<
       getAccountMeta(accounts.player),
       getAccountMeta(accounts.clock),
     ],
-    data: getCollectFreeParkingInstructionDataEncoder().encode({}),
+    data: getBuildHotelV2InstructionDataEncoder().encode(
+      args as BuildHotelV2InstructionDataArgs
+    ),
     programAddress,
-  } as CollectFreeParkingInstruction<
+  } as BuildHotelV2Instruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
@@ -268,7 +287,7 @@ export function getCollectFreeParkingInstruction<
   >);
 }
 
-export type ParsedCollectFreeParkingInstruction<
+export type ParsedBuildHotelV2Instruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -279,17 +298,17 @@ export type ParsedCollectFreeParkingInstruction<
     player: TAccountMetas[2];
     clock: TAccountMetas[3];
   };
-  data: CollectFreeParkingInstructionData;
+  data: BuildHotelV2InstructionData;
 };
 
-export function parseCollectFreeParkingInstruction<
+export function parseBuildHotelV2Instruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
-): ParsedCollectFreeParkingInstruction<TProgram, TAccountMetas> {
+): ParsedBuildHotelV2Instruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
@@ -308,8 +327,6 @@ export function parseCollectFreeParkingInstruction<
       player: getNextAccount(),
       clock: getNextAccount(),
     },
-    data: getCollectFreeParkingInstructionDataDecoder().decode(
-      instruction.data
-    ),
+    data: getBuildHotelV2InstructionDataDecoder().decode(instruction.data),
   };
 }

@@ -16,6 +16,8 @@ import {
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
+  getU8Decoder,
+  getU8Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
@@ -39,17 +41,17 @@ import {
   type ResolvedAccount,
 } from '../shared';
 
-export const VISIT_BEACH_RESORT_DISCRIMINATOR = new Uint8Array([
-  29, 144, 200, 42, 23, 132, 255, 15,
+export const BUILD_HOUSE_V2_DISCRIMINATOR = new Uint8Array([
+  129, 101, 111, 168, 249, 48, 111, 126,
 ]);
 
-export function getVisitBeachResortDiscriminatorBytes() {
+export function getBuildHouseV2DiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    VISIT_BEACH_RESORT_DISCRIMINATOR
+    BUILD_HOUSE_V2_DISCRIMINATOR
   );
 }
 
-export type VisitBeachResortInstruction<
+export type BuildHouseV2Instruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountGame extends string | AccountMeta<string> = string,
   TAccountPlayerState extends string | AccountMeta<string> = string,
@@ -79,36 +81,41 @@ export type VisitBeachResortInstruction<
     ]
   >;
 
-export type VisitBeachResortInstructionData = {
+export type BuildHouseV2InstructionData = {
   discriminator: ReadonlyUint8Array;
+  position: number;
 };
 
-export type VisitBeachResortInstructionDataArgs = {};
+export type BuildHouseV2InstructionDataArgs = { position: number };
 
-export function getVisitBeachResortInstructionDataEncoder(): FixedSizeEncoder<VisitBeachResortInstructionDataArgs> {
+export function getBuildHouseV2InstructionDataEncoder(): FixedSizeEncoder<BuildHouseV2InstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: VISIT_BEACH_RESORT_DISCRIMINATOR })
+    getStructEncoder([
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['position', getU8Encoder()],
+    ]),
+    (value) => ({ ...value, discriminator: BUILD_HOUSE_V2_DISCRIMINATOR })
   );
 }
 
-export function getVisitBeachResortInstructionDataDecoder(): FixedSizeDecoder<VisitBeachResortInstructionData> {
+export function getBuildHouseV2InstructionDataDecoder(): FixedSizeDecoder<BuildHouseV2InstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['position', getU8Decoder()],
   ]);
 }
 
-export function getVisitBeachResortInstructionDataCodec(): FixedSizeCodec<
-  VisitBeachResortInstructionDataArgs,
-  VisitBeachResortInstructionData
+export function getBuildHouseV2InstructionDataCodec(): FixedSizeCodec<
+  BuildHouseV2InstructionDataArgs,
+  BuildHouseV2InstructionData
 > {
   return combineCodec(
-    getVisitBeachResortInstructionDataEncoder(),
-    getVisitBeachResortInstructionDataDecoder()
+    getBuildHouseV2InstructionDataEncoder(),
+    getBuildHouseV2InstructionDataDecoder()
   );
 }
 
-export type VisitBeachResortAsyncInput<
+export type BuildHouseV2AsyncInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountPlayer extends string = string,
@@ -118,16 +125,17 @@ export type VisitBeachResortAsyncInput<
   playerState?: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
   clock?: Address<TAccountClock>;
+  position: BuildHouseV2InstructionDataArgs['position'];
 };
 
-export async function getVisitBeachResortInstructionAsync<
+export async function getBuildHouseV2InstructionAsync<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountPlayer extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: VisitBeachResortAsyncInput<
+  input: BuildHouseV2AsyncInput<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
@@ -135,7 +143,7 @@ export async function getVisitBeachResortInstructionAsync<
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
-  VisitBeachResortInstruction<
+  BuildHouseV2Instruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
@@ -158,6 +166,9 @@ export async function getVisitBeachResortInstructionAsync<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
+
+  // Original args.
+  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.playerState.value) {
@@ -183,9 +194,11 @@ export async function getVisitBeachResortInstructionAsync<
       getAccountMeta(accounts.player),
       getAccountMeta(accounts.clock),
     ],
-    data: getVisitBeachResortInstructionDataEncoder().encode({}),
+    data: getBuildHouseV2InstructionDataEncoder().encode(
+      args as BuildHouseV2InstructionDataArgs
+    ),
     programAddress,
-  } as VisitBeachResortInstruction<
+  } as BuildHouseV2Instruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
@@ -194,7 +207,7 @@ export async function getVisitBeachResortInstructionAsync<
   >);
 }
 
-export type VisitBeachResortInput<
+export type BuildHouseV2Input<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountPlayer extends string = string,
@@ -204,23 +217,24 @@ export type VisitBeachResortInput<
   playerState: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
   clock?: Address<TAccountClock>;
+  position: BuildHouseV2InstructionDataArgs['position'];
 };
 
-export function getVisitBeachResortInstruction<
+export function getBuildHouseV2Instruction<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountPlayer extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: VisitBeachResortInput<
+  input: BuildHouseV2Input<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
     TAccountClock
   >,
   config?: { programAddress?: TProgramAddress }
-): VisitBeachResortInstruction<
+): BuildHouseV2Instruction<
   TProgramAddress,
   TAccountGame,
   TAccountPlayerState,
@@ -243,6 +257,9 @@ export function getVisitBeachResortInstruction<
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolve default values.
   if (!accounts.clock.value) {
     accounts.clock.value =
@@ -257,9 +274,11 @@ export function getVisitBeachResortInstruction<
       getAccountMeta(accounts.player),
       getAccountMeta(accounts.clock),
     ],
-    data: getVisitBeachResortInstructionDataEncoder().encode({}),
+    data: getBuildHouseV2InstructionDataEncoder().encode(
+      args as BuildHouseV2InstructionDataArgs
+    ),
     programAddress,
-  } as VisitBeachResortInstruction<
+  } as BuildHouseV2Instruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
@@ -268,7 +287,7 @@ export function getVisitBeachResortInstruction<
   >);
 }
 
-export type ParsedVisitBeachResortInstruction<
+export type ParsedBuildHouseV2Instruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -279,17 +298,17 @@ export type ParsedVisitBeachResortInstruction<
     player: TAccountMetas[2];
     clock: TAccountMetas[3];
   };
-  data: VisitBeachResortInstructionData;
+  data: BuildHouseV2InstructionData;
 };
 
-export function parseVisitBeachResortInstruction<
+export function parseBuildHouseV2Instruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
-): ParsedVisitBeachResortInstruction<TProgram, TAccountMetas> {
+): ParsedBuildHouseV2Instruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
@@ -308,6 +327,6 @@ export function parseVisitBeachResortInstruction<
       player: getNextAccount(),
       clock: getNextAccount(),
     },
-    data: getVisitBeachResortInstructionDataDecoder().decode(instruction.data),
+    data: getBuildHouseV2InstructionDataDecoder().decode(instruction.data),
   };
 }

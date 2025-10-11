@@ -1,5 +1,5 @@
-import { ColorGroup } from "@/configs/board-data";
-import type {
+import { ColorGroup, boardData } from "@/configs/board-data";
+import {
   GameState,
   PlayerState,
   PropertyState,
@@ -21,7 +21,7 @@ export interface GameAccount {
   address: string;
   gameId: number | string;
   configId: string;
-  authority: string;
+  creator: string;
   bump: number;
   maxPlayers: number;
   currentPlayers: number;
@@ -37,6 +37,11 @@ export interface GameAccount {
   winner: string | null;
   turnStartedAt: number;
   activeTrades: TradeInfo[];
+  entryFee: number;
+  tokenMint: string | null;
+  tokenVault: string | null;
+  totalPrizePool: number;
+  properties: PropertyInfo[];
 }
 
 export interface PlayerAccount {
@@ -104,6 +109,13 @@ export type TradeInfo = {
   expiresAt: number | string;
 };
 
+export type PropertyInfo = {
+  owner: string | null;
+  houses: number;
+  hasHotel: boolean;
+  isMortgaged: boolean;
+};
+
 function optionToNullable<T>(option: Option<T>): T | null {
   return isSome(option) ? option.value : null;
 }
@@ -132,7 +144,7 @@ export function mapGameStateToAccount(
     address: addressToString(address),
     gameId: bigintToString(gameState.gameId),
     configId: addressToString(gameState.configId),
-    authority: addressToString(gameState.authority),
+    creator: addressToString(gameState.creator),
     bump: gameState.bump,
     maxPlayers: gameState.maxPlayers,
     currentPlayers: gameState.currentPlayers,
@@ -152,6 +164,16 @@ export function mapGameStateToAccount(
       : null,
     turnStartedAt: bigintToNumber(gameState.turnStartedAt),
     activeTrades: gameState.activeTrades.map(mapTradeInfoToAccount),
+    entryFee: bigintToNumber(gameState.entryFee),
+    tokenMint: optionToNullable(gameState.tokenMint),
+    tokenVault: optionToNullable(gameState.tokenVault),
+    totalPrizePool: bigintToNumber(gameState.totalPrizePool),
+    properties: gameState.properties.map((prop) => ({
+      owner: optionToNullable(prop.owner),
+      houses: prop.houses,
+      hasHotel: prop.hasHotel,
+      isMortgaged: prop.isMortgaged,
+    })),
   };
 }
 
@@ -263,5 +285,94 @@ export function mapTradeInfoToAccount(
     receiverProperty: optionToNullable(tradeInfo.receiverProperty),
     createdAt: bigintToNumber(tradeInfo.createdAt),
     expiresAt: bigintToNumber(tradeInfo.expiresAt),
+  };
+}
+
+export function mapPropertyInfoToAccount(
+  propertyInfo: PropertyInfo,
+  position: number,
+  gameAddress: string
+): PropertyAccount {
+  const boardSpace = boardData.find((space) => space.position === position);
+
+  if (!boardSpace) {
+    throw new Error(`Board space not found for position ${position}`);
+  }
+
+  const syntheticAddress = `${gameAddress}_property_${position}`;
+
+  // Map property type from board data
+  let propertyType: PropertyType;
+  let colorGroup: ColorGroup = "brown"; // default
+  let price = 0;
+  let rentBase = 0;
+  let rentWithColorGroup = 0;
+  let rentWithHouses: number[] = [0, 0, 0, 0];
+  let rentWithHotel = 0;
+  let houseCost = 0;
+  let mortgageValue = 0;
+
+  switch (boardSpace.type) {
+    case "property":
+      propertyType = PropertyType.Street;
+      colorGroup = boardSpace.colorGroup;
+      price = boardSpace.price;
+      rentBase = boardSpace.baseRent;
+      rentWithColorGroup = boardSpace.rentWithColorGroup;
+      rentWithHouses = [
+        boardSpace.rentWith1House,
+        boardSpace.rentWith2Houses,
+        boardSpace.rentWith3Houses,
+        boardSpace.rentWith4Houses,
+      ];
+      rentWithHotel = boardSpace.rentWithHotel;
+      houseCost = boardSpace.houseCost;
+      mortgageValue = boardSpace.mortgageValue;
+      break;
+    case "railroad":
+      propertyType = PropertyType.Railroad;
+      price = boardSpace.price;
+      rentBase = boardSpace.railroadRent[0]; // rent for owning 1 railroad
+      mortgageValue = boardSpace.mortgageValue;
+      break;
+    case "utility":
+      propertyType = PropertyType.Utility;
+      price = boardSpace.price;
+      rentBase = boardSpace.utilityMultiplier[0]; // multiplier for owning 1 utility
+      mortgageValue = boardSpace.mortgageValue;
+      break;
+    case "corner":
+      propertyType = PropertyType.Corner;
+      break;
+    case "chance":
+      propertyType = PropertyType.Chance;
+      break;
+    case "community-chest":
+      propertyType = PropertyType.CommunityChest;
+      break;
+    case "tax":
+      propertyType = PropertyType.Tax;
+      break;
+    default:
+      propertyType = PropertyType.Corner;
+  }
+
+  return {
+    address: syntheticAddress,
+    position,
+    owner: propertyInfo.owner,
+    price,
+    colorGroup,
+    propertyType,
+    houses: propertyInfo.houses,
+    hasHotel: propertyInfo.hasHotel,
+    isMortgaged: propertyInfo.isMortgaged,
+    rentBase,
+    rentWithColorGroup,
+    rentWithHouses,
+    rentWithHotel,
+    houseCost,
+    mortgageValue,
+    lastRentPaid: "0", // Default since we don't track this in PropertyInfo anymore
   };
 }

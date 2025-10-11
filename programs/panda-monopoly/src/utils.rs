@@ -1,8 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    error::GameError, ColorGroup, GameState, PlayerState, PropertyState, PropertyType,
-    JAIL_POSITION,
+    error::GameError, get_property_data, ColorGroup, GameState, PlayerState, PropertyState, PropertyType, JAIL_POSITION
 };
 
 // Helper function for rent calculation
@@ -261,4 +260,104 @@ pub fn force_end_turn(game: &mut GameState, player_state: &mut PlayerState, cloc
     game.turn_started_at = clock.unix_timestamp;
 
     msg!("Turn automatically ended. Next turn: Player {}", next_turn);
+}
+
+pub fn random_two_u8_with_range(bytes: &[u8; 32], min_value: u8, max_value: u8) -> [u8; 2] {
+    let range = (max_value - min_value + 1) as u16;
+    let threshold = (256 / range * range) as u8;
+
+    // First value from the first half [0..16]
+    let mut first = None;
+    for &b in bytes[..16].iter().rev() {
+        if b < threshold {
+            first = Some(min_value + (b % range as u8));
+            break;
+        }
+    }
+    let die1 = first.unwrap_or_else(|| min_value + (bytes[15] % range as u8));
+
+    // Second value from the second half [16..32]
+    let mut second = None;
+    for &b in bytes[16..].iter().rev() {
+        if b < threshold {
+            second = Some(min_value + (b % range as u8));
+            break;
+        }
+    }
+    let die2 = second.unwrap_or_else(|| min_value + (bytes[31] % range as u8));
+
+    [die1, die2]
+}
+
+// news
+
+pub fn calculate_rent(
+    game: &GameState,
+    position: u8,
+    owner_properties: &[u8],
+    dice_roll: [u8; 2],
+) -> Result<u64> {
+    let property = game.get_property(position)?;
+    let static_data = get_property_data(position)?;
+
+    // Mortgaged properties don't collect rent
+    if property.is_mortgaged {
+        return Ok(0);
+    }
+
+    match static_data.property_type {
+        PropertyType::Street => {
+            if property.has_hotel {
+                Ok(static_data.rent[5])
+            } else if property.houses > 0 {
+                Ok(static_data.rent[property.houses as usize])
+            } else {
+                // Check for monopoly
+                let owner = property.owner.ok_or(GameError::PropertyNotOwned)?;
+                if game.has_monopoly(&owner, static_data.color_group) {
+                    Ok(static_data.rent[0] * 2) // Double rent with monopoly
+                } else {
+                    Ok(static_data.rent[0])
+                }
+            }
+        }
+        PropertyType::Railroad => {
+            // Count railroads owned
+            let railroad_count = owner_properties
+                .iter()
+                .filter(|&&pos| {
+                    matches!(
+                        get_property_data(pos).map(|d| d.property_type),
+                        Ok(PropertyType::Railroad)
+                    )
+                })
+                .count();
+
+            Ok(match railroad_count {
+                1 => 25,
+                2 => 50,
+                3 => 100,
+                4 => 200,
+                _ => 0,
+            })
+        }
+        PropertyType::Utility => {
+            // Count utilities owned
+            let utility_count = owner_properties
+                .iter()
+                .filter(|&&pos| {
+                    matches!(
+                        get_property_data(pos).map(|d| d.property_type),
+                        Ok(PropertyType::Utility)
+                    )
+                })
+                .count();
+
+            let multiplier = if utility_count == 2 { 10 } else { 4 };
+            let dice_total = (dice_roll[0] + dice_roll[1]) as u64;
+
+            Ok(dice_total * multiplier)
+        }
+        _ => Ok(0),
+    }
 }

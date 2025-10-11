@@ -11,6 +11,8 @@ import {
   fixDecoderSize,
   fixEncoderSize,
   getAddressEncoder,
+  getBooleanDecoder,
+  getBooleanEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getOptionDecoder,
@@ -18,6 +20,8 @@ import {
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
+  getU8Decoder,
+  getU8Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
@@ -56,12 +60,25 @@ export type RollDiceInstruction<
   TAccountGame extends string | AccountMeta<string> = string,
   TAccountPlayerState extends string | AccountMeta<string> = string,
   TAccountPlayer extends string | AccountMeta<string> = string,
-  TAccountRecentBlockhashes extends
-    | string
-    | AccountMeta<string> = 'SysvarRecentB1ockHashes11111111111111111111',
   TAccountClock extends
     | string
     | AccountMeta<string> = 'SysvarC1ock11111111111111111111111111111111',
+  TAccountOracleQueue extends
+    | string
+    | AccountMeta<string> = '5hBR571xnXppuCPveTrctfTU7tJLSN94nq7kv7FRK5Tc',
+  TAccountRecentBlockhashes extends
+    | string
+    | AccountMeta<string> = 'SysvarRecentB1ockHashes11111111111111111111',
+  TAccountProgramIdentity extends string | AccountMeta<string> = string,
+  TAccountVrfProgram extends
+    | string
+    | AccountMeta<string> = 'Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz',
+  TAccountSlotHashes extends
+    | string
+    | AccountMeta<string> = 'SysvarS1otHashes111111111111111111111111111',
+  TAccountSystemProgram extends
+    | string
+    | AccountMeta<string> = '11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -77,22 +94,41 @@ export type RollDiceInstruction<
         ? WritableSignerAccount<TAccountPlayer> &
             AccountSignerMeta<TAccountPlayer>
         : TAccountPlayer,
-      TAccountRecentBlockhashes extends string
-        ? ReadonlyAccount<TAccountRecentBlockhashes>
-        : TAccountRecentBlockhashes,
       TAccountClock extends string
         ? ReadonlyAccount<TAccountClock>
         : TAccountClock,
+      TAccountOracleQueue extends string
+        ? WritableAccount<TAccountOracleQueue>
+        : TAccountOracleQueue,
+      TAccountRecentBlockhashes extends string
+        ? ReadonlyAccount<TAccountRecentBlockhashes>
+        : TAccountRecentBlockhashes,
+      TAccountProgramIdentity extends string
+        ? ReadonlyAccount<TAccountProgramIdentity>
+        : TAccountProgramIdentity,
+      TAccountVrfProgram extends string
+        ? ReadonlyAccount<TAccountVrfProgram>
+        : TAccountVrfProgram,
+      TAccountSlotHashes extends string
+        ? ReadonlyAccount<TAccountSlotHashes>
+        : TAccountSlotHashes,
+      TAccountSystemProgram extends string
+        ? ReadonlyAccount<TAccountSystemProgram>
+        : TAccountSystemProgram,
       ...TRemainingAccounts,
     ]
   >;
 
 export type RollDiceInstructionData = {
   discriminator: ReadonlyUint8Array;
+  useVrf: boolean;
+  clientSeed: number;
   diceRoll: Option<ReadonlyUint8Array>;
 };
 
 export type RollDiceInstructionDataArgs = {
+  useVrf: boolean;
+  clientSeed: number;
   diceRoll: OptionOrNullable<ReadonlyUint8Array>;
 };
 
@@ -100,6 +136,8 @@ export function getRollDiceInstructionDataEncoder(): Encoder<RollDiceInstruction
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['useVrf', getBooleanEncoder()],
+      ['clientSeed', getU8Encoder()],
       ['diceRoll', getOptionEncoder(fixEncoderSize(getBytesEncoder(), 2))],
     ]),
     (value) => ({ ...value, discriminator: ROLL_DICE_DISCRIMINATOR })
@@ -109,6 +147,8 @@ export function getRollDiceInstructionDataEncoder(): Encoder<RollDiceInstruction
 export function getRollDiceInstructionDataDecoder(): Decoder<RollDiceInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['useVrf', getBooleanDecoder()],
+    ['clientSeed', getU8Decoder()],
     ['diceRoll', getOptionDecoder(fixDecoderSize(getBytesDecoder(), 2))],
   ]);
 }
@@ -127,14 +167,26 @@ export type RollDiceAsyncInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountPlayer extends string = string,
-  TAccountRecentBlockhashes extends string = string,
   TAccountClock extends string = string,
+  TAccountOracleQueue extends string = string,
+  TAccountRecentBlockhashes extends string = string,
+  TAccountProgramIdentity extends string = string,
+  TAccountVrfProgram extends string = string,
+  TAccountSlotHashes extends string = string,
+  TAccountSystemProgram extends string = string,
 > = {
   game: Address<TAccountGame>;
   playerState?: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
-  recentBlockhashes?: Address<TAccountRecentBlockhashes>;
   clock?: Address<TAccountClock>;
+  oracleQueue?: Address<TAccountOracleQueue>;
+  recentBlockhashes?: Address<TAccountRecentBlockhashes>;
+  programIdentity?: Address<TAccountProgramIdentity>;
+  vrfProgram?: Address<TAccountVrfProgram>;
+  slotHashes?: Address<TAccountSlotHashes>;
+  systemProgram?: Address<TAccountSystemProgram>;
+  useVrf: RollDiceInstructionDataArgs['useVrf'];
+  clientSeed: RollDiceInstructionDataArgs['clientSeed'];
   diceRoll: RollDiceInstructionDataArgs['diceRoll'];
 };
 
@@ -142,16 +194,26 @@ export async function getRollDiceInstructionAsync<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountPlayer extends string,
-  TAccountRecentBlockhashes extends string,
   TAccountClock extends string,
+  TAccountOracleQueue extends string,
+  TAccountRecentBlockhashes extends string,
+  TAccountProgramIdentity extends string,
+  TAccountVrfProgram extends string,
+  TAccountSlotHashes extends string,
+  TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
   input: RollDiceAsyncInput<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
+    TAccountClock,
+    TAccountOracleQueue,
     TAccountRecentBlockhashes,
-    TAccountClock
+    TAccountProgramIdentity,
+    TAccountVrfProgram,
+    TAccountSlotHashes,
+    TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
@@ -160,8 +222,13 @@ export async function getRollDiceInstructionAsync<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
+    TAccountClock,
+    TAccountOracleQueue,
     TAccountRecentBlockhashes,
-    TAccountClock
+    TAccountProgramIdentity,
+    TAccountVrfProgram,
+    TAccountSlotHashes,
+    TAccountSystemProgram
   >
 > {
   // Program address.
@@ -173,11 +240,19 @@ export async function getRollDiceInstructionAsync<
     game: { value: input.game ?? null, isWritable: true },
     playerState: { value: input.playerState ?? null, isWritable: true },
     player: { value: input.player ?? null, isWritable: true },
+    clock: { value: input.clock ?? null, isWritable: false },
+    oracleQueue: { value: input.oracleQueue ?? null, isWritable: true },
     recentBlockhashes: {
       value: input.recentBlockhashes ?? null,
       isWritable: false,
     },
-    clock: { value: input.clock ?? null, isWritable: false },
+    programIdentity: {
+      value: input.programIdentity ?? null,
+      isWritable: false,
+    },
+    vrfProgram: { value: input.vrfProgram ?? null, isWritable: false },
+    slotHashes: { value: input.slotHashes ?? null, isWritable: false },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -198,13 +273,39 @@ export async function getRollDiceInstructionAsync<
       ],
     });
   }
+  if (!accounts.clock.value) {
+    accounts.clock.value =
+      'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
+  }
+  if (!accounts.oracleQueue.value) {
+    accounts.oracleQueue.value =
+      '5hBR571xnXppuCPveTrctfTU7tJLSN94nq7kv7FRK5Tc' as Address<'5hBR571xnXppuCPveTrctfTU7tJLSN94nq7kv7FRK5Tc'>;
+  }
   if (!accounts.recentBlockhashes.value) {
     accounts.recentBlockhashes.value =
       'SysvarRecentB1ockHashes11111111111111111111' as Address<'SysvarRecentB1ockHashes11111111111111111111'>;
   }
-  if (!accounts.clock.value) {
-    accounts.clock.value =
-      'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
+  if (!accounts.programIdentity.value) {
+    accounts.programIdentity.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([105, 100, 101, 110, 116, 105, 116, 121])
+        ),
+      ],
+    });
+  }
+  if (!accounts.vrfProgram.value) {
+    accounts.vrfProgram.value =
+      'Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz' as Address<'Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz'>;
+  }
+  if (!accounts.slotHashes.value) {
+    accounts.slotHashes.value =
+      'SysvarS1otHashes111111111111111111111111111' as Address<'SysvarS1otHashes111111111111111111111111111'>;
+  }
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -213,8 +314,13 @@ export async function getRollDiceInstructionAsync<
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.playerState),
       getAccountMeta(accounts.player),
-      getAccountMeta(accounts.recentBlockhashes),
       getAccountMeta(accounts.clock),
+      getAccountMeta(accounts.oracleQueue),
+      getAccountMeta(accounts.recentBlockhashes),
+      getAccountMeta(accounts.programIdentity),
+      getAccountMeta(accounts.vrfProgram),
+      getAccountMeta(accounts.slotHashes),
+      getAccountMeta(accounts.systemProgram),
     ],
     data: getRollDiceInstructionDataEncoder().encode(
       args as RollDiceInstructionDataArgs
@@ -225,8 +331,13 @@ export async function getRollDiceInstructionAsync<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
+    TAccountClock,
+    TAccountOracleQueue,
     TAccountRecentBlockhashes,
-    TAccountClock
+    TAccountProgramIdentity,
+    TAccountVrfProgram,
+    TAccountSlotHashes,
+    TAccountSystemProgram
   >);
 }
 
@@ -234,14 +345,26 @@ export type RollDiceInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountPlayer extends string = string,
-  TAccountRecentBlockhashes extends string = string,
   TAccountClock extends string = string,
+  TAccountOracleQueue extends string = string,
+  TAccountRecentBlockhashes extends string = string,
+  TAccountProgramIdentity extends string = string,
+  TAccountVrfProgram extends string = string,
+  TAccountSlotHashes extends string = string,
+  TAccountSystemProgram extends string = string,
 > = {
   game: Address<TAccountGame>;
   playerState: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
-  recentBlockhashes?: Address<TAccountRecentBlockhashes>;
   clock?: Address<TAccountClock>;
+  oracleQueue?: Address<TAccountOracleQueue>;
+  recentBlockhashes?: Address<TAccountRecentBlockhashes>;
+  programIdentity: Address<TAccountProgramIdentity>;
+  vrfProgram?: Address<TAccountVrfProgram>;
+  slotHashes?: Address<TAccountSlotHashes>;
+  systemProgram?: Address<TAccountSystemProgram>;
+  useVrf: RollDiceInstructionDataArgs['useVrf'];
+  clientSeed: RollDiceInstructionDataArgs['clientSeed'];
   diceRoll: RollDiceInstructionDataArgs['diceRoll'];
 };
 
@@ -249,16 +372,26 @@ export function getRollDiceInstruction<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountPlayer extends string,
-  TAccountRecentBlockhashes extends string,
   TAccountClock extends string,
+  TAccountOracleQueue extends string,
+  TAccountRecentBlockhashes extends string,
+  TAccountProgramIdentity extends string,
+  TAccountVrfProgram extends string,
+  TAccountSlotHashes extends string,
+  TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
   input: RollDiceInput<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
+    TAccountClock,
+    TAccountOracleQueue,
     TAccountRecentBlockhashes,
-    TAccountClock
+    TAccountProgramIdentity,
+    TAccountVrfProgram,
+    TAccountSlotHashes,
+    TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): RollDiceInstruction<
@@ -266,8 +399,13 @@ export function getRollDiceInstruction<
   TAccountGame,
   TAccountPlayerState,
   TAccountPlayer,
+  TAccountClock,
+  TAccountOracleQueue,
   TAccountRecentBlockhashes,
-  TAccountClock
+  TAccountProgramIdentity,
+  TAccountVrfProgram,
+  TAccountSlotHashes,
+  TAccountSystemProgram
 > {
   // Program address.
   const programAddress =
@@ -278,11 +416,19 @@ export function getRollDiceInstruction<
     game: { value: input.game ?? null, isWritable: true },
     playerState: { value: input.playerState ?? null, isWritable: true },
     player: { value: input.player ?? null, isWritable: true },
+    clock: { value: input.clock ?? null, isWritable: false },
+    oracleQueue: { value: input.oracleQueue ?? null, isWritable: true },
     recentBlockhashes: {
       value: input.recentBlockhashes ?? null,
       isWritable: false,
     },
-    clock: { value: input.clock ?? null, isWritable: false },
+    programIdentity: {
+      value: input.programIdentity ?? null,
+      isWritable: false,
+    },
+    vrfProgram: { value: input.vrfProgram ?? null, isWritable: false },
+    slotHashes: { value: input.slotHashes ?? null, isWritable: false },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -293,13 +439,29 @@ export function getRollDiceInstruction<
   const args = { ...input };
 
   // Resolve default values.
+  if (!accounts.clock.value) {
+    accounts.clock.value =
+      'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
+  }
+  if (!accounts.oracleQueue.value) {
+    accounts.oracleQueue.value =
+      '5hBR571xnXppuCPveTrctfTU7tJLSN94nq7kv7FRK5Tc' as Address<'5hBR571xnXppuCPveTrctfTU7tJLSN94nq7kv7FRK5Tc'>;
+  }
   if (!accounts.recentBlockhashes.value) {
     accounts.recentBlockhashes.value =
       'SysvarRecentB1ockHashes11111111111111111111' as Address<'SysvarRecentB1ockHashes11111111111111111111'>;
   }
-  if (!accounts.clock.value) {
-    accounts.clock.value =
-      'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
+  if (!accounts.vrfProgram.value) {
+    accounts.vrfProgram.value =
+      'Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz' as Address<'Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz'>;
+  }
+  if (!accounts.slotHashes.value) {
+    accounts.slotHashes.value =
+      'SysvarS1otHashes111111111111111111111111111' as Address<'SysvarS1otHashes111111111111111111111111111'>;
+  }
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -308,8 +470,13 @@ export function getRollDiceInstruction<
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.playerState),
       getAccountMeta(accounts.player),
-      getAccountMeta(accounts.recentBlockhashes),
       getAccountMeta(accounts.clock),
+      getAccountMeta(accounts.oracleQueue),
+      getAccountMeta(accounts.recentBlockhashes),
+      getAccountMeta(accounts.programIdentity),
+      getAccountMeta(accounts.vrfProgram),
+      getAccountMeta(accounts.slotHashes),
+      getAccountMeta(accounts.systemProgram),
     ],
     data: getRollDiceInstructionDataEncoder().encode(
       args as RollDiceInstructionDataArgs
@@ -320,8 +487,13 @@ export function getRollDiceInstruction<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
+    TAccountClock,
+    TAccountOracleQueue,
     TAccountRecentBlockhashes,
-    TAccountClock
+    TAccountProgramIdentity,
+    TAccountVrfProgram,
+    TAccountSlotHashes,
+    TAccountSystemProgram
   >);
 }
 
@@ -334,8 +506,13 @@ export type ParsedRollDiceInstruction<
     game: TAccountMetas[0];
     playerState: TAccountMetas[1];
     player: TAccountMetas[2];
-    recentBlockhashes: TAccountMetas[3];
-    clock: TAccountMetas[4];
+    clock: TAccountMetas[3];
+    oracleQueue: TAccountMetas[4];
+    recentBlockhashes: TAccountMetas[5];
+    programIdentity: TAccountMetas[6];
+    vrfProgram: TAccountMetas[7];
+    slotHashes: TAccountMetas[8];
+    systemProgram: TAccountMetas[9];
   };
   data: RollDiceInstructionData;
 };
@@ -348,7 +525,7 @@ export function parseRollDiceInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedRollDiceInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+  if (instruction.accounts.length < 10) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -364,8 +541,13 @@ export function parseRollDiceInstruction<
       game: getNextAccount(),
       playerState: getNextAccount(),
       player: getNextAccount(),
-      recentBlockhashes: getNextAccount(),
       clock: getNextAccount(),
+      oracleQueue: getNextAccount(),
+      recentBlockhashes: getNextAccount(),
+      programIdentity: getNextAccount(),
+      vrfProgram: getNextAccount(),
+      slotHashes: getNextAccount(),
+      systemProgram: getNextAccount(),
     },
     data: getRollDiceInstructionDataDecoder().decode(instruction.data),
   };

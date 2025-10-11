@@ -11,6 +11,8 @@ import {
   fixDecoderSize,
   fixEncoderSize,
   getAddressEncoder,
+  getBooleanDecoder,
+  getBooleanEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getOptionDecoder,
@@ -121,12 +123,14 @@ export type DrawCommunityChestCardInstruction<
 
 export type DrawCommunityChestCardInstructionData = {
   discriminator: ReadonlyUint8Array;
-  clientSeed: Option<number>;
+  useVrf: boolean;
+  clientSeed: number;
   cardIndex: Option<number>;
 };
 
 export type DrawCommunityChestCardInstructionDataArgs = {
-  clientSeed: OptionOrNullable<number>;
+  useVrf: boolean;
+  clientSeed: number;
   cardIndex: OptionOrNullable<number>;
 };
 
@@ -134,7 +138,8 @@ export function getDrawCommunityChestCardInstructionDataEncoder(): Encoder<DrawC
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['clientSeed', getOptionEncoder(getU8Encoder())],
+      ['useVrf', getBooleanEncoder()],
+      ['clientSeed', getU8Encoder()],
       ['cardIndex', getOptionEncoder(getU8Encoder())],
     ]),
     (value) => ({
@@ -147,7 +152,8 @@ export function getDrawCommunityChestCardInstructionDataEncoder(): Encoder<DrawC
 export function getDrawCommunityChestCardInstructionDataDecoder(): Decoder<DrawCommunityChestCardInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['clientSeed', getOptionDecoder(getU8Decoder())],
+    ['useVrf', getBooleanDecoder()],
+    ['clientSeed', getU8Decoder()],
     ['cardIndex', getOptionDecoder(getU8Decoder())],
   ]);
 }
@@ -184,6 +190,7 @@ export type DrawCommunityChestCardAsyncInput<
   vrfProgram?: Address<TAccountVrfProgram>;
   slotHashes?: Address<TAccountSlotHashes>;
   systemProgram?: Address<TAccountSystemProgram>;
+  useVrf: DrawCommunityChestCardInstructionDataArgs['useVrf'];
   clientSeed: DrawCommunityChestCardInstructionDataArgs['clientSeed'];
   cardIndex: DrawCommunityChestCardInstructionDataArgs['cardIndex'];
 };
@@ -361,6 +368,7 @@ export type DrawCommunityChestCardInput<
   vrfProgram?: Address<TAccountVrfProgram>;
   slotHashes?: Address<TAccountSlotHashes>;
   systemProgram?: Address<TAccountSystemProgram>;
+  useVrf: DrawCommunityChestCardInstructionDataArgs['useVrf'];
   clientSeed: DrawCommunityChestCardInstructionDataArgs['clientSeed'];
   cardIndex: DrawCommunityChestCardInstructionDataArgs['cardIndex'];
 };

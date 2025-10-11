@@ -16,6 +16,8 @@ import {
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
+  getU64Decoder,
+  getU64Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
@@ -53,8 +55,18 @@ export type InitializeGameInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountGame extends string | AccountMeta<string> = string,
   TAccountPlayerState extends string | AccountMeta<string> = string,
-  TAccountAuthority extends string | AccountMeta<string> = string,
+  TAccountCreator extends string | AccountMeta<string> = string,
   TAccountConfig extends string | AccountMeta<string> = string,
+  TAccountGameAuthority extends string | AccountMeta<string> = string,
+  TAccountTokenMint extends string | AccountMeta<string> = string,
+  TAccountCreatorTokenAccount extends string | AccountMeta<string> = string,
+  TAccountTokenVault extends string | AccountMeta<string> = string,
+  TAccountTokenProgram extends
+    | string
+    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+  TAccountAssociatedTokenProgram extends
+    | string
+    | AccountMeta<string> = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
   TAccountSystemProgram extends
     | string
     | AccountMeta<string> = '11111111111111111111111111111111',
@@ -72,13 +84,31 @@ export type InitializeGameInstruction<
       TAccountPlayerState extends string
         ? WritableAccount<TAccountPlayerState>
         : TAccountPlayerState,
-      TAccountAuthority extends string
-        ? WritableSignerAccount<TAccountAuthority> &
-            AccountSignerMeta<TAccountAuthority>
-        : TAccountAuthority,
+      TAccountCreator extends string
+        ? WritableSignerAccount<TAccountCreator> &
+            AccountSignerMeta<TAccountCreator>
+        : TAccountCreator,
       TAccountConfig extends string
         ? WritableAccount<TAccountConfig>
         : TAccountConfig,
+      TAccountGameAuthority extends string
+        ? ReadonlyAccount<TAccountGameAuthority>
+        : TAccountGameAuthority,
+      TAccountTokenMint extends string
+        ? ReadonlyAccount<TAccountTokenMint>
+        : TAccountTokenMint,
+      TAccountCreatorTokenAccount extends string
+        ? WritableAccount<TAccountCreatorTokenAccount>
+        : TAccountCreatorTokenAccount,
+      TAccountTokenVault extends string
+        ? WritableAccount<TAccountTokenVault>
+        : TAccountTokenVault,
+      TAccountTokenProgram extends string
+        ? ReadonlyAccount<TAccountTokenProgram>
+        : TAccountTokenProgram,
+      TAccountAssociatedTokenProgram extends string
+        ? ReadonlyAccount<TAccountAssociatedTokenProgram>
+        : TAccountAssociatedTokenProgram,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -91,13 +121,17 @@ export type InitializeGameInstruction<
 
 export type InitializeGameInstructionData = {
   discriminator: ReadonlyUint8Array;
+  entryFee: bigint;
 };
 
-export type InitializeGameInstructionDataArgs = {};
+export type InitializeGameInstructionDataArgs = { entryFee: number | bigint };
 
 export function getInitializeGameInstructionDataEncoder(): FixedSizeEncoder<InitializeGameInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['entryFee', getU64Encoder()],
+    ]),
     (value) => ({ ...value, discriminator: INITIALIZE_GAME_DISCRIMINATOR })
   );
 }
@@ -105,6 +139,7 @@ export function getInitializeGameInstructionDataEncoder(): FixedSizeEncoder<Init
 export function getInitializeGameInstructionDataDecoder(): FixedSizeDecoder<InitializeGameInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['entryFee', getU64Decoder()],
   ]);
 }
 
@@ -121,24 +156,43 @@ export function getInitializeGameInstructionDataCodec(): FixedSizeCodec<
 export type InitializeGameAsyncInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
-  TAccountAuthority extends string = string,
+  TAccountCreator extends string = string,
   TAccountConfig extends string = string,
+  TAccountGameAuthority extends string = string,
+  TAccountTokenMint extends string = string,
+  TAccountCreatorTokenAccount extends string = string,
+  TAccountTokenVault extends string = string,
+  TAccountTokenProgram extends string = string,
+  TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
   playerState?: Address<TAccountPlayerState>;
-  authority: TransactionSigner<TAccountAuthority>;
+  creator: TransactionSigner<TAccountCreator>;
   config: Address<TAccountConfig>;
+  gameAuthority?: Address<TAccountGameAuthority>;
+  tokenMint: Address<TAccountTokenMint>;
+  creatorTokenAccount?: Address<TAccountCreatorTokenAccount>;
+  tokenVault?: Address<TAccountTokenVault>;
+  tokenProgram?: Address<TAccountTokenProgram>;
+  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   clock?: Address<TAccountClock>;
+  entryFee: InitializeGameInstructionDataArgs['entryFee'];
 };
 
 export async function getInitializeGameInstructionAsync<
   TAccountGame extends string,
   TAccountPlayerState extends string,
-  TAccountAuthority extends string,
+  TAccountCreator extends string,
   TAccountConfig extends string,
+  TAccountGameAuthority extends string,
+  TAccountTokenMint extends string,
+  TAccountCreatorTokenAccount extends string,
+  TAccountTokenVault extends string,
+  TAccountTokenProgram extends string,
+  TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
@@ -146,8 +200,14 @@ export async function getInitializeGameInstructionAsync<
   input: InitializeGameAsyncInput<
     TAccountGame,
     TAccountPlayerState,
-    TAccountAuthority,
+    TAccountCreator,
     TAccountConfig,
+    TAccountGameAuthority,
+    TAccountTokenMint,
+    TAccountCreatorTokenAccount,
+    TAccountTokenVault,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
     TAccountClock
   >,
@@ -157,8 +217,14 @@ export async function getInitializeGameInstructionAsync<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
-    TAccountAuthority,
+    TAccountCreator,
     TAccountConfig,
+    TAccountGameAuthority,
+    TAccountTokenMint,
+    TAccountCreatorTokenAccount,
+    TAccountTokenVault,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
     TAccountClock
   >
@@ -171,8 +237,20 @@ export async function getInitializeGameInstructionAsync<
   const originalAccounts = {
     game: { value: input.game ?? null, isWritable: true },
     playerState: { value: input.playerState ?? null, isWritable: true },
-    authority: { value: input.authority ?? null, isWritable: true },
+    creator: { value: input.creator ?? null, isWritable: true },
     config: { value: input.config ?? null, isWritable: true },
+    gameAuthority: { value: input.gameAuthority ?? null, isWritable: false },
+    tokenMint: { value: input.tokenMint ?? null, isWritable: false },
+    creatorTokenAccount: {
+      value: input.creatorTokenAccount ?? null,
+      isWritable: true,
+    },
+    tokenVault: { value: input.tokenVault ?? null, isWritable: true },
+    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    associatedTokenProgram: {
+      value: input.associatedTokenProgram ?? null,
+      isWritable: false,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     clock: { value: input.clock ?? null, isWritable: false },
   };
@@ -181,6 +259,9 @@ export async function getInitializeGameInstructionAsync<
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolve default values.
   if (!accounts.playerState.value) {
     accounts.playerState.value = await getProgramDerivedAddress({
@@ -188,9 +269,52 @@ export async function getInitializeGameInstructionAsync<
       seeds: [
         getBytesEncoder().encode(new Uint8Array([112, 108, 97, 121, 101, 114])),
         getAddressEncoder().encode(expectAddress(accounts.game.value)),
-        getAddressEncoder().encode(expectAddress(accounts.authority.value)),
+        getAddressEncoder().encode(expectAddress(accounts.creator.value)),
       ],
     });
+  }
+  if (!accounts.gameAuthority.value) {
+    accounts.gameAuthority.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([
+            103, 97, 109, 101, 95, 97, 117, 116, 104, 111, 114, 105, 116, 121,
+          ])
+        ),
+      ],
+    });
+  }
+  if (!accounts.tokenProgram.value) {
+    accounts.tokenProgram.value =
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  }
+  if (!accounts.creatorTokenAccount.value) {
+    accounts.creatorTokenAccount.value = await getProgramDerivedAddress({
+      programAddress:
+        'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>,
+      seeds: [
+        getAddressEncoder().encode(expectAddress(accounts.creator.value)),
+        getAddressEncoder().encode(expectAddress(accounts.tokenProgram.value)),
+        getAddressEncoder().encode(expectAddress(accounts.tokenMint.value)),
+      ],
+    });
+  }
+  if (!accounts.tokenVault.value) {
+    accounts.tokenVault.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([116, 111, 107, 101, 110, 95, 118, 97, 117, 108, 116])
+        ),
+        getAddressEncoder().encode(expectAddress(accounts.tokenMint.value)),
+        getAddressEncoder().encode(expectAddress(accounts.game.value)),
+      ],
+    });
+  }
+  if (!accounts.associatedTokenProgram.value) {
+    accounts.associatedTokenProgram.value =
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
@@ -206,19 +330,33 @@ export async function getInitializeGameInstructionAsync<
     accounts: [
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.playerState),
-      getAccountMeta(accounts.authority),
+      getAccountMeta(accounts.creator),
       getAccountMeta(accounts.config),
+      getAccountMeta(accounts.gameAuthority),
+      getAccountMeta(accounts.tokenMint),
+      getAccountMeta(accounts.creatorTokenAccount),
+      getAccountMeta(accounts.tokenVault),
+      getAccountMeta(accounts.tokenProgram),
+      getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.clock),
     ],
-    data: getInitializeGameInstructionDataEncoder().encode({}),
+    data: getInitializeGameInstructionDataEncoder().encode(
+      args as InitializeGameInstructionDataArgs
+    ),
     programAddress,
   } as InitializeGameInstruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
-    TAccountAuthority,
+    TAccountCreator,
     TAccountConfig,
+    TAccountGameAuthority,
+    TAccountTokenMint,
+    TAccountCreatorTokenAccount,
+    TAccountTokenVault,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
     TAccountClock
   >);
@@ -227,24 +365,43 @@ export async function getInitializeGameInstructionAsync<
 export type InitializeGameInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
-  TAccountAuthority extends string = string,
+  TAccountCreator extends string = string,
   TAccountConfig extends string = string,
+  TAccountGameAuthority extends string = string,
+  TAccountTokenMint extends string = string,
+  TAccountCreatorTokenAccount extends string = string,
+  TAccountTokenVault extends string = string,
+  TAccountTokenProgram extends string = string,
+  TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
   playerState: Address<TAccountPlayerState>;
-  authority: TransactionSigner<TAccountAuthority>;
+  creator: TransactionSigner<TAccountCreator>;
   config: Address<TAccountConfig>;
+  gameAuthority: Address<TAccountGameAuthority>;
+  tokenMint: Address<TAccountTokenMint>;
+  creatorTokenAccount: Address<TAccountCreatorTokenAccount>;
+  tokenVault: Address<TAccountTokenVault>;
+  tokenProgram?: Address<TAccountTokenProgram>;
+  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   clock?: Address<TAccountClock>;
+  entryFee: InitializeGameInstructionDataArgs['entryFee'];
 };
 
 export function getInitializeGameInstruction<
   TAccountGame extends string,
   TAccountPlayerState extends string,
-  TAccountAuthority extends string,
+  TAccountCreator extends string,
   TAccountConfig extends string,
+  TAccountGameAuthority extends string,
+  TAccountTokenMint extends string,
+  TAccountCreatorTokenAccount extends string,
+  TAccountTokenVault extends string,
+  TAccountTokenProgram extends string,
+  TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
@@ -252,8 +409,14 @@ export function getInitializeGameInstruction<
   input: InitializeGameInput<
     TAccountGame,
     TAccountPlayerState,
-    TAccountAuthority,
+    TAccountCreator,
     TAccountConfig,
+    TAccountGameAuthority,
+    TAccountTokenMint,
+    TAccountCreatorTokenAccount,
+    TAccountTokenVault,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
     TAccountClock
   >,
@@ -262,8 +425,14 @@ export function getInitializeGameInstruction<
   TProgramAddress,
   TAccountGame,
   TAccountPlayerState,
-  TAccountAuthority,
+  TAccountCreator,
   TAccountConfig,
+  TAccountGameAuthority,
+  TAccountTokenMint,
+  TAccountCreatorTokenAccount,
+  TAccountTokenVault,
+  TAccountTokenProgram,
+  TAccountAssociatedTokenProgram,
   TAccountSystemProgram,
   TAccountClock
 > {
@@ -275,8 +444,20 @@ export function getInitializeGameInstruction<
   const originalAccounts = {
     game: { value: input.game ?? null, isWritable: true },
     playerState: { value: input.playerState ?? null, isWritable: true },
-    authority: { value: input.authority ?? null, isWritable: true },
+    creator: { value: input.creator ?? null, isWritable: true },
     config: { value: input.config ?? null, isWritable: true },
+    gameAuthority: { value: input.gameAuthority ?? null, isWritable: false },
+    tokenMint: { value: input.tokenMint ?? null, isWritable: false },
+    creatorTokenAccount: {
+      value: input.creatorTokenAccount ?? null,
+      isWritable: true,
+    },
+    tokenVault: { value: input.tokenVault ?? null, isWritable: true },
+    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    associatedTokenProgram: {
+      value: input.associatedTokenProgram ?? null,
+      isWritable: false,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     clock: { value: input.clock ?? null, isWritable: false },
   };
@@ -285,7 +466,18 @@ export function getInitializeGameInstruction<
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolve default values.
+  if (!accounts.tokenProgram.value) {
+    accounts.tokenProgram.value =
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  }
+  if (!accounts.associatedTokenProgram.value) {
+    accounts.associatedTokenProgram.value =
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -300,19 +492,33 @@ export function getInitializeGameInstruction<
     accounts: [
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.playerState),
-      getAccountMeta(accounts.authority),
+      getAccountMeta(accounts.creator),
       getAccountMeta(accounts.config),
+      getAccountMeta(accounts.gameAuthority),
+      getAccountMeta(accounts.tokenMint),
+      getAccountMeta(accounts.creatorTokenAccount),
+      getAccountMeta(accounts.tokenVault),
+      getAccountMeta(accounts.tokenProgram),
+      getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.clock),
     ],
-    data: getInitializeGameInstructionDataEncoder().encode({}),
+    data: getInitializeGameInstructionDataEncoder().encode(
+      args as InitializeGameInstructionDataArgs
+    ),
     programAddress,
   } as InitializeGameInstruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
-    TAccountAuthority,
+    TAccountCreator,
     TAccountConfig,
+    TAccountGameAuthority,
+    TAccountTokenMint,
+    TAccountCreatorTokenAccount,
+    TAccountTokenVault,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
     TAccountClock
   >);
@@ -326,10 +532,16 @@ export type ParsedInitializeGameInstruction<
   accounts: {
     game: TAccountMetas[0];
     playerState: TAccountMetas[1];
-    authority: TAccountMetas[2];
+    creator: TAccountMetas[2];
     config: TAccountMetas[3];
-    systemProgram: TAccountMetas[4];
-    clock: TAccountMetas[5];
+    gameAuthority: TAccountMetas[4];
+    tokenMint: TAccountMetas[5];
+    creatorTokenAccount: TAccountMetas[6];
+    tokenVault: TAccountMetas[7];
+    tokenProgram: TAccountMetas[8];
+    associatedTokenProgram: TAccountMetas[9];
+    systemProgram: TAccountMetas[10];
+    clock: TAccountMetas[11];
   };
   data: InitializeGameInstructionData;
 };
@@ -342,7 +554,7 @@ export function parseInitializeGameInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedInitializeGameInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 6) {
+  if (instruction.accounts.length < 12) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -357,8 +569,14 @@ export function parseInitializeGameInstruction<
     accounts: {
       game: getNextAccount(),
       playerState: getNextAccount(),
-      authority: getNextAccount(),
+      creator: getNextAccount(),
       config: getNextAccount(),
+      gameAuthority: getNextAccount(),
+      tokenMint: getNextAccount(),
+      creatorTokenAccount: getNextAccount(),
+      tokenVault: getNextAccount(),
+      tokenProgram: getNextAccount(),
+      associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
       clock: getNextAccount(),
     },
