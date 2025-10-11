@@ -108,6 +108,8 @@ interface GameContextType {
 
   // Game logs
   gameLogs: GameLogEntry[];
+  gameLogsLoading: boolean;
+  addGameLog: (entry: Omit<GameLogEntry, "id" | "timestamp">) => Promise<GameLogEntry | undefined>;
 
   // Utility functions
   getPropertyByPosition: (position: number) => PropertyAccount | null;
@@ -175,7 +177,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [hasShownCommunityChestModal, setHasShownCommunityChestModal] =
     useState(false);
 
-  const { gameLogs, addGameLog } = useGameLogs();
+  const gameId = useMemo(() => {
+    return gameAddress || null;
+  }, [gameAddress]);
+
+  const { gameLogs, addGameLog, isLoading: gameLogsLoading } = useGameLogs(gameId || undefined);
 
   // events
   const [cardDrawEvents, setCardDrawEvents] = useState<GameEvent[]>([]);
@@ -186,7 +192,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const { rpc, erRpc } = useRpcContext();
 
   const addCardDrawEvent = useCallback(
-    (newEvent: GameEvent) => {
+    async (newEvent: GameEvent) => {
       setCardDrawEvents((prev) => [...prev, newEvent].slice(-50)); // Keep last 50 events
       setLatestCardDraw(newEvent);
 
@@ -362,7 +368,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.error("Error starting game:", error);
       throw error;
     }
-  }, [rpc, gameAddress, gameState, wallet, addGameLog]);
+  }, [rpc, gameAddress, gameState, wallet]);
 
   const resetGame = useCallback(async (): Promise<void> => {
     if (!gameAddress || !gameState || !wallet?.address || !wallet.delegated) {
@@ -821,7 +827,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.error("Error using get out of jail card:", error);
       throw error;
     }
-  }, [gameAddress, wallet, addGameLog]);
+  }, [gameAddress, wallet]);
 
   const buildHouse = useCallback(
     async (position: number): Promise<void> => {
@@ -982,7 +988,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.error("Error paying MEV tax:", error);
       throw error;
     }
-  }, [gameAddress, wallet, addGameLog]);
+  }, [gameAddress, wallet]);
 
   const payPriorityFeeTax = useCallback(async (): Promise<void> => {
     if (!gameAddress || !wallet?.address || !wallet.delegated) {
@@ -1589,8 +1595,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
     // Game logs
     gameLogs,
-    // addGameLog,
-    // clearGameLogs,
+    gameLogsLoading,
+    addGameLog,
 
     // events
     cardDrawEvents,
