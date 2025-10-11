@@ -1,12 +1,5 @@
 import { Address, createKeyPairFromBytes } from "@solana/kit";
 
-export const CHANCE_CARD_DRAWN_EVENT_DISCRIMINATOR = new Uint8Array([
-  117, 139, 184, 221, 43, 65, 0, 208,
-]);
-export const COMMUNITY_CHEST_CARD_DRAWN_EVENT_DISCRIMINATOR = new Uint8Array([
-  81, 71, 245, 66, 80, 31, 199, 184,
-]);
-
 /**
  * Generate a unique game ID based on timestamp and random value
  */

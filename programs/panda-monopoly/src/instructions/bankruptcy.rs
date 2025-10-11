@@ -1,7 +1,6 @@
 use crate::constants::get_property_data;
 use crate::error::GameError;
-use crate::instructions::end_game::check_game_end_condition;
-use crate::state::*;
+use crate::{state::*, PlayerBankrupt};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
@@ -34,6 +33,8 @@ pub fn declare_bankruptcy_handler(ctx: Context<DeclareBankruptcy>) -> Result<()>
     let player_pubkey = ctx.accounts.player.key();
     let clock = &ctx.accounts.clock;
 
+    require!(!game.is_ending, GameError::GameAlreadyEnding);
+
     // Find player index in game.players vector
     let player_index = game
         .players
@@ -46,10 +47,8 @@ pub fn declare_bankruptcy_handler(ctx: Context<DeclareBankruptcy>) -> Result<()>
     //     return Err(GameError::NotPlayerTurn.into());
     // }
 
-    // Mark player as bankrupt
     player_state.is_bankrupt = true;
 
-    // Calculate total liquidation value from properties
     let mut total_liquidation_value = 0u64;
     let mut houses_returned = 0u8;
     let mut hotels_returned = 0u8;
@@ -128,11 +127,7 @@ pub fn declare_bankruptcy_handler(ctx: Context<DeclareBankruptcy>) -> Result<()>
 
     player_state.cash_balance = 0;
     player_state.net_worth = 0;
-
-    // Clear all properties owned from player state
     player_state.properties_owned.clear();
-
-    // Clear Get Out of Jail Free cards
     player_state.get_out_of_jail_cards = 0;
 
     // Clear all player flags and reset position
@@ -153,41 +148,52 @@ pub fn declare_bankruptcy_handler(ctx: Context<DeclareBankruptcy>) -> Result<()>
         hotels_returned
     );
 
-    // Check if game should end (only one player remaining)
-    if check_game_end_condition(game) {
+    if game.check_bankruptcy_end_condition() {
+        game.is_ending = true;
         game.game_status = GameStatus::Finished;
+        game.end_reason = Some(GameEndReason::BankruptcyVictory);
 
-        // Find the remaining player and declare them winner
-        if let Some(winner_pubkey) = game
-            .players
-            .iter()
-            .find(|&&p| p != Pubkey::default())
-            .copied()
-        {
+        // Find winner
+        if let Some(winner_pubkey) = game.get_active_players().first().copied() {
             game.winner = Some(winner_pubkey);
-            msg!("Game ended. Winner: {}", winner_pubkey);
+
+            msg!(
+                "Game ended by bankruptcy victory. Winner: {}",
+                winner_pubkey
+            );
 
             emit!(GameEnded {
                 game_id: game.game_id,
                 winner: Some(winner_pubkey),
+                reason: GameEndReason::BankruptcyVictory,
+                winner_net_worth: None, // Can be calculated in claim_reward
                 ended_at: clock.unix_timestamp,
             });
         } else {
-            // No players remaining (shouldn't happen in normal gameplay)
             msg!("Game ended with no remaining players");
 
             emit!(GameEnded {
                 game_id: game.game_id,
                 winner: None,
+                reason: GameEndReason::BankruptcyVictory,
+                winner_net_worth: None,
                 ended_at: clock.unix_timestamp,
             });
         }
     } else {
-        // Advance to next player's turn
+        // Advance to next turn
         if game.current_turn >= game.current_players {
             game.current_turn = 0;
         }
     }
+
+    emit!(PlayerBankrupt {
+        game: game.key(),
+        player: player_pubkey,
+        liquidation_value: total_liquidation_value,
+        cash_transferred: remaining_cash,
+        timestamp: clock.unix_timestamp,
+    });
 
     Ok(())
 }
@@ -234,12 +240,10 @@ fn reset_player_state_for_bankruptcy(player_state: &mut PlayerState) {
 }
 
 fn remove_player_from_game(game: &mut GameState, player_index: u8) -> Result<()> {
-    // Remove player from the players array by setting to default
     if (player_index as usize) < game.players.len() {
         game.players[player_index as usize] = Pubkey::default();
     }
 
-    // Decrease current players count
     game.current_players = game
         .current_players
         .checked_sub(1)

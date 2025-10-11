@@ -40,7 +40,7 @@ export function GameView() {
   }
 
   return (
-    <div className="max-h-screen game-container w-full h-full">
+    <div className="max-h-screen xl:h-screen game-container w-full h-full">
       <div
         style={{
           gridArea: "left",

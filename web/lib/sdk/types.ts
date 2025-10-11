@@ -11,6 +11,25 @@ import {
   ChanceCardDrawn,
   CommunityChestCardDrawn,
   TradeType,
+  GameStarted,
+  PlayerJoined,
+  HotelBuilt,
+  SpecialSpaceAction,
+  HouseBuilt,
+  BuildingSold,
+  PropertyPurchased,
+  RentPaid,
+  PropertyMortgaged,
+  PropertyUnmortgaged,
+  PlayerPassedGo,
+  GameEnded,
+  TradeCreated,
+  TradeAccepted,
+  TradeRejected,
+  TradeCancelled,
+  TradesCleanedUp,
+  PlayerBankrupt,
+  TaxPaid,
 } from "./generated";
 
 export interface CreatePlatformParams {
@@ -23,6 +42,7 @@ export interface CreateGameParams {
   rpc: Rpc<SolanaRpcApi>;
   creator: TransactionSigner;
   platformId: Address;
+  entryFee: number;
 }
 
 export interface CreateGameIxs {
@@ -187,88 +207,6 @@ export interface PayPriorityFeeTaxParams {
   gameAddress: Address;
 }
 
-// Enhanced GameEvent type to include all possible events
-export type GameEvent =
-  | {
-      type: "ChanceCardDrawn";
-      data: ChanceCardDrawn;
-    }
-  | {
-      type: "CommunityChestCardDrawn";
-      data: CommunityChestCardDrawn;
-    }
-  | {
-      type: "PlayerPassedGo";
-      data: {
-        player: Address;
-        gameId: bigint;
-        salaryCollected: bigint;
-        newPosition: number;
-        timestamp: bigint;
-      };
-    }
-  | {
-      type: "GameEnded";
-      data: {
-        gameId: bigint;
-        winner: Address | null;
-        endedAt: bigint;
-      };
-    }
-  | {
-      type: "TradeCreated";
-      data: {
-        game: Address;
-        tradeId: number;
-        proposer: Address;
-        receiver: Address;
-        tradeType: TradeType;
-        proposerMoney: bigint;
-        receiverMoney: bigint;
-        proposerProperty: number | null;
-        receiverProperty: number | null;
-        expiresAt: bigint;
-      };
-    }
-  | {
-      type: "TradeAccepted";
-      data: {
-        game: Address;
-        tradeId: number;
-        proposer: Address;
-        receiver: Address;
-        accepter: Address;
-      };
-    }
-  | {
-      type: "TradeRejected";
-      data: {
-        game: Address;
-        tradeId: number;
-        proposer: Address;
-        receiver: Address;
-        rejecter: Address;
-      };
-    }
-  | {
-      type: "TradeCancelled";
-      data: {
-        game: Address;
-        tradeId: number;
-        proposer: Address;
-        receiver: Address;
-        canceller: Address;
-      };
-    }
-  | {
-      type: "TradesCleanedUp";
-      data: {
-        game: Address;
-        tradesRemoved: number;
-        remainingTrades: number;
-      };
-    };
-
 // trading
 export interface CreateTradeParams {
   proposer: TransactionSigner;
@@ -305,3 +243,90 @@ export interface DeclareBankruptcyParams {
   gameAddress: Address;
   propertiesOwned: number[];
 }
+
+// Complete GameEvent union type with all events from events.rs
+export type GameEvent =
+  | {
+      type: "ChanceCardDrawn";
+      data: ChanceCardDrawn;
+    }
+  | {
+      type: "CommunityChestCardDrawn";
+      data: CommunityChestCardDrawn;
+    }
+  | {
+      type: "PlayerPassedGo";
+      data: PlayerPassedGo;
+    }
+  | {
+      type: "GameEnded";
+      data: GameEnded;
+    }
+  | {
+      type: "TradeCreated";
+      data: TradeCreated;
+    }
+  | {
+      type: "TradeAccepted";
+      data: TradeAccepted;
+    }
+  | {
+      type: "TradeRejected";
+      data: TradeRejected;
+    }
+  | {
+      type: "TradeCancelled";
+      data: TradeCancelled;
+    }
+  | {
+      type: "TradesCleanedUp";
+      data: TradesCleanedUp;
+    }
+  | {
+      type: "PropertyPurchased";
+      data: PropertyPurchased;
+    }
+  | {
+      type: "RentPaid";
+      data: RentPaid;
+    }
+  | {
+      type: "HouseBuilt";
+      data: HouseBuilt;
+    }
+  | {
+      type: "HotelBuilt";
+      data: HotelBuilt;
+    }
+  | {
+      type: "BuildingSold";
+      data: BuildingSold;
+    }
+  | {
+      type: "PropertyMortgaged";
+      data: PropertyMortgaged;
+    }
+  | {
+      type: "PropertyUnmortgaged";
+      data: PropertyUnmortgaged;
+    }
+  | {
+      type: "PlayerJoined";
+      data: PlayerJoined;
+    }
+  | {
+      type: "GameStarted";
+      data: GameStarted;
+    }
+  | {
+      type: "SpecialSpaceAction";
+      data: SpecialSpaceAction;
+    }
+  | {
+      type: "PlayerBankrupt";
+      data: PlayerBankrupt;
+    }
+  | {
+      type: "TaxPaid";
+      data: TaxPaid;
+    };

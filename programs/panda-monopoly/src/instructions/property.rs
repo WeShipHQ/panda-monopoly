@@ -483,7 +483,7 @@ pub struct BuildHouse<'info> {
         seeds = [b"player", game.key().as_ref(), player.key().as_ref()],
         bump
     )]
-    pub player_state: Box<Account<'info, PlayerState>>,     
+    pub player_state: Box<Account<'info, PlayerState>>,
 
     #[account(
         mut,
@@ -1089,6 +1089,14 @@ pub fn buy_property_v2_handler(ctx: Context<BuyPropertyV2>, position: u8) -> Res
         property_data.price
     );
 
+    emit!(PropertyPurchased {
+        game: game.key(),
+        player: player_pubkey,
+        property_position: position,
+        price: property_data.price,
+        timestamp: clock.unix_timestamp,
+    });
+
     Ok(())
 }
 
@@ -1223,6 +1231,18 @@ pub fn sell_building_v2_handler(
 
     // Update timestamp
     game.turn_started_at = clock.unix_timestamp;
+
+    emit!(BuildingSold {
+        game: game.key(),
+        player: player_pubkey,
+        property_position: position,
+        building_type: match building_type {
+            BuildingType::House => "House".to_string(),
+            BuildingType::Hotel => "Hotel".to_string(),
+        },
+        sale_price,
+        timestamp: clock.unix_timestamp,
+    });
 
     Ok(())
 }
@@ -1451,11 +1471,19 @@ pub fn pay_rent_v2_handler(ctx: Context<PayRentV2>, position: u8) -> Result<()> 
         position
     );
 
+    emit!(RentPaid {
+        game: game.key(),
+        payer: payer_pubkey,
+        owner: ctx.accounts.property_owner.key(),
+        property_position: position,
+        amount: rent_amount,
+        timestamp: clock.unix_timestamp,
+    });
+
     Ok(())
 }
 
 #[derive(Accounts)]
-#[instruction(position: u8)]
 pub struct BuildHouseV2<'info> {
     #[account(
         mut,
@@ -1479,138 +1507,153 @@ pub struct BuildHouseV2<'info> {
 }
 
 pub fn build_house_v2_handler(ctx: Context<BuildHouseV2>, position: u8) -> Result<()> {
-    let game = &mut ctx.accounts.game;
     let player_state = &mut ctx.accounts.player_state;
     let player_pubkey = ctx.accounts.player.key();
     let clock = &ctx.accounts.clock;
-
-    // Validate turn
-    let player_index = game
-        .players
-        .iter()
-        .position(|&p| p == player_pubkey)
-        .ok_or(GameError::PlayerNotFound)?;
-
-    require!(
-        game.current_turn == player_index as u8,
-        GameError::NotPlayerTurn
-    );
-
-    // Get static data
     let static_data = get_property_data(position)?;
 
-    // Validate property type
-    require!(
-        static_data.property_type == PropertyType::Street,
-        GameError::CannotBuildOnPropertyType
-    );
+    {
+        let game = &ctx.accounts.game;
+        // Validate turn
+        let player_index = game
+            .players
+            .iter()
+            .position(|&p| p == player_pubkey)
+            .ok_or(GameError::PlayerNotFound)?;
 
-    // // Get property
-    // let property = game.get_property(position)?;
-
-    // // Validate ownership
-    // require!(
-    //     property.owner == Some(player_pubkey),
-    //     GameError::PropertyNotOwnedByPlayer
-    // );
-
-    // require!(!property.is_mortgaged, GameError::PropertyMortgaged);
-    // require!(!property.has_hotel, GameError::PropertyHasHotel);
-    // require!(property.houses < 4, GameError::MaxHousesReached);
-
-    // // Check monopoly
-    // require!(
-    //     game.has_monopoly(&player_pubkey, static_data.color_group),
-    //     GameError::DoesNotOwnColorGroup
-    // );
-
-    // // Check even building
-    // require!(
-    //     game.can_build_evenly(
-    //         &player_pubkey,
-    //         static_data.color_group,
-    //         position,
-    //         property.houses + 1
-    //     ),
-    //     GameError::MustBuildEvenly
-    // );
-
-    // // Check houses available
-    // require!(game.houses_remaining > 0, GameError::NotEnoughHousesInBank);
-
-    // // Check funds
-    // require!(
-    //     player_state.cash_balance >= static_data.house_cost,
-    //     GameError::InsufficientFunds
-    // );
-
-    let houses = {
-        let property = game.get_property(position)?;
-
-        // Validate ownership
         require!(
-            property.owner == Some(player_pubkey),
-            GameError::PropertyNotOwnedByPlayer
+            game.current_turn == player_index as u8,
+            GameError::NotPlayerTurn
         );
 
-        require!(!property.is_mortgaged, GameError::PropertyMortgaged);
-        require!(!property.has_hotel, GameError::PropertyHasHotel);
-        require!(property.houses < 4, GameError::MaxHousesReached);
+        // Validate property type
+        require!(
+            static_data.property_type == PropertyType::Street,
+            GameError::CannotBuildOnPropertyType
+        );
 
-        property.houses
-    };
+        // // Get property
+        // let property = game.get_property(position)?;
 
-    // Check monopoly
-    require!(
-        game.has_monopoly(&player_pubkey, static_data.color_group),
-        GameError::DoesNotOwnColorGroup
-    );
+        // // Validate ownership
+        // require!(
+        //     property.owner == Some(player_pubkey),
+        //     GameError::PropertyNotOwnedByPlayer
+        // );
 
-    // Check even building
-    require!(
-        game.can_build_evenly(
-            &player_pubkey,
-            static_data.color_group,
-            position,
-            houses + 1
-        ),
-        GameError::MustBuildEvenly
-    );
+        // require!(!property.is_mortgaged, GameError::PropertyMortgaged);
+        // require!(!property.has_hotel, GameError::PropertyHasHotel);
+        // require!(property.houses < 4, GameError::MaxHousesReached);
 
-    // Check houses available
-    require!(game.houses_remaining > 0, GameError::NotEnoughHousesInBank);
+        // // Check monopoly
+        // require!(
+        //     game.has_monopoly(&player_pubkey, static_data.color_group),
+        //     GameError::DoesNotOwnColorGroup
+        // );
 
-    // Check funds
-    require!(
-        player_state.cash_balance >= static_data.house_cost,
-        GameError::InsufficientFunds
-    );
+        // // Check even building
+        // require!(
+        //     game.can_build_evenly(
+        //         &player_pubkey,
+        //         static_data.color_group,
+        //         position,
+        //         property.houses + 1
+        //     ),
+        //     GameError::MustBuildEvenly
+        // );
 
-    // Build house
-    let property_mut = game.get_property_mut(position)?;
-    property_mut.houses += 1;
-    game.houses_remaining -= 1;
+        // // Check houses available
+        // require!(game.houses_remaining > 0, GameError::NotEnoughHousesInBank);
 
-    // Deduct money
-    player_state.cash_balance = player_state
-        .cash_balance
-        .checked_sub(static_data.house_cost)
-        .ok_or(GameError::ArithmeticUnderflow)?;
+        // // Check funds
+        // require!(
+        //     player_state.cash_balance >= static_data.house_cost,
+        //     GameError::InsufficientFunds
+        // );
 
-    // Update net worth
-    player_state.net_worth = player_state
-        .net_worth
-        .checked_add(static_data.house_cost)
-        .ok_or(GameError::ArithmeticOverflow)?;
+        let houses = {
+            let property = game.get_property(position)?;
 
-    // Update timestamp
-    game.turn_started_at = clock.unix_timestamp;
+            // Validate ownership
+            require!(
+                property.owner == Some(player_pubkey),
+                GameError::PropertyNotOwnedByPlayer
+            );
+
+            require!(!property.is_mortgaged, GameError::PropertyMortgaged);
+            require!(!property.has_hotel, GameError::PropertyHasHotel);
+            require!(property.houses < 4, GameError::MaxHousesReached);
+
+            property.houses
+        };
+
+        // Check monopoly
+        require!(
+            game.has_monopoly(&player_pubkey, static_data.color_group),
+            GameError::DoesNotOwnColorGroup
+        );
+
+        // Check even building
+        require!(
+            game.can_build_evenly(
+                &player_pubkey,
+                static_data.color_group,
+                position,
+                houses + 1
+            ),
+            GameError::MustBuildEvenly
+        );
+
+        // Check houses available
+        require!(game.houses_remaining > 0, GameError::NotEnoughHousesInBank);
+
+        // Check funds
+        require!(
+            player_state.cash_balance >= static_data.house_cost,
+            GameError::InsufficientFunds
+        );
+    }
+
+    {
+        // Build house
+        let game = &mut ctx.accounts.game;
+        let property_mut = game.get_property_mut(position)?;
+        property_mut.houses += 1;
+        game.houses_remaining -= 1;
+
+        // Deduct money
+        player_state.cash_balance = player_state
+            .cash_balance
+            .checked_sub(static_data.house_cost)
+            .ok_or(GameError::ArithmeticUnderflow)?;
+
+        // Update net worth
+        player_state.net_worth = player_state
+            .net_worth
+            .checked_add(static_data.house_cost)
+            .ok_or(GameError::ArithmeticOverflow)?;
+
+        // Update timestamp
+        game.turn_started_at = clock.unix_timestamp;
+    }
+
+    {
+        let game = &ctx.accounts.game;
+        let property = game.get_property(position)?;
+        emit!(HouseBuilt {
+            game: game.key(),
+            player: player_pubkey,
+            property_position: position,
+            house_count: property.houses,
+            cost: static_data.house_cost,
+            timestamp: clock.unix_timestamp,
+        });
+    }
 
     Ok(())
 }
 
 #[derive(Accounts)]
-#[instruction(position: u8)]
 pub struct BuildHotelV2<'info> {
     #[account(
         mut,
@@ -1716,6 +1759,14 @@ pub fn build_hotel_v2_handler(ctx: Context<BuildHotelV2>, position: u8) -> Resul
         static_data.house_cost
     );
 
+    emit!(HotelBuilt {
+        game: game.key(),
+        player: player_pubkey,
+        property_position: position,
+        cost: static_data.house_cost as u64,
+        timestamp: clock.unix_timestamp,
+    });
+
     Ok(())
 }
 
@@ -1798,6 +1849,14 @@ pub fn mortgage_property_v2_handler(ctx: Context<MortgagePropertyV2>, position: 
         static_data.mortgage_value
     );
 
+    emit!(PropertyMortgaged {
+        game: game.key(),
+        player: player_pubkey,
+        property_position: position,
+        mortgage_value: static_data.mortgage_value,
+        timestamp: clock.unix_timestamp,
+    });
+
     Ok(())
 }
 
@@ -1864,5 +1923,23 @@ pub fn unmortgage_property_v2_handler(
         interest
     );
 
+    emit!(PropertyUnmortgaged {
+        game: game.key(),
+        player: player_pubkey,
+        property_position: position,
+        unmortgage_cost,
+        timestamp: clock.unix_timestamp,
+    });
+
     Ok(())
+}
+
+// bankruptcy
+#[event]
+pub struct PlayerBankrupt {
+    pub game: Pubkey,
+    pub player: Pubkey,
+    pub liquidation_value: u64,
+    pub cash_transferred: u64,
+    pub timestamp: i64,
 }

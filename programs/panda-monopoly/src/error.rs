@@ -9,6 +9,9 @@ pub enum GameError {
     #[msg("Game has already been initialized")]
     GameAlreadyInitialized,
 
+    #[msg("Game has already started, cannot leave")]
+    GameAlreadyStarted,
+
     #[msg("Game is not in progress")]
     GameNotInProgress,
 
@@ -26,6 +29,18 @@ pub enum GameError {
 
     #[msg("Game cannot start with current player count")]
     CannotStartGame,
+
+    #[msg("Creator cannot leave game, use cancel_game instead")]
+    CreatorCannotLeaveGame,
+
+    #[msg("Missing player account in remaining accounts")]
+    MissingPlayerAccount,
+
+    #[msg("Missing player token account in remaining accounts")]
+    MissingPlayerTokenAccount,
+
+    #[msg("Invalid player account provided")]
+    InvalidPlayerAccount,
 
     // Player Errors
     #[msg("Player not found in game")]
@@ -357,4 +372,25 @@ pub enum GameError {
 
     #[msg("Token accounts provided for free game")]
     UnexpectedTokenAccounts,
+
+    #[msg("Game is already ending")]
+    GameAlreadyEnding,
+
+    #[msg("Game is not finished yet")]
+    GameNotFinished,
+
+    #[msg("Prize has already been claimed")]
+    PrizeAlreadyClaimed,
+
+    #[msg("No winner has been declared")]
+    NoWinnerDeclared,
+
+    #[msg("You are not the winner")]
+    NotWinner,
+
+    #[msg("No prize to claim")]
+    NoPrizeToClaim,
+
+    #[msg("No active players found")]
+    NoActivePlayers,
 }
