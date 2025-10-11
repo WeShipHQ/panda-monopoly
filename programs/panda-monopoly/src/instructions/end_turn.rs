@@ -65,7 +65,11 @@ pub fn end_turn_handler(ctx: Context<EndTurn>) -> Result<()> {
         return Err(GameError::MustDeclareBankruptcy.into());
     }
 
-    // Reset turn-specific flags
+    if game.check_time_end_condition(clock.unix_timestamp) {
+        msg!("Time limit reached! Game should be ended via end_game instruction.");
+        // Don't block turn ending, but log that game should end
+    }
+
     player_state.has_rolled_dice = false;
     player_state.needs_property_action = false;
     player_state.pending_property_position = None;

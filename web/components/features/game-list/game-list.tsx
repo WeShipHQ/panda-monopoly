@@ -195,18 +195,13 @@ export function GameList() {
       {!filteredGames || filteredGames.length === 0 ? (
         <div className="text-center py-8 sm:py-12 px-4">
           <div className="text-gray-500 text-base sm:text-lg">
-            {statusFilter === "all"
-              ? "No games available"
-              : `No ${getFilterLabel().toLowerCase()} games`}
+            No games available
           </div>
           <p className="text-gray-400 mt-2 text-sm sm:text-base max-w-md mx-auto">
             {statusFilter === "all"
               ? "Be the first to create a game!"
               : "Try selecting a different filter or create a new game!"}
           </p>
-          <div className="mt-4">
-            <CreateGameButton />
-          </div>
         </div>
       ) : (
         <div className="grid gap-4 sm:gap-6">
@@ -261,9 +256,8 @@ function CreateGameButton() {
         rpc,
         creator: { address: address(wallet.address) } as TransactionSigner,
         platformId: PLATFORM_ID,
+        entryFee,
       });
-
-      // 3yft6EzsKqyWuvrZrTAo3WSvBUAnt7zu9Uzk6KxTfBDv
 
       const signature = await buildAndSendTransactionWithPrivy(
         rpc,
@@ -277,7 +271,7 @@ function CreateGameButton() {
         return;
       }
 
-      toast.success(`Game created successfully with ${entryFee} SOL entry fee!`);
+      toast.success(`Game created successfully`);
       setShowEntryFeeDialog(false);
       router.push(`/game/${gameAccountAddress}`);
     } catch (error) {
@@ -290,10 +284,7 @@ function CreateGameButton() {
 
   return (
     <>
-      <Button
-        onClick={handleOpenDialog}
-        className="gap-2 w-full sm:w-auto"
-      >
+      <Button onClick={handleOpenDialog} className="gap-2 w-full sm:w-auto">
         <Plus className="w-4 h-4" />
         <span className="hidden xs:inline">Create Game</span>
         <span className="xs:hidden">Create</span>

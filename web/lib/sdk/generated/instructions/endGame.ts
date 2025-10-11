@@ -16,6 +16,7 @@ import {
   getStructEncoder,
   transformEncoder,
   type AccountMeta,
+  type AccountSignerMeta,
   type Address,
   type FixedSizeCodec,
   type FixedSizeDecoder,
@@ -24,7 +25,9 @@ import {
   type InstructionWithAccounts,
   type InstructionWithData,
   type ReadonlyAccount,
+  type ReadonlySignerAccount,
   type ReadonlyUint8Array,
+  type TransactionSigner,
   type WritableAccount,
 } from '@solana/kit';
 import { PANDA_MONOPOLY_PROGRAM_ADDRESS } from '../programs';
@@ -41,6 +44,7 @@ export function getEndGameDiscriminatorBytes() {
 export type EndGameInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountGame extends string | AccountMeta<string> = string,
+  TAccountCaller extends string | AccountMeta<string> = string,
   TAccountClock extends
     | string
     | AccountMeta<string> = 'SysvarC1ock11111111111111111111111111111111',
@@ -52,6 +56,10 @@ export type EndGameInstruction<
       TAccountGame extends string
         ? WritableAccount<TAccountGame>
         : TAccountGame,
+      TAccountCaller extends string
+        ? ReadonlySignerAccount<TAccountCaller> &
+            AccountSignerMeta<TAccountCaller>
+        : TAccountCaller,
       TAccountClock extends string
         ? ReadonlyAccount<TAccountClock>
         : TAccountClock,
@@ -88,20 +96,28 @@ export function getEndGameInstructionDataCodec(): FixedSizeCodec<
 
 export type EndGameInput<
   TAccountGame extends string = string,
+  TAccountCaller extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
+  caller: TransactionSigner<TAccountCaller>;
   clock?: Address<TAccountClock>;
 };
 
 export function getEndGameInstruction<
   TAccountGame extends string,
+  TAccountCaller extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: EndGameInput<TAccountGame, TAccountClock>,
+  input: EndGameInput<TAccountGame, TAccountCaller, TAccountClock>,
   config?: { programAddress?: TProgramAddress }
-): EndGameInstruction<TProgramAddress, TAccountGame, TAccountClock> {
+): EndGameInstruction<
+  TProgramAddress,
+  TAccountGame,
+  TAccountCaller,
+  TAccountClock
+> {
   // Program address.
   const programAddress =
     config?.programAddress ?? PANDA_MONOPOLY_PROGRAM_ADDRESS;
@@ -109,6 +125,7 @@ export function getEndGameInstruction<
   // Original accounts.
   const originalAccounts = {
     game: { value: input.game ?? null, isWritable: true },
+    caller: { value: input.caller ?? null, isWritable: false },
     clock: { value: input.clock ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -124,10 +141,19 @@ export function getEndGameInstruction<
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
-    accounts: [getAccountMeta(accounts.game), getAccountMeta(accounts.clock)],
+    accounts: [
+      getAccountMeta(accounts.game),
+      getAccountMeta(accounts.caller),
+      getAccountMeta(accounts.clock),
+    ],
     data: getEndGameInstructionDataEncoder().encode({}),
     programAddress,
-  } as EndGameInstruction<TProgramAddress, TAccountGame, TAccountClock>);
+  } as EndGameInstruction<
+    TProgramAddress,
+    TAccountGame,
+    TAccountCaller,
+    TAccountClock
+  >);
 }
 
 export type ParsedEndGameInstruction<
@@ -137,7 +163,8 @@ export type ParsedEndGameInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     game: TAccountMetas[0];
-    clock: TAccountMetas[1];
+    caller: TAccountMetas[1];
+    clock: TAccountMetas[2];
   };
   data: EndGameInstructionData;
 };
@@ -150,7 +177,7 @@ export function parseEndGameInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedEndGameInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 2) {
+  if (instruction.accounts.length < 3) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -162,7 +189,11 @@ export function parseEndGameInstruction<
   };
   return {
     programAddress: instruction.programAddress,
-    accounts: { game: getNextAccount(), clock: getNextAccount() },
+    accounts: {
+      game: getNextAccount(),
+      caller: getNextAccount(),
+      clock: getNextAccount(),
+    },
     data: getEndGameInstructionDataDecoder().decode(instruction.data),
   };
 }

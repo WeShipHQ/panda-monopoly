@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { CardData } from "@/types/space-types";
 import { surpriseCards, treasureCards } from "@/configs/board-data";
 import Image from "next/image";
+import { useGameEventsContext } from "@/components/providers/game-events-provider";
 
 interface CardDrawModalProps {
   isOpen: boolean;
@@ -30,12 +31,9 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
   const [rollingIndex, setRollingIndex] = useState(0);
   const rollingTimerRef = React.useRef<number | null>(null);
 
-  const {
-    drawChanceCard,
-    drawCommunityChestCard,
-    latestCardDraw,
-    acknowledgeCardDraw,
-  } = useGameContext();
+  const { drawChanceCard, drawCommunityChestCard } = useGameContext();
+
+  const { registerEventHandler } = useGameEventsContext();
 
   const [isFlipped, setIsFlipped] = useState(false);
 
@@ -67,44 +65,73 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
     }
   }, [isOpen, cardDeck]);
 
-  // Listen for card draw events from the blockchain
   useEffect(() => {
-    if (!latestCardDraw || !isDrawing) return;
+    const unsubscribeChance = registerEventHandler(
+      "ChanceCardDrawn",
+      (latestCardDraw) => {
+        if (!isDrawing) return;
 
-    // Filter by event type so the modal doesn't react to the other deck's events
-    const isChance = latestCardDraw.type === "ChanceCardDrawn";
-    const isChest = latestCardDraw.type === "CommunityChestCardDrawn";
-    if (
-      (cardType === "chance" && !isChance) ||
-      (cardType === "community-chest" && !isChest)
-    ) {
-      return;
-    }
+        const cardIndex = latestCardDraw.cardIndex ?? 0;
+        const card = surpriseCards[cardIndex];
 
-    // @ts-expect-error
-    const cardIndex = latestCardDraw.data.cardIndex ?? 0;
-    const card = cardDeck[cardIndex];
+        // Stop rolling and reveal card
+        if (rollingTimerRef.current) {
+          window.clearInterval(rollingTimerRef.current);
+          rollingTimerRef.current = null;
+        }
 
-    // Stop rolling and reveal card
-    if (rollingTimerRef.current) {
-      window.clearInterval(rollingTimerRef.current);
-      rollingTimerRef.current = null;
-    }
+        if (card) {
+          setDrawnCard(card);
+          setAnimationPhase("revealing");
 
-    if (card) {
-      setDrawnCard(card);
-      setAnimationPhase("revealing");
+          // Show the card after a brief delay for smoothness
+          setTimeout(() => {
+            setShowCard(true);
+            setAnimationPhase("complete");
+            setIsDrawing(false);
+            // We are already flipped at this point; ensure it stays front-facing
+            setIsFlipped(true);
+          }, 500);
+        }
+      }
+    );
 
-      // Show the card after a brief delay for smoothness
-      setTimeout(() => {
-        setShowCard(true);
-        setAnimationPhase("complete");
-        setIsDrawing(false);
-        // We are already flipped at this point; ensure it stays front-facing
-        setIsFlipped(true);
-      }, 500);
-    }
-  }, [latestCardDraw, isDrawing, cardDeck, cardType]);
+    const unsubscribeCommunity = registerEventHandler(
+      "CommunityChestCardDrawn",
+      (latestCardDraw) => {
+        console.log("latestCardDraw", latestCardDraw, isDrawing);
+        if (!isDrawing) return;
+
+        const cardIndex = latestCardDraw.cardIndex ?? 0;
+        const card = treasureCards[cardIndex];
+
+        // Stop rolling and reveal card
+        if (rollingTimerRef.current) {
+          window.clearInterval(rollingTimerRef.current);
+          rollingTimerRef.current = null;
+        }
+
+        if (card) {
+          setDrawnCard(card);
+          setAnimationPhase("revealing");
+
+          // Show the card after a brief delay for smoothness
+          setTimeout(() => {
+            setShowCard(true);
+            setAnimationPhase("complete");
+            setIsDrawing(false);
+            // We are already flipped at this point; ensure it stays front-facing
+            setIsFlipped(true);
+          }, 500);
+        }
+      }
+    );
+
+    return () => {
+      unsubscribeChance();
+      unsubscribeCommunity();
+    };
+  }, [registerEventHandler, isDrawing, cardDeck, cardType]);
 
   const startRolling = React.useCallback(() => {
     if (rollingTimerRef.current) {
@@ -157,9 +184,6 @@ export const CardDrawModal: React.FC<CardDrawModalProps> = ({
     if (rollingTimerRef.current) {
       window.clearInterval(rollingTimerRef.current);
       rollingTimerRef.current = null;
-    }
-    if (latestCardDraw) {
-      acknowledgeCardDraw();
     }
     onClose?.();
   };

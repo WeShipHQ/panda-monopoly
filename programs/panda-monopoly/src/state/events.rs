@@ -1,5 +1,5 @@
+use crate::{state::TradeType, GameEndReason};
 use anchor_lang::prelude::*;
-use crate::state::TradeType;
 
 #[event]
 pub struct ChanceCardDrawn {
@@ -35,10 +35,11 @@ pub struct PlayerPassedGo {
 pub struct GameEnded {
     pub game_id: u64,
     pub winner: Option<Pubkey>,
+    pub reason: GameEndReason,
+    pub winner_net_worth: Option<u64>,
     pub ended_at: i64,
 }
 
-// New trade events for vector-based trading
 #[event]
 pub struct TradeCreated {
     pub game: Pubkey,
@@ -85,4 +86,136 @@ pub struct TradesCleanedUp {
     pub game: Pubkey,
     pub trades_removed: u8,
     pub remaining_trades: u8,
+}
+
+#[event]
+pub struct PropertyPurchased {
+    pub game: Pubkey,
+    pub player: Pubkey,
+    pub property_position: u8,
+    pub price: u64,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct RentPaid {
+    pub game: Pubkey,
+    pub payer: Pubkey,
+    pub owner: Pubkey,
+    pub property_position: u8,
+    pub amount: u64,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct HouseBuilt {
+    pub game: Pubkey,
+    pub player: Pubkey,
+    pub property_position: u8,
+    pub house_count: u8,
+    pub cost: u64,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct HotelBuilt {
+    pub game: Pubkey,
+    pub player: Pubkey,
+    pub property_position: u8,
+    pub cost: u64,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct BuildingSold {
+    pub game: Pubkey,
+    pub player: Pubkey,
+    pub property_position: u8,
+    pub building_type: String, // "House" or "Hotel"
+    pub sale_price: u64,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct PropertyMortgaged {
+    pub game: Pubkey,
+    pub player: Pubkey,
+    pub property_position: u8,
+    pub mortgage_value: u64,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct PropertyUnmortgaged {
+    pub game: Pubkey,
+    pub player: Pubkey,
+    pub property_position: u8,
+    pub unmortgage_cost: u64,
+    pub timestamp: i64,
+}
+
+// game
+#[event]
+pub struct PlayerJoined {
+    pub game: Pubkey,
+    pub player: Pubkey,
+    pub player_index: u8,
+    pub total_players: u8,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct GameStarted {
+    pub game: Pubkey,
+    pub game_id: u64,
+    pub total_players: u8,
+    pub first_player: Pubkey,
+    pub timestamp: i64,
+}
+
+// FIXME
+#[event]
+pub struct SpecialSpaceAction {
+    pub game: Pubkey,
+    pub player: Pubkey,
+    pub space_type: u8, // 0=Go, 1=Free Parking, 2=Go To Jail, etc.
+    pub position: u8,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct TaxPaid {
+    pub game: Pubkey,
+    pub player: Pubkey,
+    pub tax_type: u8, // 0=mev Tax, 1=Priority Fee Tax
+    pub amount: u64,
+    pub position: u8,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct PrizeClaimed {
+    pub game_id: u64,
+    pub winner: Pubkey,
+    pub prize_amount: u64,
+    pub claimed_at: i64,
+}
+
+#[event]
+pub struct PlayerLeft {
+    pub game: Pubkey,
+    pub player: Pubkey,
+    pub refund_amount: u64,
+    pub remaining_players: u8,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct GameCancelled {
+    pub game: Pubkey,
+    pub game_id: u64,
+    pub creator: Pubkey,
+    pub players_count: u8,
+    pub refund_amount: u64,
+    pub timestamp: i64,
 }
