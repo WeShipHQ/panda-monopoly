@@ -293,6 +293,15 @@ pub fn callback_draw_chance_card(
         card.id
     );
 
+    emit!(ChanceCardDrawn {
+        player: player_pubkey,
+        game: game.key(),
+        card_index: card_index as u8,
+        effect_type: u8::from(card.effect_type),
+        amount: card.amount,
+        timestamp: clock.unix_timestamp,
+    });
+
     Ok(())
 }
 
@@ -524,13 +533,22 @@ pub fn callback_draw_community_chest_card(
         card.id
     );
 
+    emit!(CommunityChestCardDrawn {
+        player: player_pubkey,
+        game: game.key(),
+        card_index: card_index as u8,
+        effect_type: u8::from(card.effect_type),
+        amount: card.amount,
+        timestamp: clock.unix_timestamp,
+    });
+
     Ok(())
 }
 
 // Helper function to execute chance card effects
 fn execute_chance_card_effect(
-    game: &mut GameState,
-    player_state: &mut PlayerState,
+    game: &mut Box<Account<'_, GameState>>,
+    player_state: &mut Box<Account<'_, PlayerState>>,
     card: &ChanceCard,
     clock: &Sysvar<Clock>,
 ) -> Result<()> {
@@ -568,6 +586,14 @@ fn execute_chance_card_effect(
             // Check if passing GO (only for forward movement)
             if card.amount >= 0 && (new_position < old_position || new_position == 0) {
                 player_state.cash_balance += GO_SALARY as u64;
+
+                emit!(PlayerPassedGo {
+                    player: player_state.wallet,
+                    game_id: game.game_id,
+                    salary_collected: GO_SALARY as u64,
+                    new_position,
+                    timestamp: clock.unix_timestamp,
+                });
             }
 
             player_state.position = new_position;
@@ -614,6 +640,14 @@ fn execute_chance_card_effect(
             // Check if passing GO
             if new_position < old_position {
                 player_state.cash_balance += GO_SALARY as u64;
+
+                emit!(PlayerPassedGo {
+                    player: player_state.wallet,
+                    game_id: game.game_id,
+                    salary_collected: GO_SALARY as u64,
+                    new_position,
+                    timestamp: clock.unix_timestamp,
+                });
             }
 
             player_state.position = new_position;
@@ -688,8 +722,8 @@ fn execute_chance_card_effect(
 
 // Helper function to execute community chest card effects
 fn execute_community_chest_card_effect(
-    game: &mut GameState,
-    player_state: &mut PlayerState,
+    game: &mut Box<Account<'_, GameState>>,
+    player_state: &mut Box<Account<'_, PlayerState>>,
     card: &CommunityChestCard,
     clock: &Sysvar<Clock>,
 ) -> Result<()> {
@@ -715,6 +749,14 @@ fn execute_community_chest_card_effect(
             // Check if passing GO
             if new_position < old_position || new_position == 0 {
                 player_state.cash_balance += GO_SALARY as u64;
+
+                emit!(PlayerPassedGo {
+                    player: player_state.wallet,
+                    game_id: game.game_id,
+                    salary_collected: GO_SALARY as u64,
+                    new_position,
+                    timestamp: clock.unix_timestamp,
+                });
             }
 
             player_state.position = new_position;
@@ -901,6 +943,15 @@ pub fn pay_mev_tax_handler(ctx: Context<PayTax>) -> Result<()> {
     // Update game timestamp
     game.turn_started_at = clock.unix_timestamp;
 
+    emit!(TaxPaid {
+        game: game.key(),
+        player: player_pubkey,
+        tax_type: 1, // 1=mev Tax
+        amount: MEV_TAX as u64,
+        position: MEV_TAX_POSITION,
+        timestamp: clock.unix_timestamp,
+    });
+
     Ok(())
 }
 
@@ -959,6 +1010,15 @@ pub fn pay_priority_fee_tax_handler(ctx: Context<PayTax>) -> Result<()> {
 
     // Update game timestamp
     game.turn_started_at = clock.unix_timestamp;
+
+    emit!(TaxPaid {
+        game: game.key(),
+        player: player_pubkey,
+        tax_type: 2, // 2=Priority Fee Tax
+        amount: PRIORITY_FEE_TAX as u64,
+        position: PRIORITY_FEE_TAX_POSITION,
+        timestamp: clock.unix_timestamp,
+    });
 
     Ok(())
 }

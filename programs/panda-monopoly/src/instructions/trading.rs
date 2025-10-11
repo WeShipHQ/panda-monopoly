@@ -203,7 +203,7 @@ pub struct AcceptTrade<'info> {
         seeds = [b"player", game.key().as_ref(), accepter.key().as_ref()],
         bump
     )]
-    pub accepter_state: Box<Account<'info, PlayerState>>,       
+    pub accepter_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub accepter: Signer<'info>,
@@ -471,6 +471,12 @@ pub fn cleanup_expired_trades_handler(ctx: Context<CleanupExpiredTrades>) -> Res
         initial_count - final_count,
         final_count
     );
+
+    emit!(TradesCleanedUp {
+        game: game.key(),
+        trades_removed: (initial_count - final_count) as u8,
+        remaining_trades: final_count as u8,
+    });
 
     Ok(())
 }

@@ -8,6 +8,7 @@ import {
   TradeStatus,
   TradeType,
   TradeInfo as GeneratedTradeInfo,
+  GameEndReason,
 } from "@/lib/sdk/generated";
 import { ColorGroup as GeneratedColorGroup } from "@/lib/sdk/generated";
 import {
@@ -27,21 +28,33 @@ export interface GameAccount {
   currentPlayers: number;
   currentTurn: number;
   players: string[];
-  createdAt: number;
   gameStatus: GameStatus;
   bankBalance: string;
   freeParkingPool: string;
   housesRemaining: number;
   hotelsRemaining: number;
-  timeLimit: number | null;
   winner: string | null;
-  turnStartedAt: number;
-  activeTrades: TradeInfo[];
+
   entryFee: number;
   tokenMint: string | null;
   tokenVault: string | null;
   totalPrizePool: number;
+
+  isEnding: boolean;
+  prizeClaimed: boolean;
+
+  endReason: GameEndReason | null;
+
+  activeTrades: TradeInfo[];
+  nextTradeId: number;
+
   properties: PropertyInfo[];
+
+  // times
+  createdAt: number;
+  gameEndTime: number | null;
+  timeLimit: number | null;
+  turnStartedAt: number;
 }
 
 export interface PlayerAccount {
@@ -150,30 +163,42 @@ export function mapGameStateToAccount(
     currentPlayers: gameState.currentPlayers,
     currentTurn: gameState.currentTurn,
     players: gameState.players.map(addressToString),
-    createdAt: bigintToNumber(gameState.createdAt),
     gameStatus: gameState.gameStatus,
     bankBalance: bigintToString(gameState.bankBalance),
     freeParkingPool: bigintToString(gameState.freeParkingPool),
     housesRemaining: gameState.housesRemaining,
     hotelsRemaining: gameState.hotelsRemaining,
-    timeLimit: optionToNullable(gameState.timeLimit)
-      ? bigintToNumber(optionToNullable(gameState.timeLimit)!)
-      : null,
     winner: optionToNullable(gameState.winner)
       ? addressToString(optionToNullable(gameState.winner)!)
       : null,
-    turnStartedAt: bigintToNumber(gameState.turnStartedAt),
-    activeTrades: gameState.activeTrades.map(mapTradeInfoToAccount),
+
     entryFee: bigintToNumber(gameState.entryFee),
     tokenMint: optionToNullable(gameState.tokenMint),
     tokenVault: optionToNullable(gameState.tokenVault),
     totalPrizePool: bigintToNumber(gameState.totalPrizePool),
+
+    isEnding: gameState.isEnding,
+    prizeClaimed: gameState.prizeClaimed,
+
+    endReason: optionToNullable(gameState.endReason),
+
+    activeTrades: gameState.activeTrades.map(mapTradeInfoToAccount),
+    nextTradeId: gameState.nextTradeId,
+
     properties: gameState.properties.map((prop) => ({
       owner: optionToNullable(prop.owner),
       houses: prop.houses,
       hasHotel: prop.hasHotel,
       isMortgaged: prop.isMortgaged,
     })),
+
+    // time
+    createdAt: bigintToNumber(gameState.createdAt),
+    turnStartedAt: bigintToNumber(gameState.turnStartedAt),
+    timeLimit: Number(gameState.timeLimit),
+    gameEndTime: optionToNullable(gameState.gameEndTime)
+      ? bigintToNumber(optionToNullable(gameState.gameEndTime)!)
+      : null,
   };
 }
 

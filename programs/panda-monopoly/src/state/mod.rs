@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 mod events;
 pub use events::*;
 
-use crate::{error::GameError, get_color_group_properties_enum, STARTING_MONEY};
+use crate::{error::GameError, get_color_group_properties_enum, get_property_data, STARTING_MONEY};
 
 #[account]
 #[derive(InitSpace, Debug)]
@@ -74,6 +74,13 @@ pub enum BuildingType {
     Hotel,
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq, InitSpace)]
+pub enum GameEndReason {
+    BankruptcyVictory, // Last player standing
+    TimeLimit,         // Time ran out
+    Manual,            // Manual forfeit/end
+}
+
 // New simplified trade structure for storing in GameState vector
 #[derive(Debug, InitSpace, AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct TradeInfo {
@@ -102,15 +109,12 @@ pub struct GameState {
     pub current_turn: u8,    // 1 byte - whose turn (player index)
     #[max_len(4)]
     pub players: Vec<Pubkey>, // 32 * 8 = 256 bytes max
-    pub created_at: i64,     // 8 bytes - game creation timestamp
     pub game_status: GameStatus, // 1 byte - current game status
     pub bank_balance: u64,   // 8 bytes - bank's money
     pub free_parking_pool: u64, // 8 bytes - parking pool
     pub houses_remaining: u8, // 1 byte - houses left in bank (32 total)
     pub hotels_remaining: u8, // 1 byte - hotels left in bank (12 total)
-    pub time_limit: Option<i64>, // 9 bytes - optional time limit
     pub winner: Option<Pubkey>, // 33 bytes - game winner
-    pub turn_started_at: i64, // 8 bytes - when current turn started
 
     // Entry fee fields
     pub entry_fee: u64, // 8 bytes - entry fee amount (0 for free games)
@@ -118,11 +122,21 @@ pub struct GameState {
     pub token_vault: Option<Pubkey>, // 33 bytes - vault holding entry fees
     pub total_prize_pool: u64, // 8 bytes - total collected fees
 
+    pub is_ending: bool,     // 1 byte - game ending status
+    pub prize_claimed: bool, // Track if reward claimed
+
+    pub end_reason: Option<GameEndReason>, // How game ended
+
     #[max_len(20)]
     pub active_trades: Vec<TradeInfo>, // Vector of active trades
     pub next_trade_id: u8, // Next trade ID to assign
 
     pub properties: [PropertyInfo; 40], // Fixed array: 40 × 36 bytes = 1,440 bytes
+
+    pub created_at: i64,            // 8 bytes - game creation timestamp
+    pub game_end_time: Option<i64>, // 8 bytes - game end time
+    pub turn_started_at: i64,       // 8 bytes - when current turn started
+    pub time_limit: i64,    // 9 bytes - optional time limit
 }
 
 impl GameState {
@@ -264,6 +278,85 @@ impl GameState {
 
         true
     }
+
+    /// Calculate net worth for a specific player
+    pub fn calculate_player_net_worth(&self, player: &Pubkey) -> Result<u64> {
+        let mut total_value = 0u64;
+
+        // Iterate through properties owned by this player
+        for (position, property) in self.properties.iter().enumerate() {
+            if property.owner.as_ref() == Some(player) {
+                let property_data = get_property_data(position as u8)?;
+
+                // Add property value (use mortgage value as liquidation value)
+                if property.is_mortgaged {
+                    // Mortgaged property value = mortgage_value * 0.9 (accounting for 10% unmortgage fee)
+                    let mortgaged_value = (property_data.mortgage_value * 9) / 10;
+                    total_value = total_value
+                        .checked_add(mortgaged_value)
+                        .ok_or(GameError::ArithmeticOverflow)?;
+                } else {
+                    // Unmortgaged property = full mortgage value
+                    total_value = total_value
+                        .checked_add(property_data.mortgage_value)
+                        .ok_or(GameError::ArithmeticOverflow)?;
+                }
+
+                // Add building value (houses and hotels at construction cost)
+                if property.houses > 0 {
+                    let houses_value = property_data
+                        .house_cost
+                        .checked_mul(property.houses as u64)
+                        .ok_or(GameError::ArithmeticOverflow)?;
+                    total_value = total_value
+                        .checked_add(houses_value)
+                        .ok_or(GameError::ArithmeticOverflow)?;
+                }
+
+                if property.has_hotel {
+                    // Hotel = 5 houses worth
+                    let hotel_value = property_data
+                        .house_cost
+                        .checked_mul(5)
+                        .ok_or(GameError::ArithmeticOverflow)?;
+                    total_value = total_value
+                        .checked_add(hotel_value)
+                        .ok_or(GameError::ArithmeticOverflow)?;
+                }
+            }
+        }
+
+        Ok(total_value)
+    }
+
+    /// Check if game should end due to bankruptcy (only 1 player remaining)
+    pub fn check_bankruptcy_end_condition(&self) -> bool {
+        let active_count = self
+            .players
+            .iter()
+            .filter(|&&p| p != Pubkey::default())
+            .count();
+
+        active_count <= 1
+    }
+
+    /// Check if game should end due to time limit
+    pub fn check_time_end_condition(&self, current_time: i64) -> bool {
+        if let Some(end_time) = self.game_end_time {
+            current_time >= end_time
+        } else {
+            false
+        }
+    }
+
+    /// Get all active players (non-default, non-bankrupt)
+    pub fn get_active_players(&self) -> Vec<Pubkey> {
+        self.players
+            .iter()
+            .filter(|&&p| p != Pubkey::default())
+            .copied()
+            .collect()
+    }
 }
 
 #[account]
@@ -277,7 +370,7 @@ pub struct PlayerState {
     pub jail_turns: u8,    // 1 byte - turns in jail
     pub doubles_count: u8, // 1 byte - consecutive doubles
     pub is_bankrupt: bool, // 1 byte - bankruptcy status
-    #[max_len(50)]
+    #[max_len(40)]
     pub properties_owned: Vec<u8>, // variable - owned property positions
     pub get_out_of_jail_cards: u8, // 1 byte - jail cards owned
     pub net_worth: u64,    // 8 bytes - total asset value
