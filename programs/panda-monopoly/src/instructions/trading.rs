@@ -11,20 +11,20 @@ pub struct CreateTrade<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), proposer.key().as_ref()],
         bump
     )]
-    pub proposer_state: Account<'info, PlayerState>,
+    pub proposer_state: Box<Account<'info, PlayerState>>,
 
     #[account(
         seeds = [b"player", game.key().as_ref(), receiver.key().as_ref()],
         bump
     )]
-    pub receiver_state: Account<'info, PlayerState>,
+    pub receiver_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub proposer: Signer<'info>,
@@ -66,6 +66,19 @@ pub fn create_trade_handler(
             proposer_state.properties_owned.contains(&prop_pos),
             GameError::PropertyNotOwned
         );
+
+        // Also validate ownership in GameState properties
+        let property = game.get_property(prop_pos)?;
+        require!(
+            property.owner == Some(ctx.accounts.proposer.key()),
+            GameError::PropertyNotOwnedByPlayer
+        );
+
+        // Cannot trade mortgaged properties
+        require!(
+            !property.is_mortgaged,
+            GameError::CannotTradeMortgagedProperties
+        );
     }
 
     // Validate receiver property ownership
@@ -73,6 +86,19 @@ pub fn create_trade_handler(
         require!(
             receiver_state.properties_owned.contains(&prop_pos),
             GameError::PropertyNotOwned
+        );
+
+        // Also validate ownership in GameState properties
+        let property = game.get_property(prop_pos)?;
+        require!(
+            property.owner == Some(ctx.accounts.receiver.key()),
+            GameError::PropertyNotOwnedByPlayer
+        );
+
+        // Cannot trade mortgaged properties
+        require!(
+            !property.is_mortgaged,
+            GameError::CannotTradeMortgagedProperties
         );
     }
 
@@ -104,7 +130,7 @@ pub fn create_trade_handler(
                 GameError::InvalidTradeType
             );
             require!(
-                proposer_property.is_none() && receiver_money == 0,
+                receiver_money == 0 && proposer_property.is_none(),
                 GameError::InvalidTradeType
             );
         }
@@ -163,21 +189,21 @@ pub struct AcceptTrade<'info> {
         bump = game.bump,
         constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), proposer_state.wallet.as_ref()],
         bump
     )]
-    pub proposer_state: Account<'info, PlayerState>,
+    pub proposer_state: Box<Account<'info, PlayerState>>,
 
     #[account(
         mut,
         seeds = [b"player", game.key().as_ref(), accepter.key().as_ref()],
         bump
     )]
-    pub accepter_state: Account<'info, PlayerState>,
+    pub accepter_state: Box<Account<'info, PlayerState>>,       
 
     #[account(mut)]
     pub accepter: Signer<'info>,
@@ -229,12 +255,34 @@ pub fn accept_trade_handler(ctx: Context<AcceptTrade>, trade_id: u8) -> Result<(
             proposer_state.properties_owned.contains(&prop_pos),
             GameError::PropertyNotOwned
         );
+
+        // Validate ownership in GameState properties
+        let property = game.get_property(prop_pos)?;
+        require!(
+            property.owner == Some(trade.proposer),
+            GameError::PropertyNotOwnedByPlayer
+        );
+        require!(
+            !property.is_mortgaged,
+            GameError::CannotTradeMortgagedProperties
+        );
     }
 
     if let Some(prop_pos) = trade.receiver_property {
         require!(
             accepter_state.properties_owned.contains(&prop_pos),
             GameError::PropertyNotOwned
+        );
+
+        // Validate ownership in GameState properties
+        let property = game.get_property(prop_pos)?;
+        require!(
+            property.owner == Some(trade.receiver),
+            GameError::PropertyNotOwnedByPlayer
+        );
+        require!(
+            !property.is_mortgaged,
+            GameError::CannotTradeMortgagedProperties
         );
     }
 
@@ -252,13 +300,23 @@ pub fn accept_trade_handler(ctx: Context<AcceptTrade>, trade_id: u8) -> Result<(
 
     // Transfer properties
     if let Some(prop_pos) = trade.proposer_property {
+        // Update PlayerState ownership arrays
         proposer_state.properties_owned.retain(|&x| x != prop_pos);
         accepter_state.properties_owned.push(prop_pos);
+
+        // Update GameState property ownership
+        let property = game.get_property_mut(prop_pos)?;
+        property.owner = Some(trade.receiver);
     }
 
     if let Some(prop_pos) = trade.receiver_property {
+        // Update PlayerState ownership arrays
         accepter_state.properties_owned.retain(|&x| x != prop_pos);
         proposer_state.properties_owned.push(prop_pos);
+
+        // Update GameState property ownership
+        let property = game.get_property_mut(prop_pos)?;
+        property.owner = Some(trade.proposer);
     }
 
     // Update trade status and remove from active trades
@@ -283,7 +341,7 @@ pub struct RejectTrade<'info> {
         seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(mut)]
     pub rejecter: Signer<'info>,
@@ -292,17 +350,17 @@ pub struct RejectTrade<'info> {
 }
 
 pub fn reject_trade_handler(ctx: Context<RejectTrade>, trade_id: u8) -> Result<()> {
+    let game_key = ctx.accounts.game.key().clone();
     let game = &mut ctx.accounts.game;
     let clock = &ctx.accounts.clock;
 
     // Clean up expired trades first
-    // game.cleanup_expired_trades(clock.unix_timestamp);
+    game.cleanup_expired_trades(clock.unix_timestamp);
 
     // Find the trade
     let trade = game
-        .find_trade_by_id(trade_id)
-        .ok_or(GameError::TradeNotFound)?
-        .clone();
+        .find_trade_by_id_mut(trade_id)
+        .ok_or(GameError::TradeNotFound)?;
 
     // Validate trade
     require!(
@@ -314,16 +372,19 @@ pub fn reject_trade_handler(ctx: Context<RejectTrade>, trade_id: u8) -> Result<(
         GameError::NotTradeTarget
     );
 
-    // Remove the trade
-    game.remove_trade_by_id(trade_id);
+    // Update trade status
+    trade.status = TradeStatus::Rejected;
 
     emit!(TradeRejected {
-        game: game.key(),
+        game: game_key,
         trade_id,
         proposer: trade.proposer,
         receiver: trade.receiver,
         rejecter: ctx.accounts.rejecter.key(),
     });
+
+    // Remove the trade from active trades
+    game.remove_trade_by_id(trade_id);
 
     Ok(())
 }
@@ -336,7 +397,7 @@ pub struct CancelTrade<'info> {
         seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     #[account(mut)]
     pub canceller: Signer<'info>,
@@ -345,17 +406,17 @@ pub struct CancelTrade<'info> {
 }
 
 pub fn cancel_trade_handler(ctx: Context<CancelTrade>, trade_id: u8) -> Result<()> {
+    let game_key = ctx.accounts.game.key().clone();
     let game = &mut ctx.accounts.game;
     let clock = &ctx.accounts.clock;
 
     // Clean up expired trades first
-    // game.cleanup_expired_trades(clock.unix_timestamp);
+    game.cleanup_expired_trades(clock.unix_timestamp);
 
     // Find the trade
     let trade = game
-        .find_trade_by_id(trade_id)
-        .ok_or(GameError::TradeNotFound)?
-        .clone();
+        .find_trade_by_id_mut(trade_id)
+        .ok_or(GameError::TradeNotFound)?;
 
     // Validate trade
     require!(
@@ -367,16 +428,19 @@ pub fn cancel_trade_handler(ctx: Context<CancelTrade>, trade_id: u8) -> Result<(
         GameError::NotTradeProposer
     );
 
-    // Remove the trade
-    game.remove_trade_by_id(trade_id);
+    // Update trade status
+    trade.status = TradeStatus::Cancelled;
 
     emit!(TradeCancelled {
-        game: game.key(),
+        game: game_key,
         trade_id,
         proposer: trade.proposer,
         receiver: trade.receiver,
         canceller: ctx.accounts.canceller.key(),
     });
+
+    // Remove the trade from active trades
+    game.remove_trade_by_id(trade_id);
 
     Ok(())
 }
@@ -389,7 +453,7 @@ pub struct CleanupExpiredTrades<'info> {
         seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
     )]
-    pub game: Account<'info, GameState>,
+    pub game: Box<Account<'info, GameState>>,
 
     pub clock: Sysvar<'info, Clock>,
 }
@@ -402,11 +466,11 @@ pub fn cleanup_expired_trades_handler(ctx: Context<CleanupExpiredTrades>) -> Res
     game.cleanup_expired_trades(clock.unix_timestamp);
     let final_count = game.active_trades.len();
 
-    emit!(TradesCleanedUp {
-        game: game.key(),
-        trades_removed: (initial_count - final_count) as u8,
-        remaining_trades: final_count as u8,
-    });
+    msg!(
+        "Cleaned up {} expired trades. Active trades: {}",
+        initial_count - final_count,
+        final_count
+    );
 
     Ok(())
 }

@@ -21,6 +21,9 @@ import { buildAndSendTransactionWithPrivy } from "@/lib/tx";
 import { address, TransactionSigner } from "@solana/kit";
 import { useGames } from "@/hooks/useGames";
 import { GameStatus } from "@/lib/sdk/generated";
+import { EntryFeeDialog } from "@/components/entry-fee-dialog";
+import { CreateGameWalletDialog } from "@/components/create-game-wallet-dialog";
+import { useGameWalletCheck } from "@/hooks/use-game-wallet-check";
 
 type GameStatusFilter = "all" | GameStatus;
 
@@ -37,6 +40,8 @@ export function GameList() {
   const { wallet } = useWallet();
   const { rpc } = useRpcContext();
   const [joining, setJoining] = useState(false);
+  const [showCreateWalletDialog, setShowCreateWalletDialog] = useState(false);
+  const { checkGameWallet } = useGameWalletCheck();
 
   const { data: games, isLoading } = useGames();
 
@@ -48,15 +53,19 @@ export function GameList() {
   }, [games, statusFilter]);
 
   const handleJoinGame = async (gameAddress: string) => {
-    if (!wallet) {
-      toast.error("Please connect your wallet first.");
+    if (!checkGameWallet(() => setShowCreateWalletDialog(true))) {
       return;
     }
 
     setJoining(true);
 
     try {
-      const { instruction } = await sdk.joinGameIx({
+      if (!wallet) {
+        toast.error("Wallet not found");
+        return;
+      }
+
+      const { instructions } = await sdk.joinGameIx({
         rpc,
         player: { address: address(wallet.address) } as TransactionSigner,
         gameAddress: address(gameAddress),
@@ -64,7 +73,7 @@ export function GameList() {
 
       const signature = await buildAndSendTransactionWithPrivy(
         rpc,
-        [instruction],
+        instructions,
         wallet
       );
 
@@ -212,6 +221,13 @@ export function GameList() {
           ))}
         </div>
       )}
+
+      {showCreateWalletDialog && (
+        <CreateGameWalletDialog 
+          isOpen={showCreateWalletDialog}
+          onClose={() => setShowCreateWalletDialog(false)}
+        />
+      )}
     </div>
   );
 }
@@ -221,8 +237,18 @@ function CreateGameButton() {
   const { rpc } = useRpcContext();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [showEntryFeeDialog, setShowEntryFeeDialog] = useState(false);
+  const [showCreateWalletDialog, setShowCreateWalletDialog] = useState(false);
+  const { checkGameWallet } = useGameWalletCheck();
 
-  const handleCreateGame = async () => {
+  const handleOpenDialog = () => {
+    if (!checkGameWallet(() => setShowCreateWalletDialog(true))) {
+      return;
+    }
+    setShowEntryFeeDialog(true);
+  };
+
+  const handleCreateGame = async (entryFee: number) => {
     if (!wallet) {
       toast.error("Please connect your wallet first.");
       return;
@@ -231,7 +257,7 @@ function CreateGameButton() {
     setLoading(true);
 
     try {
-      const { instruction, gameAccountAddress } = await sdk.createGameIx({
+      const { instructions, gameAccountAddress } = await sdk.createGameIx({
         rpc,
         creator: { address: address(wallet.address) } as TransactionSigner,
         platformId: PLATFORM_ID,
@@ -241,16 +267,18 @@ function CreateGameButton() {
 
       const signature = await buildAndSendTransactionWithPrivy(
         rpc,
-        [instruction],
+        instructions,
         wallet
       );
 
       if (!signature) {
         toast.error("Failed to create game. Please try again.");
+        setLoading(false);
         return;
       }
 
-      toast.success("Game created successfully!");
+      toast.success(`Game created successfully with ${entryFee} SOL entry fee!`);
+      setShowEntryFeeDialog(false);
       router.push(`/game/${gameAccountAddress}`);
     } catch (error) {
       console.error("Failed to create game:", error);
@@ -261,14 +289,29 @@ function CreateGameButton() {
   };
 
   return (
-    <Button
-      onClick={handleCreateGame}
-      loading={loading}
-      className="gap-2 w-full sm:w-auto"
-    >
-      <Plus className="w-4 h-4" />
-      <span className="hidden xs:inline">Create Game</span>
-      <span className="xs:hidden">Create</span>
-    </Button>
+    <>
+      <Button
+        onClick={handleOpenDialog}
+        className="gap-2 w-full sm:w-auto"
+      >
+        <Plus className="w-4 h-4" />
+        <span className="hidden xs:inline">Create Game</span>
+        <span className="xs:hidden">Create</span>
+      </Button>
+
+      <EntryFeeDialog
+        isOpen={showEntryFeeDialog}
+        onClose={() => setShowEntryFeeDialog(false)}
+        onConfirm={handleCreateGame}
+        loading={loading}
+      />
+
+      {showCreateWalletDialog && (
+        <CreateGameWalletDialog 
+          isOpen={showCreateWalletDialog}
+          onClose={() => setShowCreateWalletDialog(false)}
+        />
+      )}
+    </>
   );
 }

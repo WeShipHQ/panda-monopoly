@@ -16,6 +16,8 @@ import {
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
+  getU8Decoder,
+  getU8Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
@@ -39,24 +41,21 @@ import {
   type ResolvedAccount,
 } from '../shared';
 
-export const ATTEND_FESTIVAL_DISCRIMINATOR = new Uint8Array([
-  110, 226, 182, 147, 161, 173, 227, 152,
+export const DECLINE_PROPERTY_V2_DISCRIMINATOR = new Uint8Array([
+  19, 110, 205, 24, 102, 198, 184, 133,
 ]);
 
-export function getAttendFestivalDiscriminatorBytes() {
+export function getDeclinePropertyV2DiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    ATTEND_FESTIVAL_DISCRIMINATOR
+    DECLINE_PROPERTY_V2_DISCRIMINATOR
   );
 }
 
-export type AttendFestivalInstruction<
+export type DeclinePropertyV2Instruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountGame extends string | AccountMeta<string> = string,
   TAccountPlayerState extends string | AccountMeta<string> = string,
   TAccountPlayer extends string | AccountMeta<string> = string,
-  TAccountRecentBlockhashes extends
-    | string
-    | AccountMeta<string> = 'SysvarRecentB1ockHashes11111111111111111111',
   TAccountClock extends
     | string
     | AccountMeta<string> = 'SysvarC1ock11111111111111111111111111111111',
@@ -75,9 +74,6 @@ export type AttendFestivalInstruction<
         ? WritableSignerAccount<TAccountPlayer> &
             AccountSignerMeta<TAccountPlayer>
         : TAccountPlayer,
-      TAccountRecentBlockhashes extends string
-        ? ReadonlyAccount<TAccountRecentBlockhashes>
-        : TAccountRecentBlockhashes,
       TAccountClock extends string
         ? ReadonlyAccount<TAccountClock>
         : TAccountClock,
@@ -85,72 +81,73 @@ export type AttendFestivalInstruction<
     ]
   >;
 
-export type AttendFestivalInstructionData = {
+export type DeclinePropertyV2InstructionData = {
   discriminator: ReadonlyUint8Array;
+  position: number;
 };
 
-export type AttendFestivalInstructionDataArgs = {};
+export type DeclinePropertyV2InstructionDataArgs = { position: number };
 
-export function getAttendFestivalInstructionDataEncoder(): FixedSizeEncoder<AttendFestivalInstructionDataArgs> {
+export function getDeclinePropertyV2InstructionDataEncoder(): FixedSizeEncoder<DeclinePropertyV2InstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: ATTEND_FESTIVAL_DISCRIMINATOR })
+    getStructEncoder([
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['position', getU8Encoder()],
+    ]),
+    (value) => ({ ...value, discriminator: DECLINE_PROPERTY_V2_DISCRIMINATOR })
   );
 }
 
-export function getAttendFestivalInstructionDataDecoder(): FixedSizeDecoder<AttendFestivalInstructionData> {
+export function getDeclinePropertyV2InstructionDataDecoder(): FixedSizeDecoder<DeclinePropertyV2InstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['position', getU8Decoder()],
   ]);
 }
 
-export function getAttendFestivalInstructionDataCodec(): FixedSizeCodec<
-  AttendFestivalInstructionDataArgs,
-  AttendFestivalInstructionData
+export function getDeclinePropertyV2InstructionDataCodec(): FixedSizeCodec<
+  DeclinePropertyV2InstructionDataArgs,
+  DeclinePropertyV2InstructionData
 > {
   return combineCodec(
-    getAttendFestivalInstructionDataEncoder(),
-    getAttendFestivalInstructionDataDecoder()
+    getDeclinePropertyV2InstructionDataEncoder(),
+    getDeclinePropertyV2InstructionDataDecoder()
   );
 }
 
-export type AttendFestivalAsyncInput<
+export type DeclinePropertyV2AsyncInput<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountPlayer extends string = string,
-  TAccountRecentBlockhashes extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
   playerState?: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
-  recentBlockhashes?: Address<TAccountRecentBlockhashes>;
   clock?: Address<TAccountClock>;
+  position: DeclinePropertyV2InstructionDataArgs['position'];
 };
 
-export async function getAttendFestivalInstructionAsync<
+export async function getDeclinePropertyV2InstructionAsync<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountPlayer extends string,
-  TAccountRecentBlockhashes extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: AttendFestivalAsyncInput<
+  input: DeclinePropertyV2AsyncInput<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
-    TAccountRecentBlockhashes,
     TAccountClock
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
-  AttendFestivalInstruction<
+  DeclinePropertyV2Instruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
-    TAccountRecentBlockhashes,
     TAccountClock
   >
 > {
@@ -163,16 +160,15 @@ export async function getAttendFestivalInstructionAsync<
     game: { value: input.game ?? null, isWritable: true },
     playerState: { value: input.playerState ?? null, isWritable: true },
     player: { value: input.player ?? null, isWritable: true },
-    recentBlockhashes: {
-      value: input.recentBlockhashes ?? null,
-      isWritable: false,
-    },
     clock: { value: input.clock ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
+
+  // Original args.
+  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.playerState.value) {
@@ -185,10 +181,6 @@ export async function getAttendFestivalInstructionAsync<
       ],
     });
   }
-  if (!accounts.recentBlockhashes.value) {
-    accounts.recentBlockhashes.value =
-      'SysvarRecentB1ockHashes11111111111111111111' as Address<'SysvarRecentB1ockHashes11111111111111111111'>;
-  }
   if (!accounts.clock.value) {
     accounts.clock.value =
       'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
@@ -200,57 +192,53 @@ export async function getAttendFestivalInstructionAsync<
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.playerState),
       getAccountMeta(accounts.player),
-      getAccountMeta(accounts.recentBlockhashes),
       getAccountMeta(accounts.clock),
     ],
-    data: getAttendFestivalInstructionDataEncoder().encode({}),
+    data: getDeclinePropertyV2InstructionDataEncoder().encode(
+      args as DeclinePropertyV2InstructionDataArgs
+    ),
     programAddress,
-  } as AttendFestivalInstruction<
+  } as DeclinePropertyV2Instruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
-    TAccountRecentBlockhashes,
     TAccountClock
   >);
 }
 
-export type AttendFestivalInput<
+export type DeclinePropertyV2Input<
   TAccountGame extends string = string,
   TAccountPlayerState extends string = string,
   TAccountPlayer extends string = string,
-  TAccountRecentBlockhashes extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
   playerState: Address<TAccountPlayerState>;
   player: TransactionSigner<TAccountPlayer>;
-  recentBlockhashes?: Address<TAccountRecentBlockhashes>;
   clock?: Address<TAccountClock>;
+  position: DeclinePropertyV2InstructionDataArgs['position'];
 };
 
-export function getAttendFestivalInstruction<
+export function getDeclinePropertyV2Instruction<
   TAccountGame extends string,
   TAccountPlayerState extends string,
   TAccountPlayer extends string,
-  TAccountRecentBlockhashes extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: AttendFestivalInput<
+  input: DeclinePropertyV2Input<
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
-    TAccountRecentBlockhashes,
     TAccountClock
   >,
   config?: { programAddress?: TProgramAddress }
-): AttendFestivalInstruction<
+): DeclinePropertyV2Instruction<
   TProgramAddress,
   TAccountGame,
   TAccountPlayerState,
   TAccountPlayer,
-  TAccountRecentBlockhashes,
   TAccountClock
 > {
   // Program address.
@@ -262,10 +250,6 @@ export function getAttendFestivalInstruction<
     game: { value: input.game ?? null, isWritable: true },
     playerState: { value: input.playerState ?? null, isWritable: true },
     player: { value: input.player ?? null, isWritable: true },
-    recentBlockhashes: {
-      value: input.recentBlockhashes ?? null,
-      isWritable: false,
-    },
     clock: { value: input.clock ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -273,11 +257,10 @@ export function getAttendFestivalInstruction<
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolve default values.
-  if (!accounts.recentBlockhashes.value) {
-    accounts.recentBlockhashes.value =
-      'SysvarRecentB1ockHashes11111111111111111111' as Address<'SysvarRecentB1ockHashes11111111111111111111'>;
-  }
   if (!accounts.clock.value) {
     accounts.clock.value =
       'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
@@ -289,22 +272,22 @@ export function getAttendFestivalInstruction<
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.playerState),
       getAccountMeta(accounts.player),
-      getAccountMeta(accounts.recentBlockhashes),
       getAccountMeta(accounts.clock),
     ],
-    data: getAttendFestivalInstructionDataEncoder().encode({}),
+    data: getDeclinePropertyV2InstructionDataEncoder().encode(
+      args as DeclinePropertyV2InstructionDataArgs
+    ),
     programAddress,
-  } as AttendFestivalInstruction<
+  } as DeclinePropertyV2Instruction<
     TProgramAddress,
     TAccountGame,
     TAccountPlayerState,
     TAccountPlayer,
-    TAccountRecentBlockhashes,
     TAccountClock
   >);
 }
 
-export type ParsedAttendFestivalInstruction<
+export type ParsedDeclinePropertyV2Instruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -313,21 +296,20 @@ export type ParsedAttendFestivalInstruction<
     game: TAccountMetas[0];
     playerState: TAccountMetas[1];
     player: TAccountMetas[2];
-    recentBlockhashes: TAccountMetas[3];
-    clock: TAccountMetas[4];
+    clock: TAccountMetas[3];
   };
-  data: AttendFestivalInstructionData;
+  data: DeclinePropertyV2InstructionData;
 };
 
-export function parseAttendFestivalInstruction<
+export function parseDeclinePropertyV2Instruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
-): ParsedAttendFestivalInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+): ParsedDeclinePropertyV2Instruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -343,9 +325,8 @@ export function parseAttendFestivalInstruction<
       game: getNextAccount(),
       playerState: getNextAccount(),
       player: getNextAccount(),
-      recentBlockhashes: getNextAccount(),
       clock: getNextAccount(),
     },
-    data: getAttendFestivalInstructionDataDecoder().decode(instruction.data),
+    data: getDeclinePropertyV2InstructionDataDecoder().decode(instruction.data),
   };
 }

@@ -7,7 +7,7 @@ import {
   GameAccount,
   mapGameStateToAccount,
   mapPlayerStateToAccount,
-  mapPropertyStateToAccount,
+  mapPropertyInfoToAccount,
   PlayerAccount,
   PropertyAccount,
 } from "@/types/schema";
@@ -143,27 +143,24 @@ export function useGameState(
           (player): player is PlayerAccount => player !== null
         );
 
-        // Step 4: Get all property positions from all players
-        const allPropertyPositions = players
+        // Step 4: Map properties from GameState.properties using the new approach
+        const propertyPositions = players
           .map((player) => Array.from(player.propertiesOwned))
           .flat();
 
-        // Remove duplicates
-        const uniquePropertyPositions = [...new Set(allPropertyPositions)];
+        const properties: PropertyAccount[] = propertyPositions.map(
+          (position) => {
+            const propertyInfo = gameData.properties[position];
 
-        // Step 5: Fetch all property states
-        let properties: PropertyAccount[] = [];
-        if (uniquePropertyPositions.length > 0) {
-          const propertyStates = await sdk.getPropertyStateAccounts(
-            isInProgress ? erRpc : rpc,
-            gameAddress,
-            uniquePropertyPositions
-          );
+            return mapPropertyInfoToAccount(
+              propertyInfo,
+              position,
+              gameAddress.toString()
+            );
+          }
+        );
 
-          properties = (propertyStates || []).map((propertyState) =>
-            mapPropertyStateToAccount(propertyState.data, propertyState.address)
-          );
-        }
+        console.log("tradeeeee", gameData.activeTrades);
 
         return { gameData, players, properties };
       } catch (error) {

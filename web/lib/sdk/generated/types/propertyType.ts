@@ -16,7 +16,6 @@ import {
 } from '@solana/kit';
 
 export enum PropertyType {
-  Property,
   Street,
   Railroad,
   Utility,
@@ -24,8 +23,6 @@ export enum PropertyType {
   Chance,
   CommunityChest,
   Tax,
-  Beach,
-  Festival,
 }
 
 export type PropertyTypeArgs = PropertyType;

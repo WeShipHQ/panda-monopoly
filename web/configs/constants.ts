@@ -14,12 +14,14 @@ export const VRF_PROGRAM_IDENTITY = address(
 );
 
 export const PLATFORM_ID = address(
-  "8woHMJSrVW3nEbv19PCnMkenVyyLpgoS6XGeDeTBhLpb"
+  // "8woHMJSrVW3nEbv19PCnMkenVyyLpgoS6XGeDeTBhLpb"
+  "GgUmA1zccSggfKxPsxmEAjzTrHekFeShobfFKNvqAS6n"
 );
 
 export const MEV_TAX_POSITION = 4;
 export const PRIORITY_FEE_TAX_POSITION = 38;
 export const JAIL_FINE = 50;
+export const USE_VRF = false;
 
 export const API_CONFIG = {
   BASE_URL: envConfig.NEXT_PUBLIC_INDEXER_API_URL,
@@ -66,3 +68,4 @@ export const ERROR_MESSAGES = {
   NOT_FOUND: "Resource not found",
   SERVER_ERROR: "Internal server error",
 } as const;
+

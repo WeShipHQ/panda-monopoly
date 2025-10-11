@@ -187,7 +187,7 @@ export const PlayerActions = ({
 
   const isStarted = game.gameStatus === GameStatus.InProgress;
   // const isEnded = game?.gameStatus  === GameStatus.Finished;
-  const isCreator = game.authority === wallet.address;
+  const isCreator = game.creator === wallet.address;
   const isInGame = wallet.address && game.players.includes(wallet.address);
 
   return (

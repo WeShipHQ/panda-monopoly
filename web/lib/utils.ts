@@ -1,3 +1,4 @@
+import { PropertyInfo } from "@/types/schema";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -207,3 +208,11 @@ export function generatePlayerIcon(address: string): PlayerInfo {
 
   return availableItem;
 }
+
+// properties utils
+// export const getPropertyByPosition = (
+//   position: number,
+//   properties: PropertyInfo[]
+// ): PropertyInfo | null => {
+//   return properties.find((prop) => prop. === position) || null;
+// };
