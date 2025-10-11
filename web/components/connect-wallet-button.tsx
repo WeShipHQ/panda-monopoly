@@ -14,7 +14,6 @@ import {
 } from "@solana/kit";
 import { getTransferSolInstruction } from "@solana-program/system";
 import {
-  useConnectedStandardWallets,
   useStandardSignAndSendTransaction,
 } from "@privy-io/react-auth/solana";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -38,6 +37,31 @@ import {
   useExportWallet,
 } from "@privy-io/react-auth/solana";
 import { BalanceButton } from "./balance-button";
+import { useConnectedStandardWallets } from "@privy-io/react-auth/solana";
+
+function WalletAddressWithCopy({ address, label }: { address: string; label: string }) {
+  const [copyToClipboard, isCopied] = useCopyToClipboard();
+
+  return (
+    <div className="px-2 py-1.5 text-xs text-primary border-b">
+      <div className="font-medium text-primary">{label}</div>
+      <div className="flex items-center gap-2">
+        <div className="font-mono text-xs flex-1">{formatAddress(address)}</div>
+        <div
+          className="cursor-pointer hover:bg-gray-100 p-1 rounded"
+          onClick={() => copyToClipboard(address)}
+          title="Copy address"
+        >
+          {isCopied ? (
+            <CheckIcon className="h-3 w-3 text-green-600" />
+          ) : (
+            <CopyIcon className="h-3 w-3 text-primary" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function ConnectWalletButton() {
   const { ready, authenticated, user, wallet } = useWallet();
@@ -46,6 +70,10 @@ export function ConnectWalletButton() {
   const { signAndSendTransaction } = useStandardSignAndSendTransaction();
   const [copyToClipboard, isCopied] = useCopyToClipboard();
   const { exportWallet } = useExportWallet();
+
+  // Debug connected wallets
+  console.log("Connected wallets:", wallets);
+  console.log("User wallet:", user?.wallet);
 
   const { rpc } = useRpcContext();
   const { login } = useLogin();
@@ -76,17 +104,36 @@ export function ConnectWalletButton() {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               sideOffset={12}
-              className="w-40"
+              className="w-64"
               align="end"
               side="bottom"
             >
-               <DropdownMenuItem onClick={() => (exportWallet())}>
-                <Download />
-                <DropdownMenuShortcut>Export Wallet</DropdownMenuShortcut>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => logout()}>
+              {/* Connected Wallet Info */}
+              {user?.wallet?.address && (
+                <WalletAddressWithCopy 
+                  address={user.wallet.address} 
+                  label="Connected Wallet" 
+                />
+              )}
+
+              {/* Game Wallet Info */}
+              {wallet && (
+                <WalletAddressWithCopy 
+                  address={wallet.address} 
+                  label="Game Wallet" 
+                />
+              )}
+
+              {/* Actions */}
+              {wallet && (
+                <DropdownMenuItem onClick={() => (exportWallet())} className="mt-2 flex justify-between">
+                  <span>Export Wallet</span>
+                  <Download/>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => logout()} className="flex justify-between">
+                <span>Disconnect</span>
                 <LogoutIcon />
-                <DropdownMenuShortcut>Disconnect</DropdownMenuShortcut>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
