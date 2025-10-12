@@ -107,3 +107,7 @@ export const PLAYER_BANKRUPT_EVENT_DISCRIMINATOR = new Uint8Array([
 export const TAX_PAID_EVENT_DISCRIMINATOR = new Uint8Array([
   4, 134, 57, 255, 63, 46, 212, 238,
 ]);
+
+export const GAME_END_CONDITION_MET_EVENT_DISCRIMINATOR = new Uint8Array([
+  1, 222, 18, 208, 75, 120, 233, 201,
+]);

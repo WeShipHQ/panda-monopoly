@@ -41,7 +41,7 @@ const NavBar = () => {
               <Link href="/">
                 <Image
                   src="/logo.jpg"
-                  alt="Ronit Logo"
+                  alt="Panda Monopoly Logo"
                   width={48}
                   height={48}
                 />
@@ -149,7 +149,7 @@ function MobileNavLinks({
     { href: "#home", label: "Home" },
     { href: "#journey", label: "Journey" },
     { href: "#projects", label: "Projects" },
-    { href: "https://dev.to/ronitjadhav", label: "Blogs" },
+    { href: "", label: "Blogs" },
   ];
 
   return (

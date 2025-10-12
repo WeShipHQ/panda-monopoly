@@ -67,7 +67,14 @@ pub fn end_turn_handler(ctx: Context<EndTurn>) -> Result<()> {
 
     if game.check_time_end_condition(clock.unix_timestamp) {
         msg!("Time limit reached! Game should be ended via end_game instruction.");
-        // Don't block turn ending, but log that game should end
+        game.end_condition_met = true;
+        game.end_reason = Some(GameEndReason::TimeLimit);
+
+        emit!(GameEndConditionMet {
+            game_id: game.game_id,
+            reason: GameEndReason::TimeLimit,
+            timestamp: clock.unix_timestamp,
+        });
     }
 
     player_state.has_rolled_dice = false;
@@ -78,11 +85,12 @@ pub fn end_turn_handler(ctx: Context<EndTurn>) -> Result<()> {
     player_state.needs_bankruptcy_check = false;
     // Advance to next player
     player_state.doubles_count = 0; // Reset doubles count
-    let next_turn = (game.current_turn + 1) % game.current_players;
-    game.current_turn = next_turn;
+                                    //let next_turn = (game.current_turn + 1) % game.current_players;
+                                    // game.current_turn = next_turn;
+    game.advance_turn()?;
     game.turn_started_at = clock.unix_timestamp;
 
-    msg!("Turn ended. Next turn: Player {}", next_turn);
+    msg!("Turn ended. Next turn: Player {}", game.current_turn);
 
     Ok(())
 }

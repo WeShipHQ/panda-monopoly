@@ -80,6 +80,8 @@ interface GameContextType {
   payMevTax: () => Promise<void>;
   payPriorityFeeTax: () => Promise<void>;
   declareBankruptcy: () => Promise<void>;
+  endGame: () => Promise<void>;
+  claimReward: () => Promise<void>;
 
   // Trade actions
   createTrade: (
@@ -436,7 +438,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   }, [erRpc, gameAddress, gameState, wallet]);
 
   const joinGame = useCallback(async (): Promise<void> => {
-    if (!gameAddress || !wallet?.address || !wallet.delegated) {
+    if (!gameAddress || !wallet?.address || !wallet.delegated || !gameState) {
       throw new Error("Game address or player signer not available");
     }
 
@@ -458,7 +460,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.error("Error joining game:", error);
       throw error;
     }
-  }, [rpc, gameAddress, wallet]);
+  }, [rpc, gameAddress, wallet, gameState]);
 
   const rollDice = useCallback(
     async (diceRoll?: number[]): Promise<void> => {
@@ -839,7 +841,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
       try {
         const instruction = await sdk.buildHouseIxV2({
-          rpc,
           gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
           position,
@@ -883,8 +884,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       try {
-        const instruction = await sdk.buildHouseIxV2({
-          rpc,
+        const instruction = await sdk.buildHotelIxV2({
           gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
           position,
@@ -1239,7 +1239,64 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
   }, [gameAddress, currentPlayerState, wallet]);
 
-  // Reset the modal shown flags when player state changes or when cards are no longer needed
+  const endGame = useCallback(async (): Promise<void> => {
+    if (
+      !gameAddress ||
+      !gameState ||
+      !currentPlayerState ||
+      !wallet?.address ||
+      !wallet.delegated
+    ) {
+      throw new Error("Game address or player signer not available");
+    }
+
+    try {
+      const instruction = await sdk.endGameIx({
+        gameAddress,
+        caller: { address: address(wallet.address) } as TransactionSigner,
+        players: gameState.players.map(address),
+      });
+
+      const signature = await buildAndSendTransactionWithPrivy(
+        erRpc,
+        [instruction],
+        wallet,
+        [],
+        "confirmed",
+        true
+      );
+
+      console.log("[endGame] tx", signature);
+    } catch (error) {
+      console.error("Error ending game:", error);
+      throw error;
+    }
+  }, [gameAddress, currentPlayerState, gameState, wallet]);
+
+  const claimReward = useCallback(async (): Promise<void> => {
+    if (!gameAddress || !wallet?.address || !wallet.delegated) {
+      throw new Error("Game address or player signer not available");
+    }
+
+    try {
+      const instruction = await sdk.claimRewardIx({
+        gameAddress,
+        winner: { address: address(wallet.address) } as TransactionSigner,
+      });
+
+      const signature = await buildAndSendTransactionWithPrivy(
+        rpc,
+        [instruction],
+        wallet
+      );
+
+      console.log("[claimReward] tx", signature);
+    } catch (error) {
+      console.error("Error claiming reward:", error);
+      throw error;
+    }
+  }, [gameAddress, currentPlayerState, wallet]);
+
   useEffect(() => {
     if (currentPlayerState) {
       if (!currentPlayerState.needsChanceCard) {
@@ -1571,6 +1628,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     payMevTax,
     payPriorityFeeTax,
     declareBankruptcy,
+    endGame,
+    claimReward,
 
     // Trade actions
     createTrade,

@@ -67,9 +67,16 @@ interface PlayerItemProps {
   index: number;
   isCurrentTurn: boolean;
   isYou: boolean;
+  isWinner: boolean;
 }
 
-function PlayerItem({ player, index, isCurrentTurn, isYou }: PlayerItemProps) {
+function PlayerItem({
+  player,
+  index,
+  isCurrentTurn,
+  isYou,
+  isWinner,
+}: PlayerItemProps) {
   const [previousBalance, setPreviousBalance] = useState<number | null>(null);
   const [balanceChange, setBalanceChange] = useState<number>(0);
   const [animationKey, setAnimationKey] = useState<number>(0);
@@ -151,6 +158,11 @@ function PlayerItem({ player, index, isCurrentTurn, isYou }: PlayerItemProps) {
                   Bankrupt
                 </Badge>
               )}
+              {isWinner && (
+                <Badge className="text-xs bg-green-100 text-green-800">
+                  Winner
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -221,6 +233,7 @@ export function PlayerList() {
               index={index}
               isCurrentTurn={isCurrentTurn}
               isYou={player.wallet === wallet?.address}
+              isWinner={gameState.winner === player.wallet}
             />
           );
         })}

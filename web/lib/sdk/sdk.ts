@@ -31,10 +31,6 @@ import {
   getUndelegateGameHandlerInstruction,
   getBuyPropertyInstruction,
   getInitPropertyHandlerInstruction,
-  // getRejectTradeInstruction,
-  // getCancelTradeInstruction,
-  // fetchTradeState,
-  // TradeState,
   getCreateTradeInstruction,
   getAcceptTradeInstruction,
   getRejectTradeInstruction,
@@ -72,6 +68,10 @@ import {
   getSpecialSpaceActionCodec,
   getPlayerBankruptCodec,
   getTaxPaidCodec,
+  getGameEndConditionMetCodec,
+  getEndGameInstruction,
+  getClaimRewardInstruction,
+  getBuildHouseV2Instruction,
 } from "./generated";
 import {
   CreateGameIxs,
@@ -102,6 +102,8 @@ import {
   CancelTradeParams,
   DeclareBankruptcyParams,
   UseGetOutOfJailCardParams,
+  EndGameParams,
+  ClaimRewardParams,
 } from "./types";
 import {
   getGameAuthorityPDA,
@@ -142,6 +144,7 @@ import {
   TOKEN_PROGRAM_ADDRESS,
   findAssociatedTokenPda,
   fetchToken,
+  getSyncNativeInstruction,
 } from "@solana-program/token";
 import {
   DEFAULT_EPHEMERAL_QUEUE,
@@ -168,8 +171,10 @@ import {
   SPECIAL_SPACE_ACTION_EVENT_DISCRIMINATOR,
   PLAYER_BANKRUPT_EVENT_DISCRIMINATOR,
   TAX_PAID_EVENT_DISCRIMINATOR,
+  GAME_END_CONDITION_MET_EVENT_DISCRIMINATOR,
 } from "@/configs/constants";
 import { GameAccount, mapGameStateToAccount } from "@/types/schema";
+import { getTransferSolInstruction } from "@solana-program/system";
 
 const NATIVE_MINT = address("So11111111111111111111111111111111111111112");
 
@@ -238,6 +243,23 @@ class MonopolyGameSDK {
       ixs.push(createAtaInstruction);
     }
 
+    const amount = Number(params.entryFee) * 10 ** 9;
+    if (amount > 0) {
+      const transferIx = getTransferSolInstruction({
+        source: params.creator,
+        destination: creatorTokenAccount,
+        amount,
+      });
+
+      ixs.push(transferIx);
+
+      const syncIx = getSyncNativeInstruction({
+        account: creatorTokenAccount,
+      });
+
+      ixs.push(syncIx);
+    }
+
     const [vaultTokenAccount] = await getTokenVaultPda(
       NATIVE_MINT,
       gameAccountPDA
@@ -252,8 +274,8 @@ class MonopolyGameSDK {
       tokenMint: NATIVE_MINT,
       creatorTokenAccount,
       tokenVault: vaultTokenAccount,
-      entryFee: 0,
-      timeLimitSeconds: none()
+      entryFee: Number(params.entryFee) * 10 ** 9,
+      timeLimitSeconds: none(),
     });
 
     ixs.push(instruction);
@@ -268,6 +290,10 @@ class MonopolyGameSDK {
    * Join an existing game
    */
   async joinGameIx(params: JoinGameParams): Promise<JoinGameIxs> {
+    const game = await fetchGameState(params.rpc, params.gameAddress);
+    if (!game) {
+      throw new Error("Game not found");
+    }
     const [playerStateAddress] = await getPlayerStatePDA(
       params.gameAddress,
       params.player.address
@@ -296,6 +322,24 @@ class MonopolyGameSDK {
         });
 
       ixs.push(createAtaInstruction);
+    }
+
+    const amount = Number(game.data.entryFee);
+
+    if (amount > 0) {
+      const transferIx = getTransferSolInstruction({
+        source: params.player,
+        destination: playerTokenAccount,
+        amount,
+      });
+
+      ixs.push(transferIx);
+
+      const syncIx = getSyncNativeInstruction({
+        account: playerTokenAccount,
+      });
+
+      ixs.push(syncIx);
     }
 
     const [vaultTokenAccount] = await getTokenVaultPda(
@@ -777,6 +821,20 @@ class MonopolyGameSDK {
       params.player.address
     );
 
+    return getBuildHouseV2Instruction({
+      game: params.gameAddress,
+      player: params.player,
+      playerState: playerStateAddress,
+      position: params.position,
+    });
+  }
+
+  async buildHotelIxV2(params: BuildHouseParams): Promise<Instruction> {
+    const [playerStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.player.address
+    );
+
     return getBuildHotelV2Instruction({
       game: params.gameAddress,
       player: params.player,
@@ -866,8 +924,6 @@ class MonopolyGameSDK {
     });
   }
 
-  // Tax methods
-
   /**
    * Pay MEV tax
    */
@@ -889,8 +945,6 @@ class MonopolyGameSDK {
       player: params.player,
     });
   }
-
-  // trading
 
   async createTradeIx(params: CreateTradeParams): Promise<Instruction> {
     const [proposerStateAddress] = await getPlayerStatePDA(
@@ -970,24 +1024,51 @@ class MonopolyGameSDK {
       player: params.player,
       playerState: playerStateAddress,
     });
+  }
 
-    // const addresses = await Promise.all(
-    //   params.propertiesOwned.map(async (position) =>
-    //     getPropertyStatePDA(params.gameAddress, position)
-    //   )
-    // );
+  async endGameIx(params: EndGameParams): Promise<Instruction> {
+    const ix = await getEndGameInstruction({
+      game: params.gameAddress,
+      caller: params.caller,
+    });
 
-    // const remainingAccounts = addresses.map(
-    //   ([address, _]) =>
-    //     ({
-    //       address,
-    //       role: AccountRole.WRITABLE,
-    //     } as WritableAccount)
-    // );
+    const remainingAccounts: WritableAccount[] = [];
 
-    // ix.accounts.push(...remainingAccounts);
+    for (const player of params.players) {
+      const [playerPda] = await getPlayerStatePDA(params.gameAddress, player);
+      remainingAccounts.push({
+        address: playerPda,
+        role: AccountRole.WRITABLE,
+      });
+    }
 
-    // return ix;
+    ix.accounts.push(...remainingAccounts);
+
+    return ix;
+  }
+
+  async claimRewardIx(params: ClaimRewardParams): Promise<Instruction> {
+    const [gameAuthorityPDA] = await getGameAuthorityPDA();
+
+    const [winnerTokenAccount] = await findAssociatedTokenPda({
+      mint: NATIVE_MINT,
+      owner: params.winner.address,
+      tokenProgram: TOKEN_PROGRAM_ADDRESS,
+    });
+
+    const [vaultTokenAccount] = await getTokenVaultPda(
+      NATIVE_MINT,
+      gameAuthorityPDA
+    );
+
+    return getClaimRewardInstruction({
+      game: params.gameAddress,
+      gameAuthority: gameAuthorityPDA,
+      tokenMint: NATIVE_MINT,
+      tokenVault: vaultTokenAccount,
+      winnerTokenAccount,
+      winner: params.winner,
+    });
   }
 
   // Account fetching methods
@@ -1441,6 +1522,15 @@ class MonopolyGameSDK {
               ) {
                 const data = getTaxPaidCodec().decode(buf.subarray(8));
                 onEvent({ type: "TaxPaid", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(GAME_END_CONDITION_MET_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getGameEndConditionMetCodec().decode(
+                  buf.subarray(8)
+                );
+                onEvent({ type: "GameEndConditionMet", data });
               }
             }
           }
@@ -1549,13 +1639,25 @@ export async function fetchDecodedProgramAccounts<T extends object>(
       filters,
     })
     .send();
+
   const encoder = getBase64Encoder();
+
   const datas = accountInfos.map((x) => encoder.encode(x.account.data[0]));
-  const decoded = datas.map((x) => decoder.decode(x));
-  return decoded.map((data, i) => ({
-    ...accountInfos[i]!.account,
-    address: accountInfos[i]!.pubkey,
-    programAddress: programAddress,
-    data,
-  }));
+
+  const decoded = datas.map((x) => {
+    try {
+      return decoder.decode(x);
+    } catch (error) {
+      return null;
+    }
+  });
+
+  return decoded
+    .filter((x) => !!x)
+    .map((data, i) => ({
+      ...accountInfos[i]!.account,
+      address: accountInfos[i]!.pubkey,
+      programAddress: programAddress,
+      data,
+    }));
 }

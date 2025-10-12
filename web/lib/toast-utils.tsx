@@ -2,6 +2,8 @@ import React from "react";
 import { toast } from "sonner";
 import { formatAddress } from "./utils";
 import { surpriseCards, treasureCards } from "@/configs/board-data";
+import { Address } from "@solana/kit";
+import { GameEndReason } from "./sdk/generated";
 
 interface RentPaymentToastProps {
   rentAmount: number;
@@ -15,6 +17,8 @@ interface RentPaymentFallbackToastProps {
 }
 
 interface TaxPaidToastProps {
+  isCurrentPlayer: boolean;
+  playerAddress: string;
   taxType: number;
   amount: bigint;
   position: number;
@@ -128,9 +132,10 @@ export const showRentPaymentErrorToast = () => {
 };
 
 export const showTaxPaidToast = ({
+  isCurrentPlayer,
+  playerAddress,
   taxType,
   amount,
-  position,
 }: TaxPaidToastProps) => {
   const taxTypeName =
     taxType === 1 ? "MEV Tax" : taxType === 2 ? "Priority Fee Tax" : "Tax";
@@ -138,7 +143,7 @@ export const showTaxPaidToast = ({
   toast.warning(
     <div className="flex flex-col">
       <div className="text-sm">
-        You paid{" "}
+        {isCurrentPlayer ? "You" : formatAddress(playerAddress)} paid{" "}
         <span
           className="font-bold px-2 py-0.5 rounded-md text-white"
           style={{ backgroundColor: "var(--chart-2)" }}
@@ -178,19 +183,19 @@ export const showPlayerPassedGoToast = ({
 
 export const showPlayerJoinedToast = ({
   playerAddress,
-  playerIndex,
-  totalPlayers,
-}: PlayerJoinedToastProps) => {
+}: // playerIndex,
+// totalPlayers,
+PlayerJoinedToastProps) => {
   toast.info(
     <div className="flex flex-col">
       <div className="text-sm">
-        🎮 New player joined the game!{" "}
         <span
           className="font-bold px-2 py-0.5 rounded-md text-white"
           style={{ backgroundColor: "var(--chart-2)" }}
         >
           {formatAddress(playerAddress)}
-        </span>
+        </span>{" "}
+        joined the game!
       </div>
     </div>
   );
@@ -266,15 +271,197 @@ export const showGoToJailToast = ({
   isCurrentPlayer,
 }: GoToJailToastProps) => {
   const playerName = isCurrentPlayer ? "You" : formatAddress(playerAddress);
-  
+
   toast.error(
     <div className="flex flex-col gap-1.5">
       <div className="text-sm">
         🚔 {playerName} {isCurrentPlayer ? "went" : "went"} to jail!
       </div>
       <div className="text-xs text-muted-foreground">
-        {isCurrentPlayer ? "Better luck next time!" : "Ouch! That's gotta hurt."}
+        {isCurrentPlayer
+          ? "Better luck next time!"
+          : "Ouch! That's gotta hurt."}
       </div>
     </div>
+  );
+};
+
+interface PropertyPurchasedToastProps {
+  propertyName: string;
+  price: bigint;
+  isCurrentPlayer: boolean;
+  playerAddress?: string;
+}
+
+export const showPropertyPurchasedToast = ({
+  propertyName,
+  price,
+  isCurrentPlayer,
+  playerAddress,
+}: PropertyPurchasedToastProps) => {
+  if (isCurrentPlayer) {
+    // Show "You bought XXX" for current player
+    toast.success(
+      <div className="flex flex-col gap-1.5">
+        <div className="text-sm">
+          🏠 You bought{" "}
+          <span
+            className="font-bold px-2 py-0.5 rounded-md text-white"
+            style={{ backgroundColor: "var(--chart-3)" }}
+          >
+            {propertyName}
+          </span>
+        </div>
+        <div className="text-xs text-muted-foreground">
+          for{" "}
+          <span
+            className="font-bold px-1 py-0.5 rounded text-white"
+            style={{ backgroundColor: "var(--chart-1)" }}
+          >
+            ${price.toString()}
+          </span>
+        </div>
+      </div>
+    );
+  } else {
+    // Show "0x00 just bought YYY" for other players
+    toast.info(
+      <div className="flex flex-col gap-1.5">
+        <div className="text-sm">
+          <span
+            className="font-bold px-2 py-0.5 rounded-md text-white"
+            style={{ backgroundColor: "var(--chart-2)" }}
+          >
+            {formatAddress(playerAddress || "")}
+          </span>{" "}
+          just bought{" "}
+          <span
+            className="font-bold px-2 py-0.5 rounded-md text-white"
+            style={{ backgroundColor: "var(--chart-3)" }}
+          >
+            {propertyName}
+          </span>
+        </div>
+        <div className="text-xs text-muted-foreground">
+          for{" "}
+          <span
+            className="font-bold px-1 py-0.5 rounded text-white"
+            style={{ backgroundColor: "var(--chart-1)" }}
+          >
+            ${price.toString()}
+          </span>
+        </div>
+      </div>
+    );
+  }
+};
+
+interface GameEndedToastProps {
+  winner: Address | string | null;
+  reason: GameEndReason;
+  winnerNetWorth: number | null;
+  currentPlayerAddress: string | null;
+}
+
+export const showGameEndedToast = ({
+  winner,
+  reason,
+  winnerNetWorth,
+  currentPlayerAddress,
+}: GameEndedToastProps) => {
+  const getReasonText = (reason: GameEndReason): string => {
+    switch (reason) {
+      case GameEndReason.BankruptcyVictory:
+        return "Bankruptcy Victory";
+      case GameEndReason.TimeLimit:
+        return "Time Limit Reached";
+      case GameEndReason.Manual:
+        return "Manual End";
+      default:
+        return "Game Ended";
+    }
+  };
+
+  const isWinner =
+    winner && currentPlayerAddress && winner === currentPlayerAddress;
+  const hasWinner = winner !== null;
+
+  toast(
+    <div className="flex flex-col gap-3 p-2 max-w-[600px] w-full">
+      {/* Header with game end styling */}
+      <div className="flex items-center gap-2">
+        <div
+          className="px-3 py-1 border-2 border-black font-black text-sm uppercase"
+          style={{
+            backgroundColor: hasWinner
+              ? isWinner
+                ? "#14f195"
+                : "#ff0080"
+              : "#ffed00",
+            color: "black",
+            transform: "rotate(-1deg)",
+          }}
+        >
+          {hasWinner
+            ? isWinner
+              ? "🎉 VICTORY!"
+              : "💔 GAME OVER"
+            : "🏁 GAME ENDED"}
+        </div>
+      </div>
+
+      {/* Winner info */}
+      {hasWinner && (
+        <div className="flex flex-col gap-2">
+          <div className="text-sm font-bold">
+            {isWinner ? (
+              <span className="text-green-600">🏆 You are the champion!</span>
+            ) : (
+              <span>
+                🏆 Winner:{" "}
+                <span
+                  className="font-bold px-2 py-0.5 rounded-md text-white text-xs"
+                  style={{ backgroundColor: "var(--chart-1)" }}
+                >
+                  {formatAddress(winner)}
+                </span>
+              </span>
+            )}
+          </div>
+
+          {winnerNetWorth && (
+            <div className="text-xs text-muted-foreground">
+              Final Net Worth:{" "}
+              <span
+                className="font-bold px-1.5 py-0.5 rounded text-white"
+                style={{ backgroundColor: "var(--chart-2)" }}
+              >
+                ${winnerNetWorth.toString()}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Game end reason */}
+      <div className="text-xs text-muted-foreground">
+        Reason:{" "}
+        <span
+          className="font-bold px-1.5 py-0.5 rounded text-white"
+          style={{ backgroundColor: "var(--chart-3)" }}
+        >
+          {getReasonText(reason)}
+        </span>
+      </div>
+
+      {/* Call to action */}
+      <div className="text-xs font-medium text-center pt-1 border-t border-gray-200">
+        {isWinner ? "🎊 Congratulations! 🎊" : "Thanks for playing! 🎮"}
+      </div>
+    </div>,
+    {
+      duration: Infinity, // Don't auto dismiss
+      closeButton: true,
+    }
   );
 };
