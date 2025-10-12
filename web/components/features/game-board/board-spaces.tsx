@@ -40,12 +40,21 @@ export const PropertySpace: React.FC<PropertySpaceProps> = ({
       showColorBar={true}
       {...props}
     >
-      <div className="flex flex-col items-center justify-center size-full text-center">
+      <div className="flex flex-col items-center justify-center size-full text-center relative">
+        {/* Decorative corner elements */}
+        {/* <div className="absolute top-0.5 left-0.5 w-1 h-1 border-t border-l border-current opacity-20"></div>
+        <div className="absolute top-0.5 right-0.5 w-1 h-1 border-t border-r border-current opacity-20"></div>
+        <div className="absolute bottom-0.5 left-0.5 w-1 h-1 border-b border-l border-current opacity-20"></div>
+        <div className="absolute bottom-0.5 right-0.5 w-1 h-1 border-b border-r border-current opacity-20"></div> */}
+        
         <div className="text-[0.5vh] sm:text-[0.7vh] md:text-[0.9vh] lg:text-[1.1vh] xl:text-[1.3vh] font-bold leading-tight mb-1">
           {name}
         </div>
-        <div className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-normal">
-          {formatPrice(Number(price))}
+        <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm bg-black/5">
+          <span className="text-[0.35vh] sm:text-[0.55vh] md:text-[0.7vh] lg:text-[0.9vh] xl:text-[1.1vh]">💰</span>
+          <span className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-semibold">
+            {formatPrice(Number(price))}
+          </span>
         </div>
       </div>
     </BaseSpace>
@@ -79,8 +88,11 @@ export const RailroadSpace: React.FC<RailroadSpaceProps> = ({
         <div className="flex-1 flex items-center justify-center">
           <div className="text-[1.5vh] sm:text-[2vh] md:text-[2.5vh] lg:text-[3vh] xl:text-[3.5vh]">🚂</div>
         </div>
-        <div className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-normal">
-          {formatPrice(Number(price))}
+        <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm bg-black/5 mx-auto">
+          <span className="text-[0.35vh] sm:text-[0.55vh] md:text-[0.7vh] lg:text-[0.9vh] xl:text-[1.1vh]">💰</span>
+          <span className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-semibold">
+            {formatPrice(Number(price))}
+          </span>
         </div>
       </div>
     </BaseSpace>
@@ -116,8 +128,11 @@ export const UtilitySpace: React.FC<UtilitySpaceProps> = ({
         <div className="flex-1 flex items-center justify-center">
           <div className="text-[1.5vh] sm:text-[2vh] md:text-[2.5vh] lg:text-[3vh] xl:text-[3.5vh]">{icon}</div>
         </div>
-        <div className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-normal">
-          {formatPrice(Number(price))}
+        <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm bg-black/5 mx-auto">
+          <span className="text-[0.35vh] sm:text-[0.55vh] md:text-[0.7vh] lg:text-[0.9vh] xl:text-[1.1vh]">💰</span>
+          <span className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-semibold">
+            {formatPrice(Number(price))}
+          </span>
         </div>
       </div>
     </BaseSpace>
