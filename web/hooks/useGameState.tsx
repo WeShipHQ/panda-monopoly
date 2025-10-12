@@ -174,6 +174,7 @@ export function useGameState(
       shouldRetryOnError: false,
       // Disable polling when subscriptions are active
       refreshInterval: subscribeToUpdates ? 0 : 5_000,
+      keepPreviousData: true,
     }
   );
 
