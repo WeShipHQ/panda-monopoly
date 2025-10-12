@@ -17,7 +17,7 @@ import { showGameEndedToast } from "@/lib/toast-utils";
 import { GameEndReason } from "@/lib/sdk/generated";
 
 export function DebugUI() {
-  const { currentPlayerState, mutate, refetch } = useGameContext();
+  const { currentPlayerState, refetch } = useGameContext();
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleUpdateBalance = async () => {

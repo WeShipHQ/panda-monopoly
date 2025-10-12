@@ -40,7 +40,6 @@ import {
   showRentPaymentFallbackToast,
   showRentPaymentErrorToast,
 } from "@/lib/toast-utils";
-import { KeyedMutator } from "swr";
 import { USE_VRF } from "@/configs/constants";
 
 interface GameContextType {
@@ -130,18 +129,6 @@ interface GameContextType {
   // demo
   demoDices: number[] | null;
   setDemoDices: (dices: number[] | null) => void;
-  mutate: KeyedMutator<
-    | {
-        gameData: null;
-        players: never[];
-        properties: never[];
-      }
-    | {
-        gameData: GameAccount;
-        players: PlayerAccount[];
-        properties: PropertyAccount[];
-      }
-  >;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -217,7 +204,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     isLoading: gameLoading,
     error: gameError,
     refetch,
-    mutate,
   } = useGameState(gameAddress, {
     onCardDrawEvent: addCardDrawEvent,
   });
@@ -1119,7 +1105,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         console.log("[acceptTrade] tx", signature);
 
         // Refresh game state to get updated trades
-        await refetch();
 
         toast.success("Trade accepted successfully!");
       } catch (error) {
@@ -1128,7 +1113,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [gameAddress, wallet, erRpc, refetch]
+    [gameAddress, wallet, erRpc]
   );
 
   const rejectTrade = useCallback(
@@ -1156,9 +1141,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[rejectTrade] tx", signature);
 
-        // Refresh game state to get updated trades
-        await refetch();
-
         toast.success("Trade rejected successfully!");
       } catch (error) {
         console.error("Error rejecting trade:", error);
@@ -1166,7 +1148,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [gameAddress, wallet, erRpc, refetch]
+    [gameAddress, wallet, erRpc]
   );
 
   const cancelTrade = useCallback(
@@ -1193,9 +1175,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[cancelTrade] tx", signature);
 
-        // Refresh game state to get updated trades
-        await refetch();
-
         toast.success("Trade cancelled successfully!");
       } catch (error) {
         console.error("Error canceling trade:", error);
@@ -1203,7 +1182,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [gameAddress, wallet, erRpc, refetch]
+    [gameAddress, wallet, erRpc]
   );
 
   const declareBankruptcy = useCallback(async (): Promise<void> => {
@@ -1676,7 +1655,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     // demo
     demoDices,
     setDemoDices,
-    mutate,
+    // mutate,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
