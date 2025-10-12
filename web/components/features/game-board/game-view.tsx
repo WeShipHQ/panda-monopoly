@@ -8,7 +8,8 @@ import { useParams } from "next/navigation";
 import { address } from "@solana/kit";
 import { LeftPanel } from "./left-panel";
 import { RightPanel } from "./right-panel";
-import { DiceLoading } from "@/components/dice-loading";
+import { Spinner } from "@/components/ui/spinner";
+// import { DiceLoading } from "@/components/dice-loading";
 
 export function GameView() {
   const { address: gameAddress } = useParams<{ address: string }>();
@@ -24,8 +25,7 @@ export function GameView() {
   if (gameLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center">
-        {/* <DiceLoading /> */}
-        loading...
+        <Spinner variant="bars" />
       </div>
     );
   }

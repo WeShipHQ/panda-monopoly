@@ -148,14 +148,6 @@ pub fn end_game_handler<'c: 'info, 'info>(
 
             player_account.exit(&crate::ID)?;
             accounts.push(player_account);
-            // commit_and_undelegate_accounts(
-            //     &ctx.accounts.caller,
-            //     vec![&player_account.to_account_info()],
-            //     &ctx.accounts.magic_context,
-            //     &ctx.accounts.magic_program,
-            // )?;
-
-            // msg!("Player {} undelegated", player_pubkey);
         }
 
         game.exit(&crate::ID)?;

@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Space_Grotesk } from "next/font/google";
 import "@/styles/globals.css";
 import { Toaster } from "@/components/ui/sonner";
-// import "@/styles/fonts.css";
-// import "@/styles/monopoly.css";
 import { AppProviders } from "@/components/providers/app-provider";
 
 const spaceGrotesk = Space_Grotesk({
@@ -28,6 +27,7 @@ export default function RootLayout({
       <body className={spaceGrotesk.className}>
         <AppProviders>{children}</AppProviders>
         <Toaster />
+        <Analytics mode="production" />;
       </body>
     </html>
   );
