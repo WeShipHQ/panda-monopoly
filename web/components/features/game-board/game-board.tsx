@@ -35,11 +35,13 @@ import {
 } from "./corner-spaces";
 import { useWallet } from "@/hooks/use-wallet";
 import { Button } from "@/components/ui/button";
+import { RotateCw, RotateCcw } from "lucide-react";
 
 interface MonopolyBoardProps {}
 
 const GameBoard: React.FC<MonopolyBoardProps> = () => {
   const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [boardRotation, setBoardRotation] = useState<number>(0);
 
   const { wallet } = useWallet();
 
@@ -166,6 +168,14 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
     }
   };
 
+  const handleRotateClockwise = () => {
+    setBoardRotation((prev) => (prev + 90) % 360);
+  };
+
+  const handleRotateCounterClockwise = () => {
+    setBoardRotation((prev) => (prev - 90 + 360) % 360);
+  };
+
   const renderSpace = (space: BoardSpace, properties: PropertyAccount[]) => {
     const position = space.position;
     const key = `${space.name}-${position}`;
@@ -210,18 +220,40 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
 
   return (
     <div className="h-full w-full monopoly-board overflow-hidden relative">
+      {/* Rotation Controls */}
+      <div className="absolute top-4 right-4 z-50 flex gap-2">
+        <Button
+          variant="neutral"
+          size="icon"
+          onClick={handleRotateCounterClockwise}
+          className="bg-white/90 hover:bg-white shadow-lg"
+          title="Xoay trái"
+        >
+          <RotateCcw className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="neutral"
+          size="icon"
+          onClick={handleRotateClockwise}
+          className="bg-white/90 hover:bg-white shadow-lg"
+          title="Xoay phải"
+        >
+          <RotateCw className="h-4 w-4" />
+        </Button>
+      </div>
+
       <div className="h-full w-full flex items-center justify-center p-2 sm:p-4">
         <div
           className="relative aspect-square bg-board-bg transition-transform duration-500 ease-in-out border-2
                      w-full h-full max-w-[min(100vh,100vw)] max-h-[min(100vh,100vw)]
                      lg:max-w-none lg:max-h-none lg:h-full lg:w-auto"
-          style={{ transform: `rotate(${0}deg)` }}
+          style={{ transform: `rotate(${boardRotation}deg)` }}
         >
           <div className="absolute inset-0 grid grid-cols-14 grid-rows-14">
             {/* Player Tokens */}
             <PlayerTokensContainer
               players={players}
-              boardRotation={0}
+              boardRotation={boardRotation}
               currentPlayer={currentPlayerState.wallet}
             />
 
@@ -229,6 +261,10 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
             <div
               className="col-start-3 col-end-13 row-start-3 row-end-13 bg-[#c7e9b5] flex flex-col items-center justify-center 
                            p-1 sm:p-3 md:p-4 gap-1 sm:gap-3 md:gap-4"
+              style={{ 
+                transform: `rotate(${-boardRotation}deg)`,
+                // transition: 'transform 500ms ease-in-out'
+              }}
             >
               <div className="flex-shrink-0 transform scale-[0.7] sm:scale-75 md:scale-90 lg:scale-100 mb-6">
                 {wallet && wallet?.delegated ? (
@@ -273,13 +309,13 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
               )} */}
             </div>
 
-            <GoCorner />
+            <GoCorner boardRotation={boardRotation} />
 
-            <JailCorner />
+            <JailCorner boardRotation={boardRotation} />
 
-            <FreeParkingCorner />
+            <FreeParkingCorner boardRotation={boardRotation} />
 
-            <GoToJailCorner />
+            <GoToJailCorner boardRotation={boardRotation} />
 
             {/* Bottom Row */}
             <div className="col-start-3 col-end-13 row-start-13 row-end-15 grid grid-cols-9 grid-rows-1 ">
