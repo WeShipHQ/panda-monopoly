@@ -152,6 +152,7 @@ export const PlayerActions = ({
   handlePayPriorityFeeTax,
   handlePayJailFine,
   handleGetOutOfJailCard,
+  handleEndGame,
   isLoading,
 }: {
   wallet: WalletWithMetadata;
@@ -164,6 +165,7 @@ export const PlayerActions = ({
   handleEndTurn: () => void;
   handlePayJailFine: () => void;
   handleGetOutOfJailCard: () => void;
+  handleEndGame: () => void;
   isLoading: string | null;
 }) => {
   const {
@@ -187,20 +189,44 @@ export const PlayerActions = ({
 
   const isStarted = game.gameStatus === GameStatus.InProgress;
   const isEnded = game?.gameStatus === GameStatus.Finished;
+  const endConditionMet = game?.endConditionMet;
   const isCreator = game.creator === wallet.address;
   const isInGame = wallet.address && game.players.includes(wallet.address);
 
   if (isEnded) {
     return (
-      <>
-      
-      </>
+      <div className="flex flex-col items-center gap-2">
+        <Badge variant="default">Game ended</Badge>
+      </div>
+    );
+  }
+
+  if (endConditionMet) {
+    return (
+      <div className="flex flex-col items-center gap-4">
+        <Button
+          onClick={handleEndGame}
+          size="sm"
+          loading={isLoading === "endGame"}
+        >
+          End game
+        </Button>
+        <Badge variant="neutral">The game can end now.</Badge>
+      </div>
     );
   }
 
   return (
     <div className="flex flex-col items-center">
       <DicesOnly />
+
+      {/* <Button
+        onClick={handleEndGame}
+        size="sm"
+        loading={isLoading === "endGame"}
+      >
+        End game
+      </Button> */}
 
       {!isStarted && (
         <div className="flex items-center gap-2 mt-8 mb-4">
@@ -226,7 +252,11 @@ export const PlayerActions = ({
               onClick={() => handleJoinGame(game.address)}
               loading={isLoading === "joinGame"}
             >
-              Join game
+              {game.entryFee > 0
+                ? `Join game (Pay ${formatPrice(
+                    Number(game.entryFee) / 10 ** 9
+                  )})`
+                : "Join game"}
             </Button>
           )}
 

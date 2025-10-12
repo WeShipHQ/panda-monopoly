@@ -1,7 +1,9 @@
 use crate::error::GameError;
 use crate::state::*;
 use anchor_lang::prelude::*;
+use ephemeral_rollups_sdk::{anchor::commit, ephem::commit_and_undelegate_accounts};
 
+#[commit]
 #[derive(Accounts)]
 pub struct EndGame<'info> {
     #[account(
@@ -30,9 +32,9 @@ pub fn end_game_handler<'c: 'info, 'info>(
         GameError::GameAlreadyEnded
     );
 
-    require!(!game.is_ending, GameError::GameAlreadyEnding);
+    require!(game.end_condition_met, GameError::GameAlreadyEnding);
 
-    game.is_ending = true;
+    // game.end_condition_met = true;
 
     let end_reason: GameEndReason;
     let mut winner_pubkey: Option<Pubkey> = None;
@@ -112,7 +114,7 @@ pub fn end_game_handler<'c: 'info, 'info>(
             best_net_worth
         );
     } else {
-        game.is_ending = false;
+        game.end_condition_met = false;
         return Err(GameError::GameCannotEnd.into());
     }
 
@@ -120,6 +122,7 @@ pub fn end_game_handler<'c: 'info, 'info>(
     game.game_status = GameStatus::Finished;
     game.winner = winner_pubkey;
     game.end_reason = Some(end_reason);
+    game.ended_at = Some(clock.unix_timestamp);
 
     emit!(GameEnded {
         game_id: game.game_id,
@@ -130,11 +133,41 @@ pub fn end_game_handler<'c: 'info, 'info>(
     });
 
     msg!("✅ Game {} has ended successfully", game.game_id);
-    if game.total_prize_pool > 0 {
-        msg!(
-            "💰 Prize pool: ${} - Winner can claim via claim_reward instruction",
-            game.total_prize_pool
-        );
+
+    // undelegate players
+    {
+        let remaining_accounts_iter = &mut ctx.remaining_accounts.iter();
+        let players = &game.players;
+        let mut accounts: Vec<&AccountInfo<'info>> = vec![];
+
+        // delegate player accounts
+        for _player_pubkey in players.iter() {
+            let player_account = remaining_accounts_iter
+                .next()
+                .ok_or(GameError::InvalidAccount)?;
+
+            player_account.exit(&crate::ID)?;
+            accounts.push(player_account);
+            // commit_and_undelegate_accounts(
+            //     &ctx.accounts.caller,
+            //     vec![&player_account.to_account_info()],
+            //     &ctx.accounts.magic_context,
+            //     &ctx.accounts.magic_program,
+            // )?;
+
+            // msg!("Player {} undelegated", player_pubkey);
+        }
+
+        game.exit(&crate::ID)?;
+        let game_acc = &game.to_account_info();
+        accounts.push(game_acc);
+
+        commit_and_undelegate_accounts(
+            &ctx.accounts.caller,
+            accounts,
+            &ctx.accounts.magic_context,
+            &ctx.accounts.magic_program,
+        )?;
     }
 
     Ok(())

@@ -8,7 +8,7 @@ import React, {
   useState,
   ReactNode,
 } from "react";
-import { Address } from "@solana/kit";
+import { Address, isSome } from "@solana/kit";
 import { GameEvent } from "@/lib/sdk/types";
 import { useGameEvents } from "@/hooks/useGameEvents";
 import { useWallet } from "@/hooks/use-wallet";
@@ -22,7 +22,10 @@ import {
   showChanceCardDrawnToast,
   showCommunityChestCardDrawnToast,
   showGoToJailToast,
+  showPropertyPurchasedToast,
+  showGameEndedToast,
 } from "@/lib/toast-utils";
+import { getBoardSpaceData } from "@/lib/board-utils";
 
 type EventHandler<T = any> = (event: T, context: GameEventContext) => void;
 
@@ -83,7 +86,6 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
         const handlers = eventHandlers.get(event.type);
 
         if (handlers) {
-          console.log("CHECK XXXX heheheh", event.type, wallet?.address);
           const context: GameEventContext = {
             gameAddress: gameAddress || null,
             currentPlayerAddress: wallet?.address || null,
@@ -144,13 +146,13 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
     const unsubscribeTaxPaid = registerEventHandler(
       "TaxPaid",
       (data, context) => {
-        if (!context.isCurrentPlayer(data.player)) {
-          showTaxPaidToast({
-            taxType: data.taxType,
-            amount: data.amount,
-            position: data.position,
-          });
-        }
+        showTaxPaidToast({
+          isCurrentPlayer: context.isCurrentPlayer(data.player),
+          playerAddress: data.player.toString(),
+          taxType: data.taxType,
+          amount: data.amount,
+          position: data.position,
+        });
       }
     );
 
@@ -219,13 +221,59 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
     const unsubscribeSpecialSpaceAction = registerEventHandler(
       "SpecialSpaceAction",
       (data, context) => {
-        console.log("CHECK XXXX SpecialSpaceAction", data, context);
         if (data.spaceType === 2) {
           showGoToJailToast({
             playerAddress: data.player,
             isCurrentPlayer: context.isCurrentPlayer(data.player),
           });
         }
+      }
+    );
+
+    const unsubscribeGameEndConditionMet = registerEventHandler(
+      "GameEndConditionMet",
+      (data, context) => {
+        console.log("unsubscribeGameEndConditionMet", data, context);
+      }
+    );
+
+    const unsubscribePropertyPurchased = registerEventHandler(
+      "PropertyPurchased",
+      (data, context) => {
+        const propertyData = getBoardSpaceData(data.propertyPosition);
+        const propertyName =
+          propertyData?.name || `Property ${data.propertyPosition}`;
+
+        const isCurrentPlayer = context.isCurrentPlayer(data.player);
+
+        showPropertyPurchasedToast({
+          propertyName,
+          price: data.price,
+          isCurrentPlayer,
+          playerAddress: isCurrentPlayer ? undefined : data.player,
+        });
+
+        playSound("property-buy");
+      }
+    );
+
+    const unsubscribeGameEnded = registerEventHandler(
+      "GameEnded",
+      (data, context) => {
+        const winner = isSome(data.winner) ? data.winner.value : null;
+
+        showGameEndedToast({
+          winner,
+          reason: data.reason,
+          winnerNetWorth: Number(data.winnerNetWorth),
+          currentPlayerAddress: context.currentPlayerAddress,
+        });
+
+        const isWinner =
+          winner &&
+          context.currentPlayerAddress &&
+          winner === context.currentPlayerAddress;
+        playSound(isWinner ? "money-receive" : "button-click");
       }
     );
 
@@ -237,6 +285,9 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
       unsubscribeChanceCard();
       unsubscribeCommunityChestCard();
       unsubscribeSpecialSpaceAction();
+      unsubscribeGameEndConditionMet();
+      unsubscribePropertyPurchased();
+      unsubscribeGameEnded();
     };
   }, [registerEventHandler]);
 

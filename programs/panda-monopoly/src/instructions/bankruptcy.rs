@@ -33,7 +33,7 @@ pub fn declare_bankruptcy_handler(ctx: Context<DeclareBankruptcy>) -> Result<()>
     let player_pubkey = ctx.accounts.player.key();
     let clock = &ctx.accounts.clock;
 
-    require!(!game.is_ending, GameError::GameAlreadyEnding);
+    require!(!game.end_condition_met, GameError::GameAlreadyEnding);
 
     // Find player index in game.players vector
     let player_index = game
@@ -149,42 +149,45 @@ pub fn declare_bankruptcy_handler(ctx: Context<DeclareBankruptcy>) -> Result<()>
     );
 
     if game.check_bankruptcy_end_condition() {
-        game.is_ending = true;
-        game.game_status = GameStatus::Finished;
+        game.end_condition_met = true;
         game.end_reason = Some(GameEndReason::BankruptcyVictory);
 
+        emit!(GameEndConditionMet {
+            game_id: game.game_id,
+            reason: GameEndReason::TimeLimit,
+            timestamp: clock.unix_timestamp,
+        });
+
         // Find winner
-        if let Some(winner_pubkey) = game.get_active_players().first().copied() {
-            game.winner = Some(winner_pubkey);
+        // if let Some(winner_pubkey) = game.get_active_players().first().copied() {
+        //     game.winner = Some(winner_pubkey);
 
-            msg!(
-                "Game ended by bankruptcy victory. Winner: {}",
-                winner_pubkey
-            );
+        //     msg!(
+        //         "Game ended by bankruptcy victory. Winner: {}",
+        //         winner_pubkey
+        //     );
 
-            emit!(GameEnded {
-                game_id: game.game_id,
-                winner: Some(winner_pubkey),
-                reason: GameEndReason::BankruptcyVictory,
-                winner_net_worth: None, // Can be calculated in claim_reward
-                ended_at: clock.unix_timestamp,
-            });
-        } else {
-            msg!("Game ended with no remaining players");
+        //     emit!(GameEnded {
+        //         game_id: game.game_id,
+        //         winner: Some(winner_pubkey),
+        //         reason: GameEndReason::BankruptcyVictory,
+        //         winner_net_worth: None, // Can be calculated in claim_reward
+        //         ended_at: clock.unix_timestamp,
+        //     });
+        // } else {
+        //     msg!("Game ended with no remaining players");
 
-            emit!(GameEnded {
-                game_id: game.game_id,
-                winner: None,
-                reason: GameEndReason::BankruptcyVictory,
-                winner_net_worth: None,
-                ended_at: clock.unix_timestamp,
-            });
-        }
+        //     emit!(GameEnded {
+        //         game_id: game.game_id,
+        //         winner: None,
+        //         reason: GameEndReason::BankruptcyVictory,
+        //         winner_net_worth: None,
+        //         ended_at: clock.unix_timestamp,
+        //     });
+        // }
     } else {
         // Advance to next turn
-        if game.current_turn >= game.current_players {
-            game.current_turn = 0;
-        }
+        game.advance_turn()?;
     }
 
     emit!(PlayerBankrupt {
@@ -241,7 +244,8 @@ fn reset_player_state_for_bankruptcy(player_state: &mut PlayerState) {
 
 fn remove_player_from_game(game: &mut GameState, player_index: u8) -> Result<()> {
     if (player_index as usize) < game.players.len() {
-        game.players[player_index as usize] = Pubkey::default();
+        // game.players[player_index as usize] = Pubkey::default();
+        game.player_eliminated[player_index as usize] = true;
     }
 
     game.current_players = game
@@ -249,10 +253,16 @@ fn remove_player_from_game(game: &mut GameState, player_index: u8) -> Result<()>
         .checked_sub(1)
         .ok_or(GameError::ArithmeticUnderflow)?;
 
+    game.active_players = game
+        .active_players
+        .checked_sub(1)
+        .ok_or(GameError::ArithmeticUnderflow)?;
+
     // Adjust current_turn if necessary
-    if game.current_turn >= game.current_players && game.current_players > 0 {
-        game.current_turn = 0;
-    }
+    game.advance_turn()?;
+    // if game.current_turn >= game.current_players && game.current_players > 0 {
+    //     game.current_turn = 0;
+    // }
 
     msg!(
         "Player at index {} removed from game. Remaining players: {}",

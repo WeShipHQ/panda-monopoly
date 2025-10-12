@@ -1,4 +1,5 @@
 import { useRpcContext } from "@/components/providers/rpc-provider";
+import { GameStatus } from "@/lib/sdk/generated";
 import { sdk } from "@/lib/sdk/sdk";
 import { GameAccount } from "@/types/schema";
 import useSWR from "swr";
@@ -30,8 +31,24 @@ export function useGames(config: UseGamesConfig = {}): UseGamesResult {
         sdk.getGameAccounts(rpc),
         sdk.getGameAccounts(erRpc),
       ]);
-      console.log(allGames);
-      return allGames.flat().sort((a, b) => {
+
+      const map = new Map<string, GameAccount>();
+
+      for (const game of allGames[0]) {
+        map.set(game.address, game);
+      }
+
+      for (const game of allGames[1]) {
+        const existing = map.get(game.address);
+
+        if (!existing) {
+          map.set(game.address, game);
+        } else if (game.gameStatus === GameStatus.InProgress) {
+          map.set(game.address, game);
+        }
+      }
+
+      return Array.from(map.values()).sort((a, b) => {
         if (a.createdAt > b.createdAt) {
           return -1;
         }
@@ -51,6 +68,8 @@ export function useGames(config: UseGamesConfig = {}): UseGamesResult {
   const refetch = async (): Promise<GameAccount[] | undefined> => {
     return await mutate();
   };
+
+  console.error(error);
 
   return {
     data,

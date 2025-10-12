@@ -14,17 +14,18 @@ export function GameView() {
   const { address: gameAddress } = useParams<{ address: string }>();
   const { setGameAddress, gameState, gameLoading, gameError } =
     useGameContext();
-
+  console.log("check", gameLoading, gameState);
   useEffect(() => {
     if (gameAddress) {
       setGameAddress(address(gameAddress));
     }
   }, [gameAddress]);
 
-  if (gameLoading || !gameAddress || !gameState) {
+  if (gameLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center">
-        <DiceLoading />
+        {/* <DiceLoading /> */}
+        loading...
       </div>
     );
   }

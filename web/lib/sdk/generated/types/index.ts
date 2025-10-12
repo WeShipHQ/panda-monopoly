@@ -12,6 +12,7 @@ export * from './chanceCardDrawn';
 export * from './colorGroup';
 export * from './communityChestCardDrawn';
 export * from './gameCancelled';
+export * from './gameEndConditionMet';
 export * from './gameEnded';
 export * from './gameEndReason';
 export * from './gameStarted';

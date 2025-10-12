@@ -219,3 +219,10 @@ pub struct GameCancelled {
     pub refund_amount: u64,
     pub timestamp: i64,
 }
+
+#[event]
+pub struct GameEndConditionMet {
+    pub game_id: u64,
+    pub reason: GameEndReason,
+    pub timestamp: i64,
+}

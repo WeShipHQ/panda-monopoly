@@ -14,9 +14,10 @@ import { AlertTriangle } from "lucide-react";
 import { useGameContext } from "@/components/providers/game-provider";
 import { useState } from "react";
 import { toast } from "sonner";
+import { GameStatus } from "@/lib/sdk/generated";
 
 export function BankruptcyButton() {
-  const { declareBankruptcy, currentPlayerState, isCurrentTurn } =
+  const { declareBankruptcy, gameState, currentPlayerState, isCurrentTurn } =
     useGameContext();
   const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -36,9 +37,13 @@ export function BankruptcyButton() {
   };
 
   // Only show the button if it's the current player's turn and they're not already bankrupt
-  //   if (!isCurrentTurn || !currentPlayerState || currentPlayerState.isBankrupt) {
-  //     return null;
-  //   }
+  if (
+    !currentPlayerState ||
+    currentPlayerState.isBankrupt ||
+    gameState?.gameStatus !== GameStatus.InProgress
+  ) {
+    return null;
+  }
 
   return (
     <div className="w-full">

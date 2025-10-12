@@ -217,13 +217,14 @@ pub fn send_player_to_jail_and_end_turn(
     player_state.has_rolled_dice = false;
 
     // Advance to next player
-    let next_turn = (game.current_turn + 1) % game.current_players;
-    game.current_turn = next_turn;
+    // let next_turn = (game.current_turn + 1) % game.current_players;
+    // game.current_turn = next_turn;
+    game.advance_turn().unwrap();
     game.turn_started_at = clock.unix_timestamp;
 
     msg!(
         "Player sent to jail and turn ended automatically. Next turn: Player {}",
-        next_turn
+        game.current_turn
     );
 
     emit!(SpecialSpaceAction {
@@ -264,11 +265,12 @@ pub fn force_end_turn(game: &mut GameState, player_state: &mut PlayerState, cloc
     player_state.doubles_count = 0;
 
     // Advance to next player
-    let next_turn = (game.current_turn + 1) % game.current_players;
-    game.current_turn = next_turn;
+    // let next_turn = (game.current_turn + 1) % game.current_players;
+    // game.current_turn = next_turn;
+    game.advance_turn().unwrap();
     game.turn_started_at = clock.unix_timestamp;
 
-    msg!("Turn automatically ended. Next turn: Player {}", next_turn);
+    msg!("Turn automatically ended. Next turn: Player {}", game.current_turn);
 }
 
 pub fn random_two_u8_with_range(bytes: &[u8; 32], min_value: u8, max_value: u8) -> [u8; 2] {

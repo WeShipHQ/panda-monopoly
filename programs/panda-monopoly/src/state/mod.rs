@@ -56,7 +56,6 @@ pub enum ColorGroup {
 
 #[derive(Debug, InitSpace, AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
 pub enum PropertyType {
-    // Property,
     Street,
     Railroad,
     Utility,
@@ -64,8 +63,6 @@ pub enum PropertyType {
     Chance,
     CommunityChest,
     Tax,
-    // Beach,
-    // Festival,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq)]
@@ -109,6 +106,10 @@ pub struct GameState {
     pub current_turn: u8,    // 1 byte - whose turn (player index)
     #[max_len(4)]
     pub players: Vec<Pubkey>, // 32 * 8 = 256 bytes max
+    #[max_len(4)]
+    pub player_eliminated: Vec<bool>, // Parallel array tracking elimination
+    pub total_players: u8,   // Total who joined (never decreases)
+    pub active_players: u8,  // Current non-bankrupt count
     pub game_status: GameStatus, // 1 byte - current game status
     pub bank_balance: u64,   // 8 bytes - bank's money
     pub free_parking_pool: u64, // 8 bytes - parking pool
@@ -122,8 +123,9 @@ pub struct GameState {
     pub token_vault: Option<Pubkey>, // 33 bytes - vault holding entry fees
     pub total_prize_pool: u64, // 8 bytes - total collected fees
 
-    pub is_ending: bool,     // 1 byte - game ending status
-    pub prize_claimed: bool, // Track if reward claimed
+    // pub is_ending: bool,     // 1 byte - game ending status
+    pub prize_claimed: bool,     // Track if reward claimed
+    pub end_condition_met: bool, // Track if end condition met
 
     pub end_reason: Option<GameEndReason>, // How game ended
 
@@ -133,10 +135,12 @@ pub struct GameState {
 
     pub properties: [PropertyInfo; 40], // Fixed array: 40 × 36 bytes = 1,440 bytes
 
-    pub created_at: i64,            // 8 bytes - game creation timestamp
+    pub created_at: i64, // 8 bytes - game creation timestamp
+    pub started_at: Option<i64>,
+    pub ended_at: Option<i64>,
     pub game_end_time: Option<i64>, // 8 bytes - game end time
     pub turn_started_at: i64,       // 8 bytes - when current turn started
-    pub time_limit: i64,    // 9 bytes - optional time limit
+    pub time_limit: Option<i64>,    // 9 bytes - optional time limit
 }
 
 impl GameState {
@@ -332,9 +336,9 @@ impl GameState {
     /// Check if game should end due to bankruptcy (only 1 player remaining)
     pub fn check_bankruptcy_end_condition(&self) -> bool {
         let active_count = self
-            .players
+            .player_eliminated
             .iter()
-            .filter(|&&p| p != Pubkey::default())
+            .filter(|&&eliminated| !eliminated)
             .count();
 
         active_count <= 1
@@ -353,9 +357,30 @@ impl GameState {
     pub fn get_active_players(&self) -> Vec<Pubkey> {
         self.players
             .iter()
-            .filter(|&&p| p != Pubkey::default())
+            .zip(self.player_eliminated.iter())
+            .filter_map(|(player, &eliminated)| if !eliminated { Some(player) } else { None })
             .copied()
             .collect()
+    }
+
+    pub fn advance_turn(&mut self) -> Result<()> {
+        let mut attempts = 0;
+
+        loop {
+            self.current_turn = (self.current_turn + 1) % self.players.len() as u8;
+
+            // Skip eliminated players
+            if !self.player_eliminated[self.current_turn as usize] {
+                break;
+            }
+
+            attempts += 1;
+            if attempts >= self.players.len() {
+                return Err(GameError::NoActivePlayers.into());
+            }
+        }
+
+        Ok(())
     }
 }
 

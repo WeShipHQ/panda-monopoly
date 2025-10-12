@@ -30,6 +30,7 @@ import {
   TradesCleanedUp,
   PlayerBankrupt,
   TaxPaid,
+  GameEndConditionMet,
 } from "./generated";
 
 export interface CreatePlatformParams {
@@ -129,7 +130,6 @@ export interface PayRentParams {
 
 // Building-related instruction parameters
 export interface BuildHouseParams {
-  rpc: Rpc<GetAccountInfoApi>;
   player: TransactionSigner;
   gameAddress: Address;
   position: number;
@@ -244,6 +244,18 @@ export interface DeclareBankruptcyParams {
   propertiesOwned: number[];
 }
 
+export interface EndGameParams {
+  caller: TransactionSigner;
+  gameAddress: Address;
+  players: Address[];
+}
+
+export interface ClaimRewardParams {
+  // rpc: TransactionSigner;
+  winner: TransactionSigner;
+  gameAddress: Address;
+}
+
 // Complete GameEvent union type with all events from events.rs
 export type GameEvent =
   | {
@@ -329,4 +341,8 @@ export type GameEvent =
   | {
       type: "TaxPaid";
       data: TaxPaid;
+    }
+  | {
+      type: "GameEndConditionMet";
+      data: GameEndConditionMet;
     };

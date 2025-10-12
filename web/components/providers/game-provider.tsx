@@ -40,7 +40,6 @@ import {
   showRentPaymentFallbackToast,
   showRentPaymentErrorToast,
 } from "@/lib/toast-utils";
-import { KeyedMutator } from "swr";
 import { USE_VRF } from "@/configs/constants";
 
 interface GameContextType {
@@ -80,6 +79,8 @@ interface GameContextType {
   payMevTax: () => Promise<void>;
   payPriorityFeeTax: () => Promise<void>;
   declareBankruptcy: () => Promise<void>;
+  endGame: () => Promise<void>;
+  claimReward: () => Promise<void>;
 
   // Trade actions
   createTrade: (
@@ -130,18 +131,6 @@ interface GameContextType {
   // demo
   demoDices: number[] | null;
   setDemoDices: (dices: number[] | null) => void;
-  mutate: KeyedMutator<
-    | {
-        gameData: null;
-        players: never[];
-        properties: never[];
-      }
-    | {
-        gameData: GameAccount;
-        players: PlayerAccount[];
-        properties: PropertyAccount[];
-      }
-  >;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -221,7 +210,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     isLoading: gameLoading,
     error: gameError,
     refetch,
-    mutate,
   } = useGameState(gameAddress, {
     onCardDrawEvent: addCardDrawEvent,
   });
@@ -442,7 +430,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   }, [erRpc, gameAddress, gameState, wallet]);
 
   const joinGame = useCallback(async (): Promise<void> => {
-    if (!gameAddress || !wallet?.address || !wallet.delegated) {
+    if (!gameAddress || !wallet?.address || !wallet.delegated || !gameState) {
       throw new Error("Game address or player signer not available");
     }
 
@@ -464,7 +452,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.error("Error joining game:", error);
       throw error;
     }
-  }, [rpc, gameAddress, wallet]);
+  }, [rpc, gameAddress, wallet, gameState]);
 
   const rollDice = useCallback(
     async (diceRoll?: number[]): Promise<void> => {
@@ -845,7 +833,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
       try {
         const instruction = await sdk.buildHouseIxV2({
-          rpc,
           gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
           position,
@@ -889,8 +876,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       try {
-        const instruction = await sdk.buildHouseIxV2({
-          rpc,
+        const instruction = await sdk.buildHotelIxV2({
           gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
           position,
@@ -1125,7 +1111,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         console.log("[acceptTrade] tx", signature);
 
         // Refresh game state to get updated trades
-        await refetch();
 
         toast.success("Trade accepted successfully!");
       } catch (error) {
@@ -1134,7 +1119,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [gameAddress, wallet, erRpc, refetch]
+    [gameAddress, wallet, erRpc]
   );
 
   const rejectTrade = useCallback(
@@ -1162,9 +1147,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[rejectTrade] tx", signature);
 
-        // Refresh game state to get updated trades
-        await refetch();
-
         toast.success("Trade rejected successfully!");
       } catch (error) {
         console.error("Error rejecting trade:", error);
@@ -1172,7 +1154,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [gameAddress, wallet, erRpc, refetch]
+    [gameAddress, wallet, erRpc]
   );
 
   const cancelTrade = useCallback(
@@ -1199,9 +1181,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[cancelTrade] tx", signature);
 
-        // Refresh game state to get updated trades
-        await refetch();
-
         toast.success("Trade cancelled successfully!");
       } catch (error) {
         console.error("Error canceling trade:", error);
@@ -1209,7 +1188,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [gameAddress, wallet, erRpc, refetch]
+    [gameAddress, wallet, erRpc]
   );
 
   const declareBankruptcy = useCallback(async (): Promise<void> => {
@@ -1245,7 +1224,64 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
   }, [gameAddress, currentPlayerState, wallet]);
 
-  // Reset the modal shown flags when player state changes or when cards are no longer needed
+  const endGame = useCallback(async (): Promise<void> => {
+    if (
+      !gameAddress ||
+      !gameState ||
+      !currentPlayerState ||
+      !wallet?.address ||
+      !wallet.delegated
+    ) {
+      throw new Error("Game address or player signer not available");
+    }
+
+    try {
+      const instruction = await sdk.endGameIx({
+        gameAddress,
+        caller: { address: address(wallet.address) } as TransactionSigner,
+        players: gameState.players.map(address),
+      });
+
+      const signature = await buildAndSendTransactionWithPrivy(
+        erRpc,
+        [instruction],
+        wallet,
+        [],
+        "confirmed",
+        true
+      );
+
+      console.log("[endGame] tx", signature);
+    } catch (error) {
+      console.error("Error ending game:", error);
+      throw error;
+    }
+  }, [gameAddress, currentPlayerState, gameState, wallet]);
+
+  const claimReward = useCallback(async (): Promise<void> => {
+    if (!gameAddress || !wallet?.address || !wallet.delegated) {
+      throw new Error("Game address or player signer not available");
+    }
+
+    try {
+      const instruction = await sdk.claimRewardIx({
+        gameAddress,
+        winner: { address: address(wallet.address) } as TransactionSigner,
+      });
+
+      const signature = await buildAndSendTransactionWithPrivy(
+        rpc,
+        [instruction],
+        wallet
+      );
+
+      console.log("[claimReward] tx", signature);
+    } catch (error) {
+      console.error("Error claiming reward:", error);
+      throw error;
+    }
+  }, [gameAddress, currentPlayerState, wallet]);
+
   useEffect(() => {
     if (currentPlayerState) {
       if (!currentPlayerState.needsChanceCard) {
@@ -1577,6 +1613,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     payMevTax,
     payPriorityFeeTax,
     declareBankruptcy,
+    endGame,
+    claimReward,
 
     // Trade actions
     createTrade,
@@ -1623,7 +1661,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     // demo
     demoDices,
     setDemoDices,
-    mutate,
+    // mutate,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
