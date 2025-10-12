@@ -21,10 +21,11 @@ export function GameView() {
     }
   }, [gameAddress]);
 
-  if (gameLoading || !gameAddress || !gameState) {
+  if (gameLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center">
-        <DiceLoading />
+        {/* <DiceLoading /> */}
+        loading...
       </div>
     );
   }
