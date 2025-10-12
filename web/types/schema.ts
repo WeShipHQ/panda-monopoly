@@ -28,6 +28,9 @@ export interface GameAccount {
   currentPlayers: number;
   currentTurn: number;
   players: string[];
+  playerEliminated: boolean[];
+  totalPlayers: number;
+  activePlayers: number;
   gameStatus: GameStatus;
   bankBalance: string;
   freeParkingPool: string;
@@ -40,7 +43,7 @@ export interface GameAccount {
   tokenVault: string | null;
   totalPrizePool: number;
 
-  isEnding: boolean;
+  endConditionMet: boolean;
   prizeClaimed: boolean;
 
   endReason: GameEndReason | null;
@@ -52,6 +55,8 @@ export interface GameAccount {
 
   // times
   createdAt: number;
+  startedAt: number | null;
+  endedAt: number | null;
   gameEndTime: number | null;
   timeLimit: number | null;
   turnStartedAt: number;
@@ -163,6 +168,9 @@ export function mapGameStateToAccount(
     currentPlayers: gameState.currentPlayers,
     currentTurn: gameState.currentTurn,
     players: gameState.players.map(addressToString),
+    playerEliminated: gameState.playerEliminated,
+    totalPlayers: gameState.totalPlayers,
+    activePlayers: gameState.activePlayers,
     gameStatus: gameState.gameStatus,
     bankBalance: bigintToString(gameState.bankBalance),
     freeParkingPool: bigintToString(gameState.freeParkingPool),
@@ -177,7 +185,7 @@ export function mapGameStateToAccount(
     tokenVault: optionToNullable(gameState.tokenVault),
     totalPrizePool: bigintToNumber(gameState.totalPrizePool),
 
-    isEnding: gameState.isEnding,
+    endConditionMet: gameState.endConditionMet,
     prizeClaimed: gameState.prizeClaimed,
 
     endReason: optionToNullable(gameState.endReason),
@@ -194,6 +202,12 @@ export function mapGameStateToAccount(
 
     // time
     createdAt: bigintToNumber(gameState.createdAt),
+    startedAt: optionToNullable(gameState.startedAt)
+      ? bigintToNumber(optionToNullable(gameState.startedAt)!)
+      : null,
+    endedAt: optionToNullable(gameState.endedAt)
+      ? bigintToNumber(optionToNullable(gameState.endedAt)!)
+      : null,
     turnStartedAt: bigintToNumber(gameState.turnStartedAt),
     timeLimit: Number(gameState.timeLimit),
     gameEndTime: optionToNullable(gameState.gameEndTime)

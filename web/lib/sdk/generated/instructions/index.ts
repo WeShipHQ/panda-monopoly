@@ -40,6 +40,7 @@ export * from './payMevTaxHandler';
 export * from './payPriorityFeeTaxHandler';
 export * from './payRent';
 export * from './payRentV2';
+export * from './processUndelegation';
 export * from './rejectTrade';
 export * from './resetGameHandler';
 export * from './rollDice';

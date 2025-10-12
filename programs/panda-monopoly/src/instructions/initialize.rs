@@ -198,13 +198,16 @@ pub fn initialize_game_handler(
     game.current_players = 0; // Initial player count
     game.max_players = MAX_PLAYERS;
     game.players = vec![];
+    game.player_eliminated = vec![];
+    game.total_players = 0;
+    game.active_players = 0;
     game.houses_remaining = TOTAL_HOUSES;
     game.hotels_remaining = TOTAL_HOTELS;
     game.created_at = clock.unix_timestamp;
     game.bank_balance = 1_000_000; // Initial bank balance
-    game.time_limit = time_limit_seconds.unwrap_or(60 * 60);
+    game.time_limit = time_limit_seconds;
     game.game_end_time = None;
-    game.is_ending = false;
+    game.end_condition_met = false;
     game.winner = None;
     game.turn_started_at = clock.unix_timestamp;
     game.active_trades = vec![];
@@ -218,6 +221,7 @@ pub fn initialize_game_handler(
 
     // Add player to game
     game.players.push(player_state.wallet);
+    game.player_eliminated.push(false);
     game.current_players = game.players.len() as u8;
 
     msg!(
@@ -305,7 +309,6 @@ pub fn join_game_handler(ctx: Context<JoinGame>) -> Result<()> {
     msg!("Join game: {}", game.key());
     msg!("Player: {}", player_pubkey);
 
-    // Check if player already exists in game
     for existing_player in &game.players {
         msg!("Existing player: {}", existing_player);
         if *existing_player == player_pubkey {
@@ -313,7 +316,6 @@ pub fn join_game_handler(ctx: Context<JoinGame>) -> Result<()> {
         }
     }
 
-    // Handle entry fee payment if game has entry fee
     if game.entry_fee > 0 {
         // require!(
         //     ctx.accounts.game_authority.is_some()
@@ -324,13 +326,11 @@ pub fn join_game_handler(ctx: Context<JoinGame>) -> Result<()> {
         //     GameError::MissingTokenAccounts
         // );
 
-        // let token_mint = ctx.accounts.token_mint.as_ref().unwrap();
         let token_mint = &ctx.accounts.token_mint;
         let player_token_account = &ctx.accounts.player_token_account;
         let token_vault = &ctx.accounts.token_vault;
         let game_authority = &ctx.accounts.game_authority;
 
-        // Validate game authority PDA
         let (expected_game_authority, _) =
             Pubkey::find_program_address(&[GAME_AUTHORITY_SEED], ctx.program_id);
 
@@ -339,7 +339,6 @@ pub fn join_game_handler(ctx: Context<JoinGame>) -> Result<()> {
             GameError::InvalidGameAuthority
         );
 
-        // Validate token accounts
         require!(
             player_token_account.mint == token_mint.key(),
             GameError::InvalidTokenAccount
@@ -358,7 +357,6 @@ pub fn join_game_handler(ctx: Context<JoinGame>) -> Result<()> {
             GameError::InvalidTokenAccount
         );
 
-        // Validate that the token accounts match the game's configuration
         require!(
             Some(token_mint.key()) == game.token_mint,
             GameError::InvalidTokenAccount
@@ -368,7 +366,6 @@ pub fn join_game_handler(ctx: Context<JoinGame>) -> Result<()> {
             GameError::InvalidTokenAccount
         );
 
-        // Transfer entry fee from player to vault
         let transfer_accounts = TransferChecked {
             from: player_token_account.to_account_info(),
             mint: token_mint.to_account_info(),
@@ -387,7 +384,6 @@ pub fn join_game_handler(ctx: Context<JoinGame>) -> Result<()> {
 
         transfer_checked(transfer_ctx, game.entry_fee, token_mint.decimals)?;
 
-        // Update total prize pool
         game.total_prize_pool = game
             .total_prize_pool
             .checked_add(game.entry_fee)
@@ -417,7 +413,10 @@ pub fn join_game_handler(ctx: Context<JoinGame>) -> Result<()> {
 
     // Add player to game
     game.players.push(player_pubkey);
+    game.player_eliminated.push(false);
     game.current_players = game.players.len() as u8;
+    game.total_players = game.players.len() as u8;
+    game.active_players = game.current_players;
 
     msg!(
         "Player {} joined game. Total players: {}",
@@ -472,27 +471,13 @@ pub fn start_game_handler<'c: 'info, 'info>(
         game.game_status = GameStatus::InProgress;
         game.current_turn = 0; // First player starts
         game.turn_started_at = clock.unix_timestamp;
+        game.started_at = Some(clock.unix_timestamp);
 
-        // if let Some(limit) = game.time_limit {
-
-        // } else {
-        //     game.game_end_time = None;
-        //     msg!("Game has no time limit");
-        // }
-
-        game.game_end_time = Some(
-            clock
-                .unix_timestamp
-                .checked_add(game.time_limit)
-                .ok_or(GameError::ArithmeticOverflow)?,
-        );
-        msg!(
-            "Game will end at timestamp: {}",
-            game.game_end_time.unwrap()
-        );
-
-        msg!("Game started! Player {} goes first.", game.players[0]);
-        msg!("Total players in game: {}", game.current_players);
+        if let Some(limit) = game.time_limit {
+            game.game_end_time = Some(clock.unix_timestamp + limit);
+        } else {
+            game.game_end_time = None;
+        }
     }
 
     {

@@ -48,6 +48,12 @@ export type EndGameInstruction<
   TAccountClock extends
     | string
     | AccountMeta<string> = 'SysvarC1ock11111111111111111111111111111111',
+  TAccountMagicProgram extends
+    | string
+    | AccountMeta<string> = 'Magic11111111111111111111111111111111111111',
+  TAccountMagicContext extends
+    | string
+    | AccountMeta<string> = 'MagicContext1111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -63,6 +69,12 @@ export type EndGameInstruction<
       TAccountClock extends string
         ? ReadonlyAccount<TAccountClock>
         : TAccountClock,
+      TAccountMagicProgram extends string
+        ? ReadonlyAccount<TAccountMagicProgram>
+        : TAccountMagicProgram,
+      TAccountMagicContext extends string
+        ? WritableAccount<TAccountMagicContext>
+        : TAccountMagicContext,
       ...TRemainingAccounts,
     ]
   >;
@@ -98,25 +110,39 @@ export type EndGameInput<
   TAccountGame extends string = string,
   TAccountCaller extends string = string,
   TAccountClock extends string = string,
+  TAccountMagicProgram extends string = string,
+  TAccountMagicContext extends string = string,
 > = {
   game: Address<TAccountGame>;
   caller: TransactionSigner<TAccountCaller>;
   clock?: Address<TAccountClock>;
+  magicProgram?: Address<TAccountMagicProgram>;
+  magicContext?: Address<TAccountMagicContext>;
 };
 
 export function getEndGameInstruction<
   TAccountGame extends string,
   TAccountCaller extends string,
   TAccountClock extends string,
+  TAccountMagicProgram extends string,
+  TAccountMagicContext extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: EndGameInput<TAccountGame, TAccountCaller, TAccountClock>,
+  input: EndGameInput<
+    TAccountGame,
+    TAccountCaller,
+    TAccountClock,
+    TAccountMagicProgram,
+    TAccountMagicContext
+  >,
   config?: { programAddress?: TProgramAddress }
 ): EndGameInstruction<
   TProgramAddress,
   TAccountGame,
   TAccountCaller,
-  TAccountClock
+  TAccountClock,
+  TAccountMagicProgram,
+  TAccountMagicContext
 > {
   // Program address.
   const programAddress =
@@ -127,6 +153,8 @@ export function getEndGameInstruction<
     game: { value: input.game ?? null, isWritable: true },
     caller: { value: input.caller ?? null, isWritable: false },
     clock: { value: input.clock ?? null, isWritable: false },
+    magicProgram: { value: input.magicProgram ?? null, isWritable: false },
+    magicContext: { value: input.magicContext ?? null, isWritable: true },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -138,6 +166,14 @@ export function getEndGameInstruction<
     accounts.clock.value =
       'SysvarC1ock11111111111111111111111111111111' as Address<'SysvarC1ock11111111111111111111111111111111'>;
   }
+  if (!accounts.magicProgram.value) {
+    accounts.magicProgram.value =
+      'Magic11111111111111111111111111111111111111' as Address<'Magic11111111111111111111111111111111111111'>;
+  }
+  if (!accounts.magicContext.value) {
+    accounts.magicContext.value =
+      'MagicContext1111111111111111111111111111111' as Address<'MagicContext1111111111111111111111111111111'>;
+  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -145,6 +181,8 @@ export function getEndGameInstruction<
       getAccountMeta(accounts.game),
       getAccountMeta(accounts.caller),
       getAccountMeta(accounts.clock),
+      getAccountMeta(accounts.magicProgram),
+      getAccountMeta(accounts.magicContext),
     ],
     data: getEndGameInstructionDataEncoder().encode({}),
     programAddress,
@@ -152,7 +190,9 @@ export function getEndGameInstruction<
     TProgramAddress,
     TAccountGame,
     TAccountCaller,
-    TAccountClock
+    TAccountClock,
+    TAccountMagicProgram,
+    TAccountMagicContext
   >);
 }
 
@@ -165,6 +205,8 @@ export type ParsedEndGameInstruction<
     game: TAccountMetas[0];
     caller: TAccountMetas[1];
     clock: TAccountMetas[2];
+    magicProgram: TAccountMetas[3];
+    magicContext: TAccountMetas[4];
   };
   data: EndGameInstructionData;
 };
@@ -177,7 +219,7 @@ export function parseEndGameInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedEndGameInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 3) {
+  if (instruction.accounts.length < 5) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -193,6 +235,8 @@ export function parseEndGameInstruction<
       game: getNextAccount(),
       caller: getNextAccount(),
       clock: getNextAccount(),
+      magicProgram: getNextAccount(),
+      magicContext: getNextAccount(),
     },
     data: getEndGameInstructionDataDecoder().decode(instruction.data),
   };

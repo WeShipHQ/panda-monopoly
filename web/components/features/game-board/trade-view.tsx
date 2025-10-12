@@ -11,7 +11,7 @@ import { ArrowRight, Plus, Check, X } from "lucide-react";
 import { formatAddress } from "@/lib/utils";
 import { useGameContext } from "@/components/providers/game-provider";
 import { CreateTradeDialog } from "./trade-modal";
-import { TradeStatus } from "@/lib/sdk/generated";
+import { GameStatus, TradeStatus } from "@/lib/sdk/generated";
 import { getTypedSpaceData } from "@/lib/board-utils";
 import { colorMap, ColorGroup } from "@/configs/board-data";
 import type { TradeInfo } from "@/types/schema";
@@ -107,7 +107,12 @@ export function TradeView() {
     <Card className="bg-white">
       <CardHeader className="flex items-center justify-between">
         <CardTitle>Trades</CardTitle>
-        <Button size="sm" className="h-8 px-3" onClick={handleCreateTrade}>
+        <Button
+          size="sm"
+          className="h-8 px-3"
+          onClick={handleCreateTrade}
+          disabled={gameState?.gameStatus !== GameStatus.InProgress}
+        >
           <Plus className="w-4 h-4 mr-1" />
           Create
         </Button>

@@ -62,7 +62,6 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
     buildHotel,
     sellBuilding,
     properties,
-    players,
     currentPlayerState,
   } = useGameContext();
 
@@ -113,7 +112,9 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
     try {
       await buildHouse(propertyData.position);
       toast("House built successfully! 🏠", {
-        description: `Built a house on ${propertyData.name} for ${formatPrice(houseCost)}`,
+        description: `Built a house on ${propertyData.name} for ${formatPrice(
+          houseCost
+        )}`,
       });
     } catch (error) {
       console.error("Error building house:", error);
@@ -132,7 +133,9 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
     try {
       await buildHotel(propertyData.position);
       toast("Hotel built successfully! 🏨", {
-        description: `Built a hotel on ${propertyData.name} for ${formatPrice(hotelCost)}`,
+        description: `Built a hotel on ${propertyData.name} for ${formatPrice(
+          hotelCost
+        )}`,
       });
     } catch (error) {
       console.error("Error building hotel:", error);
@@ -153,18 +156,28 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
         `Selling ${buildingType} at position ${propertyData.position}`
       );
       await sellBuilding(propertyData.position, buildingType);
-      
-      const buildingName = buildingType === BuildingType.House ? "house" : "hotel";
-      const sellPrice = buildingType === BuildingType.House 
-        ? Math.floor(houseCost / 2) 
-        : Math.floor(hotelCost / 2);
-      
-      toast(`${buildingName.charAt(0).toUpperCase() + buildingName.slice(1)} sold successfully! 💰`, {
-        description: `Sold ${buildingName} on ${propertyData.name} for ${formatPrice(sellPrice)}`,
-      });
+
+      const buildingName =
+        buildingType === BuildingType.House ? "house" : "hotel";
+      const sellPrice =
+        buildingType === BuildingType.House
+          ? Math.floor(houseCost / 2)
+          : Math.floor(hotelCost / 2);
+
+      toast(
+        `${
+          buildingName.charAt(0).toUpperCase() + buildingName.slice(1)
+        } sold successfully! 💰`,
+        {
+          description: `Sold ${buildingName} on ${
+            propertyData.name
+          } for ${formatPrice(sellPrice)}`,
+        }
+      );
     } catch (error) {
       console.error(`Error selling ${buildingType}:`, error);
-      const buildingName = buildingType === BuildingType.House ? "house" : "hotel";
+      const buildingName =
+        buildingType === BuildingType.House ? "house" : "hotel";
       toast(`Failed to sell ${buildingName}`, {
         description: "Please try again later",
       });

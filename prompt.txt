@@ -101,7 +101,7 @@ use anchor_lang::prelude::*;
 mod events;
 pub use events::*;
 
-use crate::{error::GameError, get_color_group_properties_enum, STARTING_MONEY};
+use crate::{error::GameError, get_color_group_properties_enum, get_property_data, STARTING_MONEY};
 
 #[account]
 #[derive(InitSpace, Debug)]
@@ -172,6 +172,13 @@ pub enum BuildingType {
     Hotel,
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq, InitSpace)]
+pub enum GameEndReason {
+    BankruptcyVictory, // Last player standing
+    TimeLimit,         // Time ran out
+    Manual,            // Manual forfeit/end
+}
+
 // New simplified trade structure for storing in GameState vector
 #[derive(Debug, InitSpace, AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct TradeInfo {
@@ -200,15 +207,12 @@ pub struct GameState {
     pub current_turn: u8,    // 1 byte - whose turn (player index)
     #[max_len(4)]
     pub players: Vec<Pubkey>, // 32 * 8 = 256 bytes max
-    pub created_at: i64,     // 8 bytes - game creation timestamp
     pub game_status: GameStatus, // 1 byte - current game status
     pub bank_balance: u64,   // 8 bytes - bank's money
     pub free_parking_pool: u64, // 8 bytes - parking pool
     pub houses_remaining: u8, // 1 byte - houses left in bank (32 total)
     pub hotels_remaining: u8, // 1 byte - hotels left in bank (12 total)
-    pub time_limit: Option<i64>, // 9 bytes - optional time limit
     pub winner: Option<Pubkey>, // 33 bytes - game winner
-    pub turn_started_at: i64, // 8 bytes - when current turn started
 
     // Entry fee fields
     pub entry_fee: u64, // 8 bytes - entry fee amount (0 for free games)
@@ -216,11 +220,21 @@ pub struct GameState {
     pub token_vault: Option<Pubkey>, // 33 bytes - vault holding entry fees
     pub total_prize_pool: u64, // 8 bytes - total collected fees
 
+    pub is_ending: bool,     // 1 byte - game ending status
+    pub prize_claimed: bool, // Track if reward claimed
+
+    pub end_reason: Option<GameEndReason>, // How game ended
+
     #[max_len(20)]
     pub active_trades: Vec<TradeInfo>, // Vector of active trades
     pub next_trade_id: u8, // Next trade ID to assign
 
     pub properties: [PropertyInfo; 40], // Fixed array: 40 × 36 bytes = 1,440 bytes
+
+    pub created_at: i64,            // 8 bytes - game creation timestamp
+    pub game_end_time: Option<i64>, // 8 bytes - game end time
+    pub turn_started_at: i64,       // 8 bytes - when current turn started
+    pub time_limit: i64,    // 9 bytes - optional time limit
 }
 
 impl GameState {
@@ -362,6 +376,85 @@ impl GameState {
 
         true
     }
+
+    /// Calculate net worth for a specific player
+    pub fn calculate_player_net_worth(&self, player: &Pubkey) -> Result<u64> {
+        let mut total_value = 0u64;
+
+        // Iterate through properties owned by this player
+        for (position, property) in self.properties.iter().enumerate() {
+            if property.owner.as_ref() == Some(player) {
+                let property_data = get_property_data(position as u8)?;
+
+                // Add property value (use mortgage value as liquidation value)
+                if property.is_mortgaged {
+                    // Mortgaged property value = mortgage_value * 0.9 (accounting for 10% unmortgage fee)
+                    let mortgaged_value = (property_data.mortgage_value * 9) / 10;
+                    total_value = total_value
+                        .checked_add(mortgaged_value)
+                        .ok_or(GameError::ArithmeticOverflow)?;
+                } else {
+                    // Unmortgaged property = full mortgage value
+                    total_value = total_value
+                        .checked_add(property_data.mortgage_value)
+                        .ok_or(GameError::ArithmeticOverflow)?;
+                }
+
+                // Add building value (houses and hotels at construction cost)
+                if property.houses > 0 {
+                    let houses_value = property_data
+                        .house_cost
+                        .checked_mul(property.houses as u64)
+                        .ok_or(GameError::ArithmeticOverflow)?;
+                    total_value = total_value
+                        .checked_add(houses_value)
+                        .ok_or(GameError::ArithmeticOverflow)?;
+                }
+
+                if property.has_hotel {
+                    // Hotel = 5 houses worth
+                    let hotel_value = property_data
+                        .house_cost
+                        .checked_mul(5)
+                        .ok_or(GameError::ArithmeticOverflow)?;
+                    total_value = total_value
+                        .checked_add(hotel_value)
+                        .ok_or(GameError::ArithmeticOverflow)?;
+                }
+            }
+        }
+
+        Ok(total_value)
+    }
+
+    /// Check if game should end due to bankruptcy (only 1 player remaining)
+    pub fn check_bankruptcy_end_condition(&self) -> bool {
+        let active_count = self
+            .players
+            .iter()
+            .filter(|&&p| p != Pubkey::default())
+            .count();
+
+        active_count <= 1
+    }
+
+    /// Check if game should end due to time limit
+    pub fn check_time_end_condition(&self, current_time: i64) -> bool {
+        if let Some(end_time) = self.game_end_time {
+            current_time >= end_time
+        } else {
+            false
+        }
+    }
+
+    /// Get all active players (non-default, non-bankrupt)
+    pub fn get_active_players(&self) -> Vec<Pubkey> {
+        self.players
+            .iter()
+            .filter(|&&p| p != Pubkey::default())
+            .copied()
+            .collect()
+    }
 }
 
 #[account]
@@ -375,7 +468,7 @@ pub struct PlayerState {
     pub jail_turns: u8,    // 1 byte - turns in jail
     pub doubles_count: u8, // 1 byte - consecutive doubles
     pub is_bankrupt: bool, // 1 byte - bankruptcy status
-    #[max_len(50)]
+    #[max_len(40)]
     pub properties_owned: Vec<u8>, // variable - owned property positions
     pub get_out_of_jail_cards: u8, // 1 byte - jail cards owned
     pub net_worth: u64,    // 8 bytes - total asset value
@@ -430,6 +523,7 @@ impl PlayerState {
     }
 }
 
+
 impl PropertyState {}
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, InitSpace, Clone, PartialEq, Eq)]
@@ -464,6 +558,19 @@ pub struct TradeState {
 
 impl TradeState {}
 
+#[account]
+#[derive(Debug, InitSpace)]
+pub struct AuctionState {
+    pub game: Pubkey,
+    pub property_position: u8,
+    pub current_bid: u64,
+    pub highest_bidder: Option<Pubkey>,
+    pub started_at: i64,
+    pub ends_at: i64,
+    pub is_active: bool,
+    pub bump: u8,
+}
+
 // ----- new struct
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, InitSpace, PartialEq, Eq)]
 pub struct PropertyInfo {
@@ -489,6 +596,7 @@ impl PropertyInfo {
         vec![PropertyInfo::default(); 40]
     }
 }
+
 
 // initialize.rs
 use crate::constants::*;
@@ -592,7 +700,11 @@ pub struct InitializeGame<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
-pub fn initialize_game_handler(ctx: Context<InitializeGame>, entry_fee: u64) -> Result<()> {
+pub fn initialize_game_handler(
+    ctx: Context<InitializeGame>,
+    entry_fee: u64,
+    time_limit_seconds: Option<i64>,
+) -> Result<()> {
     let config = &mut ctx.accounts.config;
     let game = &mut ctx.accounts.game;
     let player_state = &mut ctx.accounts.player_state;
@@ -691,7 +803,9 @@ pub fn initialize_game_handler(ctx: Context<InitializeGame>, entry_fee: u64) -> 
     game.hotels_remaining = TOTAL_HOTELS;
     game.created_at = clock.unix_timestamp;
     game.bank_balance = 1_000_000; // Initial bank balance
-    game.time_limit = None;
+    game.time_limit = time_limit_seconds.unwrap_or(60 * 60);
+    game.game_end_time = None;
+    game.is_ending = false;
     game.winner = None;
     game.turn_started_at = clock.unix_timestamp;
     game.active_trades = vec![];
@@ -960,6 +1074,24 @@ pub fn start_game_handler<'c: 'info, 'info>(
         game.current_turn = 0; // First player starts
         game.turn_started_at = clock.unix_timestamp;
 
+        // if let Some(limit) = game.time_limit {
+
+        // } else {
+        //     game.game_end_time = None;
+        //     msg!("Game has no time limit");
+        // }
+
+        game.game_end_time = Some(
+            clock
+                .unix_timestamp
+                .checked_add(game.time_limit)
+                .ok_or(GameError::ArithmeticOverflow)?,
+        );
+        msg!(
+            "Game will end at timestamp: {}",
+            game.game_end_time.unwrap()
+        );
+
         msg!("Game started! Player {} goes first.", game.players[0]);
         msg!("Total players in game: {}", game.current_players);
     }
@@ -1048,6 +1180,7 @@ pub fn start_game_handler<'c: 'info, 'info>(
     Ok(())
 }
 
+
 // end_game.rs
 use crate::error::GameError;
 use crate::state::*;
@@ -1057,84 +1190,156 @@ use anchor_lang::prelude::*;
 pub struct EndGame<'info> {
     #[account(
         mut,
-        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes().as_ref()],
+        seeds = [b"game", game.config_id.as_ref(), &game.game_id.to_le_bytes()],
         bump = game.bump,
-        constraint = game.game_status == GameStatus::InProgress @ GameError::GameNotInProgress
     )]
     pub game: Box<Account<'info, GameState>>,
 
+    pub caller: Signer<'info>,
+
     pub clock: Sysvar<'info, Clock>,
+    // remaining_accounts should contain PlayerState accounts for all active players
+    // Format: [player_state_1, player_state_2, ...]
 }
 
-pub fn end_game_handler(ctx: Context<EndGame>) -> Result<()> {
+pub fn end_game_handler<'c: 'info, 'info>(
+    ctx: Context<'_, '_, 'c, 'info, EndGame<'info>>,
+) -> Result<()> {
     let game = &mut ctx.accounts.game;
     let clock = &ctx.accounts.clock;
 
-    // Check if game should end (only one player remaining)
-    let active_players = count_active_players(game);
+    // Prevent double-ending
+    require!(
+        game.game_status != GameStatus::Finished,
+        GameError::GameAlreadyEnded
+    );
 
-    if active_players <= 1 {
-        // End the game
-        game.game_status = GameStatus::Finished;
+    require!(!game.is_ending, GameError::GameAlreadyEnding);
 
-        if active_players == 1 {
-            // Find the remaining active player and declare them winner
-            if let Some(winner_pubkey) = find_last_active_player(game) {
-                game.winner = Some(winner_pubkey);
-                msg!("Game ended. Winner: {}", winner_pubkey);
+    game.is_ending = true;
 
-                emit!(GameEnded {
-                    game_id: game.game_id,
-                    winner: Some(winner_pubkey),
-                    ended_at: clock.unix_timestamp,
-                });
+    let end_reason: GameEndReason;
+    let mut winner_pubkey: Option<Pubkey> = None;
+    let mut winner_net_worth: Option<u64> = None;
+
+    if game.check_bankruptcy_end_condition() {
+        end_reason = GameEndReason::BankruptcyVictory;
+
+        let active_players = game.get_active_players();
+        if let Some(&winner) = active_players.first() {
+            winner_pubkey = Some(winner);
+
+            // Try to get winner's complete net worth from remaining accounts
+            if let Some(player_state) = find_player_state_in_remaining_accounts(
+                &ctx.remaining_accounts,
+                &game.key(),
+                &winner,
+            )? {
+                let property_value = game.calculate_player_net_worth(&winner)?;
+                let total_net_worth = property_value
+                    .checked_add(player_state.cash_balance)
+                    .ok_or(GameError::ArithmeticOverflow)?;
+                winner_net_worth = Some(total_net_worth);
+                msg!(
+                    "Winner total net worth (cash + properties): ${}",
+                    total_net_worth
+                );
             }
-        } else {
-            // No players remaining (shouldn't happen in normal gameplay)
-            msg!("Game ended with no remaining players");
 
-            emit!(GameEnded {
-                game_id: game.game_id,
-                winner: None,
-                ended_at: clock.unix_timestamp,
-            });
+            msg!("🏆 Game ended: Bankruptcy victory. Winner: {}", winner);
+        } else {
+            msg!("Game ended: No remaining players");
+        }
+    } else if game.check_time_end_condition(clock.unix_timestamp) {
+        end_reason = GameEndReason::TimeLimit;
+
+        let active_players = game.get_active_players();
+
+        require!(!active_players.is_empty(), GameError::NoActivePlayers);
+
+        let mut best_player: Option<Pubkey> = None;
+        let mut best_net_worth: u64 = 0;
+
+        // Calculate complete net worth for each player
+        for player in active_players.iter() {
+            let property_value = game.calculate_player_net_worth(player)?;
+
+            // Try to find player's cash balance from remaining accounts
+            let total_net_worth = if let Some(player_state) =
+                find_player_state_in_remaining_accounts(
+                    &ctx.remaining_accounts,
+                    &game.key(),
+                    player,
+                )? {
+                property_value
+                    .checked_add(player_state.cash_balance)
+                    .ok_or(GameError::ArithmeticOverflow)?
+            } else {
+                // If PlayerState not provided, use property value only
+                property_value
+            };
+
+            msg!("Player {} total net worth: ${}", player, total_net_worth);
+
+            if total_net_worth > best_net_worth {
+                best_net_worth = total_net_worth;
+                best_player = Some(*player);
+            }
         }
 
-        msg!("Game {} has ended", game.game_id);
+        winner_pubkey = best_player;
+        winner_net_worth = Some(best_net_worth);
+
+        msg!(
+            "🏆 Game ended: Time limit reached. Winner: {:?} with net worth: ${}",
+            winner_pubkey,
+            best_net_worth
+        );
     } else {
+        game.is_ending = false;
         return Err(GameError::GameCannotEnd.into());
     }
 
-    // Emit GameEnded event
+    // Update game state
+    game.game_status = GameStatus::Finished;
+    game.winner = winner_pubkey;
+    game.end_reason = Some(end_reason);
+
     emit!(GameEnded {
         game_id: game.game_id,
-        winner: game.winner,
+        winner: winner_pubkey,
+        reason: end_reason,
+        winner_net_worth,
         ended_at: clock.unix_timestamp,
     });
+
+    msg!("✅ Game {} has ended successfully", game.game_id);
+    if game.total_prize_pool > 0 {
+        msg!(
+            "💰 Prize pool: ${} - Winner can claim via claim_reward instruction",
+            game.total_prize_pool
+        );
+    }
 
     Ok(())
 }
 
-/// Count the number of active (non-bankrupt, non-default) players
-fn count_active_players(game: &GameState) -> u8 {
-    game.players
-        .iter()
-        .filter(|&&player| player != Pubkey::default())
-        .count() as u8
+fn find_player_state_in_remaining_accounts<'c: 'info, 'info>(
+    remaining_accounts: &'c [AccountInfo<'info>],
+    game_key: &Pubkey,
+    player_key: &Pubkey,
+) -> Result<Option<Account<'c, PlayerState>>> {
+    for account_info in remaining_accounts {
+        if let Ok(player_state) = Account::<PlayerState>::try_from(account_info) {
+            // Verify it belongs to the correct game and player
+            if player_state.game == *game_key && player_state.wallet == *player_key {
+                return Ok(Some(player_state));
+            }
+        }
+    }
+    Ok(None)
 }
 
-/// Find the last remaining active player
-fn find_last_active_player(game: &GameState) -> Option<Pubkey> {
-    game.players
-        .iter()
-        .find(|&&player| player != Pubkey::default())
-        .copied()
-}
-
-/// Check if the game should end based on current state
-pub fn check_game_end_condition(game: &GameState) -> bool {
-    count_active_players(game) <= 1
-}
 
 // end_turn.rs
 use crate::error::GameError;
@@ -1204,7 +1409,11 @@ pub fn end_turn_handler(ctx: Context<EndTurn>) -> Result<()> {
         return Err(GameError::MustDeclareBankruptcy.into());
     }
 
-    // Reset turn-specific flags
+    if game.check_time_end_condition(clock.unix_timestamp) {
+        msg!("Time limit reached! Game should be ended via end_game instruction.");
+        // Don't block turn ending, but log that game should end
+    }
+
     player_state.has_rolled_dice = false;
     player_state.needs_property_action = false;
     player_state.pending_property_position = None;
@@ -1223,10 +1432,10 @@ pub fn end_turn_handler(ctx: Context<EndTurn>) -> Result<()> {
 }
 
 
+
 // bankruptcy.rs
 use crate::constants::get_property_data;
 use crate::error::GameError;
-use crate::instructions::end_game::check_game_end_condition;
 use crate::{state::*, PlayerBankrupt};
 use anchor_lang::prelude::*;
 
@@ -1260,6 +1469,8 @@ pub fn declare_bankruptcy_handler(ctx: Context<DeclareBankruptcy>) -> Result<()>
     let player_pubkey = ctx.accounts.player.key();
     let clock = &ctx.accounts.clock;
 
+    require!(!game.is_ending, GameError::GameAlreadyEnding);
+
     // Find player index in game.players vector
     let player_index = game
         .players
@@ -1272,10 +1483,8 @@ pub fn declare_bankruptcy_handler(ctx: Context<DeclareBankruptcy>) -> Result<()>
     //     return Err(GameError::NotPlayerTurn.into());
     // }
 
-    // Mark player as bankrupt
     player_state.is_bankrupt = true;
 
-    // Calculate total liquidation value from properties
     let mut total_liquidation_value = 0u64;
     let mut houses_returned = 0u8;
     let mut hotels_returned = 0u8;
@@ -1354,11 +1563,7 @@ pub fn declare_bankruptcy_handler(ctx: Context<DeclareBankruptcy>) -> Result<()>
 
     player_state.cash_balance = 0;
     player_state.net_worth = 0;
-
-    // Clear all properties owned from player state
     player_state.properties_owned.clear();
-
-    // Clear Get Out of Jail Free cards
     player_state.get_out_of_jail_cards = 0;
 
     // Clear all player flags and reset position
@@ -1379,37 +1584,40 @@ pub fn declare_bankruptcy_handler(ctx: Context<DeclareBankruptcy>) -> Result<()>
         hotels_returned
     );
 
-    // Check if game should end (only one player remaining)
-    if check_game_end_condition(game) {
+    if game.check_bankruptcy_end_condition() {
+        game.is_ending = true;
         game.game_status = GameStatus::Finished;
+        game.end_reason = Some(GameEndReason::BankruptcyVictory);
 
-        // Find the remaining player and declare them winner
-        if let Some(winner_pubkey) = game
-            .players
-            .iter()
-            .find(|&&p| p != Pubkey::default())
-            .copied()
-        {
+        // Find winner
+        if let Some(winner_pubkey) = game.get_active_players().first().copied() {
             game.winner = Some(winner_pubkey);
-            msg!("Game ended. Winner: {}", winner_pubkey);
+
+            msg!(
+                "Game ended by bankruptcy victory. Winner: {}",
+                winner_pubkey
+            );
 
             emit!(GameEnded {
                 game_id: game.game_id,
                 winner: Some(winner_pubkey),
+                reason: GameEndReason::BankruptcyVictory,
+                winner_net_worth: None, // Can be calculated in claim_reward
                 ended_at: clock.unix_timestamp,
             });
         } else {
-            // No players remaining (shouldn't happen in normal gameplay)
             msg!("Game ended with no remaining players");
 
             emit!(GameEnded {
                 game_id: game.game_id,
                 winner: None,
+                reason: GameEndReason::BankruptcyVictory,
+                winner_net_worth: None,
                 ended_at: clock.unix_timestamp,
             });
         }
     } else {
-        // Advance to next player's turn
+        // Advance to next turn
         if game.current_turn >= game.current_players {
             game.current_turn = 0;
         }
@@ -1468,12 +1676,10 @@ fn reset_player_state_for_bankruptcy(player_state: &mut PlayerState) {
 }
 
 fn remove_player_from_game(game: &mut GameState, player_index: u8) -> Result<()> {
-    // Remove player from the players array by setting to default
     if (player_index as usize) < game.players.len() {
         game.players[player_index as usize] = Pubkey::default();
     }
 
-    // Decrease current players count
     game.current_players = game
         .current_players
         .checked_sub(1)
@@ -1492,6 +1698,7 @@ fn remove_player_from_game(game: &mut GameState, player_index: u8) -> Result<()>
 
     Ok(())
 }
+
 
 // property.rs
 

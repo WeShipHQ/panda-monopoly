@@ -85,6 +85,9 @@ export type GameState = {
   currentPlayers: number;
   currentTurn: number;
   players: Array<Address>;
+  playerEliminated: Array<boolean>;
+  totalPlayers: number;
+  activePlayers: number;
   gameStatus: GameStatus;
   bankBalance: bigint;
   freeParkingPool: bigint;
@@ -95,16 +98,18 @@ export type GameState = {
   tokenMint: Option<Address>;
   tokenVault: Option<Address>;
   totalPrizePool: bigint;
-  isEnding: boolean;
   prizeClaimed: boolean;
+  endConditionMet: boolean;
   endReason: Option<GameEndReason>;
   activeTrades: Array<TradeInfo>;
   nextTradeId: number;
   properties: Array<PropertyInfo>;
   createdAt: bigint;
+  startedAt: Option<bigint>;
+  endedAt: Option<bigint>;
   gameEndTime: Option<bigint>;
   turnStartedAt: bigint;
-  timeLimit: bigint;
+  timeLimit: Option<bigint>;
 };
 
 export type GameStateArgs = {
@@ -116,6 +121,9 @@ export type GameStateArgs = {
   currentPlayers: number;
   currentTurn: number;
   players: Array<Address>;
+  playerEliminated: Array<boolean>;
+  totalPlayers: number;
+  activePlayers: number;
   gameStatus: GameStatusArgs;
   bankBalance: number | bigint;
   freeParkingPool: number | bigint;
@@ -126,16 +134,18 @@ export type GameStateArgs = {
   tokenMint: OptionOrNullable<Address>;
   tokenVault: OptionOrNullable<Address>;
   totalPrizePool: number | bigint;
-  isEnding: boolean;
   prizeClaimed: boolean;
+  endConditionMet: boolean;
   endReason: OptionOrNullable<GameEndReasonArgs>;
   activeTrades: Array<TradeInfoArgs>;
   nextTradeId: number;
   properties: Array<PropertyInfoArgs>;
   createdAt: number | bigint;
+  startedAt: OptionOrNullable<number | bigint>;
+  endedAt: OptionOrNullable<number | bigint>;
   gameEndTime: OptionOrNullable<number | bigint>;
   turnStartedAt: number | bigint;
-  timeLimit: number | bigint;
+  timeLimit: OptionOrNullable<number | bigint>;
 };
 
 export function getGameStateEncoder(): Encoder<GameStateArgs> {
@@ -150,6 +160,9 @@ export function getGameStateEncoder(): Encoder<GameStateArgs> {
       ['currentPlayers', getU8Encoder()],
       ['currentTurn', getU8Encoder()],
       ['players', getArrayEncoder(getAddressEncoder())],
+      ['playerEliminated', getArrayEncoder(getBooleanEncoder())],
+      ['totalPlayers', getU8Encoder()],
+      ['activePlayers', getU8Encoder()],
       ['gameStatus', getGameStatusEncoder()],
       ['bankBalance', getU64Encoder()],
       ['freeParkingPool', getU64Encoder()],
@@ -160,16 +173,18 @@ export function getGameStateEncoder(): Encoder<GameStateArgs> {
       ['tokenMint', getOptionEncoder(getAddressEncoder())],
       ['tokenVault', getOptionEncoder(getAddressEncoder())],
       ['totalPrizePool', getU64Encoder()],
-      ['isEnding', getBooleanEncoder()],
       ['prizeClaimed', getBooleanEncoder()],
+      ['endConditionMet', getBooleanEncoder()],
       ['endReason', getOptionEncoder(getGameEndReasonEncoder())],
       ['activeTrades', getArrayEncoder(getTradeInfoEncoder())],
       ['nextTradeId', getU8Encoder()],
       ['properties', getArrayEncoder(getPropertyInfoEncoder(), { size: 40 })],
       ['createdAt', getI64Encoder()],
+      ['startedAt', getOptionEncoder(getI64Encoder())],
+      ['endedAt', getOptionEncoder(getI64Encoder())],
       ['gameEndTime', getOptionEncoder(getI64Encoder())],
       ['turnStartedAt', getI64Encoder()],
-      ['timeLimit', getI64Encoder()],
+      ['timeLimit', getOptionEncoder(getI64Encoder())],
     ]),
     (value) => ({ ...value, discriminator: GAME_STATE_DISCRIMINATOR })
   );
@@ -186,6 +201,9 @@ export function getGameStateDecoder(): Decoder<GameState> {
     ['currentPlayers', getU8Decoder()],
     ['currentTurn', getU8Decoder()],
     ['players', getArrayDecoder(getAddressDecoder())],
+    ['playerEliminated', getArrayDecoder(getBooleanDecoder())],
+    ['totalPlayers', getU8Decoder()],
+    ['activePlayers', getU8Decoder()],
     ['gameStatus', getGameStatusDecoder()],
     ['bankBalance', getU64Decoder()],
     ['freeParkingPool', getU64Decoder()],
@@ -196,16 +214,18 @@ export function getGameStateDecoder(): Decoder<GameState> {
     ['tokenMint', getOptionDecoder(getAddressDecoder())],
     ['tokenVault', getOptionDecoder(getAddressDecoder())],
     ['totalPrizePool', getU64Decoder()],
-    ['isEnding', getBooleanDecoder()],
     ['prizeClaimed', getBooleanDecoder()],
+    ['endConditionMet', getBooleanDecoder()],
     ['endReason', getOptionDecoder(getGameEndReasonDecoder())],
     ['activeTrades', getArrayDecoder(getTradeInfoDecoder())],
     ['nextTradeId', getU8Decoder()],
     ['properties', getArrayDecoder(getPropertyInfoDecoder(), { size: 40 })],
     ['createdAt', getI64Decoder()],
+    ['startedAt', getOptionDecoder(getI64Decoder())],
+    ['endedAt', getOptionDecoder(getI64Decoder())],
     ['gameEndTime', getOptionDecoder(getI64Decoder())],
     ['turnStartedAt', getI64Decoder()],
-    ['timeLimit', getI64Decoder()],
+    ['timeLimit', getOptionDecoder(getI64Decoder())],
   ]);
 }
 

@@ -15,8 +15,8 @@ pub use utils::*;
 
 declare_id!("4vucUqMcXN4sgLsgnrXTUC9U7ACZ5DmoRBLbWt4vrnyR");
 
-#[program]
 #[ephemeral]
+#[program]
 pub mod panda_monopoly {
     use super::*;
 

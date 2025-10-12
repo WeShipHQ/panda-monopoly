@@ -1,21 +1,5 @@
 "use client";
 
-import {
-  pipe,
-  createTransactionMessage,
-  setTransactionMessageFeePayer,
-  setTransactionMessageLifetimeUsingBlockhash,
-  appendTransactionMessageInstructions,
-  compileTransaction,
-  createNoopSigner,
-  getTransactionEncoder,
-  address,
-  getBase58Codec,
-} from "@solana/kit";
-import { getTransferSolInstruction } from "@solana-program/system";
-import {
-  useStandardSignAndSendTransaction,
-} from "@privy-io/react-auth/solana";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,17 +13,18 @@ import { LogoutIcon, WalletIcon } from "@/components/ui/icons";
 import { useWallet } from "@/hooks/use-wallet";
 import { formatAddress } from "@/lib/utils";
 import { useLogin, useLogout } from "@privy-io/react-auth";
-import { toast } from "sonner";
-import { useRpcContext } from "./providers/rpc-provider";
 import { CheckIcon, CopyIcon, Download } from "lucide-react";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
-import {
-  useExportWallet,
-} from "@privy-io/react-auth/solana";
+import { useExportWallet } from "@privy-io/react-auth/solana";
 import { BalanceButton } from "./balance-button";
-import { useConnectedStandardWallets } from "@privy-io/react-auth/solana";
 
-function WalletAddressWithCopy({ address, label }: { address: string; label: string }) {
+function WalletAddressWithCopy({
+  address,
+  label,
+}: {
+  address: string;
+  label: string;
+}) {
   const [copyToClipboard, isCopied] = useCopyToClipboard();
 
   return (
@@ -66,16 +51,8 @@ function WalletAddressWithCopy({ address, label }: { address: string; label: str
 export function ConnectWalletButton() {
   const { ready, authenticated, user, wallet } = useWallet();
 
-  const { wallets } = useConnectedStandardWallets();
-  const { signAndSendTransaction } = useStandardSignAndSendTransaction();
-  const [copyToClipboard, isCopied] = useCopyToClipboard();
   const { exportWallet } = useExportWallet();
 
-  // Debug connected wallets
-  console.log("Connected wallets:", wallets);
-  console.log("User wallet:", user?.wallet);
-
-  const { rpc } = useRpcContext();
   const { login } = useLogin();
   const { logout } = useLogout();
 
@@ -87,19 +64,18 @@ export function ConnectWalletButton() {
         <>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button >
-              <Avatar className="rounded-lg size-6">
-                <AvatarImage
-                  walletAddress={wallet?.address || user?.wallet?.address}
-                  alt="User Avatar"
-                />
-              </Avatar>
+              <Button>
+                <Avatar className="rounded-lg size-6">
+                  <AvatarImage
+                    walletAddress={wallet?.address || user?.wallet?.address}
+                    alt="User Avatar"
+                  />
+                </Avatar>
                 {wallet
                   ? formatAddress(wallet.address)
                   : user?.wallet?.address
                   ? formatAddress(user?.wallet?.address)
                   : "--"}
-                
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -110,28 +86,34 @@ export function ConnectWalletButton() {
             >
               {/* Connected Wallet Info */}
               {user?.wallet?.address && (
-                <WalletAddressWithCopy 
-                  address={user.wallet.address} 
-                  label="Connected Wallet" 
+                <WalletAddressWithCopy
+                  address={user.wallet.address}
+                  label="Connected Wallet"
                 />
               )}
 
               {/* Game Wallet Info */}
               {wallet && (
-                <WalletAddressWithCopy 
-                  address={wallet.address} 
-                  label="Game Wallet" 
+                <WalletAddressWithCopy
+                  address={wallet.address}
+                  label="Game Wallet"
                 />
               )}
 
               {/* Actions */}
               {wallet && (
-                <DropdownMenuItem onClick={() => (exportWallet())} className="mt-2 flex justify-between">
+                <DropdownMenuItem
+                  onClick={() => exportWallet()}
+                  className="mt-2 flex justify-between"
+                >
                   <span>Export Wallet</span>
-                  <Download/>
+                  <Download />
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem onClick={() => logout()} className="flex justify-between">
+              <DropdownMenuItem
+                onClick={() => logout()}
+                className="flex justify-between"
+              >
                 <span>Disconnect</span>
                 <LogoutIcon />
               </DropdownMenuItem>
@@ -140,9 +122,6 @@ export function ConnectWalletButton() {
           {wallet && (
             <>
               <BalanceButton walletAddress={wallet.address} />
-              <Button size="icon" onClick={() => copyToClipboard(wallet.address)}>
-                {isCopied ? <CheckIcon /> : <CopyIcon />}
-              </Button>
             </>
           )}
           {/* <Button
@@ -210,16 +189,19 @@ export function ConnectWalletButton() {
   );
 }
 
-function UserMenu({ onDisconnect, walletAddress }: { onDisconnect: () => void; walletAddress?: string }) {
+function UserMenu({
+  onDisconnect,
+  walletAddress,
+}: {
+  onDisconnect: () => void;
+  walletAddress?: string;
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button>
           <Avatar className="rounded-lg">
-            <AvatarImage 
-              walletAddress={walletAddress}
-              alt="User Avatar" 
-            />
+            <AvatarImage walletAddress={walletAddress} alt="User Avatar" />
             <AvatarFallback walletAddress={walletAddress} />
           </Avatar>
         </button>

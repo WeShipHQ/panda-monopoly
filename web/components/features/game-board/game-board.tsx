@@ -64,6 +64,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
     payPriorityFeeTax,
     payJailFine,
     useGetOutOfJailCard,
+    endGame,
   } = useGameContext();
 
   // console.log("currentPlayerState", currentPlayerState);
@@ -176,6 +177,17 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
     setBoardRotation((prev) => (prev - 90 + 360) % 360);
   };
 
+  const handleEndGame = async () => {
+    setIsLoading("endGame");
+    try {
+      await endGame();
+    } catch (error) {
+      console.error("Failed to end game:", error);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
   const renderSpace = (space: BoardSpace, properties: PropertyAccount[]) => {
     const position = space.position;
     const key = `${space.name}-${position}`;
@@ -261,7 +273,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
             <div
               className="col-start-3 col-end-13 row-start-3 row-end-13 bg-[#c7e9b5] flex flex-col items-center justify-center 
                            p-1 sm:p-3 md:p-4 gap-1 sm:gap-3 md:gap-4"
-              style={{ 
+              style={{
                 transform: `rotate(${-boardRotation}deg)`,
                 // transition: 'transform 500ms ease-in-out'
               }}
@@ -279,6 +291,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
                       handlePayPriorityFeeTax={handlePayPriorityFeeTax}
                       handlePayJailFine={handlePayJailFine}
                       handleGetOutOfJailCard={handleGetOutOfJailCard}
+                      handleEndGame={handleEndGame}
                       isLoading={isLoading}
                       wallet={wallet}
                     />

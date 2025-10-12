@@ -134,8 +134,17 @@ pub fn leave_game_handler(ctx: Context<LeaveGame>) -> Result<()> {
     }
 
     game.players.remove(player_index);
+    game.player_eliminated.remove(player_index);
     game.current_players = game
         .current_players
+        .checked_sub(1)
+        .ok_or(GameError::ArithmeticUnderflow)?;
+    game.total_players = game
+        .total_players
+        .checked_sub(1)
+        .ok_or(GameError::ArithmeticUnderflow)?;
+    game.active_players = game
+        .active_players
         .checked_sub(1)
         .ok_or(GameError::ArithmeticUnderflow)?;
 
