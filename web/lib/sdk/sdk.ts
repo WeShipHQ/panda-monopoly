@@ -72,6 +72,7 @@ import {
   getEndGameInstruction,
   getClaimRewardInstruction,
   getBuildHouseV2Instruction,
+  getLeaveGameInstruction,
 } from "./generated";
 import {
   CreateGameIxs,
@@ -104,6 +105,7 @@ import {
   UseGetOutOfJailCardParams,
   EndGameParams,
   ClaimRewardParams,
+  LeaveGameParams,
 } from "./types";
 import {
   getGameAuthorityPDA,
@@ -363,6 +365,57 @@ class MonopolyGameSDK {
       instructions: ixs,
       playerStateAddress: playerStateAddress,
     };
+  }
+
+  async leaveGameIx(params: LeaveGameParams): Promise<Instruction[]> {
+    const [playerStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.player.address
+    );
+
+    const [gameAuthorityPDA] = await getGameAuthorityPDA();
+
+    const [playerTokenAccount] = await findAssociatedTokenPda({
+      mint: NATIVE_MINT,
+      owner: params.player.address,
+      tokenProgram: TOKEN_PROGRAM_ADDRESS,
+    });
+
+    const ixs: Instruction[] = [];
+
+    try {
+      await fetchToken(params.rpc, playerTokenAccount);
+    } catch (error) {
+      console.log("Creator token account not found, creating a new one");
+
+      const createAtaInstruction =
+        await getCreateAssociatedTokenInstructionAsync({
+          payer: params.player,
+          mint: NATIVE_MINT,
+          owner: params.player.address,
+        });
+
+      ixs.push(createAtaInstruction);
+    }
+
+    const [vaultTokenAccount] = await getTokenVaultPda(
+      NATIVE_MINT,
+      params.gameAddress
+    );
+
+    const instruction = await getLeaveGameInstruction({
+      game: params.gameAddress,
+      player: params.player,
+      playerState: playerStateAddress,
+      gameAuthority: gameAuthorityPDA,
+      tokenMint: NATIVE_MINT,
+      playerTokenAccount,
+      tokenVault: vaultTokenAccount,
+    });
+
+    ixs.push(instruction);
+
+    return ixs;
   }
 
   /**
