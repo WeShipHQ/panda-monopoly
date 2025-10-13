@@ -1,0 +1,1957 @@
+* {
+  box-sizing: border-box;
+}
+
+.board {
+  display: flex;
+  align-items: flex-start;
+  background: var(--Colours-General-Background, #d9e8d6);
+  width: 1372px;
+  height: 1372px;
+
+  .textName4 {
+    margin: 21px 0px 0px;
+    width: 96px;
+    text-align: center;
+    line-height: 15px;
+    letter-spacing: 0.39px;
+    color: var(--Colours-General-Black, #000000);
+    font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: UPPERCASE;
+  }
+
+  .textName {
+    margin: 63px 0px 0px -104px;
+    width: 96px;
+    text-align: center;
+    line-height: 15px;
+    letter-spacing: 0.39px;
+    color: var(--Colours-General-Black, #000000);
+    font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: UPPERCASE;
+  }
+
+  .communityChest {
+    width: 90px;
+    height: 75px;
+  }
+
+  .price {
+    flex-shrink: 0;
+    line-height: 15px;
+    letter-spacing: 0.39px;
+    color: var(--Colours-General-Black, #000000);
+    font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: UPPERCASE;
+  }
+
+  .intersect {
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 11px;
+    height: 2px;
+  }
+
+  .text {
+    display: flex;
+    position: absolute;
+    top: -5px;
+    left: 0;
+    align-items: center;
+    justify-content: center;
+    width: 12px;
+    height: 14px;
+    line-height: 14px;
+    letter-spacing: 0;
+    color: var(--Colours-General-Black, #000000);
+    font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    text-transform: UPPERCASE;
+  }
+
+  .textName2 {
+    width: 96px;
+    text-align: center;
+    line-height: 15px;
+    letter-spacing: 0.39px;
+    color: var(--Colours-General-Black, #000000);
+    font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: UPPERCASE;
+  }
+
+  .action2 {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    align-items: center;
+    background: var(--Colours-General-Background, #d9e8d6);
+    padding: 19px 8px 22px;
+
+    .questionMark {
+      margin-top: 18px;
+      width: 54px;
+      height: 114px;
+    }
+  }
+
+  .currency {
+    position: relative;
+    flex-shrink: 0;
+    width: 12px;
+    height: 3px;
+  }
+
+  .price4 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 81px;
+    width: 112px;
+  }
+
+  .action {
+    display: flex;
+    flex-shrink: 0;
+    align-items: flex-start;
+    justify-content: space-between;
+    background: var(--Colours-General-Background, #d9e8d6);
+    padding: 19px 6px 22px;
+    width: 112px;
+    min-width: 112px;
+
+    .communityChest2 {
+      display: flex;
+      align-items: center;
+      margin-top: 41px;
+      padding: 13px 5px 12px;
+    }
+  }
+
+  .price2 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 153px;
+    margin-left: -112px;
+    width: 112px;
+  }
+
+  .variableTile7 {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    align-items: center;
+    background: var(--Colours-General-Background, #d9e8d6);
+    padding-top: 19px;
+    padding-bottom: 20px;
+
+    .stationIcon2 {
+      margin-top: 20px;
+      width: 100px;
+      height: 100px;
+    }
+  }
+
+  .variableTile2 {
+    display: flex;
+    flex-shrink: 0;
+    align-items: flex-start;
+    background: var(--Colours-General-Background, #d9e8d6);
+    padding-top: 19px;
+    padding-bottom: 20px;
+
+    .stationIcon {
+      margin-top: 29px;
+      margin-left: -106px;
+      width: 100px;
+      height: 100px;
+    }
+  }
+
+  .aLeft {
+    display: inline-flex;
+    align-items: flex-start;
+    margin-top: 686px;
+    margin-left: -504px;
+    rotate: 90deg;
+
+    .textName3 {
+      margin: 0px 0px 0px -98px;
+      width: 96px;
+      text-align: center;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .price3 {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 134px;
+      width: 112px;
+    }
+
+    .variableTile {
+      display: flex;
+      flex-shrink: 0;
+      align-items: flex-start;
+      background: var(--Colours-General-Background, #d9e8d6);
+      padding-bottom: 20px;
+      overflow: hidden;
+
+      .colourBlock {
+        background: var(--Colours-Property-Orange, #f7941d);
+        width: 112px;
+        height: 42px;
+      }
+    }
+
+    .variableTile3 {
+      display: flex;
+      flex-shrink: 0;
+      align-items: flex-start;
+      background: var(--Colours-General-Background, #d9e8d6);
+      padding-bottom: 20px;
+      overflow: hidden;
+
+      .colourBlock2 {
+        background: var(--Colours-Property-Pink, #d93a96);
+        width: 112px;
+        height: 42px;
+      }
+    }
+
+    .variableTile4 {
+      display: flex;
+      flex-shrink: 0;
+      align-items: flex-start;
+      background: var(--Colours-General-Background, #d9e8d6);
+      padding-top: 19px;
+      padding-bottom: 20px;
+
+      .utilityIcon {
+        display: flex;
+        align-items: center;
+        margin-top: 29px;
+        margin-left: -106px;
+        padding: 15px 20px;
+
+        .electricCompany {
+          width: 60px;
+          height: 70px;
+        }
+      }
+    }
+
+    .corner {
+      display: flex;
+      flex-shrink: 0;
+      align-items: center;
+      background: var(--Colours-General-Background, #d9e8d6);
+
+      .container2 {
+        display: flex;
+        flex-grow: 1;
+        align-items: flex-start;
+        justify-content: space-between;
+        padding-bottom: 13px;
+        width: 182px;
+        min-width: 182px;
+        rotate: -90deg;
+
+        .textJail {
+          margin: 63px 0px 0px;
+          line-height: 22px;
+          letter-spacing: 0.4px;
+          color: var(--Colours-General-Black, #000000);
+          font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+          font-size: 20px;
+          font-weight: 500;
+          text-transform: UPPERCASE;
+          rotate: 90deg;
+        }
+
+        .autoWrapper {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          align-self: stretch;
+
+          .container {
+            position: relative;
+            background: var(--Colours-Property-Orange, #f7941d);
+            width: 140px;
+            height: 140px;
+
+            .inJail2 {
+              display: flex;
+              position: absolute;
+              top: 19px;
+              left: 18px;
+              align-items: center;
+              padding: 12px 11px;
+              width: 100px;
+              height: 100px;
+              rotate: 45deg;
+
+              .inJail {
+                outline-width: 1px;
+                outline-style: solid;
+                outline-color: var(--Colours-General-Black, #000000);
+                border-radius: 1px;
+                width: 78px;
+                height: 76px;
+                background-image: url(../image/mgos0rlu-ogt5oz5.png);
+                background-position: -80px -77px;
+                background-size: 307.69% 313.52%;
+                background-repeat: no-repeat;
+              }
+            }
+
+            .textIn {
+              position: absolute;
+              top: 21px;
+              left: 77px;
+              width: 56px;
+              height: 22px;
+              text-align: center;
+              line-height: 22px;
+              letter-spacing: 0.4px;
+              color: var(--Colours-General-Black, #000000);
+              font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+              font-size: 20px;
+              font-weight: 500;
+              text-transform: UPPERCASE;
+              rotate: 45deg;
+            }
+
+            .textJail2 {
+              position: absolute;
+              top: 103px;
+              left: 9px;
+              width: 36px;
+              height: 14px;
+              line-height: 22px;
+              letter-spacing: 0.4px;
+              color: var(--Colours-General-Black, #000000);
+              font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+              font-size: 20px;
+              font-weight: 500;
+              text-transform: UPPERCASE;
+              rotate: 45deg;
+            }
+          }
+
+          .textJail3 {
+            margin: 15px 0px 0px;
+            line-height: 22px;
+            letter-spacing: 0.4px;
+            color: var(--Colours-General-Black, #000000);
+            font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+            font-size: 20px;
+            font-weight: 500;
+            text-transform: UPPERCASE;
+          }
+        }
+      }
+    }
+  }
+
+  .aTop {
+    display: inline-flex;
+    align-items: flex-start;
+    margin-left: -686px;
+    rotate: 180deg;
+
+    .price5 {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 5px;
+      width: 112px;
+    }
+
+    .variableTile5 {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      align-items: center;
+      background: var(--Colours-General-Background, #d9e8d6);
+      padding-bottom: 20px;
+      overflow: hidden;
+
+      .colourBlock3 {
+        background: var(--Colours-Property-Yellow, #fef200);
+        width: 112px;
+        height: 42px;
+      }
+    }
+
+    .variableTile6 {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      align-items: center;
+      background: var(--Colours-General-Background, #d9e8d6);
+      padding-top: 19px;
+      padding-bottom: 20px;
+
+      .utilityIcon2 {
+        display: flex;
+        align-items: center;
+        align-self: stretch;
+        margin: 20px 6px 0px;
+        padding: 14px 6px 14px 7px;
+
+        .waterworks {
+          width: 87px;
+          height: 72px;
+        }
+      }
+    }
+
+    .variableTile8 {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      align-items: center;
+      background: var(--Colours-General-Background, #d9e8d6);
+      padding-bottom: 20px;
+      overflow: hidden;
+
+      .colourBlock4 {
+        background: var(--Colours-Property-Red, #f11c26);
+        width: 112px;
+        height: 42px;
+      }
+    }
+
+    .corner2 {
+      display: flex;
+      flex-shrink: 0;
+      align-items: center;
+      background: var(--Colours-General-Background, #d9e8d6);
+      padding-top: 1px;
+      padding-right: 1px;
+
+      .container3 {
+        display: flex;
+        position: relative;
+        flex-grow: 1;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-right: -1px;
+        margin-left: -1px;
+        padding: 35px 21px 36px 4px;
+        width: 182px;
+        min-width: 182px;
+        overflow: hidden;
+        rotate: -90deg;
+
+        .freeParking2 {
+          display: flex;
+          position: absolute;
+          top: 39px;
+          left: 43px;
+          align-items: center;
+          padding: 4px;
+          width: 100px;
+          height: 100px;
+          rotate: 45deg;
+
+          .freeParking {
+            width: 92px;
+            height: 92px;
+          }
+        }
+
+        .autoWrapper2 {
+          display: flex;
+          position: relative;
+          align-items: flex-start;
+          align-self: stretch;
+
+          .textParking {
+            margin: 97px 0px 0px;
+            line-height: 22px;
+            letter-spacing: 0.4px;
+            color: var(--Colours-General-Black, #000000);
+            font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+            font-size: 20px;
+            font-weight: 500;
+            text-transform: UPPERCASE;
+            rotate: 45deg;
+          }
+
+          .textFree {
+            margin: 0px 0px 0px 37px;
+            line-height: 22px;
+            letter-spacing: 0.4px;
+            color: var(--Colours-General-Black, #000000);
+            font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+            font-size: 20px;
+            font-weight: 500;
+            text-transform: UPPERCASE;
+            rotate: 45deg;
+          }
+        }
+      }
+    }
+  }
+
+  .aBottom {
+    display: inline-flex;
+    align-items: flex-start;
+    margin-top: 1190px;
+    margin-left: -1008px;
+
+    .variableTile9 {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      align-items: center;
+      background: var(--Colours-General-Background, #d9e8d6);
+      padding-bottom: 20px;
+      overflow: hidden;
+
+      .colourBlock5 {
+        background: var(--Colours-Property-Blue-Light, #aae0fa);
+        width: 112px;
+        height: 42px;
+      }
+    }
+
+    .action3 {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      align-items: center;
+      background: var(--Colours-General-Background, #d9e8d6);
+      padding-top: 19px;
+      padding-bottom: 20px;
+
+      .textName5 {
+        width: 112px;
+        height: 40px;
+        text-align: center;
+        line-height: 22px;
+        letter-spacing: 0.4px;
+        color: var(--Colours-General-Black, #000000);
+        font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+        font-size: 20px;
+        font-weight: 500;
+        text-transform: UPPERCASE;
+      }
+
+      .graphic {
+        display: flex;
+        align-items: center;
+        align-self: stretch;
+        margin: 28px 48px 0px;
+
+        .rectangle2 {
+          display: flex;
+          flex-grow: 1;
+          align-items: center;
+          border-radius: 50%;
+          padding: 4px;
+
+          .rectangle {
+            border-radius: 50%;
+            background: var(--Colours-General-Black, #000000);
+            width: 8px;
+            height: 8px;
+          }
+        }
+      }
+
+      .price7 {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        column-gap: 2px;
+        margin-top: 50px;
+        width: 112px;
+
+        .frame4 {
+          display: inline-flex;
+          flex-shrink: 0;
+          align-items: center;
+
+          .price6 {
+            flex-shrink: 0;
+            margin: 0px 0px 0px -1px;
+            line-height: 15px;
+            letter-spacing: 0.39px;
+            color: var(--Colours-General-Black, #000000);
+            font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            text-transform: UPPERCASE;
+          }
+        }
+      }
+    }
+
+    .variableTile10 {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      align-items: center;
+      background: var(--Colours-General-Background, #d9e8d6);
+      padding-bottom: 20px;
+      overflow: hidden;
+
+      .colourBlock6 {
+        background: var(--Colours-Property-Brown, #955235);
+        width: 112px;
+        height: 42px;
+      }
+    }
+
+    .action4 {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      align-items: center;
+      background: var(--Colours-General-Background, #d9e8d6);
+      padding: 19px 6px 22px;
+
+      .communityChest3 {
+        display: flex;
+        align-items: center;
+        align-self: stretch;
+        margin-top: 17px;
+        padding: 13px 5px 12px;
+      }
+    }
+
+    .corner3 {
+      display: flex;
+      flex-shrink: 0;
+      align-items: center;
+      background: var(--Colours-General-Background, #d9e8d6);
+
+      .container4 {
+        position: relative;
+        width: 182px;
+        height: 182px;
+        overflow: hidden;
+
+        .aGo {
+          position: absolute;
+          top: 61px;
+          left: 43px;
+          width: 96px;
+          height: 60px;
+          rotate: -45deg;
+        }
+
+        .text4 {
+          display: inline-flex;
+          position: absolute;
+          top: 26px;
+          left: -8px;
+          flex-direction: column;
+          align-items: center;
+          width: 112px;
+          height: 45px;
+          rotate: -45deg;
+          row-gap: 6px;
+
+          .textM {
+            flex-shrink: 0;
+            line-height: 18px;
+            letter-spacing: 0.16px;
+            color: var(--Colours-General-Black, #000000);
+            font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+            font-size: 16px;
+            font-weight: 500;
+            text-transform: UPPERCASE;
+          }
+
+          .text3 {
+            position: relative;
+            flex-shrink: 0;
+            width: 112px;
+            height: 11px;
+
+            .currency2 {
+              position: absolute;
+              top: 1px;
+              left: 7px;
+              width: 13px;
+              height: 11px;
+            }
+
+            .textM2 {
+              position: absolute;
+              top: 0;
+              left: 20px;
+              width: 27px;
+              height: 11px;
+              line-height: 18px;
+              letter-spacing: 0.16px;
+              color: var(--Colours-General-Black, #000000);
+              font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+              font-size: 16px;
+              font-weight: 500;
+              text-transform: UPPERCASE;
+            }
+
+            .text2 {
+              position: absolute;
+              top: 0;
+              left: 51px;
+              width: 54px;
+              height: 11px;
+              line-height: 18px;
+              letter-spacing: 0.16px;
+              color: var(--Colours-General-Black, #000000);
+              font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+              font-size: 16px;
+              font-weight: 500;
+              text-transform: UPPERCASE;
+            }
+          }
+        }
+
+        .arrow {
+          position: absolute;
+          top: 146px;
+          left: 21px;
+          width: 140px;
+          height: 28px;
+        }
+      }
+    }
+  }
+
+  .center {
+    display: flex;
+    position: relative;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-top: 182px;
+    margin-left: -1190px;
+    padding: 133px 90px;
+    width: 1008px;
+    min-width: 1008px;
+    overflow: hidden;
+
+    .ellipse4 {
+      position: absolute;
+      bottom: 2px;
+      left: 2px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 8px;
+      height: 8px;
+    }
+
+    .ellipse3 {
+      position: absolute;
+      right: 2px;
+      bottom: 2px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 8px;
+      height: 8px;
+    }
+
+    .ellipse2 {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 8px;
+      height: 8px;
+    }
+
+    .ellipse {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 8px;
+      height: 8px;
+    }
+
+    .stroke {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      width: 244px;
+      height: 157px;
+    }
+
+    .a20 {
+      position: absolute;
+      top: 0;
+      left: 237px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse23 {
+      position: absolute;
+      top: 4px;
+      left: 233px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a19 {
+      position: absolute;
+      top: 0;
+      left: 225px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse22 {
+      position: absolute;
+      top: 4px;
+      left: 221px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a18 {
+      position: absolute;
+      top: 0;
+      left: 212px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse21 {
+      position: absolute;
+      top: 4px;
+      left: 208px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a17 {
+      position: absolute;
+      top: 0;
+      left: 200px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse20 {
+      position: absolute;
+      top: 4px;
+      left: 196px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a16 {
+      position: absolute;
+      top: 0;
+      left: 187px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse19 {
+      position: absolute;
+      top: 4px;
+      left: 183px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a15 {
+      position: absolute;
+      top: 0;
+      left: 175px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse18 {
+      position: absolute;
+      top: 4px;
+      left: 171px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a14 {
+      position: absolute;
+      top: 0;
+      left: 162px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse17 {
+      position: absolute;
+      top: 4px;
+      left: 158px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a13 {
+      position: absolute;
+      top: 0;
+      left: 150px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse16 {
+      position: absolute;
+      top: 4px;
+      left: 146px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a12 {
+      position: absolute;
+      top: 0;
+      left: 137px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse15 {
+      position: absolute;
+      top: 4px;
+      left: 133px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a11 {
+      position: absolute;
+      top: 0;
+      left: 125px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse14 {
+      position: absolute;
+      top: 4px;
+      left: 121px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a10 {
+      position: absolute;
+      top: 0;
+      left: 112px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse13 {
+      position: absolute;
+      top: 4px;
+      left: 109px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a9 {
+      position: absolute;
+      top: 0;
+      left: 100px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse12 {
+      position: absolute;
+      top: 4px;
+      left: 96px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .ellipse11 {
+      position: absolute;
+      top: 4px;
+      left: 84px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a7 {
+      position: absolute;
+      top: 0;
+      left: 75px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse10 {
+      position: absolute;
+      top: 4px;
+      left: 71px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .ellipse9 {
+      position: absolute;
+      top: 4px;
+      left: 59px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a5 {
+      position: absolute;
+      top: 0;
+      left: 50px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse7 {
+      position: absolute;
+      top: 4px;
+      left: 34px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a27 {
+      position: absolute;
+      top: 0;
+      left: 148px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse32 {
+      position: absolute;
+      top: 4px;
+      left: 145px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a26 {
+      position: absolute;
+      top: 0;
+      left: 136px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse31 {
+      position: absolute;
+      top: 4px;
+      left: 132px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a25 {
+      position: absolute;
+      top: 0;
+      left: 124px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse30 {
+      position: absolute;
+      top: 4px;
+      left: 120px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a24 {
+      position: absolute;
+      top: 0;
+      left: 111px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse29 {
+      position: absolute;
+      top: 4px;
+      left: 108px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a23 {
+      position: absolute;
+      top: 0;
+      left: 99px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse28 {
+      position: absolute;
+      top: 4px;
+      left: 95px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a8 {
+      position: absolute;
+      top: 0;
+      left: 87px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse27 {
+      position: absolute;
+      top: 4px;
+      left: 83px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a22 {
+      position: absolute;
+      top: 0;
+      left: 74px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse26 {
+      position: absolute;
+      top: 4px;
+      left: 70px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a6 {
+      position: absolute;
+      top: 0;
+      left: 62px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse25 {
+      position: absolute;
+      top: 4px;
+      left: 58px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a21 {
+      position: absolute;
+      top: 0;
+      left: 49px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse8 {
+      position: absolute;
+      top: 4px;
+      left: 46px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a4 {
+      position: absolute;
+      top: 0;
+      left: 37px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse24 {
+      position: absolute;
+      top: 4px;
+      left: 33px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a3 {
+      position: absolute;
+      top: 0;
+      left: 25px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse6 {
+      position: absolute;
+      top: 4px;
+      left: 21px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a2 {
+      position: absolute;
+      top: 0;
+      left: 12px;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .ellipse5 {
+      position: absolute;
+      top: 4px;
+      left: 9px;
+      border-radius: 50%;
+      background: var(--Colours-General-Black, #000000);
+      width: 2px;
+      height: 2px;
+    }
+
+    .a {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 7px;
+      height: 9px;
+      line-height: 15px;
+      letter-spacing: 0.39px;
+      color: var(--Colours-General-Black, #000000);
+      font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: UPPERCASE;
+    }
+
+    .leftBorder {
+      position: absolute;
+      top: 88px;
+      bottom: 88px;
+      left: -74px;
+      width: 157px;
+      height: 9px;
+      rotate: -90deg;
+    }
+
+    .topBorder {
+      position: absolute;
+      top: 0;
+      right: 14px;
+      left: 14px;
+      width: 244px;
+      height: 9px;
+    }
+
+    .actionArea {
+      position: relative;
+      z-index: 1;
+      width: 272px;
+      height: 185px;
+      rotate: 135deg;
+
+      .background {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        bottom: 14px;
+        left: 14px;
+        width: 244px;
+        height: 157px;
+        overflow: hidden;
+
+        .gradient {
+          position: absolute;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          left: 0;
+          background: var(--Gradients-Community-Chest);
+          background-color: var(--Colours-Property-Blue-Light, #aae0fa);
+          width: 244px;
+          height: 157px;
+          background-image: linear-gradient(
+            180deg,
+            #0072bb4d 0%,
+            #ffffff4d 100%
+          );
+        }
+      }
+
+      .bottomBorder {
+        position: absolute;
+        right: 14px;
+        bottom: 0;
+        left: 14px;
+        width: 244px;
+        height: 9px;
+        rotate: -180deg;
+      }
+
+      .rightBorder {
+        position: absolute;
+        top: 88px;
+        right: -74px;
+        bottom: 88px;
+        width: 157px;
+        height: 9px;
+        rotate: -270deg;
+      }
+
+      .communityChest5 {
+        display: flex;
+        position: absolute;
+        top: 23px;
+        left: 66px;
+        align-items: center;
+        padding: 18px 7px 17px;
+        width: 140px;
+        height: 140px;
+
+        .communityChest4 {
+          width: 126px;
+          height: 105px;
+        }
+      }
+    }
+
+    .container5 {
+      display: inline-flex;
+      position: absolute;
+      top: 433px;
+      left: 74px;
+      align-items: center;
+      padding-left: 4px;
+      width: 857px;
+      height: 143px;
+      rotate: -45deg;
+
+      .left {
+        display: inline-flex;
+        position: relative;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        column-gap: 10px;
+        outline-width: 4px;
+        outline-style: solid;
+        outline-color: var(--Colours-Property-Red, #f11c26);
+        border-radius: 12px 0px 0px 12px;
+        background: var(--Colours-Property-Red, #f11c26);
+        padding: 43px 20px 9px 18px;
+        height: 135px;
+        overflow: hidden;
+
+        .whiteStroke {
+          position: absolute;
+          top: 4px;
+          right: 4px;
+          bottom: 4px;
+          left: 4px;
+          flex-shrink: 0;
+          outline-width: 4px;
+          outline-style: solid;
+          outline-color: var(--Colours-General-White, #ffffff);
+          border-radius: 8px;
+          width: 371px;
+          height: 127px;
+        }
+
+        .rectangle3 {
+          position: absolute;
+          top: 0;
+          right: -5px;
+          bottom: 0;
+          flex-shrink: 0;
+          z-index: 1;
+          background: var(--Colours-Property-Red, #f11c26);
+          width: 17px;
+          height: 135px;
+        }
+
+        .text5 {
+          flex-shrink: 0;
+          z-index: 2;
+          line-height: 135px;
+          letter-spacing: 5.92px;
+          color: var(--Colours-General-White, #ffffff);
+          font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+          font-size: 148px;
+          font-weight: 500;
+          text-transform: UPPERCASE;
+        }
+      }
+
+      .rightMiddle {
+        position: relative;
+        flex-shrink: 0;
+        width: 474px;
+        height: 143px;
+
+        .union {
+          position: absolute;
+          top: -28px;
+          left: -30px;
+          outline-width: 4px;
+          outline-style: solid;
+          outline-color: var(--Colours-Property-Red, #f11c26);
+          width: 500px;
+          height: 167px;
+        }
+
+        .subtract {
+          position: absolute;
+          top: -28px;
+          left: -40px;
+          width: 510px;
+          height: 167px;
+        }
+
+        .text6 {
+          position: absolute;
+          top: 21px;
+          left: 112px;
+          width: 339px;
+          height: 135px;
+          line-height: 135px;
+          letter-spacing: 5.92px;
+          color: var(--Colours-General-White, #ffffff);
+          font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+          font-size: 148px;
+          font-weight: 500;
+        }
+
+        .middle {
+          position: absolute;
+          top: -80px;
+          left: -96px;
+          width: 320px;
+          height: 191px;
+
+          .text7 {
+            position: absolute;
+            top: 80px;
+            left: 86px;
+            width: 116px;
+            height: 178px;
+            line-height: 178px;
+            letter-spacing: 5.92px;
+            color: var(--Colours-General-White, #ffffff);
+            font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+            font-size: 148px;
+            font-weight: 500;
+          }
+
+          .subtract2 {
+            position: absolute;
+            top: 171px;
+            left: 94px;
+            width: 99px;
+            height: 33px;
+          }
+        }
+      }
+    }
+
+    .actionArea2 {
+      position: relative;
+      margin-top: 557px;
+      width: 272px;
+      height: 185px;
+      rotate: -45deg;
+
+      .background2 {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        bottom: 14px;
+        left: 14px;
+        width: 244px;
+        height: 157px;
+        overflow: hidden;
+
+        .gradient2 {
+          position: absolute;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          left: 0;
+          background: var(--Gradients-Chance);
+          background-color: var(--Colours-Property-Orange, #f7941d);
+          width: 244px;
+          height: 157px;
+          background-image: linear-gradient(
+            180deg,
+            #ffffff00 0%,
+            #ffffff3d 100%
+          );
+        }
+      }
+
+      .bottomBorder2 {
+        position: absolute;
+        right: 14px;
+        bottom: 0;
+        left: 14px;
+        width: 244px;
+        height: 9px;
+        rotate: 180deg;
+      }
+
+      .rightBorder2 {
+        position: absolute;
+        top: 88px;
+        right: -74px;
+        bottom: 88px;
+        width: 157px;
+        height: 9px;
+        rotate: 90deg;
+      }
+
+      .questionMark2 {
+        position: absolute;
+        top: 30px;
+        left: 106px;
+        width: 60px;
+        height: 126px;
+      }
+    }
+  }
+
+  .aRight {
+    display: inline-flex;
+    align-items: flex-start;
+    margin-top: 504px;
+    margin-left: -504px;
+    rotate: -90deg;
+
+    .variableTile11 {
+      display: flex;
+      flex-shrink: 0;
+      align-items: flex-start;
+      background: var(--Colours-General-Background, #d9e8d6);
+      padding-bottom: 20px;
+      overflow: hidden;
+
+      .colourBlock7 {
+        background: var(--Colours-Property-Blue-Dark, #0072bb);
+        width: 112px;
+        height: 42px;
+      }
+    }
+
+    .action5 {
+      display: flex;
+      flex-shrink: 0;
+      align-items: flex-start;
+      justify-content: space-between;
+      background: var(--Colours-General-Background, #d9e8d6);
+      padding-top: 50px;
+      padding-bottom: 20px;
+      width: 112px;
+      min-width: 112px;
+
+      .price8 {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 103px;
+        width: 112px;
+      }
+
+      .autoWrapper3 {
+        position: relative;
+        width: 100px;
+        height: 100px;
+
+        .textName6 {
+          position: absolute;
+          top: -31px;
+          right: -6px;
+          width: 112px;
+          height: 40px;
+          text-align: center;
+          line-height: 22px;
+          letter-spacing: 0.4px;
+          color: var(--Colours-General-Black, #000000);
+          font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+          font-size: 20px;
+          font-weight: 500;
+          text-transform: UPPERCASE;
+        }
+
+        .luxuryTax2 {
+          display: flex;
+          position: absolute;
+          top: 0;
+          left: 0;
+          align-items: center;
+          padding: 24px 17px 23px 18px;
+          width: 100px;
+          height: 100px;
+
+          .luxuryTax {
+            width: 65px;
+            height: 53px;
+          }
+        }
+      }
+    }
+
+    .action6 {
+      display: flex;
+      flex-shrink: 0;
+      align-items: flex-start;
+      justify-content: space-between;
+      background: var(--Colours-General-Background, #d9e8d6);
+      padding: 19px 8px 22px;
+      width: 112px;
+      min-width: 112px;
+
+      .questionMark3 {
+        margin-top: 27px;
+        width: 54px;
+        height: 114px;
+      }
+    }
+
+    .variableTile12 {
+      display: flex;
+      flex-shrink: 0;
+      align-items: flex-start;
+      background: var(--Colours-General-Background, #d9e8d6);
+      padding-bottom: 20px;
+      overflow: hidden;
+
+      .colourBlock8 {
+        background: var(--Colours-Property-Green, #1fb25a);
+        width: 112px;
+        height: 42px;
+      }
+    }
+
+    .corner4 {
+      display: flex;
+      flex-shrink: 0;
+      align-items: center;
+      background: var(--Colours-General-Background, #d9e8d6);
+
+      .container6 {
+        display: flex;
+        position: relative;
+        flex-grow: 1;
+        align-items: flex-start;
+        justify-content: space-between;
+        padding: 34px 10px 37px 26px;
+        width: 182px;
+        min-width: 182px;
+        overflow: hidden;
+        rotate: 270deg;
+
+        .textParking2 {
+          margin: 97px 0px 0px;
+          line-height: 22px;
+          letter-spacing: 0.4px;
+          color: var(--Colours-General-Black, #000000);
+          font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+          font-size: 20px;
+          font-weight: 500;
+          text-transform: UPPERCASE;
+          rotate: -315deg;
+        }
+
+        .textFree2 {
+          line-height: 22px;
+          letter-spacing: 0.4px;
+          color: var(--Colours-General-Black, #000000);
+          font-family: "ITC Kabel Std", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+          font-size: 20px;
+          font-weight: 500;
+          text-transform: UPPERCASE;
+          rotate: -315deg;
+        }
+
+        .goToJail2 {
+          display: flex;
+          position: absolute;
+          top: 40px;
+          left: 45px;
+          align-items: center;
+          padding: 6px 4px 6px 5px;
+          width: 100px;
+          height: 100px;
+          rotate: -315deg;
+
+          .goToJail {
+            width: 91px;
+            height: 88px;
+          }
+        }
+      }
+    }
+  }
+}
