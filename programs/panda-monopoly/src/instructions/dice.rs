@@ -164,7 +164,7 @@ pub fn roll_dice_handler(
 
                 emit!(PlayerPassedGo {
                     player: player_pubkey,
-                    game_id: game.game_id,
+                    game: game.key(),
                     salary_collected: GO_SALARY as u64,
                     new_position,
                     timestamp: clock.unix_timestamp,
@@ -241,7 +241,7 @@ pub fn roll_dice_handler(
 
             emit!(PlayerPassedGo {
                 player: player_pubkey,
-                game_id: game.game_id,
+                game: game.key(),
                 salary_collected: GO_SALARY as u64,
                 new_position,
                 timestamp: clock.unix_timestamp,
@@ -359,7 +359,7 @@ pub fn callback_roll_dice(ctx: Context<CallbackRollDiceCtx>, randomness: [u8; 32
 
         emit!(PlayerPassedGo {
             player: player_pubkey,
-            game_id: game.game_id,
+            game: game.key(),
             salary_collected: GO_SALARY as u64,
             new_position,
             timestamp: clock.unix_timestamp,
@@ -446,7 +446,7 @@ fn handle_jail_dice_roll(
 
             emit!(PlayerPassedGo {
                 player: player_state.wallet,
-                game_id: game.game_id,
+                game: game.key(),
                 salary_collected: GO_SALARY as u64,
                 new_position,
                 timestamp: clock.unix_timestamp,
@@ -596,7 +596,7 @@ fn handle_jail_dice_roll_without_vrf(
 
             emit!(PlayerPassedGo {
                 player: player_state.wallet,
-                game_id: game.game_id,
+                game: game.key(),
                 salary_collected: GO_SALARY as u64,
                 new_position,
                 timestamp: clock.unix_timestamp,

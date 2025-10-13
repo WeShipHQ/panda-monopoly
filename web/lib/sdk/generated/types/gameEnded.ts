@@ -33,7 +33,7 @@ import {
 } from '.';
 
 export type GameEnded = {
-  gameId: bigint;
+  game: Address;
   winner: Option<Address>;
   reason: GameEndReason;
   winnerNetWorth: Option<bigint>;
@@ -41,7 +41,7 @@ export type GameEnded = {
 };
 
 export type GameEndedArgs = {
-  gameId: number | bigint;
+  game: Address;
   winner: OptionOrNullable<Address>;
   reason: GameEndReasonArgs;
   winnerNetWorth: OptionOrNullable<number | bigint>;
@@ -50,7 +50,7 @@ export type GameEndedArgs = {
 
 export function getGameEndedEncoder(): Encoder<GameEndedArgs> {
   return getStructEncoder([
-    ['gameId', getU64Encoder()],
+    ['game', getAddressEncoder()],
     ['winner', getOptionEncoder(getAddressEncoder())],
     ['reason', getGameEndReasonEncoder()],
     ['winnerNetWorth', getOptionEncoder(getU64Encoder())],
@@ -60,7 +60,7 @@ export function getGameEndedEncoder(): Encoder<GameEndedArgs> {
 
 export function getGameEndedDecoder(): Decoder<GameEnded> {
   return getStructDecoder([
-    ['gameId', getU64Decoder()],
+    ['game', getAddressDecoder()],
     ['winner', getOptionDecoder(getAddressDecoder())],
     ['reason', getGameEndReasonDecoder()],
     ['winnerNetWorth', getOptionDecoder(getU64Decoder())],

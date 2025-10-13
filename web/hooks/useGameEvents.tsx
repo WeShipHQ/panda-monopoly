@@ -52,7 +52,12 @@ export function useGameEvents(
         isInProgress ? erRpcSubscriptions : rpcSubscriptions,
         async (event) => {
           console.log(`Event ${event.type} received`);
-          onEvent?.(event);
+          if (
+            event.data.game &&
+            event.data.game.toString() === gameAddress.toString()
+          ) {
+            onEvent?.(event);
+          }
         }
       );
 

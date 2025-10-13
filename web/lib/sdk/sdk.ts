@@ -73,6 +73,8 @@ import {
   getClaimRewardInstruction,
   getBuildHouseV2Instruction,
   getLeaveGameInstruction,
+  fetchAllPlayerState,
+  fetchAllMaybePlayerState,
 } from "./generated";
 import {
   CreateGameIxs,
@@ -1111,8 +1113,9 @@ class MonopolyGameSDK {
 
     const [vaultTokenAccount] = await getTokenVaultPda(
       NATIVE_MINT,
-      gameAuthorityPDA
+      params.gameAddress
     );
+    console.log("vaultTokenAccount", vaultTokenAccount);
 
     return getClaimRewardInstruction({
       game: params.gameAddress,
@@ -1184,6 +1187,48 @@ class MonopolyGameSDK {
     }
   }
 
+  async getPlayerAccounts(
+    primaryRpc: Rpc<SolanaRpcApi>,
+    fallbackRpc: Rpc<SolanaRpcApi>,
+    gamePDA: Address,
+    playerAddresses: Address[]
+  ): Promise<Account<PlayerState>[]> {
+    try {
+      const pdas = (
+        await Promise.all(
+          playerAddresses.map((player) => getPlayerStatePDA(gamePDA, player))
+        )
+      ).flatMap((item) => item[0]);
+
+      const maybePlayerStates = await fetchAllMaybePlayerState(
+        primaryRpc,
+        pdas
+      );
+
+      console.log("maybePlayerStates", maybePlayerStates);
+
+      const nonExistentPlayerAddresss = maybePlayerStates
+        .filter((item) => !item.exists)
+        .map((item) => item.address);
+
+      if (nonExistentPlayerAddresss.length > 0) {
+        const fallbackAccounts = await fetchAllMaybePlayerState(
+          fallbackRpc,
+          nonExistentPlayerAddresss
+        );
+
+        return [...maybePlayerStates, ...fallbackAccounts].filter(
+          (acc) => acc.exists
+        );
+      }
+
+      return maybePlayerStates.filter((acc) => acc.exists);
+    } catch (error) {
+      console.error("Error fetching players states:", error);
+      return [];
+    }
+  }
+
   /**
    * Get a specific trade by proposer
    */
@@ -1246,17 +1291,17 @@ class MonopolyGameSDK {
   ) {
     let ignoreFetch = false;
 
-    fetchEncodedAccount(rpc, accAddress)
-      .then((response) => {
-        if (ignoreFetch) {
-          return;
-        }
-        onAccountChange(response);
-      })
-      .catch((error) => {
-        console.error("Error fetching account:", accAddress, error);
-        onAccountChange(null);
-      });
+    // fetchEncodedAccount(rpc, accAddress)
+    //   .then((response) => {
+    //     if (ignoreFetch) {
+    //       return;
+    //     }
+    //     onAccountChange(response);
+    //   })
+    //   .catch((error) => {
+    //     console.error("Error fetching account:", accAddress, error);
+    //     onAccountChange(null);
+    //   });
 
     const abortController = new AbortController();
 
@@ -1413,7 +1458,6 @@ class MonopolyGameSDK {
             const trimmed = log.trim();
 
             if (trimmed.startsWith(PROGRAM_DATA)) {
-              console.log("xxx log", trimmed);
               const base64 = trimmed.slice(PROGRAM_DATA_START_INDEX);
               const buf = Buffer.from(base64, "base64");
 

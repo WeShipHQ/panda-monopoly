@@ -8,12 +8,13 @@
 
 import {
   combineCodec,
+  getAddressDecoder,
+  getAddressEncoder,
   getI64Decoder,
   getI64Encoder,
   getStructDecoder,
   getStructEncoder,
-  getU64Decoder,
-  getU64Encoder,
+  type Address,
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
@@ -26,20 +27,20 @@ import {
 } from '.';
 
 export type GameEndConditionMet = {
-  gameId: bigint;
+  game: Address;
   reason: GameEndReason;
   timestamp: bigint;
 };
 
 export type GameEndConditionMetArgs = {
-  gameId: number | bigint;
+  game: Address;
   reason: GameEndReasonArgs;
   timestamp: number | bigint;
 };
 
 export function getGameEndConditionMetEncoder(): FixedSizeEncoder<GameEndConditionMetArgs> {
   return getStructEncoder([
-    ['gameId', getU64Encoder()],
+    ['game', getAddressEncoder()],
     ['reason', getGameEndReasonEncoder()],
     ['timestamp', getI64Encoder()],
   ]);
@@ -47,7 +48,7 @@ export function getGameEndConditionMetEncoder(): FixedSizeEncoder<GameEndConditi
 
 export function getGameEndConditionMetDecoder(): FixedSizeDecoder<GameEndConditionMet> {
   return getStructDecoder([
-    ['gameId', getU64Decoder()],
+    ['game', getAddressDecoder()],
     ['reason', getGameEndReasonDecoder()],
     ['timestamp', getI64Decoder()],
   ]);

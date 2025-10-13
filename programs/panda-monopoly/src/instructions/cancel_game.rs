@@ -222,7 +222,6 @@ pub fn cancel_game_handler<'c: 'info, 'info>(
 
     emit!(GameCancelled {
         game: game.key(),
-        game_id: game.game_id,
         creator: game.creator,
         players_count: game.current_players,
         refund_amount: game.entry_fee,

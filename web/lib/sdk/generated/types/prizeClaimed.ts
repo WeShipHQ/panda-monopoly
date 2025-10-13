@@ -23,14 +23,14 @@ import {
 } from '@solana/kit';
 
 export type PrizeClaimed = {
-  gameId: bigint;
+  game: Address;
   winner: Address;
   prizeAmount: bigint;
   claimedAt: bigint;
 };
 
 export type PrizeClaimedArgs = {
-  gameId: number | bigint;
+  game: Address;
   winner: Address;
   prizeAmount: number | bigint;
   claimedAt: number | bigint;
@@ -38,7 +38,7 @@ export type PrizeClaimedArgs = {
 
 export function getPrizeClaimedEncoder(): FixedSizeEncoder<PrizeClaimedArgs> {
   return getStructEncoder([
-    ['gameId', getU64Encoder()],
+    ['game', getAddressEncoder()],
     ['winner', getAddressEncoder()],
     ['prizeAmount', getU64Encoder()],
     ['claimedAt', getI64Encoder()],
@@ -47,7 +47,7 @@ export function getPrizeClaimedEncoder(): FixedSizeEncoder<PrizeClaimedArgs> {
 
 export function getPrizeClaimedDecoder(): FixedSizeDecoder<PrizeClaimed> {
   return getStructDecoder([
-    ['gameId', getU64Decoder()],
+    ['game', getAddressDecoder()],
     ['winner', getAddressDecoder()],
     ['prizeAmount', getU64Decoder()],
     ['claimedAt', getI64Decoder()],
