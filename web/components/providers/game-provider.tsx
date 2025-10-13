@@ -64,6 +64,7 @@ interface GameContextType {
   resetGame: () => Promise<void>;
   closeGame: () => Promise<void>;
   joinGame: () => Promise<void>;
+  leaveGame: () => Promise<void>;
   rollDice: (diceRoll?: number[]) => Promise<void>;
   buyProperty: (position: number) => Promise<void>;
   skipProperty: (position: number) => Promise<void>;
@@ -204,9 +205,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     isLoading: gameLoading,
     error: gameError,
     refetch,
-  } = useGameState(gameAddress, {
-    onCardDrawEvent: addCardDrawEvent,
-  });
+  } = useGameState(gameAddress);
 
   const currentPlayerAddress = useMemo(() => {
     return gameState?.players?.[gameState?.currentTurn] || null;
@@ -447,6 +446,32 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       throw error;
     }
   }, [rpc, gameAddress, wallet, gameState]);
+
+  const leaveGame = useCallback(async (): Promise<void> => {
+    if (!gameAddress || !wallet?.address || !wallet.delegated) {
+      throw new Error("Game address or player signer not available");
+    }
+
+    try {
+      const instructions = await sdk.leaveGameIx({
+        rpc,
+        gameAddress,
+        player: { address: address(wallet.address) } as TransactionSigner,
+      });
+
+      const signature = await buildAndSendTransactionWithPrivy(
+        rpc,
+        instructions,
+        wallet
+      );
+
+      console.log("[leaveGame] tx", signature);
+      alert("success");
+    } catch (error) {
+      console.error("Error leaving game:", error);
+      throw error;
+    }
+  }, [rpc, gameAddress, wallet]);
 
   const rollDice = useCallback(
     async (diceRoll?: number[]): Promise<void> => {
@@ -1076,7 +1101,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [gameAddress, wallet, erRpc, refetch]
+    [gameAddress, wallet, erRpc]
   );
 
   const acceptTrade = useCallback(
@@ -1592,6 +1617,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     resetGame,
     closeGame,
     joinGame,
+    leaveGame,
     rollDice,
     buyProperty,
     skipProperty,

@@ -62,6 +62,12 @@ export interface JoinGameIxs {
   playerStateAddress: Address;
 }
 
+export interface LeaveGameParams {
+  rpc: Rpc<SolanaRpcApi>;
+  player: TransactionSigner;
+  gameAddress: Address;
+}
+
 export interface StartGameParams {
   rpc: Rpc<SolanaRpcApi>;
   authority: TransactionSigner;

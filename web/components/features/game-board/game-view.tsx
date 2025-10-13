@@ -12,9 +12,8 @@ import { DiceLoading } from "@/components/dice-loading";
 
 export function GameView() {
   const { address: gameAddress } = useParams<{ address: string }>();
-  const { setGameAddress, gameState, gameLoading, gameError } =
-    useGameContext();
-  console.log("check", gameLoading, gameState);
+  const { setGameAddress, gameLoading, gameError } = useGameContext();
+
   useEffect(() => {
     if (gameAddress) {
       setGameAddress(address(gameAddress));

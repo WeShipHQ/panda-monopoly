@@ -17,7 +17,7 @@ import { showGameEndedToast } from "@/lib/toast-utils";
 import { GameEndReason } from "@/lib/sdk/generated";
 
 export function DebugUI() {
-  const { currentPlayerState, refetch } = useGameContext();
+  const { currentPlayerState, refetch, leaveGame } = useGameContext();
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleUpdateBalance = async () => {
@@ -91,6 +91,7 @@ export function DebugUI() {
       >
         CHANCE
       </Button>
+      <Button onClick={leaveGame}>LEAVE</Button>
       <GameInfo />
       <DiceTestForm />
     </div>
