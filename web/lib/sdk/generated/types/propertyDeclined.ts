@@ -24,45 +24,48 @@ import {
   type FixedSizeEncoder,
 } from '@solana/kit';
 
-export type PlayerPassedGo = {
+export type PropertyDeclined = {
   game: Address;
   player: Address;
-  salaryCollected: bigint;
-  newPosition: number;
+  propertyPosition: number;
+  price: bigint;
   timestamp: bigint;
 };
 
-export type PlayerPassedGoArgs = {
+export type PropertyDeclinedArgs = {
   game: Address;
   player: Address;
-  salaryCollected: number | bigint;
-  newPosition: number;
+  propertyPosition: number;
+  price: number | bigint;
   timestamp: number | bigint;
 };
 
-export function getPlayerPassedGoEncoder(): FixedSizeEncoder<PlayerPassedGoArgs> {
+export function getPropertyDeclinedEncoder(): FixedSizeEncoder<PropertyDeclinedArgs> {
   return getStructEncoder([
     ['game', getAddressEncoder()],
     ['player', getAddressEncoder()],
-    ['salaryCollected', getU64Encoder()],
-    ['newPosition', getU8Encoder()],
+    ['propertyPosition', getU8Encoder()],
+    ['price', getU64Encoder()],
     ['timestamp', getI64Encoder()],
   ]);
 }
 
-export function getPlayerPassedGoDecoder(): FixedSizeDecoder<PlayerPassedGo> {
+export function getPropertyDeclinedDecoder(): FixedSizeDecoder<PropertyDeclined> {
   return getStructDecoder([
     ['game', getAddressDecoder()],
     ['player', getAddressDecoder()],
-    ['salaryCollected', getU64Decoder()],
-    ['newPosition', getU8Decoder()],
+    ['propertyPosition', getU8Decoder()],
+    ['price', getU64Decoder()],
     ['timestamp', getI64Decoder()],
   ]);
 }
 
-export function getPlayerPassedGoCodec(): FixedSizeCodec<
-  PlayerPassedGoArgs,
-  PlayerPassedGo
+export function getPropertyDeclinedCodec(): FixedSizeCodec<
+  PropertyDeclinedArgs,
+  PropertyDeclined
 > {
-  return combineCodec(getPlayerPassedGoEncoder(), getPlayerPassedGoDecoder());
+  return combineCodec(
+    getPropertyDeclinedEncoder(),
+    getPropertyDeclinedDecoder()
+  );
 }

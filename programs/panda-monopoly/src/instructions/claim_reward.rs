@@ -130,7 +130,7 @@ pub fn claim_reward_handler(ctx: Context<ClaimReward>) -> Result<()> {
     );
 
     emit!(PrizeClaimed {
-        game_id: game.game_id,
+        game: game.key(),
         winner: winner_pubkey,
         prize_amount,
         claimed_at: clock.unix_timestamp,

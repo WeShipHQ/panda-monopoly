@@ -26,7 +26,6 @@ import {
 
 export type GameCancelled = {
   game: Address;
-  gameId: bigint;
   creator: Address;
   playersCount: number;
   refundAmount: bigint;
@@ -35,7 +34,6 @@ export type GameCancelled = {
 
 export type GameCancelledArgs = {
   game: Address;
-  gameId: number | bigint;
   creator: Address;
   playersCount: number;
   refundAmount: number | bigint;
@@ -45,7 +43,6 @@ export type GameCancelledArgs = {
 export function getGameCancelledEncoder(): FixedSizeEncoder<GameCancelledArgs> {
   return getStructEncoder([
     ['game', getAddressEncoder()],
-    ['gameId', getU64Encoder()],
     ['creator', getAddressEncoder()],
     ['playersCount', getU8Encoder()],
     ['refundAmount', getU64Encoder()],
@@ -56,7 +53,6 @@ export function getGameCancelledEncoder(): FixedSizeEncoder<GameCancelledArgs> {
 export function getGameCancelledDecoder(): FixedSizeDecoder<GameCancelled> {
   return getStructDecoder([
     ['game', getAddressDecoder()],
-    ['gameId', getU64Decoder()],
     ['creator', getAddressDecoder()],
     ['playersCount', getU8Decoder()],
     ['refundAmount', getU64Decoder()],

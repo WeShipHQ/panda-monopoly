@@ -1332,6 +1332,14 @@ pub fn decline_property_v2_handler(ctx: Context<DeclinePropertyV2>, position: u8
         static_data.price
     );
 
+    emit!(PropertyDeclined {
+        game: game.key(),
+        player: player_pubkey,
+        property_position: position,
+        price: static_data.price,
+        timestamp: clock.unix_timestamp,
+    });
+
     // Note: Auction system would be triggered here in full implementation
 
     Ok(())
@@ -1932,14 +1940,4 @@ pub fn unmortgage_property_v2_handler(
     });
 
     Ok(())
-}
-
-// bankruptcy
-#[event]
-pub struct PlayerBankrupt {
-    pub game: Pubkey,
-    pub player: Pubkey,
-    pub liquidation_value: u64,
-    pub cash_transferred: u64,
-    pub timestamp: i64,
 }

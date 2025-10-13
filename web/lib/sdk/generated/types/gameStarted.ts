@@ -14,8 +14,6 @@ import {
   getI64Encoder,
   getStructDecoder,
   getStructEncoder,
-  getU64Decoder,
-  getU64Encoder,
   getU8Decoder,
   getU8Encoder,
   type Address,
@@ -26,7 +24,6 @@ import {
 
 export type GameStarted = {
   game: Address;
-  gameId: bigint;
   totalPlayers: number;
   firstPlayer: Address;
   timestamp: bigint;
@@ -34,7 +31,6 @@ export type GameStarted = {
 
 export type GameStartedArgs = {
   game: Address;
-  gameId: number | bigint;
   totalPlayers: number;
   firstPlayer: Address;
   timestamp: number | bigint;
@@ -43,7 +39,6 @@ export type GameStartedArgs = {
 export function getGameStartedEncoder(): FixedSizeEncoder<GameStartedArgs> {
   return getStructEncoder([
     ['game', getAddressEncoder()],
-    ['gameId', getU64Encoder()],
     ['totalPlayers', getU8Encoder()],
     ['firstPlayer', getAddressEncoder()],
     ['timestamp', getI64Encoder()],
@@ -53,7 +48,6 @@ export function getGameStartedEncoder(): FixedSizeEncoder<GameStartedArgs> {
 export function getGameStartedDecoder(): FixedSizeDecoder<GameStarted> {
   return getStructDecoder([
     ['game', getAddressDecoder()],
-    ['gameId', getU64Decoder()],
     ['totalPlayers', getU8Decoder()],
     ['firstPlayer', getAddressDecoder()],
     ['timestamp', getI64Decoder()],

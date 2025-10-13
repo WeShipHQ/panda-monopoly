@@ -24,6 +24,7 @@ export * from './playerJoined';
 export * from './playerLeft';
 export * from './playerPassedGo';
 export * from './prizeClaimed';
+export * from './propertyDeclined';
 export * from './propertyInfo';
 export * from './propertyMortgaged';
 export * from './propertyPurchased';

@@ -23,8 +23,8 @@ pub struct CommunityChestCardDrawn {
 
 #[event]
 pub struct PlayerPassedGo {
+    pub game: Pubkey,
     pub player: Pubkey,
-    pub game_id: u64,
     pub salary_collected: u64,
     pub new_position: u8,
     pub timestamp: i64,
@@ -33,7 +33,7 @@ pub struct PlayerPassedGo {
 // Game ending event
 #[event]
 pub struct GameEnded {
-    pub game_id: u64,
+    pub game: Pubkey,
     pub winner: Option<Pubkey>,
     pub reason: GameEndReason,
     pub winner_net_worth: Option<u64>,
@@ -90,6 +90,15 @@ pub struct TradesCleanedUp {
 
 #[event]
 pub struct PropertyPurchased {
+    pub game: Pubkey,
+    pub player: Pubkey,
+    pub property_position: u8,
+    pub price: u64,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct PropertyDeclined {
     pub game: Pubkey,
     pub player: Pubkey,
     pub property_position: u8,
@@ -167,7 +176,6 @@ pub struct PlayerJoined {
 #[event]
 pub struct GameStarted {
     pub game: Pubkey,
-    pub game_id: u64,
     pub total_players: u8,
     pub first_player: Pubkey,
     pub timestamp: i64,
@@ -195,7 +203,7 @@ pub struct TaxPaid {
 
 #[event]
 pub struct PrizeClaimed {
-    pub game_id: u64,
+    pub game: Pubkey,
     pub winner: Pubkey,
     pub prize_amount: u64,
     pub claimed_at: i64,
@@ -213,7 +221,6 @@ pub struct PlayerLeft {
 #[event]
 pub struct GameCancelled {
     pub game: Pubkey,
-    pub game_id: u64,
     pub creator: Pubkey,
     pub players_count: u8,
     pub refund_amount: u64,
@@ -222,7 +229,16 @@ pub struct GameCancelled {
 
 #[event]
 pub struct GameEndConditionMet {
-    pub game_id: u64,
+    pub game: Pubkey,
     pub reason: GameEndReason,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct PlayerBankrupt {
+    pub game: Pubkey,
+    pub player: Pubkey,
+    pub liquidation_value: u64,
+    pub cash_transferred: u64,
     pub timestamp: i64,
 }
