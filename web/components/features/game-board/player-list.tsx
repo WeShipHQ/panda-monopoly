@@ -10,6 +10,7 @@ import { HomeIcon } from "lucide-react";
 import { useWallet } from "@/hooks/use-wallet";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { UserAvatar } from "@/components/user-avatar";
 
 interface BalanceChangeAnimationProps {
   change: number;
@@ -100,7 +101,7 @@ function PlayerItem({
       <CardContent className="px-3">
         <div className="flex items-center gap-3 justify-stretch">
           <div className="relative">
-            <Avatar className="w-10 h-10">
+            {/* <Avatar className="w-10 h-10">
               <AvatarImage
                 walletAddress={player.wallet}
                 alt={`Player ${index + 1}`}
@@ -111,7 +112,12 @@ function PlayerItem({
               >
                 {(index + 1).toString()}
               </AvatarFallback>
-            </Avatar>
+            </Avatar> */}
+            <UserAvatar
+              walletAddress={player.wallet}
+              // alt={`Player ${index + 1}`}
+              // size="sm"
+            />
           </div>
 
           <div className="flex-1 min-w-0">
@@ -196,8 +202,9 @@ export function PlayerList() {
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">Players</h2>
         <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <PlayerLoadingItem key={i} />
+          {Array.from({ length: 4 }).map((id) => (
+            // @ts-expect-error
+            <PlayerLoadingItem key={id} />
           ))}
         </div>
       </div>

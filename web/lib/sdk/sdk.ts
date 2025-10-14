@@ -75,6 +75,10 @@ import {
   getLeaveGameInstruction,
   fetchAllPlayerState,
   fetchAllMaybePlayerState,
+  getPlayerLeftCodec,
+  getGameCancelledCodec,
+  getPropertyDeclinedCodec,
+  getPrizeClaimedCodec,
 } from "./generated";
 import {
   CreateGameIxs,
@@ -176,6 +180,10 @@ import {
   PLAYER_BANKRUPT_EVENT_DISCRIMINATOR,
   TAX_PAID_EVENT_DISCRIMINATOR,
   GAME_END_CONDITION_MET_EVENT_DISCRIMINATOR,
+  PLAYER_LEFT_EVENT_DISCRIMINATOR,
+  GAME_CANCELLED_EVENT_DISCRIMINATOR,
+  PROPERTY_DECLINED_EVENT_DISCRIMINATOR,
+  PRIZE_CLAIMED_EVENT_DISCRIMINATOR,
 } from "@/configs/constants";
 import { GameAccount, mapGameStateToAccount } from "@/types/schema";
 import { getTransferSolInstruction } from "@solana-program/system";
@@ -1541,6 +1549,13 @@ class MonopolyGameSDK {
                 );
                 onEvent({ type: "PropertyPurchased", data });
               } else if (
+                discriminator.equals(
+                  Buffer.from(PROPERTY_DECLINED_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getPropertyDeclinedCodec().decode(buf.subarray(8));
+                onEvent({ type: "PropertyDeclined", data });
+              } else if (
                 discriminator.equals(Buffer.from(RENT_PAID_EVENT_DISCRIMINATOR))
               ) {
                 const data = getRentPaidCodec().decode(buf.subarray(8));
@@ -1628,6 +1643,27 @@ class MonopolyGameSDK {
                   buf.subarray(8)
                 );
                 onEvent({ type: "GameEndConditionMet", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(PLAYER_LEFT_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getPlayerLeftCodec().decode(buf.subarray(8));
+                onEvent({ type: "PlayerLeft", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(GAME_CANCELLED_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getGameCancelledCodec().decode(buf.subarray(8));
+                onEvent({ type: "GameCancelled", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(PRIZE_CLAIMED_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getPrizeClaimedCodec().decode(buf.subarray(8));
+                onEvent({ type: "PrizeClaimed", data });
               }
             }
           }

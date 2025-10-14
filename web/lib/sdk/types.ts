@@ -31,6 +31,10 @@ import {
   PlayerBankrupt,
   TaxPaid,
   GameEndConditionMet,
+  PlayerLeft,
+  GameCancelled,
+  PropertyDeclined,
+  PrizeClaimed,
 } from "./generated";
 
 export interface CreatePlatformParams {
@@ -265,6 +269,14 @@ export interface ClaimRewardParams {
 // Complete GameEvent union type with all events from events.rs
 export type GameEvent =
   | {
+      type: "PlayerLeft";
+      data: PlayerLeft;
+    }
+  | {
+      type: "GameCancelled";
+      data: GameCancelled;
+    }
+  | {
       type: "ChanceCardDrawn";
       data: ChanceCardDrawn;
     }
@@ -303,6 +315,10 @@ export type GameEvent =
   | {
       type: "PropertyPurchased";
       data: PropertyPurchased;
+    }
+  | {
+      type: "PropertyDeclined";
+      data: PropertyDeclined;
     }
   | {
       type: "RentPaid";
@@ -351,4 +367,8 @@ export type GameEvent =
   | {
       type: "GameEndConditionMet";
       data: GameEndConditionMet;
+    }
+  | {
+      type: "PrizeClaimed";
+      data: PrizeClaimed;
     };
