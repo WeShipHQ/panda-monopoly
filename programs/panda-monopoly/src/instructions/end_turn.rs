@@ -71,7 +71,7 @@ pub fn end_turn_handler(ctx: Context<EndTurn>) -> Result<()> {
         game.end_reason = Some(GameEndReason::TimeLimit);
 
         emit!(GameEndConditionMet {
-            game_id: game.game_id,
+            game: game.key(),
             reason: GameEndReason::TimeLimit,
             timestamp: clock.unix_timestamp,
         });

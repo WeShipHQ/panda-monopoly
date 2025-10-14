@@ -1,11 +1,6 @@
-import {
-  ColorGroup,
-  PropertySpace,
-  RailroadSpace,
-  TaxSpace,
-} from "@/configs/board-data";
+import { TaxSpace } from "@/configs/board-data";
+import { GameEvent } from "@/lib/sdk/types";
 import { PropertyAccount } from "@/types/schema";
-import type { Address } from "@solana/kit";
 
 export interface BaseSpaceProps {
   position: number;
@@ -32,29 +27,33 @@ export interface CardData {
 
 export interface GameLogEntry {
   id: string;
+  gameId: string;
   timestamp: number;
-  type:
-    | "move"
-    | "purchase"
-    | "rent"
-    | "card"
-    | "jail"
-    | "bankruptcy"
-    | "turn"
-    | "dice"
-    | "building"
-    | "trade"
-    | "game"
-    | "skip"
-    | "join";
+  type: GameEvent["type"];
+  // type:
+  //   | "move"
+  //   | "purchase"
+  //   | "rent"
+  //   | "card"
+  //   | "jail"
+  //   | "bankruptcy"
+  //   | "turn"
+  //   | "dice"
+  //   | "building"
+  //   | "trade"
+  //   | "game"
+  //   | "skip"
+  //   | "join"
+  //   | "leave";
   playerId: string;
   playerName?: string;
-  message: string;
+  // Removed message field - now generated dynamically
   details?: {
     // Property-related
     propertyName?: string;
     position?: number;
     price?: number;
+    houseCount?: number;
 
     // payRent
     owner?: string;
@@ -71,11 +70,13 @@ export interface GameLogEntry {
     tradeId?: string;
     action?: string;
     targetPlayer?: string;
-    targetPlayerName?: string;
-    offeredProperties?: number[];
-    requestedProperties?: number[];
+    // targetPlayerName?: string;
+    offeredProperties?: number | null;
+    requestedProperties?: number | null;
     offeredMoney?: number;
     requestedMoney?: number;
+    // clear trades:
+    remainingTrades?: number;
 
     // Movement-related
     fromPosition?: number;
@@ -94,7 +95,21 @@ export interface GameLogEntry {
     // Tax-related
     taxType?: string;
 
-    // Other
+    // bankruptcy
+    liquidationValue?: number;
+    cashTransferred?: number;
+
+    // special spaces
+    spaceType?: number;
+
+    // end game
+    winner?: string | null;
+    winnerNetWorth?: number;
+
+    // claim prize
+    prizeAmount?: number;
+
+    // other
     signature?: string;
     error?: string;
   };

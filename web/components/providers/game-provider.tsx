@@ -7,7 +7,6 @@ import {
   GameAccount,
   PlayerAccount,
   PropertyAccount,
-  // PropertyInfo,
   TradeOffer,
 } from "@/types/schema";
 import { Address, address, TransactionSigner } from "@solana/kit";
@@ -27,8 +26,6 @@ import {
   calculateRentForProperty,
 } from "@/lib/board-utils";
 import { GameLogEntry } from "@/types/space-types";
-import { formatAddress } from "@/lib/utils";
-import { useGameLogs } from "@/hooks/useGameLogs";
 import { useRpcContext } from "./rpc-provider";
 import { useWallet } from "@/hooks/use-wallet";
 import { playPropertySound, playSound, SOUND_CONFIG } from "@/lib/soundUtil";
@@ -64,6 +61,7 @@ interface GameContextType {
   resetGame: () => Promise<void>;
   closeGame: () => Promise<void>;
   joinGame: () => Promise<void>;
+  leaveGame: () => Promise<void>;
   rollDice: (diceRoll?: number[]) => Promise<void>;
   buyProperty: (position: number) => Promise<void>;
   skipProperty: (position: number) => Promise<void>;
@@ -109,23 +107,12 @@ interface GameContextType {
   showPayJailFine: boolean;
   showGetOutOfJailCard: boolean;
 
-  // Game logs
-  gameLogs: GameLogEntry[];
-
   // Utility functions
   getPropertyByPosition: (position: number) => PropertyAccount | null;
   getPlayerByAddress: (address: Address) => PlayerAccount | null;
   isCurrentPlayerTurn: () => boolean;
   canRollDice: () => boolean;
   canPlayerAct: () => boolean;
-
-  // events
-  cardDrawEvents: GameEvent[];
-  latestCardDraw: GameEvent | null;
-  addCardDrawEvent: (event: Omit<GameEvent, "id" | "timestamp">) => void;
-  clearCardDrawEvents: () => void;
-  acknowledgeCardDraw: () => void; // Mark the latest card as acknowledged
-
   // demo
   demoDices: number[] | null;
   setDemoDices: (dices: number[] | null) => void;
@@ -166,36 +153,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [hasShownCommunityChestModal, setHasShownCommunityChestModal] =
     useState(false);
 
-  const { gameLogs, addGameLog } = useGameLogs();
-
-  // events
-  const [cardDrawEvents, setCardDrawEvents] = useState<GameEvent[]>([]);
-  const [latestCardDraw, setLatestCardDraw] = useState<GameEvent | null>(null);
-
+  // demo
   const [demoDices, setDemoDices] = useState<number[] | null>(null);
 
   const { rpc, erRpc } = useRpcContext();
-
-  const addCardDrawEvent = useCallback(
-    (newEvent: GameEvent) => {
-      setCardDrawEvents((prev) => [...prev, newEvent].slice(-50)); // Keep last 50 events
-      setLatestCardDraw(newEvent);
-
-      // addGameLog({
-      //   type: "card",
-      //   playerId: newEvent.data.player,
-      //   message: `${formatAddress(newEvent.data.player)} drew a card`,
-      //   details: {
-      //     cardType:
-      //       newEvent.type === "ChanceCardDrawn" ? "chance" : "community-chest",
-      //     cardIndex: newEvent.data.cardIndex,
-      //     effectType: newEvent.data.effectType,
-      //     amount: newEvent.data.amount,
-      //   },
-      // });
-    },
-    [addGameLog]
-  );
 
   const {
     players,
@@ -204,9 +165,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     isLoading: gameLoading,
     error: gameError,
     refetch,
-  } = useGameState(gameAddress, {
-    onCardDrawEvent: addCardDrawEvent,
-  });
+  } = useGameState(gameAddress);
 
   const currentPlayerAddress = useMemo(() => {
     return gameState?.players?.[gameState?.currentTurn] || null;
@@ -353,7 +312,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.error("Error starting game:", error);
       throw error;
     }
-  }, [rpc, gameAddress, gameState, wallet, addGameLog]);
+  }, [rpc, gameAddress, gameState, wallet]);
 
   const resetGame = useCallback(async (): Promise<void> => {
     if (!gameAddress || !gameState || !wallet?.address || !wallet.delegated) {
@@ -448,6 +407,32 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
   }, [rpc, gameAddress, wallet, gameState]);
 
+  const leaveGame = useCallback(async (): Promise<void> => {
+    if (!gameAddress || !wallet?.address || !wallet.delegated) {
+      throw new Error("Game address or player signer not available");
+    }
+
+    try {
+      const instructions = await sdk.leaveGameIx({
+        rpc,
+        gameAddress,
+        player: { address: address(wallet.address) } as TransactionSigner,
+      });
+
+      const signature = await buildAndSendTransactionWithPrivy(
+        rpc,
+        instructions,
+        wallet
+      );
+
+      console.log("[leaveGame] tx", signature);
+      alert("success");
+    } catch (error) {
+      console.error("Error leaving game:", error);
+      throw error;
+    }
+  }, [rpc, gameAddress, wallet]);
+
   const rollDice = useCallback(
     async (diceRoll?: number[]): Promise<void> => {
       if (!gameAddress || !wallet?.address || !wallet.delegated) {
@@ -472,22 +457,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         );
 
         console.log("[rollDice] tx", signature);
-
-        addGameLog({
-          type: "dice",
-          playerId: wallet.address,
-          message: `${formatAddress(wallet.address)} rolled the dice`,
-          details: {
-            diceRoll: diceRoll as [number, number] | undefined,
-            signature,
-          },
-        });
       } catch (error) {
         console.error("Error rolling dice:", error);
         throw error;
       }
     },
-    [gameAddress, wallet, addGameLog]
+    [gameAddress, wallet]
   );
 
   const buyProperty = useCallback(
@@ -497,18 +472,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       try {
-        // const initPropertyInstruction = await sdk.initPropertyIx({
-        //   gameAddress,
-        //   player: { address: address(wallet.address) } as TransactionSigner,
-        //   position,
-        // });
-
-        // const signature1 = await buildAndSendTransactionWithPrivy(
-        //   rpc,
-        //   [initPropertyInstruction],
-        //   wallet
-        // );
-
         const instruction = await sdk.buyPropertyIxV2({
           gameAddress,
           player: { address: address(wallet.address) } as TransactionSigner,
@@ -530,26 +493,13 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         playPropertySound("buy");
 
         const propertyData = getTypedSpaceData(position, "property");
-        addGameLog({
-          type: "purchase",
-          playerId: wallet.address,
-          message: `${formatAddress(wallet.address)} bought ${
-            propertyData?.name || "N/A"
-          }`,
-          details: {
-            position,
-            propertyName: propertyData?.name || "N/A",
-            price: propertyData?.price || 0,
-            signature,
-          },
-        });
         soundUtil.playPropertySound("buy");
       } catch (error) {
         console.error("Error buying property:", error);
         throw error;
       }
     },
-    [gameAddress, wallet, addGameLog]
+    [gameAddress, wallet]
   );
 
   const skipProperty = useCallback(
@@ -578,20 +528,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         console.log("[skipProperty] tx", signature);
 
         const propertyData = getTypedSpaceData(position, "property");
-        addGameLog({
-          type: "skip",
-          playerId: wallet.address,
-          message: `${formatAddress(wallet.address)} skipped ${
-            propertyData?.name || "property"
-          }`,
-          details: { position },
-        });
       } catch (error) {
         console.error("Error skipping property:", error);
         throw error;
       }
     },
-    [gameAddress, wallet, addGameLog]
+    [gameAddress, wallet]
   );
 
   const payRent = useCallback(
@@ -624,27 +566,13 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         const propertyData = getTypedSpaceData(position, "property");
 
-        addGameLog({
-          type: "rent",
-          playerId: wallet.address,
-          message: `${formatAddress(
-            wallet.address
-          )} paid rent to ${formatAddress(owner)}`,
-          details: {
-            position,
-            propertyName: propertyData?.name || "N/A",
-            owner,
-            signature,
-          },
-        });
-
         console.log("Rent paid:", signature);
       } catch (error) {
         console.error("Error paying rent:", error);
         throw error;
       }
     },
-    [gameAddress, wallet, addGameLog]
+    [gameAddress, wallet]
   );
 
   const endTurn = useCallback(async (): Promise<void> => {
@@ -669,17 +597,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[endTurn] tx", signature);
-
-      addGameLog({
-        type: "turn",
-        playerId: wallet.address,
-        message: `${formatAddress(wallet.address)} ended their turn`,
-      });
     } catch (error) {
       console.error("Error ending turn:", error);
       throw error;
     }
-  }, [gameAddress, wallet, addGameLog]);
+  }, [gameAddress, wallet]);
 
   const drawChanceCard = useCallback(async (): Promise<void> => {
     if (!gameAddress || !wallet?.address || !wallet.delegated) {
@@ -704,20 +626,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[drawChanceCard] tx", signature);
-
-      addGameLog({
-        type: "card",
-        playerId: wallet.address,
-        message: `${formatAddress(wallet.address)} drew a Chance card`,
-        details: { cardType: "chance", signature },
-      });
-
-      console.log("Chance card drawn:", signature);
     } catch (error) {
       console.error("Error drawing chance card:", error);
       throw error;
     }
-  }, [gameAddress, wallet, addGameLog]);
+  }, [gameAddress, wallet]);
 
   const drawCommunityChestCard = useCallback(async (): Promise<void> => {
     if (!gameAddress || !wallet?.address || !wallet.delegated) {
@@ -743,19 +656,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
       console.log("[drawCommunityChestCard] tx", signature);
 
-      addGameLog({
-        type: "card",
-        playerId: wallet.address,
-        message: `${formatAddress(wallet.address)} drew a Community Chest card`,
-        details: { cardType: "community-chest", signature },
-      });
-
       console.log("Community Chest card drawn:", signature);
     } catch (error) {
       console.error("Error drawing community chest card:", error);
       throw error;
     }
-  }, [gameAddress, wallet, addGameLog]);
+  }, [gameAddress, wallet]);
 
   const payJailFine = useCallback(async (): Promise<void> => {
     if (!gameAddress || !wallet?.address || !wallet.delegated) {
@@ -777,20 +683,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         true
       );
 
-      addGameLog({
-        type: "jail",
-        playerId: wallet.address,
-        message: `${formatAddress(
-          wallet.address
-        )} paid jail fine and was released`,
-      });
-
       console.log("[payJailFine] tx", signature);
     } catch (error) {
       console.error("Error paying jail fine:", error);
       throw error;
     }
-  }, [gameAddress, wallet, addGameLog]);
+  }, [gameAddress, wallet]);
 
   const useGetOutOfJailCard = useCallback(async (): Promise<void> => {
     if (!gameAddress || !wallet?.address || !wallet.delegated) {
@@ -817,7 +715,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.error("Error using get out of jail card:", error);
       throw error;
     }
-  }, [gameAddress, wallet, addGameLog]);
+  }, [gameAddress, wallet]);
 
   const buildHouse = useCallback(
     async (position: number): Promise<void> => {
@@ -842,25 +740,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         );
 
         console.log("[buildHouse] tx", signature);
-
-        // Play property buy sound for building
-        playPropertySound("buy");
-
-        const propertyData = getTypedSpaceData(position, "property");
-        addGameLog({
-          type: "building",
-          playerId: wallet.address,
-          message: `${formatAddress(wallet.address)} built a house on ${
-            propertyData?.name || "property"
-          }`,
-          details: { position, buildingType: "house" },
-        });
       } catch (error) {
         console.error("Error building house:", error);
         throw error;
       }
     },
-    [gameAddress, wallet, addGameLog]
+    [gameAddress, wallet]
   );
 
   const buildHotel = useCallback(
@@ -886,25 +771,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         );
 
         console.log("[buildHotel] tx", signature);
-
-        // Play property buy sound for building hotel
-        playPropertySound("buy");
-
-        const propertyData = getTypedSpaceData(position, "property");
-        addGameLog({
-          type: "building",
-          playerId: wallet.address,
-          message: `${formatAddress(wallet.address)} built a hotel on ${
-            propertyData?.name || "property"
-          }`,
-          details: { position, buildingType: "hotel" },
-        });
       } catch (error) {
         console.error("Error building hotel:", error);
         throw error;
       }
     },
-    [gameAddress, wallet, addGameLog]
+    [gameAddress, wallet]
   );
 
   const sellBuilding = useCallback(
@@ -932,23 +804,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         );
 
         console.log("[sellBuilding] tx", signature);
-
-        const propertyData = getTypedSpaceData(position, "property");
-        addGameLog({
-          type: "building",
-          playerId: wallet.address,
-          message: `${formatAddress(
-            wallet.address
-          )} sold a ${buildingType} on ${propertyData?.name || "property"}`,
-          // @ts-expect-error
-          details: { position, buildingType: `sell_${buildingType}` },
-        });
       } catch (error) {
         console.error(`Error selling ${buildingType}:`, error);
         throw error;
       }
     },
-    [gameAddress, wallet, addGameLog]
+    [gameAddress, wallet]
   );
 
   const payMevTax = useCallback(async (): Promise<void> => {
@@ -976,7 +837,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.error("Error paying MEV tax:", error);
       throw error;
     }
-  }, [gameAddress, wallet, addGameLog]);
+  }, [gameAddress, wallet]);
 
   const payPriorityFeeTax = useCallback(async (): Promise<void> => {
     if (!gameAddress || !wallet?.address || !wallet.delegated) {
@@ -1000,24 +861,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[payPriorityFeeTax] tx", signature);
-
-      addGameLog({
-        type: "move",
-        playerId: wallet.address,
-        message: `${formatAddress(
-          wallet.address
-        )} paid Priority Fee tax of $${"PRIORITY_FEE_TAX_AMOUNT"}`,
-        details: {
-          taxType: "priority_fee",
-          amount: 9999,
-          signature,
-        },
-      });
     } catch (error) {
       console.error("Error paying Priority Fee tax:", error);
       throw error;
     }
-  }, [gameAddress, wallet, addGameLog]);
+  }, [gameAddress, wallet]);
 
   const createTrade = useCallback(
     async (
@@ -1076,7 +924,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [gameAddress, wallet, erRpc, refetch]
+    [gameAddress, wallet, erRpc]
   );
 
   const acceptTrade = useCallback(
@@ -1297,12 +1145,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       // Priority 1: Handle bankruptcy check first (most critical)
       if (player.needsBankruptcyCheck) {
         console.log("Player needs bankruptcy check");
-        // TODO: Implement bankruptcy handling
-        addGameLog({
-          type: "bankruptcy",
-          playerId: player.wallet,
-          message: `${formatAddress(player.wallet)} is checking for bankruptcy`,
-        });
         return;
       }
 
@@ -1517,14 +1359,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         console.log("Player rolled doubles and can roll again");
         // Reset hasRolledDice flag so they can roll again
         // This should be handled by the smart contract, but we can show UI feedback
-        addGameLog({
-          type: "dice",
-          playerId: player.wallet,
-          message: `${formatAddress(
-            player.wallet
-          )} rolled doubles and gets another turn!`,
-          details: { doublesCount: player.doublesCount },
-        });
         return;
       }
 
@@ -1543,7 +1377,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
 
     if (gameAddress && currentPlayerState && signer && isCurrentPlayerTurn()) {
-      console.log("-------------------------------");
       handleAction(currentPlayerState);
     }
   }, [
@@ -1553,21 +1386,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     properties,
     payRent,
     isCurrentPlayerTurn,
-    addGameLog,
     isCardDrawModalOpen,
     hasShownChanceModal,
     hasShownCommunityChestModal,
   ]);
-
-  // events
-  const clearCardDrawEvents = useCallback(() => {
-    setCardDrawEvents([]);
-    setLatestCardDraw(null);
-  }, []);
-
-  const acknowledgeCardDraw = useCallback(() => {
-    setLatestCardDraw(null);
-  }, []);
 
   const value: GameContextType = {
     // Game identification
@@ -1592,6 +1414,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     resetGame,
     closeGame,
     joinGame,
+    leaveGame,
     rollDice,
     buyProperty,
     skipProperty,
@@ -1633,19 +1456,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     showPayJailFine,
     showGetOutOfJailCard,
 
-    // Game logs
-    gameLogs,
-    // addGameLog,
-    // clearGameLogs,
-
-    // events
-    cardDrawEvents,
-    latestCardDraw,
-    // @ts-expect-error
-    addCardDrawEvent,
-    clearCardDrawEvents,
-    acknowledgeCardDraw,
-
     // Utility functions
     getPropertyByPosition,
     getPlayerByAddress,
@@ -1655,7 +1465,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     // demo
     demoDices,
     setDemoDices,
-    // mutate,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

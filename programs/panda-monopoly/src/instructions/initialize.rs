@@ -43,7 +43,6 @@ pub struct InitializeGame<'info> {
     )]
     pub config: Box<Account<'info, PlatformConfig>>,
 
-    // pub game_authority: Option<UncheckedAccount<'info>>,
     /// CHECK: game authority PDA
     #[account(
         seeds = [
@@ -56,7 +55,6 @@ pub struct InitializeGame<'info> {
     #[account(
         mint::token_program = token_program,
     )]
-    // pub token_mint: Option<InterfaceAccount<'info, Mint>>,
     pub token_mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
@@ -69,11 +67,6 @@ pub struct InitializeGame<'info> {
     pub creator_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
-        // init,
-        // payer = creator,
-        // associated_token::mint = token_mint,
-        // associated_token::authority = game_authority,
-        // associated_token::token_program = token_program
         init,
         seeds = [
             TOKEN_VAULT_SEED.as_ref(),
@@ -86,12 +79,10 @@ pub struct InitializeGame<'info> {
         payer = creator,
         bump
     )]
-    // pub token_vault: Option<InterfaceAccount<'info, TokenAccount>>,
     pub token_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    // pub token_program: Option<Interface<'info, TokenInterface>>,
     pub token_program: Interface<'info, TokenInterface>,
-    // pub associated_token_program: Option<Program<'info, AssociatedToken>>,
+
     pub associated_token_program: Program<'info, AssociatedToken>,
 
     pub system_program: Program<'info, System>,
@@ -555,7 +546,6 @@ pub fn start_game_handler<'c: 'info, 'info>(
     let clock = &ctx.accounts.clock;
     emit!(GameStarted {
         game: game.key(),
-        game_id: game.game_id,
         total_players: game.current_players,
         first_player: game.players[0],
         timestamp: clock.unix_timestamp,

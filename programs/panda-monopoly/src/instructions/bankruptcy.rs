@@ -153,7 +153,7 @@ pub fn declare_bankruptcy_handler(ctx: Context<DeclareBankruptcy>) -> Result<()>
         game.end_reason = Some(GameEndReason::BankruptcyVictory);
 
         emit!(GameEndConditionMet {
-            game_id: game.game_id,
+            game: game.key(),
             reason: GameEndReason::TimeLimit,
             timestamp: clock.unix_timestamp,
         });

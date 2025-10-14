@@ -589,7 +589,7 @@ fn execute_chance_card_effect(
 
                 emit!(PlayerPassedGo {
                     player: player_state.wallet,
-                    game_id: game.game_id,
+                    game: game.key(),
                     salary_collected: GO_SALARY as u64,
                     new_position,
                     timestamp: clock.unix_timestamp,
@@ -643,7 +643,7 @@ fn execute_chance_card_effect(
 
                 emit!(PlayerPassedGo {
                     player: player_state.wallet,
-                    game_id: game.game_id,
+                    game: game.key(),
                     salary_collected: GO_SALARY as u64,
                     new_position,
                     timestamp: clock.unix_timestamp,
@@ -752,7 +752,7 @@ fn execute_community_chest_card_effect(
 
                 emit!(PlayerPassedGo {
                     player: player_state.wallet,
-                    game_id: game.game_id,
+                    game: game.key(),
                     salary_collected: GO_SALARY as u64,
                     new_position,
                     timestamp: clock.unix_timestamp,

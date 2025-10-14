@@ -72,6 +72,13 @@ import {
   getEndGameInstruction,
   getClaimRewardInstruction,
   getBuildHouseV2Instruction,
+  getLeaveGameInstruction,
+  fetchAllPlayerState,
+  fetchAllMaybePlayerState,
+  getPlayerLeftCodec,
+  getGameCancelledCodec,
+  getPropertyDeclinedCodec,
+  getPrizeClaimedCodec,
 } from "./generated";
 import {
   CreateGameIxs,
@@ -104,6 +111,7 @@ import {
   UseGetOutOfJailCardParams,
   EndGameParams,
   ClaimRewardParams,
+  LeaveGameParams,
 } from "./types";
 import {
   getGameAuthorityPDA,
@@ -172,6 +180,10 @@ import {
   PLAYER_BANKRUPT_EVENT_DISCRIMINATOR,
   TAX_PAID_EVENT_DISCRIMINATOR,
   GAME_END_CONDITION_MET_EVENT_DISCRIMINATOR,
+  PLAYER_LEFT_EVENT_DISCRIMINATOR,
+  GAME_CANCELLED_EVENT_DISCRIMINATOR,
+  PROPERTY_DECLINED_EVENT_DISCRIMINATOR,
+  PRIZE_CLAIMED_EVENT_DISCRIMINATOR,
 } from "@/configs/constants";
 import { GameAccount, mapGameStateToAccount } from "@/types/schema";
 import { getTransferSolInstruction } from "@solana-program/system";
@@ -363,6 +375,57 @@ class MonopolyGameSDK {
       instructions: ixs,
       playerStateAddress: playerStateAddress,
     };
+  }
+
+  async leaveGameIx(params: LeaveGameParams): Promise<Instruction[]> {
+    const [playerStateAddress] = await getPlayerStatePDA(
+      params.gameAddress,
+      params.player.address
+    );
+
+    const [gameAuthorityPDA] = await getGameAuthorityPDA();
+
+    const [playerTokenAccount] = await findAssociatedTokenPda({
+      mint: NATIVE_MINT,
+      owner: params.player.address,
+      tokenProgram: TOKEN_PROGRAM_ADDRESS,
+    });
+
+    const ixs: Instruction[] = [];
+
+    try {
+      await fetchToken(params.rpc, playerTokenAccount);
+    } catch (error) {
+      console.log("Creator token account not found, creating a new one");
+
+      const createAtaInstruction =
+        await getCreateAssociatedTokenInstructionAsync({
+          payer: params.player,
+          mint: NATIVE_MINT,
+          owner: params.player.address,
+        });
+
+      ixs.push(createAtaInstruction);
+    }
+
+    const [vaultTokenAccount] = await getTokenVaultPda(
+      NATIVE_MINT,
+      params.gameAddress
+    );
+
+    const instruction = await getLeaveGameInstruction({
+      game: params.gameAddress,
+      player: params.player,
+      playerState: playerStateAddress,
+      gameAuthority: gameAuthorityPDA,
+      tokenMint: NATIVE_MINT,
+      playerTokenAccount,
+      tokenVault: vaultTokenAccount,
+    });
+
+    ixs.push(instruction);
+
+    return ixs;
   }
 
   /**
@@ -1058,8 +1121,9 @@ class MonopolyGameSDK {
 
     const [vaultTokenAccount] = await getTokenVaultPda(
       NATIVE_MINT,
-      gameAuthorityPDA
+      params.gameAddress
     );
+    console.log("vaultTokenAccount", vaultTokenAccount);
 
     return getClaimRewardInstruction({
       game: params.gameAddress,
@@ -1131,6 +1195,48 @@ class MonopolyGameSDK {
     }
   }
 
+  async getPlayerAccounts(
+    primaryRpc: Rpc<SolanaRpcApi>,
+    fallbackRpc: Rpc<SolanaRpcApi>,
+    gamePDA: Address,
+    playerAddresses: Address[]
+  ): Promise<Account<PlayerState>[]> {
+    try {
+      const pdas = (
+        await Promise.all(
+          playerAddresses.map((player) => getPlayerStatePDA(gamePDA, player))
+        )
+      ).flatMap((item) => item[0]);
+
+      const maybePlayerStates = await fetchAllMaybePlayerState(
+        primaryRpc,
+        pdas
+      );
+
+      console.log("maybePlayerStates", maybePlayerStates);
+
+      const nonExistentPlayerAddresss = maybePlayerStates
+        .filter((item) => !item.exists)
+        .map((item) => item.address);
+
+      if (nonExistentPlayerAddresss.length > 0) {
+        const fallbackAccounts = await fetchAllMaybePlayerState(
+          fallbackRpc,
+          nonExistentPlayerAddresss
+        );
+
+        return [...maybePlayerStates, ...fallbackAccounts].filter(
+          (acc) => acc.exists
+        );
+      }
+
+      return maybePlayerStates.filter((acc) => acc.exists);
+    } catch (error) {
+      console.error("Error fetching players states:", error);
+      return [];
+    }
+  }
+
   /**
    * Get a specific trade by proposer
    */
@@ -1193,17 +1299,17 @@ class MonopolyGameSDK {
   ) {
     let ignoreFetch = false;
 
-    fetchEncodedAccount(rpc, accAddress)
-      .then((response) => {
-        if (ignoreFetch) {
-          return;
-        }
-        onAccountChange(response);
-      })
-      .catch((error) => {
-        console.error("Error fetching account:", accAddress, error);
-        onAccountChange(null);
-      });
+    // fetchEncodedAccount(rpc, accAddress)
+    //   .then((response) => {
+    //     if (ignoreFetch) {
+    //       return;
+    //     }
+    //     onAccountChange(response);
+    //   })
+    //   .catch((error) => {
+    //     console.error("Error fetching account:", accAddress, error);
+    //     onAccountChange(null);
+    //   });
 
     const abortController = new AbortController();
 
@@ -1360,7 +1466,6 @@ class MonopolyGameSDK {
             const trimmed = log.trim();
 
             if (trimmed.startsWith(PROGRAM_DATA)) {
-              console.log("xxx log", trimmed);
               const base64 = trimmed.slice(PROGRAM_DATA_START_INDEX);
               const buf = Buffer.from(base64, "base64");
 
@@ -1443,6 +1548,13 @@ class MonopolyGameSDK {
                   buf.subarray(8)
                 );
                 onEvent({ type: "PropertyPurchased", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(PROPERTY_DECLINED_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getPropertyDeclinedCodec().decode(buf.subarray(8));
+                onEvent({ type: "PropertyDeclined", data });
               } else if (
                 discriminator.equals(Buffer.from(RENT_PAID_EVENT_DISCRIMINATOR))
               ) {
@@ -1531,6 +1643,27 @@ class MonopolyGameSDK {
                   buf.subarray(8)
                 );
                 onEvent({ type: "GameEndConditionMet", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(PLAYER_LEFT_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getPlayerLeftCodec().decode(buf.subarray(8));
+                onEvent({ type: "PlayerLeft", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(GAME_CANCELLED_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getGameCancelledCodec().decode(buf.subarray(8));
+                onEvent({ type: "GameCancelled", data });
+              } else if (
+                discriminator.equals(
+                  Buffer.from(PRIZE_CLAIMED_EVENT_DISCRIMINATOR)
+                )
+              ) {
+                const data = getPrizeClaimedCodec().decode(buf.subarray(8));
+                onEvent({ type: "PrizeClaimed", data });
               }
             }
           }

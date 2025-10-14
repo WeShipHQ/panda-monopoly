@@ -144,148 +144,148 @@ export const LOG_MESSAGE_TEMPLATES = {
 };
 
 // Enhanced log message generator
-export const generateLogMessage = (log: GameLogEntry): string => {
-  const playerName = log.playerId; //getPlayerDisplayName(log.playerId);
-  const details = log.details || {};
+// export const generateLogMessage = (log: GameLogEntry): string => {
+//   const playerName = log.playerId; //getPlayerDisplayName(log.playerId);
+//   const details = log.details || {};
 
-  switch (log.type) {
-    case "join":
-      return LOG_MESSAGE_TEMPLATES.join(playerName);
+//   switch (log.type) {
+//     case "join":
+//       return LOG_MESSAGE_TEMPLATES.join(playerName);
 
-    case "dice":
-      const diceRoll = details.diceRoll as [number, number] | undefined;
-      return LOG_MESSAGE_TEMPLATES.dice(playerName, diceRoll);
+//     case "dice":
+//       const diceRoll = details.diceRoll as [number, number] | undefined;
+//       return LOG_MESSAGE_TEMPLATES.dice(playerName, diceRoll);
 
-    case "move":
-      const fromPos = details.fromPosition as number;
-      const toPos = details.toPosition as number;
-      const passedGo = details.passedGo as boolean;
-      if (fromPos !== undefined && toPos !== undefined) {
-        return LOG_MESSAGE_TEMPLATES.move(playerName, fromPos, toPos, passedGo);
-      }
-      return log.message; // Fallback to original message
+//     case "move":
+//       const fromPos = details.fromPosition as number;
+//       const toPos = details.toPosition as number;
+//       const passedGo = details.passedGo as boolean;
+//       if (fromPos !== undefined && toPos !== undefined) {
+//         return LOG_MESSAGE_TEMPLATES.move(playerName, fromPos, toPos, passedGo);
+//       }
+//       return log.message; // Fallback to original message
 
-    case "purchase":
-      const propertyName =
-        details.propertyName || getPropertyName(details.position || 0);
-      const price = details.price as number;
-      return LOG_MESSAGE_TEMPLATES.purchase(playerName, propertyName, price);
+//     case "purchase":
+//       const propertyName =
+//         details.propertyName || getPropertyName(details.position || 0);
+//       const price = details.price as number;
+//       return LOG_MESSAGE_TEMPLATES.purchase(playerName, propertyName, price);
 
-    case "skip":
-      const skippedProperty =
-        details.propertyName || getPropertyName(details.position || 0);
-      return LOG_MESSAGE_TEMPLATES.skip(playerName, skippedProperty);
+//     case "skip":
+//       const skippedProperty =
+//         details.propertyName || getPropertyName(details.position || 0);
+//       return LOG_MESSAGE_TEMPLATES.skip(playerName, skippedProperty);
 
-    case "rent":
-      const owner = details.owner as Address;
-      const ownerName = owner ? getPlayerDisplayName(owner) : "unknown";
-      const rentAmount = details.amount as number;
-      const rentProperty =
-        details.propertyName || getPropertyName(details.position || 0);
-      return LOG_MESSAGE_TEMPLATES.rent(
-        playerName,
-        ownerName,
-        rentAmount,
-        rentProperty
-      );
+//     case "rent":
+//       const owner = details.owner as Address;
+//       const ownerName = owner ? getPlayerDisplayName(owner) : "unknown";
+//       const rentAmount = details.amount as number;
+//       const rentProperty =
+//         details.propertyName || getPropertyName(details.position || 0);
+//       return LOG_MESSAGE_TEMPLATES.rent(
+//         playerName,
+//         ownerName,
+//         rentAmount,
+//         rentProperty
+//       );
 
-    case "card":
-      const cardType = details.cardType as "chance" | "community-chest";
-      const cardIndex = details.cardIndex as number;
-      const cardTitle = details.cardTitle as string;
-      const cardDescription = details.cardDescription as string;
+//     case "card":
+//       const cardType = details.cardType as "chance" | "community-chest";
+//       const cardIndex = details.cardIndex as number;
+//       const cardTitle = details.cardTitle as string;
+//       const cardDescription = details.cardDescription as string;
 
-      if (cardTitle && cardDescription) {
-        return LOG_MESSAGE_TEMPLATES.card_effect(
-          playerName,
-          cardTitle,
-          cardDescription
-        );
-      } else if (cardType && cardIndex) {
-        const cardData = getCardData(cardType, cardIndex);
-        if (cardData) {
-          return LOG_MESSAGE_TEMPLATES.card_effect(
-            playerName,
-            cardData.title,
-            cardData.description
-          );
-        }
-      }
+//       if (cardTitle && cardDescription) {
+//         return LOG_MESSAGE_TEMPLATES.card_effect(
+//           playerName,
+//           cardTitle,
+//           cardDescription
+//         );
+//       } else if (cardType && cardIndex) {
+//         const cardData = getCardData(cardType, cardIndex);
+//         if (cardData) {
+//           return LOG_MESSAGE_TEMPLATES.card_effect(
+//             playerName,
+//             cardData.title,
+//             cardData.description
+//           );
+//         }
+//       }
 
-      if (cardType) {
-        return LOG_MESSAGE_TEMPLATES.card_draw(playerName, cardType);
-      }
-      return log.message;
+//       if (cardType) {
+//         return LOG_MESSAGE_TEMPLATES.card_draw(playerName, cardType);
+//       }
+//       return log.message;
 
-    case "jail":
-      const jailReason = details.jailReason as string;
-      const fineAmount = details.fineAmount as number;
+//     case "jail":
+//       const jailReason = details.jailReason as string;
+//       const fineAmount = details.fineAmount as number;
 
-      if (jailReason === "doubles") {
-        return LOG_MESSAGE_TEMPLATES.jail_doubles(playerName);
-      } else if (fineAmount) {
-        return LOG_MESSAGE_TEMPLATES.jail_fine(playerName, fineAmount);
-      }
-      return log.message;
+//       if (jailReason === "doubles") {
+//         return LOG_MESSAGE_TEMPLATES.jail_doubles(playerName);
+//       } else if (fineAmount) {
+//         return LOG_MESSAGE_TEMPLATES.jail_fine(playerName, fineAmount);
+//       }
+//       return log.message;
 
-    case "building":
-      const buildingType = details.buildingType as "house" | "hotel";
-      const buildingProperty =
-        details.propertyName || getPropertyName(details.position || 0);
-      return LOG_MESSAGE_TEMPLATES.building(
-        playerName,
-        buildingType,
-        buildingProperty
-      );
+//     case "building":
+//       const buildingType = details.buildingType as "house" | "hotel";
+//       const buildingProperty =
+//         details.propertyName || getPropertyName(details.position || 0);
+//       return LOG_MESSAGE_TEMPLATES.building(
+//         playerName,
+//         buildingType,
+//         buildingProperty
+//       );
 
-    case "trade":
-      const targetPlayer = details.targetPlayer as Address;
-      const targetPlayerName = targetPlayer
-        ? getPlayerDisplayName(targetPlayer)
-        : "unknown";
+//     case "trade":
+//       const targetPlayer = details.targetPlayer as Address;
+//       const targetPlayerName = targetPlayer
+//         ? getPlayerDisplayName(targetPlayer)
+//         : "unknown";
 
-      // Determine trade action from message or details
-      if (log.message.includes("created")) {
-        return LOG_MESSAGE_TEMPLATES.trade_created(
-          playerName,
-          targetPlayerName
-        );
-      } else if (log.message.includes("accepted")) {
-        return LOG_MESSAGE_TEMPLATES.trade_accepted(
-          playerName,
-          targetPlayerName
-        );
-      } else if (log.message.includes("declined")) {
-        return LOG_MESSAGE_TEMPLATES.trade_declined(
-          playerName,
-          targetPlayerName
-        );
-      } else if (log.message.includes("cancelled")) {
-        return LOG_MESSAGE_TEMPLATES.trade_cancelled(playerName);
-      }
-      return log.message;
+//       // Determine trade action from message or details
+//       if (log.message.includes("created")) {
+//         return LOG_MESSAGE_TEMPLATES.trade_created(
+//           playerName,
+//           targetPlayerName
+//         );
+//       } else if (log.message.includes("accepted")) {
+//         return LOG_MESSAGE_TEMPLATES.trade_accepted(
+//           playerName,
+//           targetPlayerName
+//         );
+//       } else if (log.message.includes("declined")) {
+//         return LOG_MESSAGE_TEMPLATES.trade_declined(
+//           playerName,
+//           targetPlayerName
+//         );
+//       } else if (log.message.includes("cancelled")) {
+//         return LOG_MESSAGE_TEMPLATES.trade_cancelled(playerName);
+//       }
+//       return log.message;
 
-    case "turn":
-      return LOG_MESSAGE_TEMPLATES.turn(playerName);
+//     case "turn":
+//       return LOG_MESSAGE_TEMPLATES.turn(playerName);
 
-    case "game":
-      if (log.message.includes("won")) {
-        return LOG_MESSAGE_TEMPLATES.game_end(playerName);
-      } else if (log.message.includes("started")) {
-        return LOG_MESSAGE_TEMPLATES.game_start();
-      }
-      return log.message;
+//     case "game":
+//       if (log.message.includes("won")) {
+//         return LOG_MESSAGE_TEMPLATES.game_end(playerName);
+//       } else if (log.message.includes("started")) {
+//         return LOG_MESSAGE_TEMPLATES.game_start();
+//       }
+//       return log.message;
 
-    case "bankruptcy":
-      if (log.message.includes("declared")) {
-        return LOG_MESSAGE_TEMPLATES.bankruptcy_declared(playerName);
-      }
-      return LOG_MESSAGE_TEMPLATES.bankruptcy(playerName);
+//     case "bankruptcy":
+//       if (log.message.includes("declared")) {
+//         return LOG_MESSAGE_TEMPLATES.bankruptcy_declared(playerName);
+//       }
+//       return LOG_MESSAGE_TEMPLATES.bankruptcy(playerName);
 
-    default:
-      return log.message;
-  }
-};
+//     default:
+//       return log.message;
+//   }
+// };
 
 // Log entry type icons
 export const LOG_TYPE_ICONS = {

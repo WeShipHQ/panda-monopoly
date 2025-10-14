@@ -24,7 +24,6 @@ export const JAIL_FINE = 50;
 export const USE_VRF = false;
 
 // EVENT DISCRIMINATORS
-// Existing discriminators
 export const CHANCE_CARD_DRAWN_EVENT_DISCRIMINATOR = new Uint8Array([
   117, 139, 184, 221, 43, 65, 0, 208,
 ]);
@@ -35,10 +34,29 @@ export const COMMUNITY_CHEST_CARD_DRAWN_EVENT_DISCRIMINATOR = new Uint8Array([
 export const PLAYER_PASSED_GO_EVENT_DISCRIMINATOR = new Uint8Array([
   217, 210, 43, 19, 64, 171, 171, 233,
 ]);
+// game
+
+export const GAME_STARTED_EVENT_DISCRIMINATOR = new Uint8Array([
+  222, 247, 78, 255, 61, 184, 156, 41,
+]);
 
 export const GAME_ENDED_EVENT_DISCRIMINATOR = new Uint8Array([
   35, 93, 113, 153, 29, 144, 200, 109,
 ]);
+
+export const PLAYER_JOINED_EVENT_DISCRIMINATOR = new Uint8Array([
+  39, 144, 49, 106, 108, 210, 183, 38,
+]);
+
+export const PLAYER_LEFT_EVENT_DISCRIMINATOR = new Uint8Array([
+  7, 106, 62, 150, 175, 170, 96, 84,
+]);
+
+export const GAME_CANCELLED_EVENT_DISCRIMINATOR = new Uint8Array([
+  113, 20, 200, 104, 76, 35, 9, 241,
+]);
+
+//trade
 
 export const TRADE_CREATED_EVENT_DISCRIMINATOR = new Uint8Array([
   110, 86, 122, 20, 81, 78, 181, 72,
@@ -62,6 +80,10 @@ export const TRADES_CLEANED_UP_EVENT_DISCRIMINATOR = new Uint8Array([
 
 export const PROPERTY_PURCHASED_EVENT_DISCRIMINATOR = new Uint8Array([
   72, 203, 117, 173, 36, 131, 191, 177,
+]);
+
+export const PROPERTY_DECLINED_EVENT_DISCRIMINATOR = new Uint8Array([
+  123, 204, 199, 158, 227, 148, 10, 1,
 ]);
 
 export const RENT_PAID_EVENT_DISCRIMINATOR = new Uint8Array([
@@ -88,14 +110,6 @@ export const PROPERTY_UNMORTGAGED_EVENT_DISCRIMINATOR = new Uint8Array([
   183, 108, 222, 183, 178, 20, 101, 21,
 ]);
 
-export const PLAYER_JOINED_EVENT_DISCRIMINATOR = new Uint8Array([
-  39, 144, 49, 106, 108, 210, 183, 38,
-]);
-
-export const GAME_STARTED_EVENT_DISCRIMINATOR = new Uint8Array([
-  222, 247, 78, 255, 61, 184, 156, 41,
-]);
-
 export const SPECIAL_SPACE_ACTION_EVENT_DISCRIMINATOR = new Uint8Array([
   25, 55, 0, 182, 68, 132, 132, 223,
 ]);
@@ -110,4 +124,8 @@ export const TAX_PAID_EVENT_DISCRIMINATOR = new Uint8Array([
 
 export const GAME_END_CONDITION_MET_EVENT_DISCRIMINATOR = new Uint8Array([
   1, 222, 18, 208, 75, 120, 233, 201,
+]);
+
+export const PRIZE_CLAIMED_EVENT_DISCRIMINATOR = new Uint8Array([
+  213, 150, 192, 76, 199, 33, 212, 38,
 ]);

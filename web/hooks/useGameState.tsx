@@ -1,5 +1,4 @@
 import { useRpcContext } from "@/components/providers/rpc-provider";
-import { DELEGATION_PROGRAM_ID } from "@/configs/constants";
 import { GameStatus } from "@/lib/sdk/generated";
 import { sdk } from "@/lib/sdk/sdk";
 import { GameEvent } from "@/lib/sdk/types";
@@ -13,7 +12,7 @@ import {
 } from "@/types/schema";
 import { address, Address } from "@solana/kit";
 import { useCallback, useEffect, useRef } from "react";
-import useSWR, { KeyedMutator } from "swr";
+import useSWR from "swr";
 
 interface UseGameStateConfig {
   enabled?: boolean;
@@ -45,7 +44,6 @@ export function useGameState(
   const isSubscribedRef = useRef(false);
   const currentGameAddressRef = useRef<string | null>(null);
   const currentPlayerAddressesRef = useRef<string[]>([]);
-  // const currentEventSubscriptionRef = useRef<(() => void) | null>(null);
 
   const { rpc, erRpc, rpcSubscriptions, erRpcSubscriptions } = useRpcContext();
 
@@ -62,16 +60,21 @@ export function useGameState(
 
       try {
         // Step 1: Fetch game account data
-        let gameState = await sdk.getGameAccount(rpc, gameAddress);
-
-        if (gameState?.programAddress === DELEGATION_PROGRAM_ID) {
+        let gameState = await sdk.getGameAccount(erRpc, gameAddress);
+        console.log("[DEBUG] gameState by ER", gameState);
+        if (
+          !gameState ||
+          gameState?.data.gameStatus !== GameStatus.InProgress
+        ) {
           try {
-            const erState = await sdk.getGameAccount(erRpc, gameAddress);
+            const erState = await sdk.getGameAccount(rpc, gameAddress);
+            console.log("[DEBUG] gameState by SOLANA", gameState);
             gameState = erState || gameState;
           } catch (_error) {
             // Fallback to regular RPC if enhanced RPC fails
           }
         }
+
         if (!gameState) {
           return { gameData: null, players: [], properties: [] };
         }
@@ -176,11 +179,6 @@ export function useGameState(
       unsubscribe();
     });
     playerSubscriptionsRef.current.clear();
-
-    // if (currentEventSubscriptionRef.current) {
-    //   currentEventSubscriptionRef.current();
-    //   currentEventSubscriptionRef.current = null;
-    // }
 
     isSubscribedRef.current = false;
   }, []);
