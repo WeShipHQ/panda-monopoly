@@ -10,7 +10,6 @@ import {
 import { cn } from "@/lib/utils";
 import { GameLogEntry } from "@/types/space-types";
 import { useGameLogs } from "@/hooks/useGameLogs";
-import { useGameContext } from "@/components/providers/game-provider";
 
 interface GameLogsProps {
   maxHeight?: string;
@@ -139,75 +138,3 @@ function GameLogItem({
     </div>
   );
 }
-
-interface EnhancedGameLogsProps extends GameLogsProps {
-  filterTypes?: GameLogEntry["type"][];
-  title?: string;
-}
-
-export const EnhancedGameLogs: React.FC<EnhancedGameLogsProps> = ({
-  filterTypes,
-  title = "Game Events",
-  ...props
-}) => {
-  const { gameLogs } = useGameContext();
-
-  const filteredLogs = filterTypes
-    ? gameLogs.filter((log) => filterTypes.includes(log.type))
-    : gameLogs;
-
-  return <GameLogsWithFilteredData logs={filteredLogs} {...props} />;
-};
-
-interface GameLogsWithFilteredDataProps extends GameLogsProps {
-  logs: GameLogEntry[];
-}
-
-const GameLogsWithFilteredData: React.FC<GameLogsWithFilteredDataProps> = ({
-  logs,
-  maxHeight = "h-40",
-  showTimestamps = false,
-  showIcons = true,
-  autoScroll = true,
-}) => {
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (autoScroll && scrollAreaRef.current) {
-      const scrollContainer = scrollAreaRef.current.querySelector(
-        "[data-radix-scroll-area-viewport]"
-      );
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight;
-      }
-    }
-  }, [logs, autoScroll]);
-
-  if (logs.length === 0) {
-    return (
-      <ScrollArea className={cn(maxHeight, "w-full rounded-md border")}>
-        <div className="p-4 text-center text-muted-foreground text-sm">
-          No events to display...
-        </div>
-      </ScrollArea>
-    );
-  }
-
-  return (
-    <ScrollArea
-      ref={scrollAreaRef}
-      className={cn(maxHeight, "w-full max-w-xs")}
-    >
-      <div className="p-3 space-y-1">
-        {logs.map((log, index) => (
-          <GameLogItem
-            key={log.id || index}
-            log={log}
-            showTimestamp={showTimestamps}
-            showIcon={showIcons}
-          />
-        ))}
-      </div>
-    </ScrollArea>
-  );
-};

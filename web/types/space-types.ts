@@ -1,11 +1,5 @@
-import {
-  ColorGroup,
-  PropertySpace,
-  RailroadSpace,
-  TaxSpace,
-} from "@/configs/board-data";
+import { TaxSpace } from "@/configs/board-data";
 import { PropertyAccount } from "@/types/schema";
-import type { Address } from "@solana/kit";
 
 export interface BaseSpaceProps {
   position: number;
