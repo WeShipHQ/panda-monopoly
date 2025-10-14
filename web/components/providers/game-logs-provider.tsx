@@ -11,6 +11,7 @@ import React, {
 import { GameLogEntry } from "@/types/space-types";
 import { useGameEventsContext } from "./game-events-provider";
 import { mapEventToLogEntry } from "@/lib/event-to-log-mapper";
+import { GameEvent } from "@/lib/sdk/types";
 
 interface GameLogsContextType {
   gameLogs: GameLogEntry[];
@@ -24,9 +25,7 @@ const GameLogsContext = createContext<GameLogsContextType | null>(null);
 export const useGameLogsContext = () => {
   const context = useContext(GameLogsContext);
   if (!context) {
-    throw new Error(
-      "useGameLogsContext must be used within GameLogsProvider"
-    );
+    throw new Error("useGameLogsContext must be used within GameLogsProvider");
   }
   return context;
 };
@@ -44,12 +43,11 @@ export const GameLogsProvider: React.FC<GameLogsProviderProps> = ({
 }) => {
   const STORAGE_KEY = "gameLogs";
   const [gameLogs, setGameLogs] = useState<GameLogEntry[]>([]);
-  const { registerEventHandler, lastEvent } = useGameEventsContext();
+  const { registerEventHandler } = useGameEventsContext();
 
-  // Load logs from localStorage on mount
   const loadLogs = useCallback(() => {
     if (!persistToStorage) return [];
-    
+
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       const logs = stored ? (JSON.parse(stored) as GameLogEntry[]) : [];
@@ -61,18 +59,19 @@ export const GameLogsProvider: React.FC<GameLogsProviderProps> = ({
     }
   }, [STORAGE_KEY, persistToStorage]);
 
-  // Save logs to localStorage
-  const saveLogs = useCallback((logs: GameLogEntry[]) => {
-    if (!persistToStorage) return;
-    
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
-    } catch (error) {
-      console.error("Failed to save logs to localStorage:", error);
-    }
-  }, [STORAGE_KEY, persistToStorage]);
+  const saveLogs = useCallback(
+    (logs: GameLogEntry[]) => {
+      if (!persistToStorage) return;
 
-  // Add a new log entry
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+      } catch (error) {
+        console.error("Failed to save logs to localStorage:", error);
+      }
+    },
+    [STORAGE_KEY, persistToStorage]
+  );
+
   const addGameLog = useCallback(
     (entry: Omit<GameLogEntry, "id" | "timestamp">) => {
       const newLog: GameLogEntry = {
@@ -82,7 +81,7 @@ export const GameLogsProvider: React.FC<GameLogsProviderProps> = ({
       };
 
       setGameLogs((currentLogs) => {
-        const updatedLogs = [...currentLogs, newLog].slice(-maxLogs);
+        const updatedLogs = [newLog, ...currentLogs].slice(-maxLogs);
         saveLogs(updatedLogs);
         return updatedLogs;
       });
@@ -90,7 +89,6 @@ export const GameLogsProvider: React.FC<GameLogsProviderProps> = ({
     [maxLogs, saveLogs]
   );
 
-  // Clear all logs
   const clearLogs = useCallback(() => {
     setGameLogs([]);
     if (persistToStorage) {
@@ -98,7 +96,6 @@ export const GameLogsProvider: React.FC<GameLogsProviderProps> = ({
     }
   }, [STORAGE_KEY, persistToStorage]);
 
-  // Load logs on mount
   useEffect(() => {
     loadLogs();
   }, [loadLogs]);
@@ -117,15 +114,13 @@ export const GameLogsProvider: React.FC<GameLogsProviderProps> = ({
     return () => window.removeEventListener("storage", handleStorageChange);
   }, [STORAGE_KEY, loadLogs, persistToStorage]);
 
-  // Register event handlers to automatically convert events to logs
   useEffect(() => {
     const unsubscribeHandlers: (() => void)[] = [];
 
-    // Register handlers for all event types
     const eventTypes = [
       "PlayerJoined",
       "PlayerLeft",
-      "GameStarted", 
+      "GameStarted",
       "GameCancelled",
       "PlayerPassedGo",
       "PropertyPurchased",
@@ -152,29 +147,32 @@ export const GameLogsProvider: React.FC<GameLogsProviderProps> = ({
     ] as const;
 
     eventTypes.forEach((eventType) => {
-      const unsubscribe = registerEventHandler(eventType, (eventData, context) => {
-        try {
-          // Reconstruct the full event object
-          const fullEvent = {
-            type: eventType,
-            data: eventData,
-          };
+      const unsubscribe = registerEventHandler(
+        eventType as GameEvent["type"],
+        (eventData) => {
+          try {
+            const fullEvent = {
+              type: eventType,
+              data: eventData,
+            } as GameEvent;
 
-          // Map event to log entry
-          const logEntry = mapEventToLogEntry(fullEvent as any);
-          
-          // Add the log entry
-          addGameLog({
-            type: logEntry.type,
-            playerId: logEntry.playerId,
-            playerName: logEntry.playerName,
-            message: logEntry.message,
-            details: logEntry.details,
-          });
-        } catch (error) {
-          console.error(`Error processing ${eventType} event for logs:`, error);
+            const logEntry = mapEventToLogEntry(fullEvent);
+
+            addGameLog({
+              gameId: logEntry.gameId,
+              type: logEntry.type,
+              playerId: logEntry.playerId,
+              playerName: logEntry.playerName,
+              details: logEntry.details,
+            });
+          } catch (error) {
+            console.error(
+              `Error processing ${eventType} event for logs:`,
+              error
+            );
+          }
         }
-      });
+      );
 
       unsubscribeHandlers.push(unsubscribe);
     });

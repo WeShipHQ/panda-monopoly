@@ -36,6 +36,7 @@ import {
 import { useWallet } from "@/hooks/use-wallet";
 import { Button } from "@/components/ui/button";
 import { RotateCw, RotateCcw } from "lucide-react";
+import { GameLogs } from "./game-logs";
 
 interface MonopolyBoardProps {}
 
@@ -275,10 +276,9 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
                            p-1 sm:p-3 md:p-4 gap-1 sm:gap-3 md:gap-4"
               style={{
                 transform: `rotate(${-boardRotation}deg)`,
-                // transition: 'transform 500ms ease-in-out'
               }}
             >
-              <div className="flex-shrink-0 transform scale-[0.7] sm:scale-75 md:scale-90 lg:scale-100 mb-6">
+              <div className="flex-1 flex flex-col justify-end items-center">
                 {wallet && wallet?.delegated ? (
                   <DiceProvider>
                     <PlayerActions
@@ -304,22 +304,9 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
               </div>
 
               {/* game-logs */}
-              {/* {authenticated && (
-                <EnhancedGameLogs
-                  filterTypes={[
-                    "move",
-                    "skip",
-                    "purchase",
-                    "rent",
-                    "card",
-                    "jail",
-                    "building",
-                    "trade",
-                    "bankruptcy",
-                    "game",
-                  ]}
-                />
-              )} */}
+              <div className="flex-1">
+                <GameLogs />
+              </div>
             </div>
 
             <GoCorner boardRotation={boardRotation} />
