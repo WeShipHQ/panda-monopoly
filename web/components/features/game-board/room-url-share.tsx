@@ -25,7 +25,7 @@ export function RoomUrlShare() {
   };
 
   const handleBackToLobby = () => {
-    router.push("/");
+    router.push("/lobby");
   };
 
   if (!gameAddress) return null;
@@ -36,7 +36,7 @@ export function RoomUrlShare() {
   //   const maxPlayers = gameState?.maxPlayers || 0;
 
   return (
-    <Card>
+    <Card className="bg-white">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">

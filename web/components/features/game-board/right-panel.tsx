@@ -10,7 +10,7 @@ import { BonusItems } from "./bonus-items";
 
 export function RightPanel() {
   return (
-    <div className="p-4 space-y-6 h-full overflow-auto">
+    <div className="p-4 pl-2 lg:pl-4 space-y-4 md:space-y-6 h-full overflow-auto">
       <TradeView />
       <BankruptcyButton />
       <OwnedProperties />

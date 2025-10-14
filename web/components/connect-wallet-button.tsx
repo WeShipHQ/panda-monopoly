@@ -62,6 +62,11 @@ export function ConnectWalletButton() {
     <div className="flex items-center gap-4">
       {authenticated ? (
         <>
+          {wallet && (
+            <>
+              <BalanceButton walletAddress={wallet.address} />
+            </>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button>
@@ -119,65 +124,6 @@ export function ConnectWalletButton() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          {wallet && (
-            <>
-              <BalanceButton walletAddress={wallet.address} />
-            </>
-          )}
-          {/* <Button
-            onClick={async () => {
-              try {
-                const wallet = wallets[0];
-                if (!wallet) {
-                  toast.error("Please connect your wallet first");
-                  return;
-                }
-
-                const transferInstruction = getTransferSolInstruction({
-                  amount: 1_000_000_000 / 1000,
-                  destination: address(
-                    "63EEC9FfGyksm7PkVC6z8uAmqozbQcTzbkWJNsgqjkFs"
-                  ),
-                  source: createNoopSigner(address(wallet.address)),
-                });
-
-                const { value: latestBlockhash } = await rpc
-                  .getLatestBlockhash()
-                  .send();
-
-                const transaction = pipe(
-                  createTransactionMessage({ version: 0 }),
-                  (tx) =>
-                    setTransactionMessageFeePayer(address(wallet.address), tx),
-                  (tx) =>
-                    setTransactionMessageLifetimeUsingBlockhash(
-                      latestBlockhash,
-                      tx
-                    ),
-                  (tx) =>
-                    appendTransactionMessageInstructions(
-                      [transferInstruction],
-                      tx
-                    ),
-                  (tx) => compileTransaction(tx)
-                );
-
-                const encodedTransaction =
-                  getTransactionEncoder().encode(transaction);
-
-                const { signature } = await signAndSendTransaction({
-                  transaction: new Uint8Array(encodedTransaction),
-                  wallet: wallet,
-                });
-
-                console.log("Signature:", getBase58Codec().decode(signature));
-              } catch (error) {
-                console.log(error);
-              }
-            }}
-          >
-            Send test tx
-          </Button> */}
         </>
       ) : (
         <Button size="lg" disabled={disableLogin} onClick={() => login()}>
