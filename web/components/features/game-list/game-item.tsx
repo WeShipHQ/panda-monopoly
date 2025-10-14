@@ -7,24 +7,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Eye } from "lucide-react";
 import { GameAccount } from "@/types/schema";
 import { GameStatus } from "@/lib/sdk/generated";
-
-// export interface GameData {
-//   id: string;
-//   players: string[];
-//   maxPlayers: number;
-//   currentPlayers: number;
-//   bankBalance: number;
-//   gameStatus: GameStatus;
-//   gameId: number;
-//   timeLimit?: number;
-//   createdAt: number;
-// }
+import { formatAddress, formatPrice } from "@/lib/utils";
 
 interface GameItemProps {
   game: GameAccount;
-  onJoinGame: (gameId: string) => void;
+  onJoinGame: (game: GameAccount) => void;
   onSpectateGame: (gameId: string) => void;
   joining: boolean;
+  isWalletConnected: boolean;
 }
 
 export function GameItem({
@@ -32,18 +22,14 @@ export function GameItem({
   onJoinGame,
   onSpectateGame,
   joining,
+  isWalletConnected,
 }: GameItemProps) {
-  const formatEntryFee = (bankBalance: number) => {
-    const sol = bankBalance / 1e9;
-    return sol.toFixed(4);
-  };
-
   const getGameStatusBadge = (status: GameStatus) => {
     switch (status) {
       case GameStatus.WaitingForPlayers:
         return (
           <Badge variant="default" className="bg-green-500 text-white">
-            JOINABLE
+            WAITING FOR PLAYERS
           </Badge>
         );
       case GameStatus.InProgress:
@@ -101,7 +87,7 @@ export function GameItem({
   };
 
   return (
-    <Card className="hover:shadow-lg transition-shadow bg-chart-3">
+    <Card className="bg-chart-3">
       <CardContent className="p-4 sm:p-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           {/* Left side - Player avatars and game info */}
@@ -111,18 +97,20 @@ export function GameItem({
               <div className="flex -space-x-2">
                 {getPlayerAvatars(game.players, game.maxPlayers)}
               </div>
-              <span className="text-sm font-medium">VS</span>
+              {/* <span className="text-sm font-medium">VS</span> */}
             </div>
 
             {/* Entry fee and status */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               {/* Entry fee */}
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
+                {/* <div className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
                   <span className="text-white text-xs font-bold">◎</span>
-                </div>
+                </div> */}
                 <span className="text-base sm:text-lg font-semibold text-foreground">
-                  {formatEntryFee(Number(game.bankBalance))}
+                  {game.entryFee > 0
+                    ? `◎ ${formatPrice(Number(game.entryFee) / 1e9)}`
+                    : "FREE"}
                 </span>
               </div>
 
@@ -133,37 +121,16 @@ export function GameItem({
 
           {/* Right side - Action buttons */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {game.gameStatus === GameStatus.WaitingForPlayers && (
-              <Button
-                onClick={() => onJoinGame(game.address)}
-                className="bg-green-500 hover:bg-green-600 text-white px-4 sm:px-6 flex-1 sm:flex-none"
-                loading={joining}
-              >
-                Join
-              </Button>
-            )}
-
-            {game.gameStatus === GameStatus.InProgress && (
-              <Button
-                variant="neutral"
-                onClick={() => onSpectateGame(game.address)}
-                className="px-4 sm:px-6 flex-1 sm:flex-none"
-              >
-                <span className="hidden sm:inline mr-2">IN-PLAY</span>
-                <span className="sm:hidden">PLAY</span>
-              </Button>
-            )}
-
-            {game.gameStatus === GameStatus.Finished && (
-              <Button
-                variant="neutral"
-                onClick={() => onSpectateGame(game.address)}
-                className="px-4 sm:px-6 flex-1 sm:flex-none"
-              >
-                <span className="hidden sm:inline mr-2">FINISHED</span>
-                <span className="sm:hidden">DONE</span>
-              </Button>
-            )}
+            {game.gameStatus === GameStatus.WaitingForPlayers &&
+              isWalletConnected && (
+                <Button
+                  onClick={() => onJoinGame(game)}
+                  // className="bg-green-500 hover:bg-green-600 text-white px-4 sm:px-6 flex-1 sm:flex-none"
+                  loading={joining}
+                >
+                  Join
+                </Button>
+              )}
 
             <Button
               variant="neutral"
@@ -183,13 +150,13 @@ export function GameItem({
                 Players: {game.currentPlayers}/{game.maxPlayers}
               </span>
               <span className="text-muted-foreground">
-                Game ID: {game.gameId}
+                Game ID: {formatAddress(game.address)}
               </span>
-              {game.timeLimit && (
+              {/* {game.timeLimit && (
                 <span className="text-muted-foreground">
                   Time Limit: {Number(game.timeLimit) / 60}min
                 </span>
-              )}
+              )} */}
             </div>
             <div>
               Created:{" "}

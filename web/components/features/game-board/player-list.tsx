@@ -1,6 +1,5 @@
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn, formatAddress, formatPrice } from "@/lib/utils";
@@ -11,6 +10,7 @@ import { useWallet } from "@/hooks/use-wallet";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { UserAvatar } from "@/components/user-avatar";
+import { PlayerAccount } from "@/types/schema";
 
 interface BalanceChangeAnimationProps {
   change: number;
@@ -64,7 +64,7 @@ function BalanceChangeAnimation({
 }
 
 interface PlayerItemProps {
-  player: any;
+  player: PlayerAccount;
   index: number;
   isCurrentTurn: boolean;
   isYou: boolean;
@@ -73,7 +73,6 @@ interface PlayerItemProps {
 
 function PlayerItem({
   player,
-  index,
   isCurrentTurn,
   isYou,
   isWinner,
@@ -97,27 +96,20 @@ function PlayerItem({
   };
 
   return (
-    <Card className={cn("py-3 relative", isCurrentTurn ? "bg-chart-3" : "")}>
+    <Card
+      className={cn("py-3 relative")}
+      style={
+        isCurrentTurn
+          ? {
+              backgroundColor: player.playerColor,
+            }
+          : {}
+      }
+    >
       <CardContent className="px-3">
         <div className="flex items-center gap-3 justify-stretch">
           <div className="relative">
-            {/* <Avatar className="w-10 h-10">
-              <AvatarImage
-                walletAddress={player.wallet}
-                alt={`Player ${index + 1}`}
-              />
-              <AvatarFallback
-                walletAddress={player.wallet}
-                className="text-white font-semibold"
-              >
-                {(index + 1).toString()}
-              </AvatarFallback>
-            </Avatar> */}
-            <UserAvatar
-              walletAddress={player.wallet}
-              // alt={`Player ${index + 1}`}
-              // size="sm"
-            />
+            <UserAvatar walletAddress={player.wallet} />
           </div>
 
           <div className="flex-1 min-w-0">
