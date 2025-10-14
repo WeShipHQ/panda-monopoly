@@ -1,4 +1,5 @@
 import { ColorGroup, boardData } from "@/configs/board-data";
+import { PLAYER_COLORS } from "@/configs/constants";
 import {
   GameState,
   PlayerState,
@@ -65,6 +66,7 @@ export interface GameAccount {
 export interface PlayerAccount {
   address: string;
   wallet: string;
+  playerColor: string;
   game: string;
   cashBalance: string;
   position: number;
@@ -218,10 +220,12 @@ export function mapGameStateToAccount(
 
 export function mapPlayerStateToAccount(
   playerState: PlayerState,
-  address: Address
+  address: Address,
+  index?: number
 ): PlayerAccount {
   return {
     address: addressToString(address),
+    playerColor: PLAYER_COLORS[index ?? 0],
     wallet: addressToString(playerState.wallet),
     game: addressToString(playerState.game),
     cashBalance: bigintToString(playerState.cashBalance),

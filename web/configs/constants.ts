@@ -23,6 +23,8 @@ export const JAIL_FINE = 50;
 
 export const USE_VRF = false;
 
+export const PLAYER_COLORS = ["#00c8f0", "#ff4d50", "#ffbf00", "#00d696"];
+
 // EVENT DISCRIMINATORS
 export const CHANCE_CARD_DRAWN_EVENT_DISCRIMINATOR = new Uint8Array([
   117, 139, 184, 221, 43, 65, 0, 208,

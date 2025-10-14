@@ -24,12 +24,13 @@ import { GameStatus } from "@/lib/sdk/generated";
 import { EntryFeeDialog } from "@/components/entry-fee-dialog";
 import { CreateGameWalletDialog } from "@/components/create-game-wallet-dialog";
 import { useGameWalletCheck } from "@/hooks/use-game-wallet-check";
+import { GameAccount } from "@/types/schema";
 
 type GameStatusFilter = "all" | GameStatus;
 
 const FILTER_OPTIONS = [
   { value: "all" as const, label: "All Games" },
-  { value: GameStatus.WaitingForPlayers, label: "Joinable" },
+  { value: GameStatus.WaitingForPlayers, label: "Waiting for Players" },
   { value: GameStatus.InProgress, label: "In Progress" },
   { value: GameStatus.Finished, label: "Finished" },
 ];
@@ -37,7 +38,7 @@ const FILTER_OPTIONS = [
 export function GameList() {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<GameStatusFilter>(0);
-  const { wallet } = useWallet();
+  const { wallet, authenticated } = useWallet();
   const { rpc } = useRpcContext();
   const [joining, setJoining] = useState(false);
   const [showCreateWalletDialog, setShowCreateWalletDialog] = useState(false);
@@ -52,16 +53,27 @@ export function GameList() {
     return (games || []).filter((game) => game.gameStatus === statusFilter);
   }, [games, statusFilter]);
 
-  const handleJoinGame = async (gameAddress: string) => {
+  const handleJoinGame = async (game: GameAccount) => {
     if (!checkGameWallet(() => setShowCreateWalletDialog(true))) {
       return;
     }
 
     setJoining(true);
 
+    const gameAddress = game.address.toString();
+
     try {
       if (!wallet) {
         toast.error("Wallet not found");
+        return;
+      }
+
+      if (
+        game.players
+          .map((address) => address.toString())
+          .includes(wallet.address.toString())
+      ) {
+        router.push(`/game/${gameAddress}`);
         return;
       }
 
@@ -212,13 +224,14 @@ export function GameList() {
               onJoinGame={handleJoinGame}
               onSpectateGame={handleSpectateGame}
               joining={joining}
+              isWalletConnected={authenticated}
             />
           ))}
         </div>
       )}
 
       {showCreateWalletDialog && (
-        <CreateGameWalletDialog 
+        <CreateGameWalletDialog
           isOpen={showCreateWalletDialog}
           onClose={() => setShowCreateWalletDialog(false)}
         />
@@ -298,7 +311,7 @@ function CreateGameButton() {
       />
 
       {showCreateWalletDialog && (
-        <CreateGameWalletDialog 
+        <CreateGameWalletDialog
           isOpen={showCreateWalletDialog}
           onClose={() => setShowCreateWalletDialog(false)}
         />

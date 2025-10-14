@@ -5,7 +5,7 @@ import {
   UtilityPopover,
 } from "./space-popovers";
 import { BaseSpace } from "./base-space";
-import { formatPrice } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import {
   colorMap,
   PropertySpace as PropertySpaceType,
@@ -15,10 +15,11 @@ import {
   CommunityChestSpace as CommunityChestSpaceType,
   TaxSpace as TaxSpaceType,
 } from "@/configs/board-data";
-import { getTypedSpaceData } from "@/lib/board-utils";
+import { getBoardSide, getTypedSpaceData } from "@/lib/board-utils";
 import { BaseSpaceProps } from "@/types/space-types";
 import { CircleQuestionMarkIcon } from "lucide-react";
 import { TaxIcon } from "@/components/ui/icons";
+import Image from "next/image";
 
 export type PropertySpaceProps = BaseSpaceProps & PropertySpaceType;
 
@@ -31,6 +32,7 @@ export const PropertySpace: React.FC<PropertySpaceProps> = ({
   ...props
 }) => {
   const color = colorMap[colorGroup];
+  const side = getBoardSide(position);
 
   const content = (
     <BaseSpace
@@ -41,17 +43,20 @@ export const PropertySpace: React.FC<PropertySpaceProps> = ({
       {...props}
     >
       <div className="flex flex-col items-center justify-center size-full text-center relative">
-        {/* Decorative corner elements */}
-        {/* <div className="absolute top-0.5 left-0.5 w-1 h-1 border-t border-l border-current opacity-20"></div>
-        <div className="absolute top-0.5 right-0.5 w-1 h-1 border-t border-r border-current opacity-20"></div>
-        <div className="absolute bottom-0.5 left-0.5 w-1 h-1 border-b border-l border-current opacity-20"></div>
-        <div className="absolute bottom-0.5 right-0.5 w-1 h-1 border-b border-r border-current opacity-20"></div> */}
-        
-        <div className="text-[0.5vh] sm:text-[0.7vh] md:text-[0.9vh] lg:text-[1.1vh] xl:text-[1.3vh] font-bold leading-tight mb-1">
-          {name}
+        <div
+          className={cn("relative aspect-square", {
+            "w-3/4": side === "top" || side === "bottom",
+            "h-3/4": side === "left" || side === "right",
+          })}
+        >
+          <div className="size-full relative rounded-full overflow-hidden">
+            <Image src={props.logo || ""} fill alt={name} />
+          </div>
         </div>
         <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm bg-black/5">
-          <span className="text-[0.35vh] sm:text-[0.55vh] md:text-[0.7vh] lg:text-[0.9vh] xl:text-[1.1vh]">💰</span>
+          <span className="text-[0.35vh] sm:text-[0.55vh] md:text-[0.7vh] lg:text-[0.9vh] xl:text-[1.1vh]">
+            💰
+          </span>
           <span className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-semibold">
             {formatPrice(Number(price))}
           </span>
@@ -86,10 +91,14 @@ export const RailroadSpace: React.FC<RailroadSpaceProps> = ({
           {name}
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-[1.5vh] sm:text-[2vh] md:text-[2.5vh] lg:text-[3vh] xl:text-[3.5vh]">🚂</div>
+          <div className="text-[1.5vh] sm:text-[2vh] md:text-[2.5vh] lg:text-[3vh] xl:text-[3.5vh]">
+            🚂
+          </div>
         </div>
         <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm bg-black/5 mx-auto">
-          <span className="text-[0.35vh] sm:text-[0.55vh] md:text-[0.7vh] lg:text-[0.9vh] xl:text-[1.1vh]">💰</span>
+          <span className="text-[0.35vh] sm:text-[0.55vh] md:text-[0.7vh] lg:text-[0.9vh] xl:text-[1.1vh]">
+            💰
+          </span>
           <span className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-semibold">
             {formatPrice(Number(price))}
           </span>
@@ -126,10 +135,14 @@ export const UtilitySpace: React.FC<UtilitySpaceProps> = ({
           {name}
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-[1.5vh] sm:text-[2vh] md:text-[2.5vh] lg:text-[3vh] xl:text-[3.5vh]">{icon}</div>
+          <div className="text-[1.5vh] sm:text-[2vh] md:text-[2.5vh] lg:text-[3vh] xl:text-[3.5vh]">
+            {icon}
+          </div>
         </div>
         <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm bg-black/5 mx-auto">
-          <span className="text-[0.35vh] sm:text-[0.55vh] md:text-[0.7vh] lg:text-[0.9vh] xl:text-[1.1vh]">💰</span>
+          <span className="text-[0.35vh] sm:text-[0.55vh] md:text-[0.7vh] lg:text-[0.9vh] xl:text-[1.1vh]">
+            💰
+          </span>
           <span className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-semibold">
             {formatPrice(Number(price))}
           </span>
