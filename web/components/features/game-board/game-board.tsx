@@ -232,7 +232,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
   }
 
   return (
-    <div className="h-full w-full monopoly-board overflow-hidden relative">
+    <div className="h-full w-full overflow-hidden relative">
       {/* Rotation Controls */}
       <div className="absolute top-4 right-4 z-50 flex gap-2">
         <Button
@@ -256,8 +256,8 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
       </div>
 
       <div className="h-full w-full flex items-center justify-center p-2 sm:p-4">
-        <div
-          className="relative aspect-square bg-board-bg transition-transform duration-500 ease-in-out border-2
+        <Card
+          className="relative aspect-square bg-white transition-transform duration-500 ease-in-out border-2
                      w-full h-full max-w-[min(100vh,100vw)] max-h-[min(100vh,100vw)]
                      lg:max-w-none lg:max-h-none lg:h-full lg:w-auto"
           style={{ transform: `rotate(${boardRotation}deg)` }}
@@ -345,7 +345,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
               )}
             </div>
           </div>
-        </div>
+        </Card>
       </div>
 
       {cardDrawType && (

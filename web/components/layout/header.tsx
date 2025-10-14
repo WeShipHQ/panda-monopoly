@@ -108,7 +108,7 @@ const NavBar = () => {
 
 function NavLinks() {
   const links = [
-    { href: "/", label: "Lobby" },
+    // { href: "/", label: "Lobby" },
     { href: "/leaderboard", label: "Leaderboard" },
   ];
 
@@ -126,12 +126,6 @@ function NavLinks() {
             border: "2px solid transparent",
             borderRadius: "0px",
           }}
-          // onClick={(e) => {
-          //   if (link.href.startsWith("#")) {
-          //     e.preventDefault();
-          //     scrolltoHash(link.href.substring(1));
-          //   }
-          // }}
         >
           {link.label}
         </Link>
@@ -145,12 +139,7 @@ function MobileNavLinks({
 }: {
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
-  const links = [
-    { href: "#home", label: "Home" },
-    { href: "#journey", label: "Journey" },
-    { href: "#projects", label: "Projects" },
-    { href: "", label: "Blogs" },
-  ];
+  const links = [{ href: "/leaderboard", label: "Leaderboard" }];
 
   return (
     <div className="flex flex-col space-y-3">
@@ -175,9 +164,6 @@ function MobileNavLinks({
           }}
         >
           {link.label}
-          {/* {link.href.startsWith("http") && (
-            <FontAwesomeIcon icon={faExternalLinkAlt} className="ml-2" />
-          )} */}
         </a>
       ))}
     </div>

@@ -160,11 +160,9 @@ export function useGameState(
       }
     },
     {
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
       shouldRetryOnError: false,
-      // Disable polling when subscriptions are active
-      refreshInterval: subscribeToUpdates ? 0 : 5_000,
       keepPreviousData: true,
     }
   );

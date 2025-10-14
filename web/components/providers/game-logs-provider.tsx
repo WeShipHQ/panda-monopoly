@@ -12,6 +12,7 @@ import { GameLogEntry } from "@/types/space-types";
 import { useGameEventsContext } from "./game-events-provider";
 import { mapEventToLogEntry } from "@/lib/event-to-log-mapper";
 import { GameEvent } from "@/lib/sdk/types";
+import { useGameContext } from "./game-provider";
 
 interface GameLogsContextType {
   gameLogs: GameLogEntry[];
@@ -41,15 +42,19 @@ export const GameLogsProvider: React.FC<GameLogsProviderProps> = ({
   maxLogs = 100,
   persistToStorage = true,
 }) => {
-  const STORAGE_KEY = "gameLogs";
+  const { gameAddress } = useGameContext();
   const [gameLogs, setGameLogs] = useState<GameLogEntry[]>([]);
   const { registerEventHandler } = useGameEventsContext();
+
+  const storageKey = gameAddress
+    ? `gameLogs:${gameAddress.toString()}`
+    : "gameLogs:global";
 
   const loadLogs = useCallback(() => {
     if (!persistToStorage) return [];
 
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(storageKey);
       const logs = stored ? (JSON.parse(stored) as GameLogEntry[]) : [];
       setGameLogs(logs);
       return logs;
@@ -57,19 +62,19 @@ export const GameLogsProvider: React.FC<GameLogsProviderProps> = ({
       setGameLogs([]);
       return [];
     }
-  }, [STORAGE_KEY, persistToStorage]);
+  }, [storageKey, persistToStorage]);
 
   const saveLogs = useCallback(
     (logs: GameLogEntry[]) => {
       if (!persistToStorage) return;
 
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+        localStorage.setItem(storageKey, JSON.stringify(logs));
       } catch (error) {
         console.error("Failed to save logs to localStorage:", error);
       }
     },
-    [STORAGE_KEY, persistToStorage]
+    [storageKey, persistToStorage]
   );
 
   const addGameLog = useCallback(
@@ -92,27 +97,26 @@ export const GameLogsProvider: React.FC<GameLogsProviderProps> = ({
   const clearLogs = useCallback(() => {
     setGameLogs([]);
     if (persistToStorage) {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(storageKey);
     }
-  }, [STORAGE_KEY, persistToStorage]);
+  }, [storageKey, persistToStorage]);
 
   useEffect(() => {
     loadLogs();
   }, [loadLogs]);
 
-  // Listen for storage changes from other tabs
   useEffect(() => {
     if (!persistToStorage) return;
 
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) {
+      if (e.key === storageKey) {
         loadLogs();
       }
     };
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, [STORAGE_KEY, loadLogs, persistToStorage]);
+  }, [storageKey, loadLogs, persistToStorage]);
 
   useEffect(() => {
     const unsubscribeHandlers: (() => void)[] = [];

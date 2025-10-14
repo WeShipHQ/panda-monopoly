@@ -5,15 +5,19 @@ import { BankruptcyButton } from "./bankruptcy-button";
 import { ClaimRewardButton } from "./claim-reward-button";
 import envConfig from "@/configs/env";
 import { DebugUI } from "./debug-ui";
+import { OwnedProperties } from "./owned-properties";
+import { BonusItems } from "./bonus-items";
 
 export function RightPanel() {
   return (
     <div className="p-4 space-y-6 h-full overflow-auto">
       <TradeView />
       <BankruptcyButton />
+      <OwnedProperties />
+      <BonusItems />
       <ClaimRewardButton />
 
-      {envConfig.IS_DEVELOPMENT && <DebugUI />}
+      {/* {envConfig.IS_DEVELOPMENT && <DebugUI />} */}
     </div>
   );
 }

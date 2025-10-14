@@ -8,11 +8,12 @@ import { useParams } from "next/navigation";
 import { address } from "@solana/kit";
 import { LeftPanel } from "./left-panel";
 import { RightPanel } from "./right-panel";
-import { DiceLoading } from "@/components/dice-loading";
+import { Spinner } from "@/components/ui/spinner";
 
 export function GameView() {
   const { address: gameAddress } = useParams<{ address: string }>();
-  const { setGameAddress, gameLoading, gameError } = useGameContext();
+  const { setGameAddress, gameState, gameLoading, gameError } =
+    useGameContext();
 
   useEffect(() => {
     if (gameAddress) {
@@ -20,11 +21,10 @@ export function GameView() {
     }
   }, [gameAddress]);
 
-  if (gameLoading) {
+  if (gameLoading || !gameState) {
     return (
       <div className="h-screen w-full flex items-center justify-center">
-        {/* <DiceLoading /> */}
-        loading...
+        <Spinner variant="bars" />
       </div>
     );
   }
@@ -45,7 +45,7 @@ export function GameView() {
         style={{
           gridArea: "left",
         }}
-        className="overflow-hidden h-screen"
+        className="overflow-hidden h-full"
       >
         <LeftPanel />
       </div>
@@ -53,7 +53,7 @@ export function GameView() {
         style={{
           gridArea: "center",
         }}
-        className="bg-green-200 aspect-square w-[100vw] lg:w-[55vw]"
+        className="aspect-square w-[100vw] xl:w-auto xl:h-full"
       >
         <GameBoard />
       </div>
