@@ -1,7 +1,21 @@
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { currentUser, mockGameRooms } from '@/data/mock-data';
 import { GameRoom, RoomStatus } from '@/types/game';
 import { Stack, useRouter } from 'expo-router';
@@ -9,6 +23,7 @@ import { Eye, GamepadIcon, Users } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import * as React from 'react';
 import { FlatList, View, ScrollView } from 'react-native';
+import { Badge } from '@/components/ui/badge';
 
 const SCREEN_OPTIONS = {
   title: 'Monopoly Rooms',
@@ -22,27 +37,27 @@ const statusOptions = [
   { label: 'Finished', value: 'Finished' },
 ];
 
-const getStatusColor = (status: RoomStatus) => {
-  switch (status) {
-    case 'Waiting for Player':
-      return 'text-green-600';
-    case 'In Progress':
-      return 'text-yellow-600';
-    case 'Finished':
-      return 'text-gray-500';
-    default:
-      return 'text-gray-500';
-  }
-};
+// const getStatusColor = (status: RoomStatus) => {
+//   switch (status) {
+//     case 'Waiting for Player':
+//       return 'text-primary-foreground';
+//     case 'In Progress':
+//       return 'text-yellow-600';
+//     case 'Finished':
+//       return 'text-primary-foreground';
+//     default:
+//       return 'text-primary-foreground';
+//   }
+// };
 
 const getStatusBgColor = (status: RoomStatus) => {
   switch (status) {
     case 'Waiting for Player':
-      return 'bg-green-100 dark:bg-green-900/20';
+      return 'bg-green-500 dark:bg-green-900/20';
     case 'In Progress':
-      return 'bg-yellow-100 dark:bg-yellow-900/20';
+      return 'bg-yellow-500 dark:bg-yellow-900/20';
     case 'Finished':
-      return 'bg-gray-100 dark:bg-gray-900/20';
+      return 'bg-gray-300 dark:bg-gray-900/20';
     default:
       return 'bg-gray-100 dark:bg-gray-900/20';
   }
@@ -62,7 +77,7 @@ function PlayerAvatars({ players, maxPlayers }: PlayerAvatarsProps) {
       {displayPlayers.map((player, index) => (
         <View
           key={player.id}
-          className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 items-center justify-center border-2 border-white dark:border-gray-800"
+          className="h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-gray-200 dark:border-gray-800 dark:bg-gray-700"
           style={{
             marginLeft: index > 0 ? -8 : 0,
             zIndex: displayPlayers.length - index,
@@ -73,12 +88,12 @@ function PlayerAvatars({ players, maxPlayers }: PlayerAvatarsProps) {
       {Array.from({ length: emptySlots }).map((_, index) => (
         <View
           key={`empty-${index}`}
-          className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 items-center justify-center border-2 border-white dark:border-gray-800 border-dashed"
+          className="h-8 w-8 items-center justify-center rounded-full border-2 border-dashed border-white bg-gray-100 dark:border-gray-800 dark:bg-gray-800"
           style={{
             marginLeft: displayPlayers.length + index > 0 ? -8 : 0,
             zIndex: emptySlots - index,
           }}>
-          <Icon as={Users} className="w-3 h-3 text-gray-400" />
+          <Icon as={Users} className="h-3 w-3 text-gray-400" />
         </View>
       ))}
     </View>
@@ -96,24 +111,22 @@ function RoomCard({ room, onJoinGame, onSpectate }: RoomCardProps) {
   const canSpectate = room.status === 'In Progress';
 
   return (
-    <View className="bg-card border border-border rounded-lg p-4 mb-3 shadow-sm">
+    <Card className="mb-3">
       {/* Room Header */}
-      <View className="flex-row items-center justify-between mb-3">
+      <CardHeader className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-2">
-          <Icon as={GamepadIcon} className="w-5 h-5 text-primary" />
+          <Icon as={GamepadIcon} className="h-5 w-5 text-primary" />
           <Text variant="large" className="font-semibold">
             Room {room.id.split('-')[1]}
           </Text>
         </View>
-        <View className={`px-2 py-1 rounded-full ${getStatusBgColor(room.status)}`}>
-          <Text className={`text-xs font-medium ${getStatusColor(room.status)}`}>
-            {room.status}
-          </Text>
-        </View>
-      </View>
+        <Badge className={getStatusBgColor(room.status)}>
+          <Text className={`text-xs font-medium`}>{room.status}</Text>
+        </Badge>
+      </CardHeader>
 
       {/* Players and Entry Fee */}
-      <View className="flex-row items-center justify-between mb-4">
+      <CardContent className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
           <PlayerAvatars players={room.players} maxPlayers={room.maxPlayers} />
           <Text variant="small" className="text-muted-foreground">
@@ -128,26 +141,22 @@ function RoomCard({ room, onJoinGame, onSpectate }: RoomCardProps) {
             ${room.entryFee}
           </Text>
         </View>
-      </View>
+      </CardContent>
 
       {/* Action Buttons */}
-      <View className="flex-row gap-2">
+      <CardFooter className="gap-4">
         <Button
           className="flex-1"
-          variant={canJoin ? 'default' : 'outline'}
+          variant={canJoin ? 'default' : 'noShadow'}
           disabled={!canJoin}
           onPress={() => onJoinGame(room.id)}>
           <Text>{canJoin ? 'Join Game' : 'Room Full'}</Text>
         </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          disabled={!canSpectate}
-          onPress={() => onSpectate(room.id)}>
-          <Icon as={Eye} className="w-4 h-4" />
+        <Button size="icon" disabled={!canSpectate} onPress={() => onSpectate(room.id)}>
+          <Icon as={Eye} className="h-4 w-4" />
         </Button>
-      </View>
-    </View>
+      </CardFooter>
+    </Card>
   );
 }
 
@@ -188,10 +197,10 @@ export default function HomeScreen() {
       <Stack.Screen options={SCREEN_OPTIONS} />
       <View className="flex-1 bg-background">
         {/* Header */}
-        <View className="bg-card border-b border-border px-4 py-3 pt-12">
+        <View className="border-b border-border bg-card px-4 py-3 pt-12">
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center gap-3">
-              <View className="w-10 h-10 rounded-full bg-primary items-center justify-center">
+              <View className="h-10 w-10 items-center justify-center rounded-full bg-primary">
                 <Text className="text-lg text-primary-foreground">{currentUser.avatar}</Text>
               </View>
               <View>
@@ -204,7 +213,13 @@ export default function HomeScreen() {
               </View>
             </View>
             <View className="w-32">
-              <Select value={{ value: selectedStatus, label: statusOptions.find(opt => opt.value === selectedStatus)?.label || 'All Rooms' }} onValueChange={(option) => handleStatusChange(option?.value)}>
+              <Select
+                value={{
+                  value: selectedStatus,
+                  label:
+                    statusOptions.find((opt) => opt.value === selectedStatus)?.label || 'All Rooms',
+                }}
+                onValueChange={(option) => handleStatusChange(option?.value)}>
                 <SelectTrigger size="sm">
                   <SelectValue placeholder="Filter rooms" />
                 </SelectTrigger>
@@ -222,7 +237,7 @@ export default function HomeScreen() {
 
         {/* Room List */}
         <View className="flex-1 px-4 py-4">
-          <View className="flex-row items-center justify-between mb-4">
+          <View className="mb-4 flex-row items-center justify-between">
             <Text variant="h3">Game Rooms</Text>
             <Text variant="small" className="text-muted-foreground">
               {filteredRooms.length} room{filteredRooms.length !== 1 ? 's' : ''}
