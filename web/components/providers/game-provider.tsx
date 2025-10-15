@@ -62,6 +62,7 @@ interface GameContextType {
   closeGame: () => Promise<void>;
   joinGame: () => Promise<void>;
   leaveGame: () => Promise<void>;
+  cancelGame: () => Promise<void>;
   rollDice: (diceRoll?: number[]) => Promise<void>;
   buyProperty: (position: number) => Promise<void>;
   skipProperty: (position: number) => Promise<void>;
@@ -426,12 +427,38 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[leaveGame] tx", signature);
-      alert("success");
     } catch (error) {
       console.error("Error leaving game:", error);
       throw error;
     }
   }, [rpc, gameAddress, wallet]);
+
+  const cancelGame = useCallback(async (): Promise<void> => {
+    if (!gameAddress || !wallet?.address || !wallet.delegated || !gameState) {
+      throw new Error("Game address or player signer not available");
+    }
+
+    try {
+      const instructions = await sdk.cancelGameIx({
+        rpc,
+        gameAddress,
+        creator: { address: address(wallet.address) } as TransactionSigner,
+        isFreeGame: gameState.entryFee === 0,
+        players: gameState?.players.map(address) || [],
+      });
+
+      const signature = await buildAndSendTransactionWithPrivy(
+        rpc,
+        instructions,
+        wallet
+      );
+
+      console.log("[cancelGame] tx", signature);
+    } catch (error) {
+      console.error("Error canceling game:", error);
+      throw error;
+    }
+  }, [rpc, gameAddress, wallet, gameState]);
 
   const rollDice = useCallback(
     async (diceRoll?: number[]): Promise<void> => {
@@ -1415,6 +1442,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     closeGame,
     joinGame,
     leaveGame,
+    cancelGame,
     rollDice,
     buyProperty,
     skipProperty,

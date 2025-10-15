@@ -251,7 +251,7 @@ pub fn send_player_to_jail(player_state: &mut PlayerState) {
     player_state.needs_community_chest_card = false;
 }
 
-pub fn force_end_turn(game: &mut GameState, player_state: &mut PlayerState, clock: &Sysvar<Clock>) {
+pub fn force_end_turn_util(game: &mut GameState, player_state: &mut PlayerState, clock: &Sysvar<Clock>) {
     // Reset turn-specific flags
     player_state.has_rolled_dice = false;
     player_state.needs_property_action = false;
@@ -265,8 +265,6 @@ pub fn force_end_turn(game: &mut GameState, player_state: &mut PlayerState, cloc
     player_state.doubles_count = 0;
 
     // Advance to next player
-    // let next_turn = (game.current_turn + 1) % game.current_players;
-    // game.current_turn = next_turn;
     game.advance_turn().unwrap();
     game.turn_started_at = clock.unix_timestamp;
 

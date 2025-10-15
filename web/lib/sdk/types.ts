@@ -50,6 +50,14 @@ export interface CreateGameParams {
   entryFee: number;
 }
 
+export interface CancelGameParams {
+  rpc: Rpc<SolanaRpcApi>;
+  creator: TransactionSigner;
+  gameAddress: Address;
+  isFreeGame: boolean;
+  players: Address[];
+}
+
 export interface CreateGameIxs {
   instructions: Instruction[];
   gameAccountAddress: Address;

@@ -264,6 +264,22 @@ export const PANDA_MONOPOLY_ERROR__NOT_WINNER = 0x17ea; // 6122
 export const PANDA_MONOPOLY_ERROR__NO_PRIZE_TO_CLAIM = 0x17eb; // 6123
 /** NoActivePlayers: No active players found */
 export const PANDA_MONOPOLY_ERROR__NO_ACTIVE_PLAYERS = 0x17ec; // 6124
+/** TimeoutNotReached: Turn timeout has not been reached yet */
+export const PANDA_MONOPOLY_ERROR__TIMEOUT_NOT_REACHED = 0x17ed; // 6125
+/** GracePeriodNotExpired: Grace period has not expired yet */
+export const PANDA_MONOPOLY_ERROR__GRACE_PERIOD_NOT_EXPIRED = 0x17ee; // 6126
+/** InsufficientTimeoutPenalties: Player has not reached maximum timeout penalties */
+export const PANDA_MONOPOLY_ERROR__INSUFFICIENT_TIMEOUT_PENALTIES = 0x17ef; // 6127
+/** TimeoutEnforcementDisabled: Timeout enforcement is disabled for this game */
+export const PANDA_MONOPOLY_ERROR__TIMEOUT_ENFORCEMENT_DISABLED = 0x17f0; // 6128
+/** PlayerHasRecentActivity: Cannot force end turn - player has taken action recently */
+export const PANDA_MONOPOLY_ERROR__PLAYER_HAS_RECENT_ACTIVITY = 0x17f1; // 6129
+/** InsufficientBountyFunds: Insufficient lamports for timeout bounty */
+export const PANDA_MONOPOLY_ERROR__INSUFFICIENT_BOUNTY_FUNDS = 0x17f2; // 6130
+/** PlayerAlreadyBankrupt: Player is already bankrupt */
+export const PANDA_MONOPOLY_ERROR__PLAYER_ALREADY_BANKRUPT = 0x17f3; // 6131
+/** NoActivePlayersRemaining: No active players remaining */
+export const PANDA_MONOPOLY_ERROR__NO_ACTIVE_PLAYERS_REMAINING = 0x17f4; // 6132
 
 export type PandaMonopolyError =
   | typeof PANDA_MONOPOLY_ERROR__ACCOUNT_ALREADY_INITIALIZED
@@ -311,8 +327,11 @@ export type PandaMonopolyError =
   | typeof PANDA_MONOPOLY_ERROR__GAME_NOT_FINISHED
   | typeof PANDA_MONOPOLY_ERROR__GAME_NOT_INITIALIZED
   | typeof PANDA_MONOPOLY_ERROR__GAME_NOT_IN_PROGRESS
+  | typeof PANDA_MONOPOLY_ERROR__GRACE_PERIOD_NOT_EXPIRED
   | typeof PANDA_MONOPOLY_ERROR__HAS_NOT_ROLLED_DICE
+  | typeof PANDA_MONOPOLY_ERROR__INSUFFICIENT_BOUNTY_FUNDS
   | typeof PANDA_MONOPOLY_ERROR__INSUFFICIENT_FUNDS
+  | typeof PANDA_MONOPOLY_ERROR__INSUFFICIENT_TIMEOUT_PENALTIES
   | typeof PANDA_MONOPOLY_ERROR__INTERNAL_ERROR
   | typeof PANDA_MONOPOLY_ERROR__INVALID_ACCOUNT
   | typeof PANDA_MONOPOLY_ERROR__INVALID_BOARD_POSITION
@@ -347,6 +366,7 @@ export type PandaMonopolyError =
   | typeof PANDA_MONOPOLY_ERROR__MUST_ROLL_DOUBLES_OR_PAY_FINE
   | typeof PANDA_MONOPOLY_ERROR__MUST_SELL_EVENLY
   | typeof PANDA_MONOPOLY_ERROR__NO_ACTIVE_PLAYERS
+  | typeof PANDA_MONOPOLY_ERROR__NO_ACTIVE_PLAYERS_REMAINING
   | typeof PANDA_MONOPOLY_ERROR__NO_GET_OUT_OF_JAIL_CARDS
   | typeof PANDA_MONOPOLY_ERROR__NO_HOTEL_TO_SELL
   | typeof PANDA_MONOPOLY_ERROR__NO_HOUSES_TO_SELL
@@ -361,8 +381,10 @@ export type PandaMonopolyError =
   | typeof PANDA_MONOPOLY_ERROR__NOT_WINNER
   | typeof PANDA_MONOPOLY_ERROR__NO_WINNER_DECLARED
   | typeof PANDA_MONOPOLY_ERROR__OPERATION_NOT_ALLOWED
+  | typeof PANDA_MONOPOLY_ERROR__PLAYER_ALREADY_BANKRUPT
   | typeof PANDA_MONOPOLY_ERROR__PLAYER_ALREADY_EXISTS
   | typeof PANDA_MONOPOLY_ERROR__PLAYER_BANKRUPT
+  | typeof PANDA_MONOPOLY_ERROR__PLAYER_HAS_RECENT_ACTIVITY
   | typeof PANDA_MONOPOLY_ERROR__PLAYER_IN_JAIL
   | typeof PANDA_MONOPOLY_ERROR__PLAYER_NOT_FOUND
   | typeof PANDA_MONOPOLY_ERROR__PLAYER_NOT_IN_JAIL
@@ -381,6 +403,8 @@ export type PandaMonopolyError =
   | typeof PANDA_MONOPOLY_ERROR__RENT_ALREADY_PAID
   | typeof PANDA_MONOPOLY_ERROR__RESOURCE_NOT_AVAILABLE
   | typeof PANDA_MONOPOLY_ERROR__TAX_CALCULATION_ERROR
+  | typeof PANDA_MONOPOLY_ERROR__TIMEOUT_ENFORCEMENT_DISABLED
+  | typeof PANDA_MONOPOLY_ERROR__TIMEOUT_NOT_REACHED
   | typeof PANDA_MONOPOLY_ERROR__TOO_MANY_ACTIVE_TRADES
   | typeof PANDA_MONOPOLY_ERROR__TOO_MANY_DOUBLES
   | typeof PANDA_MONOPOLY_ERROR__TRADE_ALREADY_ACCEPTED
@@ -440,8 +464,11 @@ if (process.env.NODE_ENV !== 'production') {
     [PANDA_MONOPOLY_ERROR__GAME_NOT_FINISHED]: `Game is not finished yet`,
     [PANDA_MONOPOLY_ERROR__GAME_NOT_INITIALIZED]: `Game has not been initialized`,
     [PANDA_MONOPOLY_ERROR__GAME_NOT_IN_PROGRESS]: `Game is not in progress`,
+    [PANDA_MONOPOLY_ERROR__GRACE_PERIOD_NOT_EXPIRED]: `Grace period has not expired yet`,
     [PANDA_MONOPOLY_ERROR__HAS_NOT_ROLLED_DICE]: `Player has not rolled dice yet`,
+    [PANDA_MONOPOLY_ERROR__INSUFFICIENT_BOUNTY_FUNDS]: `Insufficient lamports for timeout bounty`,
     [PANDA_MONOPOLY_ERROR__INSUFFICIENT_FUNDS]: `Player has insufficient funds`,
+    [PANDA_MONOPOLY_ERROR__INSUFFICIENT_TIMEOUT_PENALTIES]: `Player has not reached maximum timeout penalties`,
     [PANDA_MONOPOLY_ERROR__INTERNAL_ERROR]: `Internal error occurred`,
     [PANDA_MONOPOLY_ERROR__INVALID_ACCOUNT]: `Invalid account provided`,
     [PANDA_MONOPOLY_ERROR__INVALID_BOARD_POSITION]: `Invalid board position`,
@@ -476,6 +503,7 @@ if (process.env.NODE_ENV !== 'production') {
     [PANDA_MONOPOLY_ERROR__MUST_ROLL_DOUBLES_OR_PAY_FINE]: `Must roll doubles or pay fine to leave jail`,
     [PANDA_MONOPOLY_ERROR__MUST_SELL_EVENLY]: `Must sell houses evenly across color group`,
     [PANDA_MONOPOLY_ERROR__NO_ACTIVE_PLAYERS]: `No active players found`,
+    [PANDA_MONOPOLY_ERROR__NO_ACTIVE_PLAYERS_REMAINING]: `No active players remaining`,
     [PANDA_MONOPOLY_ERROR__NO_GET_OUT_OF_JAIL_CARDS]: `Player has no Get Out of Jail cards`,
     [PANDA_MONOPOLY_ERROR__NO_HOTEL_TO_SELL]: `No hotel to sell on property`,
     [PANDA_MONOPOLY_ERROR__NO_HOUSES_TO_SELL]: `No houses to sell on property`,
@@ -490,8 +518,10 @@ if (process.env.NODE_ENV !== 'production') {
     [PANDA_MONOPOLY_ERROR__NOT_WINNER]: `You are not the winner`,
     [PANDA_MONOPOLY_ERROR__NO_WINNER_DECLARED]: `No winner has been declared`,
     [PANDA_MONOPOLY_ERROR__OPERATION_NOT_ALLOWED]: `Operation not allowed in current game state`,
+    [PANDA_MONOPOLY_ERROR__PLAYER_ALREADY_BANKRUPT]: `Player is already bankrupt`,
     [PANDA_MONOPOLY_ERROR__PLAYER_ALREADY_EXISTS]: `Player already exists in game`,
     [PANDA_MONOPOLY_ERROR__PLAYER_BANKRUPT]: `Player is bankrupt`,
+    [PANDA_MONOPOLY_ERROR__PLAYER_HAS_RECENT_ACTIVITY]: `Cannot force end turn - player has taken action recently`,
     [PANDA_MONOPOLY_ERROR__PLAYER_IN_JAIL]: `Player is in jail`,
     [PANDA_MONOPOLY_ERROR__PLAYER_NOT_FOUND]: `Player not found in game`,
     [PANDA_MONOPOLY_ERROR__PLAYER_NOT_IN_JAIL]: `Player is not in jail`,
@@ -510,6 +540,8 @@ if (process.env.NODE_ENV !== 'production') {
     [PANDA_MONOPOLY_ERROR__RENT_ALREADY_PAID]: `Rent already paid`,
     [PANDA_MONOPOLY_ERROR__RESOURCE_NOT_AVAILABLE]: `Resource not available`,
     [PANDA_MONOPOLY_ERROR__TAX_CALCULATION_ERROR]: `Tax amount calculation error`,
+    [PANDA_MONOPOLY_ERROR__TIMEOUT_ENFORCEMENT_DISABLED]: `Timeout enforcement is disabled for this game`,
+    [PANDA_MONOPOLY_ERROR__TIMEOUT_NOT_REACHED]: `Turn timeout has not been reached yet`,
     [PANDA_MONOPOLY_ERROR__TOO_MANY_ACTIVE_TRADES]: `Too many active trades`,
     [PANDA_MONOPOLY_ERROR__TOO_MANY_DOUBLES]: `Player rolled doubles too many times`,
     [PANDA_MONOPOLY_ERROR__TRADE_ALREADY_ACCEPTED]: `Trade already accepted`,

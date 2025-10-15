@@ -110,6 +110,9 @@ export type GameState = {
   gameEndTime: Option<bigint>;
   turnStartedAt: bigint;
   timeLimit: Option<bigint>;
+  turnTimeoutSeconds: bigint;
+  turnGracePeriodSeconds: bigint;
+  timeoutEnforcementEnabled: boolean;
 };
 
 export type GameStateArgs = {
@@ -146,6 +149,9 @@ export type GameStateArgs = {
   gameEndTime: OptionOrNullable<number | bigint>;
   turnStartedAt: number | bigint;
   timeLimit: OptionOrNullable<number | bigint>;
+  turnTimeoutSeconds: number | bigint;
+  turnGracePeriodSeconds: number | bigint;
+  timeoutEnforcementEnabled: boolean;
 };
 
 export function getGameStateEncoder(): Encoder<GameStateArgs> {
@@ -185,6 +191,9 @@ export function getGameStateEncoder(): Encoder<GameStateArgs> {
       ['gameEndTime', getOptionEncoder(getI64Encoder())],
       ['turnStartedAt', getI64Encoder()],
       ['timeLimit', getOptionEncoder(getI64Encoder())],
+      ['turnTimeoutSeconds', getU64Encoder()],
+      ['turnGracePeriodSeconds', getU64Encoder()],
+      ['timeoutEnforcementEnabled', getBooleanEncoder()],
     ]),
     (value) => ({ ...value, discriminator: GAME_STATE_DISCRIMINATOR })
   );
@@ -226,6 +235,9 @@ export function getGameStateDecoder(): Decoder<GameState> {
     ['gameEndTime', getOptionDecoder(getI64Decoder())],
     ['turnStartedAt', getI64Decoder()],
     ['timeLimit', getOptionDecoder(getI64Decoder())],
+    ['turnTimeoutSeconds', getU64Decoder()],
+    ['turnGracePeriodSeconds', getU64Decoder()],
+    ['timeoutEnforcementEnabled', getBooleanDecoder()],
   ]);
 }
 

@@ -52,6 +52,12 @@ pub mod panda_monopoly {
         instructions::initialize::initialize_game_handler(ctx, entry_fee, time_limit_seconds)
     }
 
+    pub fn cancel_game<'c: 'info, 'info>(
+        ctx: Context<'_, '_, 'c, 'info, CancelGame<'info>>,
+    ) -> Result<()> {
+        instructions::cancel_game::cancel_game_handler(ctx)
+    }
+
     pub fn join_game(ctx: Context<JoinGame>) -> Result<()> {
         instructions::initialize::join_game_handler(ctx)
     }
@@ -116,7 +122,6 @@ pub mod panda_monopoly {
         instructions::jail::use_get_out_of_jail_card_handler(ctx)
     }
 
-    // Bankruptcy instruction
     pub fn declare_bankruptcy<'c: 'info, 'info>(
         ctx: Context<'_, '_, 'c, 'info, DeclareBankruptcy<'info>>,
     ) -> Result<()> {
@@ -160,7 +165,6 @@ pub mod panda_monopoly {
         )
     }
 
-    // properties v2
     pub fn buy_property_v2(ctx: Context<BuyPropertyV2>, position: u8) -> Result<()> {
         instructions::property::buy_property_v2_handler(ctx, position)
     }
@@ -236,6 +240,16 @@ pub mod panda_monopoly {
         instructions::claim_reward::claim_reward_handler(ctx)
     }
 
+    // permissionless instructions
+
+    pub fn force_end_turn(ctx: Context<ForceEndTurn>) -> Result<()> {
+        instructions::permissionless::force_end_turn_handler(ctx)
+    }
+
+    pub fn force_bankruptcy_for_timeout(ctx: Context<ForceBankruptcyForTimeout>) -> Result<()> {
+        instructions::permissionless::force_bankruptcy_for_timeout_handler(ctx)
+    }
+
     // for test
 
     pub fn reset_game_handler<'c: 'info, 'info>(
@@ -257,47 +271,47 @@ pub mod panda_monopoly {
     }
 
     // Property instructions v1
-    pub fn init_property_handler(
-        ctx: Context<InitProperty>,
-        game_key: Pubkey,
-        position: u8,
-    ) -> Result<()> {
-        instructions::property::init_property_handler(ctx, game_key, position)
-    }
+    // pub fn init_property_handler(
+    //     ctx: Context<InitProperty>,
+    //     game_key: Pubkey,
+    //     position: u8,
+    // ) -> Result<()> {
+    //     instructions::property::init_property_handler(ctx, game_key, position)
+    // }
 
-    pub fn buy_property(ctx: Context<BuyProperty>, position: u8) -> Result<()> {
-        instructions::property::buy_property_handler(ctx, position)
-    }
+    // pub fn buy_property(ctx: Context<BuyProperty>, position: u8) -> Result<()> {
+    //     instructions::property::buy_property_handler(ctx, position)
+    // }
 
-    pub fn decline_property(ctx: Context<DeclineProperty>, position: u8) -> Result<()> {
-        instructions::property::decline_property_handler(ctx, position)
-    }
+    // pub fn decline_property(ctx: Context<DeclineProperty>, position: u8) -> Result<()> {
+    //     instructions::property::decline_property_handler(ctx, position)
+    // }
 
-    pub fn pay_rent(ctx: Context<PayRent>, position: u8) -> Result<()> {
-        instructions::property::pay_rent_handler(ctx, position)
-    }
+    // pub fn pay_rent(ctx: Context<PayRent>, position: u8) -> Result<()> {
+    //     instructions::property::pay_rent_handler(ctx, position)
+    // }
 
-    pub fn build_house(ctx: Context<BuildHouse>, position: u8) -> Result<()> {
-        instructions::property::build_house_handler(ctx, position)
-    }
+    // pub fn build_house(ctx: Context<BuildHouse>, position: u8) -> Result<()> {
+    //     instructions::property::build_house_handler(ctx, position)
+    // }
 
-    pub fn build_hotel(ctx: Context<BuildHotel>, position: u8) -> Result<()> {
-        instructions::property::build_hotel_handler(ctx, position)
-    }
+    // pub fn build_hotel(ctx: Context<BuildHotel>, position: u8) -> Result<()> {
+    //     instructions::property::build_hotel_handler(ctx, position)
+    // }
 
-    pub fn sell_building(
-        ctx: Context<SellBuilding>,
-        position: u8,
-        building_type: BuildingType,
-    ) -> Result<()> {
-        instructions::property::sell_building_handler(ctx, position, building_type)
-    }
+    // pub fn sell_building(
+    //     ctx: Context<SellBuilding>,
+    //     position: u8,
+    //     building_type: BuildingType,
+    // ) -> Result<()> {
+    //     instructions::property::sell_building_handler(ctx, position, building_type)
+    // }
 
-    pub fn mortgage_property(ctx: Context<MortgageProperty>, position: u8) -> Result<()> {
-        instructions::property::mortgage_property_handler(ctx, position)
-    }
+    // pub fn mortgage_property(ctx: Context<MortgageProperty>, position: u8) -> Result<()> {
+    //     instructions::property::mortgage_property_handler(ctx, position)
+    // }
 
-    pub fn unmortgage_property(ctx: Context<UnmortgageProperty>, position: u8) -> Result<()> {
-        instructions::property::unmortgage_property_handler(ctx, position)
-    }
+    // pub fn unmortgage_property(ctx: Context<UnmortgageProperty>, position: u8) -> Result<()> {
+    //     instructions::property::unmortgage_property_handler(ctx, position)
+    // }
 }

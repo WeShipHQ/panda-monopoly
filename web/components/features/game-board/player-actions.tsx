@@ -153,6 +153,8 @@ export const PlayerActions = ({
   handlePayJailFine,
   handleGetOutOfJailCard,
   handleEndGame,
+  handleCancelGame,
+  handleLeaveGame,
   isLoading,
 }: {
   wallet: WalletWithMetadata;
@@ -166,6 +168,8 @@ export const PlayerActions = ({
   handlePayJailFine: () => void;
   handleGetOutOfJailCard: () => void;
   handleEndGame: () => void;
+  handleCancelGame: () => void;
+  handleLeaveGame: () => void;
   isLoading: string | null;
 }) => {
   const {
@@ -220,25 +224,26 @@ export const PlayerActions = ({
     <div className="flex flex-col items-center">
       <DicesOnly />
 
-      {/* <Button
-        onClick={handleEndGame}
-        size="sm"
-        loading={isLoading === "endGame"}
-      >
-        End game
-      </Button> */}
-
       {!isStarted && (
         <div className="flex items-center gap-2 mt-8 mb-4">
           {isCreator && (
             <div className="flex flex-col gap-4 items-center">
-              <Button
-                onClick={() => handleStartGame(game.address)}
-                loading={isLoading === "startGame"}
-                disabled={game.players.length < 2}
-              >
-                Start game
-              </Button>
+              <div className="flex items-center gap-4">
+                <Button
+                  onClick={() => handleCancelGame()}
+                  loading={isLoading === "cancelGame"}
+                  variant="neutral"
+                >
+                  Cancel game
+                </Button>
+                <Button
+                  onClick={() => handleStartGame(game.address)}
+                  loading={isLoading === "startGame"}
+                  disabled={game.players.length < 2}
+                >
+                  Start game
+                </Button>
+              </div>
               {game.players.length < 2 && (
                 <Badge variant="neutral">
                   At least 2 players are required to start the game
@@ -261,7 +266,15 @@ export const PlayerActions = ({
           )}
 
           {!isCreator && isInGame && (
-            <Badge variant="neutral">Waiting for host to start game</Badge>
+            <div className="flex flex-col gap-4 items-center">
+              <Button
+                onClick={() => handleLeaveGame()}
+                loading={isLoading === "leaveGame"}
+              >
+                Leave game
+              </Button>
+              <Badge variant="neutral">Waiting for host to start game</Badge>
+            </div>
           )}
         </div>
       )}

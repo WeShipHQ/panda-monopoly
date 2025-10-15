@@ -1,5 +1,5 @@
 use crate::error::GameError;
-use crate::{constants::*, force_end_turn, state::*};
+use crate::{constants::*, force_end_turn_util, state::*};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
@@ -58,7 +58,7 @@ pub fn pay_jail_fine_handler(ctx: Context<PayJailFine>) -> Result<()> {
     player_state.jail_turns = 0;
 
     // End the turn after paying the fine
-    force_end_turn(game, player_state, clock);
+    force_end_turn_util(game, player_state, clock);
 
     msg!(
         "Player {} paid ${} jail fine and is released! Turn ended.",
@@ -124,7 +124,7 @@ pub fn use_get_out_of_jail_card_handler(ctx: Context<UseGetOutOfJailCard>) -> Re
     player_state.jail_turns = 0;
 
     // End the turn after using the card
-    force_end_turn(game, player_state, clock);
+    force_end_turn_util(game, player_state, clock);
 
     msg!(
         "Player {} used a Get Out of Jail card and is released! Turn ended. Cards remaining: {}",

@@ -3,21 +3,45 @@ import { PLAYER_COLORS } from "@/configs/constants";
 import {
   GameState,
   PlayerState,
-  PropertyState,
+  // PropertyState,
   GameStatus,
-  PropertyType,
+  // PropertyType,
   TradeStatus,
   TradeType,
   TradeInfo as GeneratedTradeInfo,
   GameEndReason,
 } from "@/lib/sdk/generated";
-import { ColorGroup as GeneratedColorGroup } from "@/lib/sdk/generated";
+// import { ColorGroup as GeneratedColorGroup } from "@/lib/sdk/generated";
 import {
   isSome,
   type Address,
   type Option,
   type ReadonlyUint8Array,
 } from "@solana/kit";
+
+export enum PropertyType {
+  Street,
+  Railroad,
+  Utility,
+  Corner,
+  Chance,
+  CommunityChest,
+  Tax,
+}
+
+export enum GeneratedColorGroup {
+  Brown,
+  LightBlue,
+  Pink,
+  Orange,
+  Red,
+  Yellow,
+  Green,
+  DarkBlue,
+  Railroad,
+  Utility,
+  Special,
+}
 
 export interface GameAccount {
   address: string;
@@ -289,31 +313,31 @@ function mapGeneratedColorGroupToFrontend(
   }
 }
 
-export function mapPropertyStateToAccount(
-  propertyState: PropertyState,
-  address: Address
-): PropertyAccount {
-  return {
-    address: addressToString(address),
-    position: propertyState.position,
-    owner: optionToNullable(propertyState.owner)
-      ? addressToString(optionToNullable(propertyState.owner)!)
-      : null,
-    price: propertyState.price,
-    colorGroup: mapGeneratedColorGroupToFrontend(propertyState.colorGroup),
-    propertyType: propertyState.propertyType,
-    houses: propertyState.houses,
-    hasHotel: propertyState.hasHotel,
-    isMortgaged: propertyState.isMortgaged,
-    rentBase: propertyState.rentBase,
-    rentWithColorGroup: propertyState.rentWithColorGroup,
-    rentWithHouses: propertyState.rentWithHouses,
-    rentWithHotel: propertyState.rentWithHotel,
-    houseCost: propertyState.houseCost,
-    mortgageValue: propertyState.mortgageValue,
-    lastRentPaid: bigintToString(propertyState.lastRentPaid),
-  };
-}
+// export function mapPropertyStateToAccount(
+//   propertyState: PropertyState,
+//   address: Address
+// ): PropertyAccount {
+//   return {
+//     address: addressToString(address),
+//     position: propertyState.position,
+//     owner: optionToNullable(propertyState.owner)
+//       ? addressToString(optionToNullable(propertyState.owner)!)
+//       : null,
+//     price: propertyState.price,
+//     colorGroup: mapGeneratedColorGroupToFrontend(propertyState.colorGroup),
+//     propertyType: propertyState.propertyType,
+//     houses: propertyState.houses,
+//     hasHotel: propertyState.hasHotel,
+//     isMortgaged: propertyState.isMortgaged,
+//     rentBase: propertyState.rentBase,
+//     rentWithColorGroup: propertyState.rentWithColorGroup,
+//     rentWithHouses: propertyState.rentWithHouses,
+//     rentWithHotel: propertyState.rentWithHotel,
+//     houseCost: propertyState.houseCost,
+//     mortgageValue: propertyState.mortgageValue,
+//     lastRentPaid: bigintToString(propertyState.lastRentPaid),
+//   };
+// }
 
 export function mapTradeInfoToAccount(
   tradeInfo: GeneratedTradeInfo

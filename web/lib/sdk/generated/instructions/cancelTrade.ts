@@ -48,6 +48,7 @@ export function getCancelTradeDiscriminatorBytes() {
 export type CancelTradeInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountGame extends string | AccountMeta<string> = string,
+  TAccountCancellerState extends string | AccountMeta<string> = string,
   TAccountCanceller extends string | AccountMeta<string> = string,
   TAccountClock extends
     | string
@@ -60,6 +61,9 @@ export type CancelTradeInstruction<
       TAccountGame extends string
         ? WritableAccount<TAccountGame>
         : TAccountGame,
+      TAccountCancellerState extends string
+        ? WritableAccount<TAccountCancellerState>
+        : TAccountCancellerState,
       TAccountCanceller extends string
         ? WritableSignerAccount<TAccountCanceller> &
             AccountSignerMeta<TAccountCanceller>
@@ -107,10 +111,12 @@ export function getCancelTradeInstructionDataCodec(): FixedSizeCodec<
 
 export type CancelTradeInput<
   TAccountGame extends string = string,
+  TAccountCancellerState extends string = string,
   TAccountCanceller extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
+  cancellerState: Address<TAccountCancellerState>;
   canceller: TransactionSigner<TAccountCanceller>;
   clock?: Address<TAccountClock>;
   tradeId: CancelTradeInstructionDataArgs['tradeId'];
@@ -118,15 +124,22 @@ export type CancelTradeInput<
 
 export function getCancelTradeInstruction<
   TAccountGame extends string,
+  TAccountCancellerState extends string,
   TAccountCanceller extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: CancelTradeInput<TAccountGame, TAccountCanceller, TAccountClock>,
+  input: CancelTradeInput<
+    TAccountGame,
+    TAccountCancellerState,
+    TAccountCanceller,
+    TAccountClock
+  >,
   config?: { programAddress?: TProgramAddress }
 ): CancelTradeInstruction<
   TProgramAddress,
   TAccountGame,
+  TAccountCancellerState,
   TAccountCanceller,
   TAccountClock
 > {
@@ -137,6 +150,7 @@ export function getCancelTradeInstruction<
   // Original accounts.
   const originalAccounts = {
     game: { value: input.game ?? null, isWritable: true },
+    cancellerState: { value: input.cancellerState ?? null, isWritable: true },
     canceller: { value: input.canceller ?? null, isWritable: true },
     clock: { value: input.clock ?? null, isWritable: false },
   };
@@ -158,6 +172,7 @@ export function getCancelTradeInstruction<
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.game),
+      getAccountMeta(accounts.cancellerState),
       getAccountMeta(accounts.canceller),
       getAccountMeta(accounts.clock),
     ],
@@ -168,6 +183,7 @@ export function getCancelTradeInstruction<
   } as CancelTradeInstruction<
     TProgramAddress,
     TAccountGame,
+    TAccountCancellerState,
     TAccountCanceller,
     TAccountClock
   >);
@@ -180,8 +196,9 @@ export type ParsedCancelTradeInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     game: TAccountMetas[0];
-    canceller: TAccountMetas[1];
-    clock: TAccountMetas[2];
+    cancellerState: TAccountMetas[1];
+    canceller: TAccountMetas[2];
+    clock: TAccountMetas[3];
   };
   data: CancelTradeInstructionData;
 };
@@ -194,7 +211,7 @@ export function parseCancelTradeInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedCancelTradeInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 3) {
+  if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -208,6 +225,7 @@ export function parseCancelTradeInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       game: getNextAccount(),
+      cancellerState: getNextAccount(),
       canceller: getNextAccount(),
       clock: getNextAccount(),
     },

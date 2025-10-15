@@ -48,6 +48,7 @@ export function getRejectTradeDiscriminatorBytes() {
 export type RejectTradeInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountGame extends string | AccountMeta<string> = string,
+  TAccountRejecterState extends string | AccountMeta<string> = string,
   TAccountRejecter extends string | AccountMeta<string> = string,
   TAccountClock extends
     | string
@@ -60,6 +61,9 @@ export type RejectTradeInstruction<
       TAccountGame extends string
         ? WritableAccount<TAccountGame>
         : TAccountGame,
+      TAccountRejecterState extends string
+        ? WritableAccount<TAccountRejecterState>
+        : TAccountRejecterState,
       TAccountRejecter extends string
         ? WritableSignerAccount<TAccountRejecter> &
             AccountSignerMeta<TAccountRejecter>
@@ -107,10 +111,12 @@ export function getRejectTradeInstructionDataCodec(): FixedSizeCodec<
 
 export type RejectTradeInput<
   TAccountGame extends string = string,
+  TAccountRejecterState extends string = string,
   TAccountRejecter extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
+  rejecterState: Address<TAccountRejecterState>;
   rejecter: TransactionSigner<TAccountRejecter>;
   clock?: Address<TAccountClock>;
   tradeId: RejectTradeInstructionDataArgs['tradeId'];
@@ -118,15 +124,22 @@ export type RejectTradeInput<
 
 export function getRejectTradeInstruction<
   TAccountGame extends string,
+  TAccountRejecterState extends string,
   TAccountRejecter extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: RejectTradeInput<TAccountGame, TAccountRejecter, TAccountClock>,
+  input: RejectTradeInput<
+    TAccountGame,
+    TAccountRejecterState,
+    TAccountRejecter,
+    TAccountClock
+  >,
   config?: { programAddress?: TProgramAddress }
 ): RejectTradeInstruction<
   TProgramAddress,
   TAccountGame,
+  TAccountRejecterState,
   TAccountRejecter,
   TAccountClock
 > {
@@ -137,6 +150,7 @@ export function getRejectTradeInstruction<
   // Original accounts.
   const originalAccounts = {
     game: { value: input.game ?? null, isWritable: true },
+    rejecterState: { value: input.rejecterState ?? null, isWritable: true },
     rejecter: { value: input.rejecter ?? null, isWritable: true },
     clock: { value: input.clock ?? null, isWritable: false },
   };
@@ -158,6 +172,7 @@ export function getRejectTradeInstruction<
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.game),
+      getAccountMeta(accounts.rejecterState),
       getAccountMeta(accounts.rejecter),
       getAccountMeta(accounts.clock),
     ],
@@ -168,6 +183,7 @@ export function getRejectTradeInstruction<
   } as RejectTradeInstruction<
     TProgramAddress,
     TAccountGame,
+    TAccountRejecterState,
     TAccountRejecter,
     TAccountClock
   >);
@@ -180,8 +196,9 @@ export type ParsedRejectTradeInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     game: TAccountMetas[0];
-    rejecter: TAccountMetas[1];
-    clock: TAccountMetas[2];
+    rejecterState: TAccountMetas[1];
+    rejecter: TAccountMetas[2];
+    clock: TAccountMetas[3];
   };
   data: RejectTradeInstructionData;
 };
@@ -194,7 +211,7 @@ export function parseRejectTradeInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedRejectTradeInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 3) {
+  if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -208,6 +225,7 @@ export function parseRejectTradeInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       game: getNextAccount(),
+      rejecterState: getNextAccount(),
       rejecter: getNextAccount(),
       clock: getNextAccount(),
     },

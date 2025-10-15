@@ -86,6 +86,9 @@ export type PlayerState = {
   needsSpecialSpaceAction: boolean;
   pendingSpecialSpacePosition: Option<number>;
   cardDrawnAt: Option<bigint>;
+  timeoutPenaltyCount: number;
+  lastActionTimestamp: bigint;
+  totalTimeoutPenalties: number;
 };
 
 export type PlayerStateArgs = {
@@ -112,6 +115,9 @@ export type PlayerStateArgs = {
   needsSpecialSpaceAction: boolean;
   pendingSpecialSpacePosition: OptionOrNullable<number>;
   cardDrawnAt: OptionOrNullable<number | bigint>;
+  timeoutPenaltyCount: number;
+  lastActionTimestamp: number | bigint;
+  totalTimeoutPenalties: number;
 };
 
 export function getPlayerStateEncoder(): Encoder<PlayerStateArgs> {
@@ -144,6 +150,9 @@ export function getPlayerStateEncoder(): Encoder<PlayerStateArgs> {
       ['needsSpecialSpaceAction', getBooleanEncoder()],
       ['pendingSpecialSpacePosition', getOptionEncoder(getU8Encoder())],
       ['cardDrawnAt', getOptionEncoder(getI64Encoder())],
+      ['timeoutPenaltyCount', getU8Encoder()],
+      ['lastActionTimestamp', getI64Encoder()],
+      ['totalTimeoutPenalties', getU8Encoder()],
     ]),
     (value) => ({ ...value, discriminator: PLAYER_STATE_DISCRIMINATOR })
   );
@@ -178,6 +187,9 @@ export function getPlayerStateDecoder(): Decoder<PlayerState> {
     ['needsSpecialSpaceAction', getBooleanDecoder()],
     ['pendingSpecialSpacePosition', getOptionDecoder(getU8Decoder())],
     ['cardDrawnAt', getOptionDecoder(getI64Decoder())],
+    ['timeoutPenaltyCount', getU8Decoder()],
+    ['lastActionTimestamp', getI64Decoder()],
+    ['totalTimeoutPenalties', getU8Decoder()],
   ]);
 }
 

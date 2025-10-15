@@ -37,6 +37,7 @@ import { useWallet } from "@/hooks/use-wallet";
 import { Button } from "@/components/ui/button";
 import { RotateCw, RotateCcw } from "lucide-react";
 import { GameLogs } from "./game-logs";
+import { useRouter } from "next/navigation";
 
 interface MonopolyBoardProps {}
 
@@ -45,6 +46,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
   const [boardRotation, setBoardRotation] = useState<number>(0);
 
   const { wallet } = useWallet();
+  const router = useRouter();
 
   const {
     gameState,
@@ -66,6 +68,8 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
     payJailFine,
     useGetOutOfJailCard,
     endGame,
+    cancelGame,
+    leaveGame,
   } = useGameContext();
 
   // console.log("currentPlayerState", currentPlayerState);
@@ -189,6 +193,30 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
     }
   };
 
+  const handleCancelGame = async () => {
+    setIsLoading("cancelGame");
+    try {
+      await cancelGame();
+      router.push("/lobby");
+    } catch (error) {
+      console.error("Failed to cancel game:", error);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
+  const handleLeaveGame = async () => {
+    setIsLoading("leaveGame");
+    try {
+      await leaveGame();
+      router.push("/lobby");
+    } catch (error) {
+      console.error("Failed to leave game:", error);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
   const renderSpace = (space: BoardSpace, properties: PropertyAccount[]) => {
     const position = space.position;
     const key = `${space.name}-${position}`;
@@ -292,6 +320,8 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
                       handlePayJailFine={handlePayJailFine}
                       handleGetOutOfJailCard={handleGetOutOfJailCard}
                       handleEndGame={handleEndGame}
+                      handleCancelGame={handleCancelGame}
+                      handleLeaveGame={handleLeaveGame}
                       isLoading={isLoading}
                       wallet={wallet}
                     />

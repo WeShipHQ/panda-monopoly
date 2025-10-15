@@ -339,6 +339,7 @@ fn execute_bankruptcy(
     game.bank_balance = game
         .bank_balance
         .checked_add(total_liquidation_value)
+        .unwrap()
         .checked_add(remaining_cash)
         .ok_or(GameError::ArithmeticOverflow)?;
 
