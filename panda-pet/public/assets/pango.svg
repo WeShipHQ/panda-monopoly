@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="pangoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fb923c;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f97316;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Body -->
+  <ellipse cx="100" cy="120" rx="48" ry="58" fill="url(#pangoGrad)"/>
+  <!-- Head -->
+  <circle cx="100" cy="68" r="36" fill="url(#pangoGrad)"/>
+  <!-- Ears -->
+  <ellipse cx="75" cy="50" rx="12" ry="20" fill="#fdba74"/>
+  <ellipse cx="125" cy="50" rx="12" ry="20" fill="#fdba74"/>
+  <!-- Tail -->
+  <path d="M 145 125 Q 165 130 170 145" stroke="url(#pangoGrad)" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <!-- Eyes -->
+  <circle cx="88" cy="65" r="5" fill="#1f2937"/>
+  <circle cx="112" cy="65" r="5" fill="#1f2937"/>
+  <!-- Nose -->
+  <circle cx="100" cy="75" r="4" fill="#1f2937"/>
+</svg>
