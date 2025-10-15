@@ -8,7 +8,7 @@ export const currentUser: User = {
 };
 
 // Mock players
-const mockPlayers: Player[] = [
+export const mockPlayers: Player[] = [
   { id: 'player-1', name: 'Alice', avatar: '👩', color: '#ffbf00' },
   { id: 'player-2', name: 'Bob', avatar: '👨', color: '#04e17a' },
   { id: 'player-3', name: 'Charlie', avatar: '🧑', color: '#0099ff' },
