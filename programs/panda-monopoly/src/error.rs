@@ -393,4 +393,29 @@ pub enum GameError {
 
     #[msg("No active players found")]
     NoActivePlayers,
+
+    // Timeout errors
+    #[msg("Turn timeout has not been reached yet")]
+    TimeoutNotReached,
+
+    #[msg("Grace period has not expired yet")]
+    GracePeriodNotExpired,
+
+    #[msg("Player has not reached maximum timeout penalties")]
+    InsufficientTimeoutPenalties,
+
+    #[msg("Timeout enforcement is disabled for this game")]
+    TimeoutEnforcementDisabled,
+
+    #[msg("Cannot force end turn - player has taken action recently")]
+    PlayerHasRecentActivity,
+
+    #[msg("Insufficient lamports for timeout bounty")]
+    InsufficientBountyFunds,
+
+    #[msg("Player is already bankrupt")]
+    PlayerAlreadyBankrupt,
+
+    #[msg("No active players remaining")]
+    NoActivePlayersRemaining,
 }

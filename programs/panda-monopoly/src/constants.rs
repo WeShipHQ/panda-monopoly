@@ -50,7 +50,11 @@ pub const FESTIVAL_POSITION: u8 = 10; // Additional special space
 pub const CHANCE_POSITIONS: [u8; 3] = [7, 22, 36]; // Pump.fun Surprise
 pub const COMMUNITY_CHEST_POSITIONS: [u8; 3] = [2, 17, 33]; // Airdrop Chest
 
-// Beach Resort and Festival positions (custom spaces)
+// timeout
+pub const DEFAULT_TURN_TIMEOUT_SECONDS: u64 = 30;
+pub const DEFAULT_GRACE_PERIOD_SECONDS: u64 = 10;
+pub const MAX_TIMEOUT_PENALTIES: u8 = 3;
+
 
 // Seed for randomness
 pub const RANDOMNESS_SEED: &[u8] = b"panda_monopoly_v1";

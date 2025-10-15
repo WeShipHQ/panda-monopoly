@@ -204,6 +204,9 @@ pub fn initialize_game_handler(
     game.active_trades = vec![];
     game.next_trade_id = 0;
     game.entry_fee = entry_fee;
+    game.turn_timeout_seconds = DEFAULT_TURN_TIMEOUT_SECONDS;
+    game.turn_grace_period_seconds = DEFAULT_GRACE_PERIOD_SECONDS;
+    game.timeout_enforcement_enabled = true;
 
     game.initialize_properties();
 

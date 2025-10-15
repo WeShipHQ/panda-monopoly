@@ -242,3 +242,30 @@ pub struct PlayerBankrupt {
     pub cash_transferred: u64,
     pub timestamp: i64,
 }
+
+#[event]
+pub struct TimeoutPenalty {
+    pub game: Pubkey,
+    pub player: Pubkey,
+    pub penalty_count: u8,
+    pub enforcer: Pubkey,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct ForcedTurnEnd {
+    pub game: Pubkey,
+    pub timed_out_player: Pubkey,
+    pub next_player: Pubkey,
+    pub enforcer: Pubkey,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct TimeoutBankruptcy {
+    pub game: Pubkey,
+    pub player: Pubkey,
+    pub total_penalties: u8,
+    pub enforcer: Pubkey,
+    pub timestamp: i64,
+}
