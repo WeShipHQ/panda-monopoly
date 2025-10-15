@@ -292,31 +292,32 @@ export default function GameScreen() {
           </View>
         </View>
 
-        <ScrollView className="flex-1">
+        <ScrollView 
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+        >
           {/* Game Board */}
-          <View className="p-4">
+          <View className="mb-4">
             <MonopolyBoard 
               players={gameState.players}
               currentPlayerIndex={gameState.currentPlayerIndex}
             />
+          </View>
 
-            {/* Two Column Layout */}
-            <View className="flex-row gap-4">
-              {/* Left Column */}
-              <View className="flex-1">
-                <PlayerList gameState={gameState} />
-                <PropertiesList currentPlayer={gameState.players[gameState.currentPlayerIndex]} />
-              </View>
+          {/* Game Controls and Info */}
+          <View className="px-4 pb-4">
+            {/* Game Actions - Full width on top */}
+            <TradeManagement 
+              onCreateTrade={handleCreateTrade} 
+              onRollDice={handleRollDice}
+              gameState={gameState}
+            />
 
-              {/* Right Column */}
-              <View className="flex-1">
-                <TradeManagement 
-                  onCreateTrade={handleCreateTrade} 
-                  onRollDice={handleRollDice}
-                  gameState={gameState}
-                />
-              </View>
-            </View>
+            {/* Player Info */}
+            <PlayerList gameState={gameState} />
+            
+            {/* Properties */}
+            <PropertiesList currentPlayer={gameState.players[gameState.currentPlayerIndex]} />
           </View>
         </ScrollView>
       </View>
