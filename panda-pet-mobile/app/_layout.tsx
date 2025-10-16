@@ -30,33 +30,17 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar style="auto" />
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen 
-          name="my-pandas" 
+          name="font-test" 
           options={{ 
-            title: 'My Pandas',
-            headerStyle: { backgroundColor: 'hsl(41, 25%, 96%)' },
-          }} 
-        />
-        <Stack.Screen 
-          name="explore" 
-          options={{ 
-            title: 'Explore Map',
-            headerStyle: { backgroundColor: 'hsl(41, 25%, 96%)' },
-          }} 
-        />
-        <Stack.Screen 
-          name="shop" 
-          options={{ 
-            title: 'Item Shop',
-            headerStyle: { backgroundColor: 'hsl(41, 25%, 96%)' },
-          }} 
-        />
-        <Stack.Screen 
-          name="profile" 
-          options={{ 
-            title: 'Profile',
+            headerShown: true,
+            title: 'Font Test',
             headerStyle: { backgroundColor: 'hsl(41, 25%, 96%)' },
           }} 
         />

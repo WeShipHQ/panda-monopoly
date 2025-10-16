@@ -1,24 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { mockPandas } from '@/data/mock-data';
 import { Plus } from 'lucide-react-native';
 import * as React from 'react';
-import { FlatList, View } from 'react-native';
-
-interface Panda {
-  id: string;
-  name: string;
-  species: string;
-  emoji: string;
-  level: number;
-  happiness: number;
-}
-
-const mockPandas: Panda[] = [
-  { id: '1', name: 'Bamboo', species: 'Classic Panda', emoji: '🐼', level: 5, happiness: 95 },
-  { id: '2', name: 'Snowflake', species: 'Ice Panda', emoji: '❄️', level: 3, happiness: 88 },
-  { id: '3', name: 'Sunny', species: 'Golden Panda', emoji: '🌟', level: 7, happiness: 92 },
-];
+import { FlatList, Image, View } from 'react-native';
 
 export default function MyPandasScreen() {
   return (
@@ -42,11 +28,19 @@ export default function MyPandasScreen() {
         renderItem={({ item }) => (
           <View className="bg-card border border-border rounded-2xl p-5 shadow-sm">
             <View className="flex-row items-center gap-4 mb-4">
-              <View className="bg-primary/10 w-16 h-16 rounded-full items-center justify-center">
-                <Text className="text-4xl">{item.emoji}</Text>
+              {/* Panda Image */}
+              <View className="bg-primary/10 w-20 h-20 rounded-2xl items-center justify-center overflow-hidden border-2 border-primary/20">
+                <Image
+                  source={item.image}
+                  style={{ width: 80, height: 80 }}
+                  resizeMode="cover"
+                />
               </View>
               <View className="flex-1">
-                <Text variant="large" className="font-semibold">{item.name}</Text>
+                <View className="flex-row items-center gap-2">
+                  <Text variant="large" className="font-semibold">{item.name}</Text>
+                  <Text className="text-xl">{item.emoji}</Text>
+                </View>
                 <Text variant="muted" className="text-sm">{item.species}</Text>
               </View>
             </View>

@@ -1,22 +1,7 @@
 import { Text } from '@/components/ui/text';
+import { mockLocations } from '@/data/mock-data';
 import * as React from 'react';
 import { FlatList, Pressable, View } from 'react-native';
-
-interface Location {
-  id: string;
-  name: string;
-  emoji: string;
-  description: string;
-  level: number;
-}
-
-const mockLocations: Location[] = [
-  { id: '1', name: 'Bamboo Forest', emoji: '🎋', description: 'A peaceful forest full of fresh bamboo', level: 1 },
-  { id: '2', name: 'Mystic Cave', emoji: '🏔️', description: 'Explore mysterious caves with hidden treasures', level: 3 },
-  { id: '3', name: 'Cherry Blossom Park', emoji: '🌸', description: 'Beautiful park where pandas gather', level: 5 },
-  { id: '4', name: 'Frozen Peak', emoji: '❄️', description: 'Cold mountain top with rare ice pandas', level: 7 },
-  { id: '5', name: 'Golden Temple', emoji: '🏯', description: 'Ancient temple with legendary pandas', level: 10 },
-];
 
 export default function ExploreScreen() {
   return (

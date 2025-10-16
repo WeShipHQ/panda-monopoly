@@ -1,24 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { mockItems } from '@/data/mock-data';
 import * as React from 'react';
 import { FlatList, View } from 'react-native';
-
-interface ShopItem {
-  id: string;
-  name: string;
-  emoji: string;
-  price: number;
-  category: string;
-}
-
-const mockItems: ShopItem[] = [
-  { id: '1', name: 'Fresh Bamboo', emoji: '🎋', price: 10, category: 'Food' },
-  { id: '2', name: 'Golden Bamboo', emoji: '✨', price: 50, category: 'Food' },
-  { id: '3', name: 'Red Scarf', emoji: '🧣', price: 100, category: 'Accessory' },
-  { id: '4', name: 'Crown', emoji: '👑', price: 500, category: 'Accessory' },
-  { id: '5', name: 'Toy Ball', emoji: '⚽', price: 75, category: 'Toy' },
-  { id: '6', name: 'Magic Potion', emoji: '🧪', price: 200, category: 'Special' },
-];
 
 export default function ShopScreen() {
   return (

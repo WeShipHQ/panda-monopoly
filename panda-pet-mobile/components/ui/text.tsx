@@ -64,10 +64,23 @@ const ARIA_LEVEL: Partial<Record<TextVariant, string>> = {
 
 const TextClassContext = React.createContext<string | undefined>(undefined);
 
+// Font family mapping based on className
+function getFontFamily(className?: string): string {
+  if (!className) return 'Fredoka_400Regular';
+  
+  if (className.includes('font-light')) return 'Fredoka_300Light';
+  if (className.includes('font-bold') || className.includes('font-extrabold')) return 'Fredoka_700Bold';
+  if (className.includes('font-semibold')) return 'Fredoka_600SemiBold';
+  if (className.includes('font-medium')) return 'Fredoka_500Medium';
+  
+  return 'Fredoka_400Regular';
+}
+
 function Text({
   className,
   asChild = false,
   variant = 'default',
+  style,
   ...props
 }: React.ComponentProps<typeof RNText> &
   TextVariantProps &
@@ -76,9 +89,13 @@ function Text({
   }) {
   const textClass = React.useContext(TextClassContext);
   const Component = asChild ? Slot.Text : RNText;
+  const combinedClassName = cn(textVariants({ variant }), textClass, className);
+  const fontFamily = getFontFamily(combinedClassName);
+  
   return (
     <Component
-      className={cn(textVariants({ variant }), textClass, className)}
+      className={combinedClassName}
+      style={[{ fontFamily }, style]}
       role={variant ? ROLE[variant] : undefined}
       aria-level={variant ? ARIA_LEVEL[variant] : undefined}
       {...props}

@@ -52,6 +52,14 @@ export default function HomeScreen() {
         {/* Navigation Buttons */}
         <View className="gap-3">
           <Button
+            onPress={() => router.push('/font-test')}
+            variant="outline"
+            className="h-12 rounded-xl"
+          >
+            <Text className="text-sm font-medium">🔤 Test Font</Text>
+          </Button>
+
+          <Button
             onPress={() => router.push('/my-pandas')}
             className="h-16 rounded-2xl shadow-lg"
           >
