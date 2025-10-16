@@ -13,6 +13,7 @@ export default function TabsLayout() {
       >
         <Tabs.Screen name="index" />
         <Tabs.Screen name="my-pandas" />
+        <Tabs.Screen name="gacha" />
         <Tabs.Screen name="explore" />
         <Tabs.Screen name="shop" />
         <Tabs.Screen name="profile" />

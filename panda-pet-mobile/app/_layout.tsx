@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as React from 'react';
 import { useFonts, Fredoka_300Light, Fredoka_400Regular, Fredoka_500Medium, Fredoka_600SemiBold, Fredoka_700Bold } from '@expo-google-fonts/fredoka';
 import * as SplashScreen from 'expo-splash-screen';
+import { GameProvider } from '@/contexts/GameContext';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -28,7 +29,7 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <GameProvider>
       <StatusBar style="auto" />
       <Stack
         screenOptions={{
@@ -45,6 +46,6 @@ export default function RootLayout() {
           }} 
         />
       </Stack>
-    </>
+    </GameProvider>
   );
 }

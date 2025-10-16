@@ -2,7 +2,7 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 import { usePathname, useRouter } from 'expo-router';
-import { Heart, Home, Map, ShoppingBag, User } from 'lucide-react-native';
+import { Heart, Home, Map, ShoppingBag, Sparkles, User } from 'lucide-react-native';
 import * as React from 'react';
 import { Pressable, View } from 'react-native';
 
@@ -15,10 +15,10 @@ interface TabItem {
 
 const tabs: TabItem[] = [
   { name: 'home', label: 'Home', icon: Home, path: '/(tabs)' },
-  { name: 'my-pandas', label: 'My Pandas', icon: Heart, path: '/(tabs)/my-pandas' },
+  { name: 'my-pandas', label: 'Pandas', icon: Heart, path: '/(tabs)/my-pandas' },
+  { name: 'gacha', label: 'Gacha', icon: Sparkles, path: '/(tabs)/gacha' },
   { name: 'explore', label: 'Explore', icon: Map, path: '/(tabs)/explore' },
   { name: 'shop', label: 'Shop', icon: ShoppingBag, path: '/(tabs)/shop' },
-  { name: 'profile', label: 'Profile', icon: User, path: '/(tabs)/profile' },
 ];
 
 export function BottomNav() {
