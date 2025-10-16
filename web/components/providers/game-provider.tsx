@@ -25,7 +25,6 @@ import {
   getTypedSpaceData,
   calculateRentForProperty,
 } from "@/lib/board-utils";
-import { GameLogEntry } from "@/types/space-types";
 import { useRpcContext } from "./rpc-provider";
 import { useWallet } from "@/hooks/use-wallet";
 import { playPropertySound, playSound, SOUND_CONFIG } from "@/lib/soundUtil";
@@ -1388,19 +1387,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         // This should be handled by the smart contract, but we can show UI feedback
         return;
       }
-
-      // If none of the above conditions are met, log the current state
-      console.log("No auto-actions needed. Player state:", {
-        hasRolledDice: player.hasRolledDice,
-        needsPropertyAction: player.needsPropertyAction,
-        needsChanceCard: player.needsChanceCard,
-        needsCommunityChestCard: player.needsCommunityChestCard,
-        needsSpecialSpaceAction: player.needsSpecialSpaceAction,
-        needsBankruptcyCheck: player.needsBankruptcyCheck,
-        // canEndTurn: player.canEndTurn,
-        inJail: player.inJail,
-        doublesCount: player.doublesCount,
-      });
     }
 
     if (gameAddress && currentPlayerState && signer && isCurrentPlayerTurn()) {

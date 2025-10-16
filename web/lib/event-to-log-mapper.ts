@@ -11,6 +11,7 @@ export function mapEventToLogEntry(event: GameEvent): GameLogEntry {
     type: event.type,
     timestamp: Date.now(),
     playerId: "",
+    signature: event.signature,
   };
 
   switch (event.type) {
@@ -211,14 +212,11 @@ export function mapEventToLogEntry(event: GameEvent): GameLogEntry {
       };
 
     case "TaxPaid":
-      const taxTypeMap: Record<number, string> = {
-        0: "MEV",
-        1: "Priority Fee",
-      };
-      const taxTypeName = taxTypeMap[event.data.taxType] || "Unknown";
+      const taxType = event.data.taxType;
+      const taxTypeName =
+        taxType === 1 ? "MEV Tax" : taxType === 2 ? "Priority Fee Tax" : "Tax";
       return {
         ...baseEntry,
-        // type: "rent", // Using rent type for tax payments
         playerId: formatAddress(event.data.player.toString()),
         details: {
           taxType: taxTypeName,
@@ -333,15 +331,15 @@ export function mapEventToLogEntry(event: GameEvent): GameLogEntry {
         },
       };
 
-    case "GameEndConditionMet":
-      return {
-        ...baseEntry,
-        // type: "game",
-        playerId: "System",
-        details: {
-          // reason: event.data.reason,
-        },
-      };
+    // case "GameEndConditionMet":
+    //   return {
+    //     ...baseEntry,
+    //     // type: "game",
+    //     playerId: "System",
+    //     details: {
+    //       // reason: event.data.reason,
+    //     },
+    //   };
 
     case "PrizeClaimed":
       return {

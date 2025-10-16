@@ -30,6 +30,7 @@ import { getBoardSpaceData } from "@/lib/board-utils";
 type EventHandler<T = any> = (event: T, context: GameEventContext) => void;
 
 interface GameEventContext {
+  signature: string;
   gameAddress: Address | null;
   currentPlayerAddress: string | null;
   isCurrentPlayer: (playerAddress: Address) => boolean;
@@ -91,6 +92,7 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
             currentPlayerAddress: wallet?.address || null,
             isCurrentPlayer: (playerAddress: Address) =>
               wallet?.address === playerAddress.toString(),
+            signature: event.signature,
           };
 
           handlers.forEach((handler) => {
@@ -143,54 +145,54 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
   }, []);
 
   useEffect(() => {
-    const unsubscribeTaxPaid = registerEventHandler(
-      "TaxPaid",
-      (data, context) => {
-        showTaxPaidToast({
-          isCurrentPlayer: context.isCurrentPlayer(data.player),
-          playerAddress: data.player.toString(),
-          taxType: data.taxType,
-          amount: data.amount,
-          position: data.position,
-        });
-      }
-    );
+    // const unsubscribeTaxPaid = registerEventHandler(
+    //   "TaxPaid",
+    //   (data, context) => {
+    //     showTaxPaidToast({
+    //       isCurrentPlayer: context.isCurrentPlayer(data.player),
+    //       playerAddress: data.player.toString(),
+    //       taxType: data.taxType,
+    //       amount: data.amount,
+    //       position: data.position,
+    //     });
+    //   }
+    // );
 
-    const unsubscribePlayerPassedGo = registerEventHandler(
-      "PlayerPassedGo",
-      (data, context) => {
-        if (context.isCurrentPlayer(data.player)) {
-          showPlayerPassedGoToast({
-            salaryCollected: data.salaryCollected,
-          });
+    // const unsubscribePlayerPassedGo = registerEventHandler(
+    //   "PlayerPassedGo",
+    //   (data, context) => {
+    //     if (context.isCurrentPlayer(data.player)) {
+    //       showPlayerPassedGoToast({
+    //         salaryCollected: data.salaryCollected,
+    //       });
 
-          playSound("money-receive");
-        }
-      }
-    );
+    //       playSound("money-receive");
+    //     }
+    //   }
+    // );
 
-    const unsubscribePlayerJoined = registerEventHandler(
-      "PlayerJoined",
-      (data, context) => {
-        if (!context.isCurrentPlayer(data.player)) {
-          showPlayerJoinedToast({
-            playerAddress: data.player,
-            playerIndex: data.playerIndex,
-            totalPlayers: data.totalPlayers,
-          });
-        }
-      }
-    );
+    // const unsubscribePlayerJoined = registerEventHandler(
+    //   "PlayerJoined",
+    //   (data, context) => {
+    //     if (!context.isCurrentPlayer(data.player)) {
+    //       showPlayerJoinedToast({
+    //         playerAddress: data.player,
+    //         playerIndex: data.playerIndex,
+    //         totalPlayers: data.totalPlayers,
+    //       });
+    //     }
+    //   }
+    // );
 
-    const unsubscribeGameStarted = registerEventHandler(
-      "GameStarted",
-      (data) => {
-        showGameStartedToast({
-          totalPlayers: data.totalPlayers,
-          firstPlayer: data.firstPlayer,
-        });
-      }
-    );
+    // const unsubscribeGameStarted = registerEventHandler(
+    //   "GameStarted",
+    //   (data) => {
+    //     showGameStartedToast({
+    //       totalPlayers: data.totalPlayers,
+    //       firstPlayer: data.firstPlayer,
+    //     });
+    //   }
+    // );
 
     const unsubscribeChanceCard = registerEventHandler(
       "ChanceCardDrawn",
@@ -230,32 +232,25 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
       }
     );
 
-    const unsubscribeGameEndConditionMet = registerEventHandler(
-      "GameEndConditionMet",
-      (data, context) => {
-        console.log("unsubscribeGameEndConditionMet", data, context);
-      }
-    );
+    // const unsubscribePropertyPurchased = registerEventHandler(
+    //   "PropertyPurchased",
+    //   (data, context) => {
+    //     const propertyData = getBoardSpaceData(data.propertyPosition);
+    //     const propertyName =
+    //       propertyData?.name || `Property ${data.propertyPosition}`;
 
-    const unsubscribePropertyPurchased = registerEventHandler(
-      "PropertyPurchased",
-      (data, context) => {
-        const propertyData = getBoardSpaceData(data.propertyPosition);
-        const propertyName =
-          propertyData?.name || `Property ${data.propertyPosition}`;
+    //     const isCurrentPlayer = context.isCurrentPlayer(data.player);
 
-        const isCurrentPlayer = context.isCurrentPlayer(data.player);
+    //     showPropertyPurchasedToast({
+    //       propertyName,
+    //       price: data.price,
+    //       isCurrentPlayer,
+    //       playerAddress: isCurrentPlayer ? undefined : data.player,
+    //     });
 
-        showPropertyPurchasedToast({
-          propertyName,
-          price: data.price,
-          isCurrentPlayer,
-          playerAddress: isCurrentPlayer ? undefined : data.player,
-        });
-
-        playSound("property-buy");
-      }
-    );
+    //     playSound("property-buy");
+    //   }
+    // );
 
     const unsubscribeGameEnded = registerEventHandler(
       "GameEnded",
@@ -278,15 +273,15 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
     );
 
     return () => {
-      unsubscribeTaxPaid();
-      unsubscribePlayerPassedGo();
-      unsubscribePlayerJoined();
-      unsubscribeGameStarted();
+      // unsubscribeTaxPaid();
+      // unsubscribePlayerPassedGo();
+      // unsubscribePlayerJoined();
+      // unsubscribeGameStarted();
       unsubscribeChanceCard();
       unsubscribeCommunityChestCard();
       unsubscribeSpecialSpaceAction();
-      unsubscribeGameEndConditionMet();
-      unsubscribePropertyPurchased();
+      // unsubscribeGameEndConditionMet();
+      // unsubscribePropertyPurchased();
       unsubscribeGameEnded();
     };
   }, [registerEventHandler]);

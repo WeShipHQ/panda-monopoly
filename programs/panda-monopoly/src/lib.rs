@@ -269,49 +269,4 @@ pub mod panda_monopoly {
     ) -> Result<()> {
         instructions::test::close_game_handler(ctx)
     }
-
-    // Property instructions v1
-    // pub fn init_property_handler(
-    //     ctx: Context<InitProperty>,
-    //     game_key: Pubkey,
-    //     position: u8,
-    // ) -> Result<()> {
-    //     instructions::property::init_property_handler(ctx, game_key, position)
-    // }
-
-    // pub fn buy_property(ctx: Context<BuyProperty>, position: u8) -> Result<()> {
-    //     instructions::property::buy_property_handler(ctx, position)
-    // }
-
-    // pub fn decline_property(ctx: Context<DeclineProperty>, position: u8) -> Result<()> {
-    //     instructions::property::decline_property_handler(ctx, position)
-    // }
-
-    // pub fn pay_rent(ctx: Context<PayRent>, position: u8) -> Result<()> {
-    //     instructions::property::pay_rent_handler(ctx, position)
-    // }
-
-    // pub fn build_house(ctx: Context<BuildHouse>, position: u8) -> Result<()> {
-    //     instructions::property::build_house_handler(ctx, position)
-    // }
-
-    // pub fn build_hotel(ctx: Context<BuildHotel>, position: u8) -> Result<()> {
-    //     instructions::property::build_hotel_handler(ctx, position)
-    // }
-
-    // pub fn sell_building(
-    //     ctx: Context<SellBuilding>,
-    //     position: u8,
-    //     building_type: BuildingType,
-    // ) -> Result<()> {
-    //     instructions::property::sell_building_handler(ctx, position, building_type)
-    // }
-
-    // pub fn mortgage_property(ctx: Context<MortgageProperty>, position: u8) -> Result<()> {
-    //     instructions::property::mortgage_property_handler(ctx, position)
-    // }
-
-    // pub fn unmortgage_property(ctx: Context<UnmortgageProperty>, position: u8) -> Result<()> {
-    //     instructions::property::unmortgage_property_handler(ctx, position)
-    // }
 }

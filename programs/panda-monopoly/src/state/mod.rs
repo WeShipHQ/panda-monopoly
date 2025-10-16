@@ -470,29 +470,29 @@ impl PlayerState {
     }
 }
 
-#[account]
-#[derive(Debug, InitSpace)]
-pub struct PropertyState {
-    pub position: u8,                // 1 byte - board position (0-39)
-    pub game: Pubkey,                // 32 bytes - game account
-    pub owner: Option<Pubkey>,       // 33 bytes - property owner
-    pub price: u16,                  // 2 bytes - purchase price
-    pub color_group: ColorGroup,     // 1 byte - property color group
-    pub property_type: PropertyType, // 1 byte - type of space
-    pub houses: u8,                  // 1 byte - number of houses (0-4)
-    pub has_hotel: bool,             // 1 byte - hotel status
-    pub is_mortgaged: bool,          // 1 byte - mortgage status
-    pub rent_base: u16,              // 2 bytes - base rent
-    pub rent_with_color_group: u16,  // 2 bytes - rent with monopoly
-    pub rent_with_houses: [u16; 4],  // 8 bytes - rent with 1-4 houses
-    pub rent_with_hotel: u16,        // 2 bytes - rent with hotel
-    pub house_cost: u16,             // 2 bytes - cost to build house
-    pub mortgage_value: u16,         // 2 bytes - mortgage value
-    pub last_rent_paid: i64,         // 8 bytes - last rent payment time
-    pub init: bool,                  // 1 byte - init status
-}
+// #[account]
+// #[derive(Debug, InitSpace)]
+// pub struct PropertyState {
+//     pub position: u8,                // 1 byte - board position (0-39)
+//     pub game: Pubkey,                // 32 bytes - game account
+//     pub owner: Option<Pubkey>,       // 33 bytes - property owner
+//     pub price: u16,                  // 2 bytes - purchase price
+//     pub color_group: ColorGroup,     // 1 byte - property color group
+//     pub property_type: PropertyType, // 1 byte - type of space
+//     pub houses: u8,                  // 1 byte - number of houses (0-4)
+//     pub has_hotel: bool,             // 1 byte - hotel status
+//     pub is_mortgaged: bool,          // 1 byte - mortgage status
+//     pub rent_base: u16,              // 2 bytes - base rent
+//     pub rent_with_color_group: u16,  // 2 bytes - rent with monopoly
+//     pub rent_with_houses: [u16; 4],  // 8 bytes - rent with 1-4 houses
+//     pub rent_with_hotel: u16,        // 2 bytes - rent with hotel
+//     pub house_cost: u16,             // 2 bytes - cost to build house
+//     pub mortgage_value: u16,         // 2 bytes - mortgage value
+//     pub last_rent_paid: i64,         // 8 bytes - last rent payment time
+//     pub init: bool,                  // 1 byte - init status
+// }
 
-impl PropertyState {}
+// impl PropertyState {}
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, InitSpace, Clone, PartialEq, Eq)]
 pub enum TradeType {

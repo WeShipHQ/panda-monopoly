@@ -2,7 +2,6 @@
 
 import { TradeView } from "./trade-view";
 import { BankruptcyButton } from "./bankruptcy-button";
-import { ClaimRewardButton } from "./claim-reward-button";
 import envConfig from "@/configs/env";
 import { DebugUI } from "./debug-ui";
 import { OwnedProperties } from "./owned-properties";
@@ -15,9 +14,8 @@ export function RightPanel() {
       <BankruptcyButton />
       <OwnedProperties />
       <BonusItems />
-      <ClaimRewardButton />
 
-      {/* {envConfig.IS_DEVELOPMENT && <DebugUI />} */}
+      {envConfig.IS_DEVELOPMENT && <DebugUI />}
     </div>
   );
 }

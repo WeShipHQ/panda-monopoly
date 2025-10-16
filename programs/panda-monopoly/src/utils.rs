@@ -1,89 +1,89 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    error::GameError, get_property_data, ColorGroup, GameState, PlayerState, PropertyState,
-    PropertyType, SpecialSpaceAction, JAIL_POSITION,
+    error::GameError, get_property_data, ColorGroup, GameState, PlayerState, PropertyType,
+    SpecialSpaceAction, JAIL_POSITION,
 };
 
 // Helper function for rent calculation
-pub fn calculate_rent_for_property(
-    property_state: &PropertyState,
-    owner_state: &PlayerState,
-    dice_result: [u8; 2],
-) -> Result<u64> {
-    match property_state.property_type {
-        PropertyType::Street => {
-            if property_state.has_hotel {
-                Ok(property_state.rent_with_hotel as u64)
-            } else if property_state.houses > 0 {
-                let house_index = (property_state.houses - 1) as usize;
-                if house_index < property_state.rent_with_houses.len() {
-                    Ok(property_state.rent_with_houses[house_index] as u64)
-                } else {
-                    Err(GameError::InvalidHouseCount.into())
-                }
-            } else {
-                // Check for monopoly to double rent
-                if has_color_group_monopoly(owner_state, property_state.color_group) {
-                    Ok(property_state.rent_with_color_group as u64)
-                } else {
-                    Ok(property_state.rent_base as u64)
-                }
-            }
-        }
-        PropertyType::Railroad => {
-            // Count railroads owned by the owner
-            let railroads_owned = count_railroads_owned(owner_state);
-            let base_rent = property_state.rent_base as u64;
+// pub fn calculate_rent_for_property(
+//     property_state: &PropertyState,
+//     owner_state: &PlayerState,
+//     dice_result: [u8; 2],
+// ) -> Result<u64> {
+//     match property_state.property_type {
+//         PropertyType::Street => {
+//             if property_state.has_hotel {
+//                 Ok(property_state.rent_with_hotel as u64)
+//             } else if property_state.houses > 0 {
+//                 let house_index = (property_state.houses - 1) as usize;
+//                 if house_index < property_state.rent_with_houses.len() {
+//                     Ok(property_state.rent_with_houses[house_index] as u64)
+//                 } else {
+//                     Err(GameError::InvalidHouseCount.into())
+//                 }
+//             } else {
+//                 // Check for monopoly to double rent
+//                 if has_color_group_monopoly(owner_state, property_state.color_group) {
+//                     Ok(property_state.rent_with_color_group as u64)
+//                 } else {
+//                     Ok(property_state.rent_base as u64)
+//                 }
+//             }
+//         }
+//         PropertyType::Railroad => {
+//             // Count railroads owned by the owner
+//             let railroads_owned = count_railroads_owned(owner_state);
+//             let base_rent = property_state.rent_base as u64;
 
-            match railroads_owned {
-                1 => Ok(base_rent),
-                2 => Ok(base_rent * 2),
-                3 => Ok(base_rent * 4),
-                4 => Ok(base_rent * 8),
-                _ => Ok(base_rent),
-            }
-        }
-        PropertyType::Utility => {
-            // Count utilities owned by the owner
-            let utilities_owned = count_utilities_owned(owner_state);
-            let dice_sum = (dice_result[0] + dice_result[1]) as u64;
+//             match railroads_owned {
+//                 1 => Ok(base_rent),
+//                 2 => Ok(base_rent * 2),
+//                 3 => Ok(base_rent * 4),
+//                 4 => Ok(base_rent * 8),
+//                 _ => Ok(base_rent),
+//             }
+//         }
+//         PropertyType::Utility => {
+//             // Count utilities owned by the owner
+//             let utilities_owned = count_utilities_owned(owner_state);
+//             let dice_sum = (dice_result[0] + dice_result[1]) as u64;
 
-            let multiplier = if utilities_owned == 1 { 4 } else { 10 };
-            Ok(dice_sum * multiplier)
-        }
-        _ => Ok(0), // No rent for other property types
-    }
-}
+//             let multiplier = if utilities_owned == 1 { 4 } else { 10 };
+//             Ok(dice_sum * multiplier)
+//         }
+//         _ => Ok(0), // No rent for other property types
+//     }
+// }
 
 // Helper function to check if owner has monopoly on color group
-fn has_color_group_monopoly(owner_state: &PlayerState, color_group: ColorGroup) -> bool {
-    let properties_in_group = get_color_group_properties(color_group);
+// fn has_color_group_monopoly(owner_state: &PlayerState, color_group: ColorGroup) -> bool {
+//     let properties_in_group = get_color_group_properties(color_group);
 
-    properties_in_group
-        .iter()
-        .all(|&position| owner_state.properties_owned.contains(&position))
-}
+//     properties_in_group
+//         .iter()
+//         .all(|&position| owner_state.properties_owned.contains(&position))
+// }
 
-// Helper function to count railroads owned
-fn count_railroads_owned(owner_state: &PlayerState) -> u8 {
-    let railroad_positions = [5, 15, 25, 35]; // Railroad positions on the board
+// // Helper function to count railroads owned
+// fn count_railroads_owned(owner_state: &PlayerState) -> u8 {
+//     let railroad_positions = [5, 15, 25, 35]; // Railroad positions on the board
 
-    railroad_positions
-        .iter()
-        .filter(|&&pos| owner_state.properties_owned.contains(&pos))
-        .count() as u8
-}
+//     railroad_positions
+//         .iter()
+//         .filter(|&&pos| owner_state.properties_owned.contains(&pos))
+//         .count() as u8
+// }
 
-// Helper function to count utilities owned
-fn count_utilities_owned(owner_state: &PlayerState) -> u8 {
-    let utility_positions = [12, 28]; // Electric Company and Water Works
+// // Helper function to count utilities owned
+// fn count_utilities_owned(owner_state: &PlayerState) -> u8 {
+//     let utility_positions = [12, 28]; // Electric Company and Water Works
 
-    utility_positions
-        .iter()
-        .filter(|&&pos| owner_state.properties_owned.contains(&pos))
-        .count() as u8
-}
+//     utility_positions
+//         .iter()
+//         .filter(|&&pos| owner_state.properties_owned.contains(&pos))
+//         .count() as u8
+// }
 
 // Helper function to get properties in a color group
 fn get_color_group_properties(color_group: ColorGroup) -> Vec<u8> {
@@ -251,7 +251,11 @@ pub fn send_player_to_jail(player_state: &mut PlayerState) {
     player_state.needs_community_chest_card = false;
 }
 
-pub fn force_end_turn_util(game: &mut GameState, player_state: &mut PlayerState, clock: &Sysvar<Clock>) {
+pub fn force_end_turn_util(
+    game: &mut GameState,
+    player_state: &mut PlayerState,
+    clock: &Sysvar<Clock>,
+) {
     // Reset turn-specific flags
     player_state.has_rolled_dice = false;
     player_state.needs_property_action = false;
@@ -268,7 +272,10 @@ pub fn force_end_turn_util(game: &mut GameState, player_state: &mut PlayerState,
     game.advance_turn().unwrap();
     game.turn_started_at = clock.unix_timestamp;
 
-    msg!("Turn automatically ended. Next turn: Player {}", game.current_turn);
+    msg!(
+        "Turn automatically ended. Next turn: Player {}",
+        game.current_turn
+    );
 }
 
 pub fn random_two_u8_with_range(bytes: &[u8; 32], min_value: u8, max_value: u8) -> [u8; 2] {

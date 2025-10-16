@@ -7,7 +7,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       theme="system"
-      style={{ fontFamily: "inherit", overflowWrap: "anywhere" }}
+      style={{
+        ...props.style,
+        fontFamily: "inherit",
+        overflowWrap: "anywhere",
+      }}
       position="bottom-center"
       toastOptions={{
         unstyled: true,

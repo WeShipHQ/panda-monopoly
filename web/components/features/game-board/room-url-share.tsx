@@ -81,7 +81,7 @@ export function RoomUrlShare() {
               <Trophy className="h-4 w-4 text-foreground/70" />
               <span className="text-sm font-base">Game Type</span>
             </div>
-            {entryFee === 0 ? (
+            {entryFee > 0 ? (
               <div className="text-right">
                 <div className="text-sm font-medium text-green-600">
                   Prize Pool

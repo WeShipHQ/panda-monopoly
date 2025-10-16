@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getCardData, getPropertyName } from "@/lib/log-utils";
 import { cn, formatAddress } from "@/lib/utils";
 import { GameLogEntry } from "@/types/space-types";
-import { useGameLogs } from "@/hooks/useGameLogs";
 import { useWallet } from "@/hooks/use-wallet";
 import { UserAvatar } from "@/components/user-avatar";
+import { useGameLogs } from "@/components/providers/game-logs-provider";
 
 interface GameLogsProps {
   showTimestamps?: boolean;
@@ -44,12 +44,13 @@ export const GameLogs: React.FC<GameLogsProps> = ({
     <div className="relative h-full">
       <ScrollArea
         ref={scrollAreaRef}
-        className={cn("flex flex-col w-xs h-[240px]")}
+        className={cn("flex flex-col mx-auto w-xs h-[240px]")}
       >
-        <div className="p-2 flex flex-col gap-1.5 space-y-1.5 w-full">
+        <div className="p-2 text-center flex flex-col gap-1.5 space-y-1.5 w-full">
           <AnimatePresence initial={false}>
             {gameLogs.map((log, index) => (
               <motion.div
+                className="w-full"
                 key={log.id || `${log.timestamp}-${index}`}
                 initial={{
                   opacity: 0,
@@ -249,8 +250,6 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
             <PlayerDisplay
               playerId={details.owner || ""}
               currentPlayerAddress={currentPlayerAddress}
-              showAvatar={false}
-              showWalletAddress={true}
             />
             <span> for </span>
             <span className="font-medium text-blue-600">
@@ -397,11 +396,6 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
         );
 
       case "TaxPaid":
-        const taxTypeMap: Record<number, string> = {
-          0: "MEV",
-          1: "Priority Fee",
-        };
-        const taxTypeName = details.taxType || "Unknown";
         return (
           <>
             <PlayerDisplay
@@ -411,7 +405,9 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
             <span> paid </span>
             <span className="font-bold text-red-500">${details.amount}</span>
             <span> </span>
-            <span className="font-medium text-orange-600">{taxTypeName}</span>
+            <span className="font-medium text-orange-600">
+              {details.taxType}
+            </span>
             <span> tax</span>
           </>
         );
@@ -453,8 +449,6 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
             <PlayerDisplay
               playerId={details.targetPlayer || ""}
               currentPlayerAddress={currentPlayerAddress}
-              showAvatar={false}
-              showWalletAddress={true}
             />
           </>
         );
@@ -470,8 +464,6 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
             <PlayerDisplay
               playerId={details.targetPlayer || ""}
               currentPlayerAddress={currentPlayerAddress}
-              showAvatar={false}
-              showWalletAddress={true}
             />
           </>
         );
@@ -487,8 +479,6 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
             <PlayerDisplay
               playerId={details.targetPlayer || ""}
               currentPlayerAddress={currentPlayerAddress}
-              showAvatar={false}
-              showWalletAddress={true}
             />
           </>
         );
@@ -581,7 +571,7 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
   };
 
   return (
-    <div className="text-xs leading-relaxed flex items-center gap-1 flex-wrap">
+    <div className="text-xs w-full text-center gap-x-1.5 gap-y-0.5 leading-relaxed flex justify-center items-center flex-wrap">
       {renderMessage()}
     </div>
   );

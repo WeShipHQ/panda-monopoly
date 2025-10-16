@@ -1,5 +1,5 @@
-import { useGameLogsContext } from "@/components/providers/game-logs-provider";
+// import { useGameLogsContext } from "@/components/providers/game-logs-provider";
 
-export function useGameLogs() {
-  return useGameLogsContext();
-}
+// export function useGameLogs() {
+//   return useGameLogsContext();
+// }

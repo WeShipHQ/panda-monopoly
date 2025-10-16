@@ -218,9 +218,6 @@ export function PlayerList() {
     <Card className="bg-white">
       <CardHeader className="flex items-center justify-between">
         <CardTitle>Players</CardTitle>
-        <Link href="/">
-          <HomeIcon />
-        </Link>
       </CardHeader>
       <CardContent className="space-y-3">
         {players.map((player, index) => {

@@ -17,6 +17,7 @@ import { CheckIcon, CopyIcon, Download } from "lucide-react";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { useExportWallet } from "@privy-io/react-auth/solana";
 import { BalanceButton } from "./balance-button";
+import { UserAvatar } from "./user-avatar";
 
 function WalletAddressWithCopy({
   address,
@@ -70,12 +71,10 @@ export function ConnectWalletButton() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button>
-                <Avatar className="rounded-lg size-6">
-                  <AvatarImage
-                    walletAddress={wallet?.address || user?.wallet?.address}
-                    alt="User Avatar"
-                  />
-                </Avatar>
+                <UserAvatar
+                  walletAddress={wallet?.address || user?.wallet?.address || ""}
+                  size="xs"
+                />
                 {wallet
                   ? formatAddress(wallet.address)
                   : user?.wallet?.address

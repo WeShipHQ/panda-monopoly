@@ -38,6 +38,8 @@ import { Button } from "@/components/ui/button";
 import { RotateCw, RotateCcw } from "lucide-react";
 import { GameLogs } from "./game-logs";
 import { useRouter } from "next/navigation";
+import { GameStatus } from "@/lib/sdk/generated";
+import { ClaimRewardButton } from "./claim-reward-button";
 
 interface MonopolyBoardProps {}
 
@@ -307,35 +309,38 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
               }}
             >
               <div className="flex-1 flex flex-col justify-end items-center">
-                {wallet && wallet?.delegated ? (
-                  <DiceProvider>
-                    <PlayerActions
-                      handleStartGame={handleStartGame}
-                      handleJoinGame={handleJoinGame}
-                      handleEndTurn={handleEndTurn}
-                      handleBuyProperty={handleBuyProperty}
-                      handleSkipProperty={handleSkipProperty}
-                      handlePayMevTax={handlePayMevTax}
-                      handlePayPriorityFeeTax={handlePayPriorityFeeTax}
-                      handlePayJailFine={handlePayJailFine}
-                      handleGetOutOfJailCard={handleGetOutOfJailCard}
-                      handleEndGame={handleEndGame}
-                      handleCancelGame={handleCancelGame}
-                      handleLeaveGame={handleLeaveGame}
-                      isLoading={isLoading}
-                      wallet={wallet}
-                    />
-                  </DiceProvider>
+                {gameState.gameStatus === GameStatus.Finished ? (
+                  <GameEndedStatus />
                 ) : (
                   <>
-                    <Button>Connect Wallet</Button>
+                    {wallet && wallet?.delegated ? (
+                      <DiceProvider>
+                        <PlayerActions
+                          handleStartGame={handleStartGame}
+                          handleJoinGame={handleJoinGame}
+                          handleEndTurn={handleEndTurn}
+                          handleBuyProperty={handleBuyProperty}
+                          handleSkipProperty={handleSkipProperty}
+                          handlePayMevTax={handlePayMevTax}
+                          handlePayPriorityFeeTax={handlePayPriorityFeeTax}
+                          handlePayJailFine={handlePayJailFine}
+                          handleGetOutOfJailCard={handleGetOutOfJailCard}
+                          handleEndGame={handleEndGame}
+                          handleCancelGame={handleCancelGame}
+                          handleLeaveGame={handleLeaveGame}
+                          isLoading={isLoading}
+                          wallet={wallet}
+                        />
+                      </DiceProvider>
+                    ) : (
+                      <Button>Connect Wallet</Button>
+                    )}
+                    {/* game-logs */}
+                    <div className="flex-1 w-full">
+                      <GameLogs />
+                    </div>
                   </>
                 )}
-              </div>
-
-              {/* game-logs */}
-              <div className="flex-1">
-                <GameLogs />
               </div>
             </div>
 
@@ -391,5 +396,13 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
     </div>
   );
 };
+
+function GameEndedStatus() {
+  return (
+    <div className="flex items-center justify-center w-full h-full">
+      <ClaimRewardButton />
+    </div>
+  );
+}
 
 export default GameBoard;
