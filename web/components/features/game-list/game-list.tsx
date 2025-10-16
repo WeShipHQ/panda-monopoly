@@ -20,11 +20,12 @@ import { PLATFORM_ID } from "@/configs/constants";
 import { buildAndSendTransactionWithPrivy } from "@/lib/tx";
 import { address, TransactionSigner } from "@solana/kit";
 import { useGames } from "@/hooks/useGames";
-import { GameStatus } from "@/lib/sdk/generated";
+import { GameEndReason, GameStatus } from "@/lib/sdk/generated";
 import { EntryFeeDialog } from "@/components/entry-fee-dialog";
 import { CreateGameWalletDialog } from "@/components/create-game-wallet-dialog";
 import { useGameWalletCheck } from "@/hooks/use-game-wallet-check";
 import { GameAccount } from "@/types/schema";
+import { showGameEndedToast } from "@/lib/toast-utils";
 
 type GameStatusFilter = "all" | GameStatus;
 
@@ -163,6 +164,19 @@ export function GameList() {
 
   return (
     <div className="w-full">
+      {/* <Button
+        onClick={() => {
+          showGameEndedToast({
+            winner: "63EEC9FfGyksm7PkVC6z8uAmqozbQcTzbkWJNsgqjkFs",
+            reason: GameEndReason.BankruptcyVictory,
+            winnerNetWorth: 2000,
+            currentPlayerAddress:
+              "5AHKzmDcjeAAnafTivi5u7dWYw3jUQh2VBRDzSd9ztVr",
+          });
+        }}
+      >
+        Demo
+      </Button> */}
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex-1">

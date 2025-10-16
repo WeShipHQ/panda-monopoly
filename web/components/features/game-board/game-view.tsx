@@ -53,7 +53,7 @@ export function GameView() {
         style={{
           gridArea: "center",
         }}
-        className="aspect-square w-[100vw] xl:w-auto xl:h-full"
+        className="aspect-square w-screen lg:w-auto lg:h-[80vh] xl:h-screen"
       >
         <GameBoard />
       </div>

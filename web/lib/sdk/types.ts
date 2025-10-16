@@ -50,6 +50,14 @@ export interface CreateGameParams {
   entryFee: number;
 }
 
+export interface CancelGameParams {
+  rpc: Rpc<SolanaRpcApi>;
+  creator: TransactionSigner;
+  gameAddress: Address;
+  isFreeGame: boolean;
+  players: Address[];
+}
+
 export interface CreateGameIxs {
   instructions: Instruction[];
   gameAccountAddress: Address;
@@ -270,105 +278,131 @@ export interface ClaimRewardParams {
 export type GameEvent =
   | {
       type: "PlayerLeft";
+      signature: string;
       data: PlayerLeft;
     }
   | {
       type: "GameCancelled";
+      signature: string;
       data: GameCancelled;
     }
   | {
       type: "ChanceCardDrawn";
+      signature: string;
       data: ChanceCardDrawn;
     }
   | {
       type: "CommunityChestCardDrawn";
+      signature: string;
       data: CommunityChestCardDrawn;
     }
   | {
       type: "PlayerPassedGo";
+      signature: string;
       data: PlayerPassedGo;
     }
   | {
       type: "GameEnded";
+      signature: string;
       data: GameEnded;
     }
   | {
       type: "TradeCreated";
+      signature: string;
       data: TradeCreated;
     }
   | {
       type: "TradeAccepted";
+      signature: string;
       data: TradeAccepted;
     }
   | {
       type: "TradeRejected";
+      signature: string;
       data: TradeRejected;
     }
   | {
       type: "TradeCancelled";
+      signature: string;
       data: TradeCancelled;
     }
   | {
       type: "TradesCleanedUp";
+      signature: string;
       data: TradesCleanedUp;
     }
   | {
       type: "PropertyPurchased";
+      signature: string;
       data: PropertyPurchased;
     }
   | {
       type: "PropertyDeclined";
+      signature: string;
       data: PropertyDeclined;
     }
   | {
       type: "RentPaid";
+      signature: string;
       data: RentPaid;
     }
   | {
       type: "HouseBuilt";
+      signature: string;
       data: HouseBuilt;
     }
   | {
       type: "HotelBuilt";
+      signature: string;
       data: HotelBuilt;
     }
   | {
       type: "BuildingSold";
+      signature: string;
       data: BuildingSold;
     }
   | {
       type: "PropertyMortgaged";
+      signature: string;
       data: PropertyMortgaged;
     }
   | {
       type: "PropertyUnmortgaged";
+      signature: string;
       data: PropertyUnmortgaged;
     }
   | {
       type: "PlayerJoined";
+      signature: string;
       data: PlayerJoined;
     }
   | {
       type: "GameStarted";
+      signature: string;
       data: GameStarted;
     }
   | {
       type: "SpecialSpaceAction";
+      signature: string;
       data: SpecialSpaceAction;
     }
   | {
       type: "PlayerBankrupt";
+      signature: string;
       data: PlayerBankrupt;
     }
   | {
       type: "TaxPaid";
+      signature: string;
       data: TaxPaid;
     }
   | {
       type: "GameEndConditionMet";
+      signature: string;
       data: GameEndConditionMet;
     }
   | {
       type: "PrizeClaimed";
+      signature: string;
       data: PrizeClaimed;
     };

@@ -16,8 +16,6 @@ import {
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
-  getU8Decoder,
-  getU8Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
@@ -41,22 +39,22 @@ import {
   type ResolvedAccount,
 } from '../shared';
 
-export const BUY_PROPERTY_DISCRIMINATOR = new Uint8Array([
-  128, 136, 62, 184, 252, 187, 128, 130,
+export const FORCE_END_TURN_DISCRIMINATOR = new Uint8Array([
+  158, 103, 163, 48, 6, 215, 138, 176,
 ]);
 
-export function getBuyPropertyDiscriminatorBytes() {
+export function getForceEndTurnDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    BUY_PROPERTY_DISCRIMINATOR
+    FORCE_END_TURN_DISCRIMINATOR
   );
 }
 
-export type BuyPropertyInstruction<
+export type ForceEndTurnInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountGame extends string | AccountMeta<string> = string,
-  TAccountPlayerState extends string | AccountMeta<string> = string,
-  TAccountPropertyState extends string | AccountMeta<string> = string,
-  TAccountPlayer extends string | AccountMeta<string> = string,
+  TAccountTimedOutPlayerState extends string | AccountMeta<string> = string,
+  TAccountTimedOutPlayer extends string | AccountMeta<string> = string,
+  TAccountEnforcer extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | AccountMeta<string> = '11111111111111111111111111111111',
@@ -71,16 +69,16 @@ export type BuyPropertyInstruction<
       TAccountGame extends string
         ? WritableAccount<TAccountGame>
         : TAccountGame,
-      TAccountPlayerState extends string
-        ? WritableAccount<TAccountPlayerState>
-        : TAccountPlayerState,
-      TAccountPropertyState extends string
-        ? WritableAccount<TAccountPropertyState>
-        : TAccountPropertyState,
-      TAccountPlayer extends string
-        ? WritableSignerAccount<TAccountPlayer> &
-            AccountSignerMeta<TAccountPlayer>
-        : TAccountPlayer,
+      TAccountTimedOutPlayerState extends string
+        ? WritableAccount<TAccountTimedOutPlayerState>
+        : TAccountTimedOutPlayerState,
+      TAccountTimedOutPlayer extends string
+        ? WritableAccount<TAccountTimedOutPlayer>
+        : TAccountTimedOutPlayer,
+      TAccountEnforcer extends string
+        ? WritableSignerAccount<TAccountEnforcer> &
+            AccountSignerMeta<TAccountEnforcer>
+        : TAccountEnforcer,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -91,82 +89,74 @@ export type BuyPropertyInstruction<
     ]
   >;
 
-export type BuyPropertyInstructionData = {
-  discriminator: ReadonlyUint8Array;
-  position: number;
-};
+export type ForceEndTurnInstructionData = { discriminator: ReadonlyUint8Array };
 
-export type BuyPropertyInstructionDataArgs = { position: number };
+export type ForceEndTurnInstructionDataArgs = {};
 
-export function getBuyPropertyInstructionDataEncoder(): FixedSizeEncoder<BuyPropertyInstructionDataArgs> {
+export function getForceEndTurnInstructionDataEncoder(): FixedSizeEncoder<ForceEndTurnInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['position', getU8Encoder()],
-    ]),
-    (value) => ({ ...value, discriminator: BUY_PROPERTY_DISCRIMINATOR })
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    (value) => ({ ...value, discriminator: FORCE_END_TURN_DISCRIMINATOR })
   );
 }
 
-export function getBuyPropertyInstructionDataDecoder(): FixedSizeDecoder<BuyPropertyInstructionData> {
+export function getForceEndTurnInstructionDataDecoder(): FixedSizeDecoder<ForceEndTurnInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['position', getU8Decoder()],
   ]);
 }
 
-export function getBuyPropertyInstructionDataCodec(): FixedSizeCodec<
-  BuyPropertyInstructionDataArgs,
-  BuyPropertyInstructionData
+export function getForceEndTurnInstructionDataCodec(): FixedSizeCodec<
+  ForceEndTurnInstructionDataArgs,
+  ForceEndTurnInstructionData
 > {
   return combineCodec(
-    getBuyPropertyInstructionDataEncoder(),
-    getBuyPropertyInstructionDataDecoder()
+    getForceEndTurnInstructionDataEncoder(),
+    getForceEndTurnInstructionDataDecoder()
   );
 }
 
-export type BuyPropertyAsyncInput<
+export type ForceEndTurnAsyncInput<
   TAccountGame extends string = string,
-  TAccountPlayerState extends string = string,
-  TAccountPropertyState extends string = string,
-  TAccountPlayer extends string = string,
+  TAccountTimedOutPlayerState extends string = string,
+  TAccountTimedOutPlayer extends string = string,
+  TAccountEnforcer extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
-  playerState?: Address<TAccountPlayerState>;
-  propertyState: Address<TAccountPropertyState>;
-  player: TransactionSigner<TAccountPlayer>;
+  timedOutPlayerState?: Address<TAccountTimedOutPlayerState>;
+  timedOutPlayer: Address<TAccountTimedOutPlayer>;
+  enforcer: TransactionSigner<TAccountEnforcer>;
   systemProgram?: Address<TAccountSystemProgram>;
   clock?: Address<TAccountClock>;
-  position: BuyPropertyInstructionDataArgs['position'];
 };
 
-export async function getBuyPropertyInstructionAsync<
+export async function getForceEndTurnInstructionAsync<
   TAccountGame extends string,
-  TAccountPlayerState extends string,
-  TAccountPropertyState extends string,
-  TAccountPlayer extends string,
+  TAccountTimedOutPlayerState extends string,
+  TAccountTimedOutPlayer extends string,
+  TAccountEnforcer extends string,
   TAccountSystemProgram extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: BuyPropertyAsyncInput<
+  input: ForceEndTurnAsyncInput<
     TAccountGame,
-    TAccountPlayerState,
-    TAccountPropertyState,
-    TAccountPlayer,
+    TAccountTimedOutPlayerState,
+    TAccountTimedOutPlayer,
+    TAccountEnforcer,
     TAccountSystemProgram,
     TAccountClock
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
-  BuyPropertyInstruction<
+  ForceEndTurnInstruction<
     TProgramAddress,
     TAccountGame,
-    TAccountPlayerState,
-    TAccountPropertyState,
-    TAccountPlayer,
+    TAccountTimedOutPlayerState,
+    TAccountTimedOutPlayer,
+    TAccountEnforcer,
     TAccountSystemProgram,
     TAccountClock
   >
@@ -178,9 +168,12 @@ export async function getBuyPropertyInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     game: { value: input.game ?? null, isWritable: true },
-    playerState: { value: input.playerState ?? null, isWritable: true },
-    propertyState: { value: input.propertyState ?? null, isWritable: true },
-    player: { value: input.player ?? null, isWritable: true },
+    timedOutPlayerState: {
+      value: input.timedOutPlayerState ?? null,
+      isWritable: true,
+    },
+    timedOutPlayer: { value: input.timedOutPlayer ?? null, isWritable: true },
+    enforcer: { value: input.enforcer ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     clock: { value: input.clock ?? null, isWritable: false },
   };
@@ -189,17 +182,16 @@ export async function getBuyPropertyInstructionAsync<
     ResolvedAccount
   >;
 
-  // Original args.
-  const args = { ...input };
-
   // Resolve default values.
-  if (!accounts.playerState.value) {
-    accounts.playerState.value = await getProgramDerivedAddress({
+  if (!accounts.timedOutPlayerState.value) {
+    accounts.timedOutPlayerState.value = await getProgramDerivedAddress({
       programAddress,
       seeds: [
         getBytesEncoder().encode(new Uint8Array([112, 108, 97, 121, 101, 114])),
         getAddressEncoder().encode(expectAddress(accounts.game.value)),
-        getAddressEncoder().encode(expectAddress(accounts.player.value)),
+        getAddressEncoder().encode(
+          expectAddress(accounts.timedOutPlayer.value)
+        ),
       ],
     });
   }
@@ -216,68 +208,65 @@ export async function getBuyPropertyInstructionAsync<
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.game),
-      getAccountMeta(accounts.playerState),
-      getAccountMeta(accounts.propertyState),
-      getAccountMeta(accounts.player),
+      getAccountMeta(accounts.timedOutPlayerState),
+      getAccountMeta(accounts.timedOutPlayer),
+      getAccountMeta(accounts.enforcer),
       getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.clock),
     ],
-    data: getBuyPropertyInstructionDataEncoder().encode(
-      args as BuyPropertyInstructionDataArgs
-    ),
+    data: getForceEndTurnInstructionDataEncoder().encode({}),
     programAddress,
-  } as BuyPropertyInstruction<
+  } as ForceEndTurnInstruction<
     TProgramAddress,
     TAccountGame,
-    TAccountPlayerState,
-    TAccountPropertyState,
-    TAccountPlayer,
+    TAccountTimedOutPlayerState,
+    TAccountTimedOutPlayer,
+    TAccountEnforcer,
     TAccountSystemProgram,
     TAccountClock
   >);
 }
 
-export type BuyPropertyInput<
+export type ForceEndTurnInput<
   TAccountGame extends string = string,
-  TAccountPlayerState extends string = string,
-  TAccountPropertyState extends string = string,
-  TAccountPlayer extends string = string,
+  TAccountTimedOutPlayerState extends string = string,
+  TAccountTimedOutPlayer extends string = string,
+  TAccountEnforcer extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountClock extends string = string,
 > = {
   game: Address<TAccountGame>;
-  playerState: Address<TAccountPlayerState>;
-  propertyState: Address<TAccountPropertyState>;
-  player: TransactionSigner<TAccountPlayer>;
+  timedOutPlayerState: Address<TAccountTimedOutPlayerState>;
+  timedOutPlayer: Address<TAccountTimedOutPlayer>;
+  enforcer: TransactionSigner<TAccountEnforcer>;
   systemProgram?: Address<TAccountSystemProgram>;
   clock?: Address<TAccountClock>;
-  position: BuyPropertyInstructionDataArgs['position'];
 };
 
-export function getBuyPropertyInstruction<
+export function getForceEndTurnInstruction<
   TAccountGame extends string,
-  TAccountPlayerState extends string,
-  TAccountPropertyState extends string,
-  TAccountPlayer extends string,
+  TAccountTimedOutPlayerState extends string,
+  TAccountTimedOutPlayer extends string,
+  TAccountEnforcer extends string,
   TAccountSystemProgram extends string,
   TAccountClock extends string,
   TProgramAddress extends Address = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
 >(
-  input: BuyPropertyInput<
+  input: ForceEndTurnInput<
     TAccountGame,
-    TAccountPlayerState,
-    TAccountPropertyState,
-    TAccountPlayer,
+    TAccountTimedOutPlayerState,
+    TAccountTimedOutPlayer,
+    TAccountEnforcer,
     TAccountSystemProgram,
     TAccountClock
   >,
   config?: { programAddress?: TProgramAddress }
-): BuyPropertyInstruction<
+): ForceEndTurnInstruction<
   TProgramAddress,
   TAccountGame,
-  TAccountPlayerState,
-  TAccountPropertyState,
-  TAccountPlayer,
+  TAccountTimedOutPlayerState,
+  TAccountTimedOutPlayer,
+  TAccountEnforcer,
   TAccountSystemProgram,
   TAccountClock
 > {
@@ -288,9 +277,12 @@ export function getBuyPropertyInstruction<
   // Original accounts.
   const originalAccounts = {
     game: { value: input.game ?? null, isWritable: true },
-    playerState: { value: input.playerState ?? null, isWritable: true },
-    propertyState: { value: input.propertyState ?? null, isWritable: true },
-    player: { value: input.player ?? null, isWritable: true },
+    timedOutPlayerState: {
+      value: input.timedOutPlayerState ?? null,
+      isWritable: true,
+    },
+    timedOutPlayer: { value: input.timedOutPlayer ?? null, isWritable: true },
+    enforcer: { value: input.enforcer ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     clock: { value: input.clock ?? null, isWritable: false },
   };
@@ -298,9 +290,6 @@ export function getBuyPropertyInstruction<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
-
-  // Original args.
-  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.systemProgram.value) {
@@ -316,51 +305,49 @@ export function getBuyPropertyInstruction<
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.game),
-      getAccountMeta(accounts.playerState),
-      getAccountMeta(accounts.propertyState),
-      getAccountMeta(accounts.player),
+      getAccountMeta(accounts.timedOutPlayerState),
+      getAccountMeta(accounts.timedOutPlayer),
+      getAccountMeta(accounts.enforcer),
       getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.clock),
     ],
-    data: getBuyPropertyInstructionDataEncoder().encode(
-      args as BuyPropertyInstructionDataArgs
-    ),
+    data: getForceEndTurnInstructionDataEncoder().encode({}),
     programAddress,
-  } as BuyPropertyInstruction<
+  } as ForceEndTurnInstruction<
     TProgramAddress,
     TAccountGame,
-    TAccountPlayerState,
-    TAccountPropertyState,
-    TAccountPlayer,
+    TAccountTimedOutPlayerState,
+    TAccountTimedOutPlayer,
+    TAccountEnforcer,
     TAccountSystemProgram,
     TAccountClock
   >);
 }
 
-export type ParsedBuyPropertyInstruction<
+export type ParsedForceEndTurnInstruction<
   TProgram extends string = typeof PANDA_MONOPOLY_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
     game: TAccountMetas[0];
-    playerState: TAccountMetas[1];
-    propertyState: TAccountMetas[2];
-    player: TAccountMetas[3];
+    timedOutPlayerState: TAccountMetas[1];
+    timedOutPlayer: TAccountMetas[2];
+    enforcer: TAccountMetas[3];
     systemProgram: TAccountMetas[4];
     clock: TAccountMetas[5];
   };
-  data: BuyPropertyInstructionData;
+  data: ForceEndTurnInstructionData;
 };
 
-export function parseBuyPropertyInstruction<
+export function parseForceEndTurnInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
-): ParsedBuyPropertyInstruction<TProgram, TAccountMetas> {
+): ParsedForceEndTurnInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 6) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
@@ -375,12 +362,12 @@ export function parseBuyPropertyInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       game: getNextAccount(),
-      playerState: getNextAccount(),
-      propertyState: getNextAccount(),
-      player: getNextAccount(),
+      timedOutPlayerState: getNextAccount(),
+      timedOutPlayer: getNextAccount(),
+      enforcer: getNextAccount(),
       systemProgram: getNextAccount(),
       clock: getNextAccount(),
     },
-    data: getBuyPropertyInstructionDataDecoder().decode(instruction.data),
+    data: getForceEndTurnInstructionDataDecoder().decode(instruction.data),
   };
 }

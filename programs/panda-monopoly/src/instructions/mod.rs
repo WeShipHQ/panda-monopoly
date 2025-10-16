@@ -13,8 +13,7 @@ pub mod trading;
 pub mod claim_reward;
 pub mod leave_game;
 pub mod cancel_game;
-
-
+pub mod permissionless;
 
 // pub use auction::*;
 pub use bankruptcy::*;
@@ -31,3 +30,4 @@ pub use trading::*;
 pub use claim_reward::*;
 pub use leave_game::*;
 pub use cancel_game::*;
+pub use permissionless::*;

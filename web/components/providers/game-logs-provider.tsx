@@ -19,11 +19,12 @@ interface GameLogsContextType {
   addGameLog: (entry: Omit<GameLogEntry, "id" | "timestamp">) => void;
   clearLogs: () => void;
   refreshLogs: () => GameLogEntry[];
+  removeDuplicates: () => void;
 }
 
 const GameLogsContext = createContext<GameLogsContextType | null>(null);
 
-export const useGameLogsContext = () => {
+export const useGameLogs = () => {
   const context = useContext(GameLogsContext);
   if (!context) {
     throw new Error("useGameLogsContext must be used within GameLogsProvider");
@@ -56,8 +57,33 @@ export const GameLogsProvider: React.FC<GameLogsProviderProps> = ({
     try {
       const stored = localStorage.getItem(storageKey);
       const logs = stored ? (JSON.parse(stored) as GameLogEntry[]) : [];
-      setGameLogs(logs);
-      return logs;
+
+      // Remove duplicates when loading from storage
+      const seenSignatures = new Set<string>();
+      const deduplicatedLogs = logs.filter((log) => {
+        const signature = log.signature;
+        if (!signature) return true; // Keep logs without signature
+
+        if (seenSignatures.has(signature)) {
+          return false; // Remove duplicate
+        }
+
+        seenSignatures.add(signature);
+        return true; // Keep first occurrence
+      });
+
+      // Save back to storage if duplicates were found
+      if (deduplicatedLogs.length !== logs.length) {
+        console.log(
+          `Removed ${
+            logs.length - deduplicatedLogs.length
+          } duplicate logs during load`
+        );
+        localStorage.setItem(storageKey, JSON.stringify(deduplicatedLogs));
+      }
+
+      setGameLogs(deduplicatedLogs);
+      return deduplicatedLogs;
     } catch {
       setGameLogs([]);
       return [];
@@ -86,7 +112,19 @@ export const GameLogsProvider: React.FC<GameLogsProviderProps> = ({
       };
 
       setGameLogs((currentLogs) => {
-        const updatedLogs = [newLog, ...currentLogs].slice(-maxLogs);
+        // Check for duplicate signature to prevent duplicate logs
+        const signature = newLog.signature;
+        if (signature) {
+          const isDuplicate = currentLogs.some(
+            (log) => log.signature === signature
+          );
+          if (isDuplicate) {
+            console.log(`Duplicate log detected for signature: ${signature}`);
+            return currentLogs; // Don't add duplicate
+          }
+        }
+
+        const updatedLogs = [newLog, ...currentLogs].slice(0, maxLogs);
         saveLogs(updatedLogs);
         return updatedLogs;
       });
@@ -100,6 +138,34 @@ export const GameLogsProvider: React.FC<GameLogsProviderProps> = ({
       localStorage.removeItem(storageKey);
     }
   }, [storageKey, persistToStorage]);
+
+  const removeDuplicates = useCallback(() => {
+    setGameLogs((currentLogs) => {
+      const seenSignatures = new Set<string>();
+      const deduplicatedLogs = currentLogs.filter((log) => {
+        const signature = log.signature;
+        if (!signature) return true; // Keep logs without signature
+
+        if (seenSignatures.has(signature)) {
+          return false; // Remove duplicate
+        }
+
+        seenSignatures.add(signature);
+        return true; // Keep first occurrence
+      });
+
+      if (deduplicatedLogs.length !== currentLogs.length) {
+        console.log(
+          `Removed ${
+            currentLogs.length - deduplicatedLogs.length
+          } duplicate logs`
+        );
+        saveLogs(deduplicatedLogs);
+      }
+
+      return deduplicatedLogs;
+    });
+  }, [saveLogs]);
 
   useEffect(() => {
     loadLogs();
@@ -146,18 +212,19 @@ export const GameLogsProvider: React.FC<GameLogsProviderProps> = ({
       "TradesCleanedUp",
       "PlayerBankrupt",
       "GameEnded",
-      "GameEndConditionMet",
+      // "GameEndConditionMet",
       "PrizeClaimed",
     ] as const;
 
     eventTypes.forEach((eventType) => {
       const unsubscribe = registerEventHandler(
         eventType as GameEvent["type"],
-        (eventData) => {
+        (eventData, context) => {
           try {
             const fullEvent = {
               type: eventType,
               data: eventData,
+              signature: context.signature,
             } as GameEvent;
 
             const logEntry = mapEventToLogEntry(fullEvent);
@@ -168,6 +235,7 @@ export const GameLogsProvider: React.FC<GameLogsProviderProps> = ({
               playerId: logEntry.playerId,
               playerName: logEntry.playerName,
               details: logEntry.details,
+              signature: logEntry.signature,
             });
           } catch (error) {
             console.error(
@@ -191,6 +259,7 @@ export const GameLogsProvider: React.FC<GameLogsProviderProps> = ({
     addGameLog,
     clearLogs,
     refreshLogs: loadLogs,
+    removeDuplicates,
   };
 
   return (

@@ -37,6 +37,9 @@ import { useWallet } from "@/hooks/use-wallet";
 import { Button } from "@/components/ui/button";
 import { RotateCw, RotateCcw } from "lucide-react";
 import { GameLogs } from "./game-logs";
+import { useRouter } from "next/navigation";
+import { GameStatus } from "@/lib/sdk/generated";
+import { ClaimRewardButton } from "./claim-reward-button";
 
 interface MonopolyBoardProps {}
 
@@ -45,6 +48,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
   const [boardRotation, setBoardRotation] = useState<number>(0);
 
   const { wallet } = useWallet();
+  const router = useRouter();
 
   const {
     gameState,
@@ -66,6 +70,8 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
     payJailFine,
     useGetOutOfJailCard,
     endGame,
+    cancelGame,
+    leaveGame,
   } = useGameContext();
 
   // console.log("currentPlayerState", currentPlayerState);
@@ -189,6 +195,30 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
     }
   };
 
+  const handleCancelGame = async () => {
+    setIsLoading("cancelGame");
+    try {
+      await cancelGame();
+      router.push("/lobby");
+    } catch (error) {
+      console.error("Failed to cancel game:", error);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
+  const handleLeaveGame = async () => {
+    setIsLoading("leaveGame");
+    try {
+      await leaveGame();
+      router.push("/lobby");
+    } catch (error) {
+      console.error("Failed to leave game:", error);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
   const renderSpace = (space: BoardSpace, properties: PropertyAccount[]) => {
     const position = space.position;
     const key = `${space.name}-${position}`;
@@ -279,33 +309,38 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
               }}
             >
               <div className="flex-1 flex flex-col justify-end items-center">
-                {wallet && wallet?.delegated ? (
-                  <DiceProvider>
-                    <PlayerActions
-                      handleStartGame={handleStartGame}
-                      handleJoinGame={handleJoinGame}
-                      handleEndTurn={handleEndTurn}
-                      handleBuyProperty={handleBuyProperty}
-                      handleSkipProperty={handleSkipProperty}
-                      handlePayMevTax={handlePayMevTax}
-                      handlePayPriorityFeeTax={handlePayPriorityFeeTax}
-                      handlePayJailFine={handlePayJailFine}
-                      handleGetOutOfJailCard={handleGetOutOfJailCard}
-                      handleEndGame={handleEndGame}
-                      isLoading={isLoading}
-                      wallet={wallet}
-                    />
-                  </DiceProvider>
+                {gameState.gameStatus === GameStatus.Finished ? (
+                  <GameEndedStatus />
                 ) : (
                   <>
-                    <Button>Connect Wallet</Button>
+                    {wallet && wallet?.delegated ? (
+                      <DiceProvider>
+                        <PlayerActions
+                          handleStartGame={handleStartGame}
+                          handleJoinGame={handleJoinGame}
+                          handleEndTurn={handleEndTurn}
+                          handleBuyProperty={handleBuyProperty}
+                          handleSkipProperty={handleSkipProperty}
+                          handlePayMevTax={handlePayMevTax}
+                          handlePayPriorityFeeTax={handlePayPriorityFeeTax}
+                          handlePayJailFine={handlePayJailFine}
+                          handleGetOutOfJailCard={handleGetOutOfJailCard}
+                          handleEndGame={handleEndGame}
+                          handleCancelGame={handleCancelGame}
+                          handleLeaveGame={handleLeaveGame}
+                          isLoading={isLoading}
+                          wallet={wallet}
+                        />
+                      </DiceProvider>
+                    ) : (
+                      <Button>Connect Wallet</Button>
+                    )}
+                    {/* game-logs */}
+                    <div className="flex-1 w-full">
+                      <GameLogs />
+                    </div>
                   </>
                 )}
-              </div>
-
-              {/* game-logs */}
-              <div className="flex-1">
-                <GameLogs />
               </div>
             </div>
 
@@ -361,5 +396,13 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
     </div>
   );
 };
+
+function GameEndedStatus() {
+  return (
+    <div className="flex items-center justify-center w-full h-full">
+      <ClaimRewardButton />
+    </div>
+  );
+}
 
 export default GameBoard;

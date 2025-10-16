@@ -30,6 +30,7 @@ export interface GameLogEntry {
   gameId: string;
   timestamp: number;
   type: GameEvent["type"];
+  signature: string;
   // type:
   //   | "move"
   //   | "purchase"
@@ -110,7 +111,6 @@ export interface GameLogEntry {
     prizeAmount?: number;
 
     // other
-    signature?: string;
     error?: string;
   };
 }

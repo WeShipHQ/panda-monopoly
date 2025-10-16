@@ -44,7 +44,7 @@ pub fn create_trade_handler(
     receiver_property: Option<u8>,
 ) -> Result<()> {
     let game = &mut ctx.accounts.game;
-    let proposer_state = &ctx.accounts.proposer_state;
+    let proposer_state = &mut ctx.accounts.proposer_state;
     let receiver_state = &ctx.accounts.receiver_state;
     let clock = &ctx.accounts.clock;
 
@@ -59,6 +59,8 @@ pub fn create_trade_handler(
         proposer_money <= proposer_state.cash_balance,
         GameError::InsufficientFunds
     );
+
+    proposer_state.record_action(clock);
 
     // Validate proposer property ownership
     if let Some(prop_pos) = proposer_property {
@@ -181,7 +183,6 @@ pub fn create_trade_handler(
 }
 
 #[derive(Accounts)]
-#[instruction(trade_id: u8)]
 pub struct AcceptTrade<'info> {
     #[account(
         mut,
@@ -249,6 +250,8 @@ pub fn accept_trade_handler(ctx: Context<AcceptTrade>, trade_id: u8) -> Result<(
         accepter_state.cash_balance >= trade.receiver_money,
         GameError::InsufficientFunds
     );
+
+    accepter_state.record_action(clock);
 
     if let Some(prop_pos) = trade.proposer_property {
         require!(
@@ -334,7 +337,6 @@ pub fn accept_trade_handler(ctx: Context<AcceptTrade>, trade_id: u8) -> Result<(
 }
 
 #[derive(Accounts)]
-#[instruction(trade_id: u8)]
 pub struct RejectTrade<'info> {
     #[account(
         mut,
@@ -342,6 +344,13 @@ pub struct RejectTrade<'info> {
         bump = game.bump,
     )]
     pub game: Box<Account<'info, GameState>>,
+
+    #[account(
+        mut,
+        seeds = [b"player", game.key().as_ref(), rejecter_state.wallet.as_ref()],
+        bump
+    )]
+    pub rejecter_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub rejecter: Signer<'info>,
@@ -372,6 +381,8 @@ pub fn reject_trade_handler(ctx: Context<RejectTrade>, trade_id: u8) -> Result<(
         GameError::NotTradeTarget
     );
 
+    ctx.accounts.rejecter_state.record_action(clock);
+
     // Update trade status
     trade.status = TradeStatus::Rejected;
 
@@ -398,6 +409,13 @@ pub struct CancelTrade<'info> {
         bump = game.bump,
     )]
     pub game: Box<Account<'info, GameState>>,
+
+    #[account(
+        mut,
+        seeds = [b"player", game.key().as_ref(), canceller_state.wallet.as_ref()],
+        bump
+    )]
+    pub canceller_state: Box<Account<'info, PlayerState>>,
 
     #[account(mut)]
     pub canceller: Signer<'info>,
@@ -427,6 +445,8 @@ pub fn cancel_trade_handler(ctx: Context<CancelTrade>, trade_id: u8) -> Result<(
         trade.proposer == ctx.accounts.canceller.key(),
         GameError::NotTradeProposer
     );
+
+    ctx.accounts.canceller_state.record_action(clock);
 
     // Update trade status
     trade.status = TradeStatus::Cancelled;

@@ -1,6 +1,6 @@
 use crate::error::GameError;
 use crate::{constants::*, random_two_u8_with_range, xorshift64star, ID};
-use crate::{force_end_turn, send_player_to_jail_and_end_turn, state::*};
+use crate::{force_end_turn_util, send_player_to_jail_and_end_turn, state::*};
 use anchor_lang::prelude::*;
 use ephemeral_vrf_sdk::anchor::vrf;
 use ephemeral_vrf_sdk::instructions::create_request_randomness_ix;
@@ -62,6 +62,8 @@ pub fn roll_dice_handler(
     if player_state.has_rolled_dice {
         return Err(GameError::AlreadyRolledDice.into());
     }
+
+    player_state.record_action(clock);
 
     if dice_roll.is_none() {
         if use_vrf {
@@ -297,8 +299,6 @@ pub struct CallbackRollDiceCtx<'info> {
 }
 
 pub fn callback_roll_dice(ctx: Context<CallbackRollDiceCtx>, randomness: [u8; 32]) -> Result<()> {
-    // let dice_1 = ephemeral_vrf_sdk::rnd::random_u8_with_range(&randomness, 1, 6);
-    // let dice_2 = ephemeral_vrf_sdk::rnd::random_u8_with_range(&randomness, 1, 6);
     let dice_roll = random_two_u8_with_range(&randomness, 1, 6);
     msg!("Roll: {} - {}", dice_roll[0], dice_roll[1]);
 
@@ -424,14 +424,14 @@ fn handle_jail_dice_roll(
             player_state.in_jail = false; // Remove from jail since they're bankrupt
             player_state.jail_turns = 0;
 
-            force_end_turn(game, player_state, clock);
+            force_end_turn_util(game, player_state, clock);
 
             msg!("Player cannot afford jail fine and is declared bankrupt. Turn ended automatically.");
             return Ok(());
         }
     } else {
         msg!("Player remains in jail. Turn {}/3", player_state.jail_turns);
-        force_end_turn(game, player_state, clock);
+        force_end_turn_util(game, player_state, clock);
         return Ok(());
     }
 
@@ -574,14 +574,14 @@ fn handle_jail_dice_roll_without_vrf(
             player_state.in_jail = false; // Remove from jail since they're bankrupt
             player_state.jail_turns = 0;
 
-            force_end_turn(game, player_state, clock);
+            force_end_turn_util(game, player_state, clock);
 
             msg!("Player cannot afford jail fine and is declared bankrupt. Turn ended automatically.");
             return Ok(());
         }
     } else {
         msg!("Player remains in jail. Turn {}/3", player_state.jail_turns);
-        force_end_turn(game, player_state, clock);
+        force_end_turn_util(game, player_state, clock);
         return Ok(());
     }
 

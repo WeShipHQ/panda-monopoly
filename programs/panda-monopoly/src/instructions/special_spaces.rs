@@ -49,6 +49,8 @@ pub fn go_to_jail_handler(ctx: Context<GoToJail>) -> Result<()> {
         return Err(GameError::HasNotRolledDice.into());
     }
 
+    player_state.record_action(clock);
+
     // Send player to jail
     player_state.in_jail = true;
     player_state.position = JAIL_POSITION;
@@ -130,6 +132,8 @@ pub fn draw_chance_card_handler(
     if !player_state.needs_chance_card {
         return Err(GameError::InvalidSpecialSpaceAction.into());
     }
+
+    player_state.record_action(clock);
 
     if use_vrf {
         msg!("Requesting randomness for chance card...");
@@ -367,6 +371,8 @@ pub fn draw_community_chest_card_handler(
     if !player_state.needs_community_chest_card {
         return Err(GameError::InvalidSpecialSpaceAction.into());
     }
+
+    player_state.record_action(clock);
 
     if use_vrf {
         msg!("Requesting randomness for community chest card...");
@@ -916,6 +922,8 @@ pub fn pay_mev_tax_handler(ctx: Context<PayTax>) -> Result<()> {
     if player_state.position != MEV_TAX_POSITION {
         return Err(GameError::InvalidBoardPosition.into());
     }
+
+    player_state.record_action(clock);
 
     if player_state.cash_balance >= MEV_TAX as u64 {
         player_state.cash_balance = player_state

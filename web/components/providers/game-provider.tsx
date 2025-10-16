@@ -25,7 +25,6 @@ import {
   getTypedSpaceData,
   calculateRentForProperty,
 } from "@/lib/board-utils";
-import { GameLogEntry } from "@/types/space-types";
 import { useRpcContext } from "./rpc-provider";
 import { useWallet } from "@/hooks/use-wallet";
 import { playPropertySound, playSound, SOUND_CONFIG } from "@/lib/soundUtil";
@@ -62,6 +61,7 @@ interface GameContextType {
   closeGame: () => Promise<void>;
   joinGame: () => Promise<void>;
   leaveGame: () => Promise<void>;
+  cancelGame: () => Promise<void>;
   rollDice: (diceRoll?: number[]) => Promise<void>;
   buyProperty: (position: number) => Promise<void>;
   skipProperty: (position: number) => Promise<void>;
@@ -426,12 +426,38 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[leaveGame] tx", signature);
-      alert("success");
     } catch (error) {
       console.error("Error leaving game:", error);
       throw error;
     }
   }, [rpc, gameAddress, wallet]);
+
+  const cancelGame = useCallback(async (): Promise<void> => {
+    if (!gameAddress || !wallet?.address || !wallet.delegated || !gameState) {
+      throw new Error("Game address or player signer not available");
+    }
+
+    try {
+      const instructions = await sdk.cancelGameIx({
+        rpc,
+        gameAddress,
+        creator: { address: address(wallet.address) } as TransactionSigner,
+        isFreeGame: gameState.entryFee === 0,
+        players: gameState?.players.map(address) || [],
+      });
+
+      const signature = await buildAndSendTransactionWithPrivy(
+        rpc,
+        instructions,
+        wallet
+      );
+
+      console.log("[cancelGame] tx", signature);
+    } catch (error) {
+      console.error("Error canceling game:", error);
+      throw error;
+    }
+  }, [rpc, gameAddress, wallet, gameState]);
 
   const rollDice = useCallback(
     async (diceRoll?: number[]): Promise<void> => {
@@ -1361,19 +1387,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         // This should be handled by the smart contract, but we can show UI feedback
         return;
       }
-
-      // If none of the above conditions are met, log the current state
-      console.log("No auto-actions needed. Player state:", {
-        hasRolledDice: player.hasRolledDice,
-        needsPropertyAction: player.needsPropertyAction,
-        needsChanceCard: player.needsChanceCard,
-        needsCommunityChestCard: player.needsCommunityChestCard,
-        needsSpecialSpaceAction: player.needsSpecialSpaceAction,
-        needsBankruptcyCheck: player.needsBankruptcyCheck,
-        // canEndTurn: player.canEndTurn,
-        inJail: player.inJail,
-        doublesCount: player.doublesCount,
-      });
     }
 
     if (gameAddress && currentPlayerState && signer && isCurrentPlayerTurn()) {
@@ -1415,6 +1428,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     closeGame,
     joinGame,
     leaveGame,
+    cancelGame,
     rollDice,
     buyProperty,
     skipProperty,

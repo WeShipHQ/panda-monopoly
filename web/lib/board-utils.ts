@@ -7,12 +7,10 @@ import {
   CornerSpace,
   ChanceSpace,
   CommunityChestSpace,
-  colorGroups,
   boardData,
   ColorGroup,
 } from "@/configs/board-data";
-import { PropertyAccount, PlayerAccount } from "@/types/schema";
-import { PropertyType } from "@/lib/sdk/generated";
+import { PropertyAccount, PlayerAccount, PropertyType } from "@/types/schema";
 
 export const isPropertySpace = (space: BoardSpace): space is PropertySpace => {
   return space.type === "property";
@@ -222,7 +220,7 @@ export const getTextContainerClasses = (side: BoardSide): string => {
       // For left column: vertical writing mode, left to right
       return `flex flex-col justify-between size-full ${basePadding} [writing-mode:vertical-rl]`;
     case "top":
-      return `flex flex-col justify-between size-full ${basePadding} pb-5 [transform:rotate(180deg)] pt-5` ; // Extra padding bottom for color bar
+      return `flex flex-col justify-between size-full ${basePadding} pb-5 [transform:rotate(180deg)] pt-5`; // Extra padding bottom for color bar
     case "right":
       // For right column: vertical writing mode, right to left with 180deg rotation
       return `flex flex-col justify-between size-full ${basePadding} pl-5 [writing-mode:vertical-lr] [transform:rotate(180deg)]`;

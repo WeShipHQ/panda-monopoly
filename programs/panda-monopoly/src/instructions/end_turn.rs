@@ -65,6 +65,8 @@ pub fn end_turn_handler(ctx: Context<EndTurn>) -> Result<()> {
         return Err(GameError::MustDeclareBankruptcy.into());
     }
 
+    player_state.record_action(clock);
+
     if game.check_time_end_condition(clock.unix_timestamp) {
         msg!("Time limit reached! Game should be ended via end_game instruction.");
         game.end_condition_met = true;

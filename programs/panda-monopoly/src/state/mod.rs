@@ -141,6 +141,10 @@ pub struct GameState {
     pub game_end_time: Option<i64>, // 8 bytes - game end time
     pub turn_started_at: i64,       // 8 bytes - when current turn started
     pub time_limit: Option<i64>,    // 9 bytes - optional time limit
+
+    pub turn_timeout_seconds: u64, // 8 bytes - timeout duration (default 30)
+    pub turn_grace_period_seconds: u64, // 8 bytes - grace period (default 10)
+    pub timeout_enforcement_enabled: bool, // 1 byte - can disable for testing
 }
 
 impl GameState {
@@ -414,6 +418,10 @@ pub struct PlayerState {
     pub pending_special_space_position: Option<u8>, // Which special space
 
     pub card_drawn_at: Option<i64>, // Timestamp when card was drawn
+
+    pub timeout_penalty_count: u8, // 1 byte - number of timeout penalties
+    pub last_action_timestamp: i64, // 8 bytes - last action taken
+    pub total_timeout_penalties: u8, // 1 byte - lifetime count for stats
 }
 
 impl PlayerState {
@@ -443,36 +451,48 @@ impl PlayerState {
         self.needs_chance_card = false;
         self.needs_community_chest_card = false;
         self.needs_bankruptcy_check = false;
-        // self.can_end_turn = false;
         self.needs_special_space_action = false;
         self.pending_special_space_position = None;
         self.card_drawn_at = None;
+
+        self.timeout_penalty_count = 0;
+        self.last_action_timestamp = clock.unix_timestamp;
+        self.total_timeout_penalties = 0;
+    }
+
+    pub fn record_action(&mut self, clock: &Sysvar<Clock>) {
+        self.last_action_timestamp = clock.unix_timestamp;
+    }
+
+    pub fn has_recent_activity(&self, current_time: i64, grace_period: u64) -> bool {
+        let elapsed = current_time.saturating_sub(self.last_action_timestamp);
+        elapsed < grace_period as i64
     }
 }
 
-#[account]
-#[derive(Debug, InitSpace)]
-pub struct PropertyState {
-    pub position: u8,                // 1 byte - board position (0-39)
-    pub game: Pubkey,                // 32 bytes - game account
-    pub owner: Option<Pubkey>,       // 33 bytes - property owner
-    pub price: u16,                  // 2 bytes - purchase price
-    pub color_group: ColorGroup,     // 1 byte - property color group
-    pub property_type: PropertyType, // 1 byte - type of space
-    pub houses: u8,                  // 1 byte - number of houses (0-4)
-    pub has_hotel: bool,             // 1 byte - hotel status
-    pub is_mortgaged: bool,          // 1 byte - mortgage status
-    pub rent_base: u16,              // 2 bytes - base rent
-    pub rent_with_color_group: u16,  // 2 bytes - rent with monopoly
-    pub rent_with_houses: [u16; 4],  // 8 bytes - rent with 1-4 houses
-    pub rent_with_hotel: u16,        // 2 bytes - rent with hotel
-    pub house_cost: u16,             // 2 bytes - cost to build house
-    pub mortgage_value: u16,         // 2 bytes - mortgage value
-    pub last_rent_paid: i64,         // 8 bytes - last rent payment time
-    pub init: bool,                  // 1 byte - init status
-}
+// #[account]
+// #[derive(Debug, InitSpace)]
+// pub struct PropertyState {
+//     pub position: u8,                // 1 byte - board position (0-39)
+//     pub game: Pubkey,                // 32 bytes - game account
+//     pub owner: Option<Pubkey>,       // 33 bytes - property owner
+//     pub price: u16,                  // 2 bytes - purchase price
+//     pub color_group: ColorGroup,     // 1 byte - property color group
+//     pub property_type: PropertyType, // 1 byte - type of space
+//     pub houses: u8,                  // 1 byte - number of houses (0-4)
+//     pub has_hotel: bool,             // 1 byte - hotel status
+//     pub is_mortgaged: bool,          // 1 byte - mortgage status
+//     pub rent_base: u16,              // 2 bytes - base rent
+//     pub rent_with_color_group: u16,  // 2 bytes - rent with monopoly
+//     pub rent_with_houses: [u16; 4],  // 8 bytes - rent with 1-4 houses
+//     pub rent_with_hotel: u16,        // 2 bytes - rent with hotel
+//     pub house_cost: u16,             // 2 bytes - cost to build house
+//     pub mortgage_value: u16,         // 2 bytes - mortgage value
+//     pub last_rent_paid: i64,         // 8 bytes - last rent payment time
+//     pub init: bool,                  // 1 byte - init status
+// }
 
-impl PropertyState {}
+// impl PropertyState {}
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, InitSpace, Clone, PartialEq, Eq)]
 pub enum TradeType {
