@@ -1054,6 +1054,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "panda-monopoly-v2"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "pinocchio",
+]
+
+[[package]]
 name = "parking_lot"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1090,6 +1098,12 @@ name = "percent-encoding"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
+
+[[package]]
+name = "pinocchio"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43a8a77bf74e1c4050a2bad53648acfcfbf22b1806473f9c9334a58ef3b38ec4"
 
 [[package]]
 name = "polyval"
