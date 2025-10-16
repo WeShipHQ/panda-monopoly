@@ -4,7 +4,11 @@ import { Text } from '@/components/ui/text';
 import { PandaRarity, useGame } from '@/contexts/GameContext';
 import { Sparkles, Gift, TrendingUp } from 'lucide-react-native';
 import * as React from 'react';
-import { Alert, Animated, Image, ScrollView, View } from 'react-native';
+import { Alert, Animated, Dimensions, Image, ScrollView, View, Easing } from 'react-native';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const ITEM_WIDTH = 120; // Width of each item in roulette
+const ITEM_SPACING = 10; // Spacing between items
 
 // Rarity colors and display info
 const rarityInfo: Record<PandaRarity, { color: string; bgColor: string; label: string; glow: string }> = {
@@ -14,14 +18,27 @@ const rarityInfo: Record<PandaRarity, { color: string; bgColor: string; label: s
   legendary: { color: '#F59E0B', bgColor: '#FEF3C7', label: 'Legendary', glow: '#FBBF24' },
 };
 
+// Mock gacha pool for roulette display
+const mockRouletteItems = [
+  { id: 'r1', name: 'Bamboo Jr', emoji: '🐼', rarity: 'common' as PandaRarity, image: require('../../public/assets/panda-pet/panda1.png') },
+  { id: 'r2', name: 'Cloud', emoji: '☁️', rarity: 'common' as PandaRarity, image: require('../../public/assets/panda-pet/panda2.png') },
+  { id: 'r3', name: 'Starlight', emoji: '⭐', rarity: 'rare' as PandaRarity, image: require('../../public/assets/panda-pet/panda4.png') },
+  { id: 'r4', name: 'Cinnamon', emoji: '🟤', rarity: 'common' as PandaRarity, image: require('../../public/assets/panda-pet/panda3.png') },
+  { id: 'r5', name: 'Sapphire', emoji: '💙', rarity: 'epic' as PandaRarity, image: require('../../public/assets/panda-pet/panda6.png') },
+  { id: 'r6', name: 'Ruby', emoji: '❤️', rarity: 'rare' as PandaRarity, image: require('../../public/assets/panda-pet/panda5.png') },
+  { id: 'r7', name: 'Thunder', emoji: '⚡', rarity: 'epic' as PandaRarity, image: require('../../public/assets/panda-pet/panda7.png') },
+  { id: 'r8', name: 'Galaxy', emoji: '🌌', rarity: 'legendary' as PandaRarity, image: require('../../public/assets/panda-pet/panda8.png') },
+];
+
 export default function GachaScreen() {
   const { state, spinGacha, canUseFreeSpin } = useGame();
   const [isSpinning, setIsSpinning] = React.useState(false);
   const [showResult, setShowResult] = React.useState(false);
   const [lastResult, setLastResult] = React.useState<{ panda: any; isNew: boolean } | null>(null);
+  const [rouletteItems, setRouletteItems] = React.useState<any[]>([]);
   
   // Animation values
-  const spinAnimation = React.useRef(new Animated.Value(0)).current;
+  const scrollX = React.useRef(new Animated.Value(0)).current;
   const scaleAnimation = React.useRef(new Animated.Value(0)).current;
   const glowAnimation = React.useRef(new Animated.Value(0)).current;
 
@@ -29,15 +46,46 @@ export default function GachaScreen() {
   const spinCost = 100;
   const canAffordSpin = state.coins >= spinCost;
 
-  const startSpinAnimation = () => {
+  // Generate roulette items (repeat items multiple times for scrolling effect)
+  const generateRouletteItems = (winnerIndex: number) => {
+    const items: any[] = [];
+    const totalItems = 50; // Total items in roulette
+    
+    // Fill with random items
+    for (let i = 0; i < totalItems; i++) {
+      const randomItem = mockRouletteItems[Math.floor(Math.random() * mockRouletteItems.length)];
+      items.push({ ...randomItem, uniqueId: `item-${i}` });
+    }
+    
+    // Place winner at specific position (center of visible area)
+    const centerPosition = Math.floor(totalItems * 0.7); // 70% through the roulette
+    items[centerPosition] = { ...items[centerPosition], isWinner: true };
+    
+    return items;
+  };
+
+  const startCSGOAnimation = (winner: any) => {
+    const items = generateRouletteItems(0);
+    setRouletteItems(items);
+    
+    // Calculate final position to land on winner
+    const winnerIndex = items.findIndex((item: any) => item.isWinner);
+    const centerOffset = (SCREEN_WIDTH / 2) - (ITEM_WIDTH / 2);
+    const finalPosition = -(winnerIndex * (ITEM_WIDTH + ITEM_SPACING)) + centerOffset;
+    
+    // Reset scroll position
+    scrollX.setValue(centerOffset);
+    
+    // CS:GO style animation: fast scroll then decelerate
     Animated.sequence([
-      // Spin animation
-      Animated.timing(spinAnimation, {
-        toValue: 1,
-        duration: 2000,
+      // Fast scroll
+      Animated.timing(scrollX, {
+        toValue: finalPosition,
+        duration: 4000,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
-      // Scale reveal
+      // Result reveal
       Animated.parallel([
         Animated.spring(scaleAnimation, {
           toValue: 1,
@@ -49,12 +97,12 @@ export default function GachaScreen() {
           Animated.sequence([
             Animated.timing(glowAnimation, {
               toValue: 1,
-              duration: 1000,
+              duration: 800,
               useNativeDriver: true,
             }),
             Animated.timing(glowAnimation, {
               toValue: 0,
-              duration: 1000,
+              duration: 800,
               useNativeDriver: true,
             }),
           ])
@@ -76,39 +124,37 @@ export default function GachaScreen() {
 
     setIsSpinning(true);
     setShowResult(false);
-    spinAnimation.setValue(0);
+    scrollX.setValue(0);
     scaleAnimation.setValue(0);
 
-    // Start animation
-    startSpinAnimation();
-
-    // Simulate spin delay
-    setTimeout(() => {
-      const result = spinGacha(useFreeSpin);
+    // Get result first
+    const result = spinGacha(useFreeSpin);
+    
+    if (result) {
+      setLastResult(result);
       
-      if (result) {
-        setLastResult(result);
+      // Start CS:GO animation
+      startCSGOAnimation(result.panda);
+      
+      // Show result after animation
+      setTimeout(() => {
         setShowResult(true);
         setIsSpinning(false);
-      } else {
-        Alert.alert('Error', 'Failed to spin. Please try again.');
-        setIsSpinning(false);
-      }
-    }, 2000);
+      }, 4500); // Wait for scroll animation to finish
+    } else {
+      Alert.alert('Error', 'Failed to spin. Please try again.');
+      setIsSpinning(false);
+    }
   };
 
   const resetResult = () => {
     setShowResult(false);
     setLastResult(null);
+    setRouletteItems([]);
     scaleAnimation.setValue(0);
-    spinAnimation.setValue(0);
+    scrollX.setValue(0);
     glowAnimation.setValue(0);
   };
-
-  const spinRotation = spinAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '720deg'],
-  });
 
   const glowOpacity = glowAnimation.interpolate({
     inputRange: [0, 1],
@@ -225,20 +271,108 @@ export default function GachaScreen() {
         </View>
       )}
 
-      {/* Spinning Animation */}
-      {isSpinning && !showResult && (
-        <View className="p-6 items-center justify-center" style={{ minHeight: 300 }}>
-          <Animated.View
-            style={{
-              transform: [{ rotate: spinRotation }],
-            }}
-          >
-            <View className="w-32 h-32 bg-primary/20 rounded-full items-center justify-center">
-              <Text className="text-6xl">🎰</Text>
-            </View>
-          </Animated.View>
-          <Text variant="h3" className="mt-6 text-primary">Spinning...</Text>
-          <Text variant="muted" className="mt-2">Get ready for your panda!</Text>
+      {/* CS:GO Style Roulette */}
+      {isSpinning && !showResult && rouletteItems.length > 0 && (
+        <View className="my-6" style={{ height: 200 }}>
+          <View className="relative">
+            {/* Center Indicator Line */}
+            <View 
+              className="absolute top-0 bottom-0 w-1 bg-red-500 z-20"
+              style={{ 
+                left: (SCREEN_WIDTH / 2) - 2,
+                shadowColor: '#EF4444',
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.8,
+                shadowRadius: 10,
+              }}
+            />
+            
+            {/* Top Triangle Indicator */}
+            <View 
+              className="absolute top-0 z-30"
+              style={{
+                left: (SCREEN_WIDTH / 2) - 10,
+                width: 0,
+                height: 0,
+                backgroundColor: 'transparent',
+                borderStyle: 'solid',
+                borderLeftWidth: 10,
+                borderRightWidth: 10,
+                borderTopWidth: 15,
+                borderLeftColor: 'transparent',
+                borderRightColor: 'transparent',
+                borderTopColor: '#EF4444',
+              }}
+            />
+
+            {/* Bottom Triangle Indicator */}
+            <View 
+              className="absolute bottom-0 z-30"
+              style={{
+                left: (SCREEN_WIDTH / 2) - 10,
+                width: 0,
+                height: 0,
+                backgroundColor: 'transparent',
+                borderStyle: 'solid',
+                borderLeftWidth: 10,
+                borderRightWidth: 10,
+                borderBottomWidth: 15,
+                borderLeftColor: 'transparent',
+                borderRightColor: 'transparent',
+                borderBottomColor: '#EF4444',
+              }}
+            />
+
+            {/* Scrolling Items */}
+            <Animated.View
+              className="flex-row items-center py-4"
+              style={{
+                transform: [{ translateX: scrollX }],
+              }}
+            >
+              {rouletteItems.map((item, index) => (
+                <View
+                  key={item.uniqueId}
+                  className="items-center justify-center mx-1 rounded-2xl overflow-hidden"
+                  style={{
+                    width: ITEM_WIDTH,
+                    height: 150,
+                    backgroundColor: rarityInfo[item.rarity].bgColor,
+                    borderWidth: 3,
+                    borderColor: rarityInfo[item.rarity].color,
+                  }}
+                >
+                  {/* Rarity Badge */}
+                  <View 
+                    className="absolute top-1 left-1 right-1 py-1 rounded-full z-10"
+                    style={{ backgroundColor: rarityInfo[item.rarity].color }}
+                  >
+                    <Text className="text-white text-xs font-bold text-center">
+                      {rarityInfo[item.rarity].label.toUpperCase()}
+                    </Text>
+                  </View>
+
+                  {/* Panda Image */}
+                  <View className="flex-1 items-center justify-center">
+                    <Image
+                      source={item.image}
+                      style={{ width: 80, height: 80 }}
+                      resizeMode="cover"
+                    />
+                  </View>
+
+                  {/* Emoji */}
+                  <Text className="text-2xl mb-1">{item.emoji}</Text>
+                </View>
+              ))}
+            </Animated.View>
+          </View>
+
+          {/* Status Text */}
+          <View className="items-center mt-4">
+            <Text variant="h3" className="text-primary font-bold">🎰 SPINNING...</Text>
+            <Text variant="muted" className="mt-1">Rolling for your panda!</Text>
+          </View>
         </View>
       )}
 
