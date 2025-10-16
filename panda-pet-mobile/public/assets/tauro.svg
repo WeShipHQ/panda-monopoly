@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="tauroGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#34d399;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Body -->
+  <ellipse cx="100" cy="125" rx="50" ry="55" fill="url(#tauroGrad)"/>
+  <!-- Head -->
+  <circle cx="100" cy="70" r="38" fill="url(#tauroGrad)"/>
+  <!-- Horns -->
+  <path d="M 75 50 Q 70 35 75 25" stroke="#6ee7b7" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M 125 50 Q 130 35 125 25" stroke="#6ee7b7" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <!-- Eyes -->
+  <circle cx="88" cy="68" r="6" fill="#1f2937"/>
+  <circle cx="112" cy="68" r="6" fill="#1f2937"/>
+  <!-- Nose -->
+  <ellipse cx="100" cy="82" rx="12" ry="8" fill="#6ee7b7"/>
+  <!-- Smile -->
+  <path d="M 82 90 Q 100 98 118 90" stroke="#1f2937" stroke-width="2" fill="none"/>
+</svg>
