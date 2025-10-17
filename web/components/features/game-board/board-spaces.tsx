@@ -42,7 +42,7 @@ export const PropertySpace: React.FC<PropertySpaceProps> = ({
       showColorBar={true}
       {...props}
     >
-      <div className="flex flex-col items-center justify-center size-full text-center relative">
+      <div className="flex flex-col gap-2 items-center justify-center size-full text-center relative">
         <div
           className={cn("relative aspect-square", {
             "w-3/4": side === "top" || side === "bottom",

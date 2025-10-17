@@ -10,6 +10,7 @@ import {
 } from "@/lib/board-utils";
 import { useSpaceOwner } from "@/hooks/useSpaceOwner";
 import { BaseSpaceProps } from "@/types/space-types";
+import { UserAvatar } from "@/components/user-avatar";
 
 interface BaseSpaceComponentProps extends BaseSpaceProps {
   children: React.ReactNode;
@@ -41,7 +42,7 @@ export const BaseSpace: React.FC<BaseSpaceComponentProps> = ({
     // @ts-expect-error
     <div
       className={cn(
-        "bg-board-space relative cursor-pointer",
+        "bg-board-space relative cursor-pointer board-space-container",
         borderClasses,
         className
       )}
@@ -50,7 +51,18 @@ export const BaseSpace: React.FC<BaseSpaceComponentProps> = ({
       {/* Color bar for properties */}
       {showColorBar && colorBarColor && (
         <div
-          style={{ backgroundColor: colorBarColor }}
+          style={{
+            backgroundColor: colorBarColor,
+            // scale thickness with the tile; horizontal vs vertical based on side
+            height:
+              side === "top" || side === "bottom"
+                ? "var(--bar-thickness-inline)"
+                : undefined,
+            width:
+              side === "left" || side === "right"
+                ? "var(--bar-thickness-inline)"
+                : undefined,
+          }}
           className={colorBarClasses}
         />
       )}
@@ -62,9 +74,8 @@ export const BaseSpace: React.FC<BaseSpaceComponentProps> = ({
             "flex items-center justify-center",
             ownerIndicatorClasses
           )}
-          // style={{ backgroundColor: ownerMeta.color || "red" }}
         >
-          <Avatar className="size-6">
+          {/* <Avatar className="owner-avatar">
             <AvatarImage
               walletAddress={ownerAddress}
               alt={`Player ${ownerAddress}`}
@@ -75,7 +86,15 @@ export const BaseSpace: React.FC<BaseSpaceComponentProps> = ({
             >
               {ownerAddress}
             </AvatarFallback>
-          </Avatar>
+          </Avatar> */}
+          <UserAvatar
+            classNames={{
+              avatar: "owner-avatar",
+              // avatar: "w-[clamp(16px,4cqi,24px)] h-[clamp(16px,4cqi,24px)]",
+              // image: "owner-avatar",
+            }}
+            walletAddress={ownerAddress}
+          />
         </div>
       )}
 

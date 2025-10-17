@@ -40,6 +40,7 @@ import { GameLogs } from "./game-logs";
 import { useRouter } from "next/navigation";
 import { GameStatus } from "@/lib/sdk/generated";
 import { ClaimRewardButton } from "./claim-reward-button";
+import { useLogin } from "@privy-io/react-auth";
 
 interface MonopolyBoardProps {}
 
@@ -47,7 +48,10 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [boardRotation, setBoardRotation] = useState<number>(0);
 
-  const { wallet } = useWallet();
+  const { ready, authenticated, wallet } = useWallet();
+  const { login } = useLogin();
+  const disableLogin = !ready || (ready && authenticated);
+
   const router = useRouter();
 
   const {
@@ -73,9 +77,6 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
     cancelGame,
     leaveGame,
   } = useGameContext();
-
-  // console.log("currentPlayerState", currentPlayerState);
-  // console.log("properties", properties);
 
   const handleStartGame = async (_gameAddress: string) => {
     try {
@@ -302,39 +303,43 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
 
             {/* Center - Responsive */}
             <div
-              className="col-start-3 col-end-13 row-start-3 row-end-13 bg-[#c7e9b5] flex flex-col items-center justify-center 
-                           p-1 sm:p-3 md:p-4 gap-1 sm:gap-3 md:gap-4"
+              className="col-start-3 col-end-13 row-start-3 row-end-13 flex flex-col items-center justify-center 
+                           p-1 sm:p-3 md:p-4 gap-1 sm:gap-3 md:gap-4 bg-chart-3/50"
               style={{
                 transform: `rotate(${-boardRotation}deg)`,
               }}
             >
-              <div className="flex-1 flex flex-col justify-end items-center">
+              <div className="w-full h-full flex flex-col justify-end items-center">
                 {gameState.gameStatus === GameStatus.Finished ? (
                   <GameEndedStatus />
                 ) : (
                   <>
-                    {wallet && wallet?.delegated ? (
-                      <DiceProvider>
-                        <PlayerActions
-                          handleStartGame={handleStartGame}
-                          handleJoinGame={handleJoinGame}
-                          handleEndTurn={handleEndTurn}
-                          handleBuyProperty={handleBuyProperty}
-                          handleSkipProperty={handleSkipProperty}
-                          handlePayMevTax={handlePayMevTax}
-                          handlePayPriorityFeeTax={handlePayPriorityFeeTax}
-                          handlePayJailFine={handlePayJailFine}
-                          handleGetOutOfJailCard={handleGetOutOfJailCard}
-                          handleEndGame={handleEndGame}
-                          handleCancelGame={handleCancelGame}
-                          handleLeaveGame={handleLeaveGame}
-                          isLoading={isLoading}
-                          wallet={wallet}
-                        />
-                      </DiceProvider>
-                    ) : (
-                      <Button>Connect Wallet</Button>
-                    )}
+                    <div className="flex-1 w-full flex flex-col items-center justify-end">
+                      {wallet && wallet?.delegated ? (
+                        <DiceProvider>
+                          <PlayerActions
+                            handleStartGame={handleStartGame}
+                            handleJoinGame={handleJoinGame}
+                            handleEndTurn={handleEndTurn}
+                            handleBuyProperty={handleBuyProperty}
+                            handleSkipProperty={handleSkipProperty}
+                            handlePayMevTax={handlePayMevTax}
+                            handlePayPriorityFeeTax={handlePayPriorityFeeTax}
+                            handlePayJailFine={handlePayJailFine}
+                            handleGetOutOfJailCard={handleGetOutOfJailCard}
+                            handleEndGame={handleEndGame}
+                            handleCancelGame={handleCancelGame}
+                            handleLeaveGame={handleLeaveGame}
+                            isLoading={isLoading}
+                            wallet={wallet}
+                          />
+                        </DiceProvider>
+                      ) : (
+                        <Button disabled={disableLogin} onClick={login}>
+                          Connect Wallet
+                        </Button>
+                      )}
+                    </div>
                     {/* game-logs */}
                     <div className="flex-1 w-full">
                       <GameLogs />
