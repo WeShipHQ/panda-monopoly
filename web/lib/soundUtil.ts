@@ -52,6 +52,7 @@ const soundMap = {
   "money-pay": "/sounds/money-pay.mp3",
   "rent-pay": "/sounds/money-pay.mp3",
   "house-build": "/sounds/up-house.wav",
+  // "house-build": "/sounds/property-buy.mp3",
   "hotel-build": "/sounds/property-buy.mp3",
 
   // Special events
@@ -63,7 +64,7 @@ const soundMap = {
   "anime-wow": "/sounds/anime-wow.mp3",
   bruh: "/sounds/bruh.mp3",
   "vine-boom": "/sounds/vine-boom.mp3",
-  
+
   // Background music
   "background-music": "/sounds/background-music.mp3",
 };
@@ -110,7 +111,9 @@ export function setMusicMuted(muted: boolean) {
     if (muted) {
       backgroundMusic.pause();
     } else {
-      backgroundMusic.play().catch(err => console.warn("Could not play background music:", err));
+      backgroundMusic
+        .play()
+        .catch((err) => console.warn("Could not play background music:", err));
     }
   }
 }
@@ -186,7 +189,7 @@ export function playBackgroundMusic() {
     backgroundMusic = new Audio(url);
     backgroundMusic.loop = true;
     backgroundMusic.volume = musicVolume;
-    
+
     if (!isMusicMuted) {
       backgroundMusic.play().catch((err) => {
         console.warn("Could not play background music:", err.message);
