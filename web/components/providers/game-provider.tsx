@@ -709,14 +709,15 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         true
       );
 
-      console.log("[payJailFine] tx", signature);
-    } catch (error) {
-      console.error("Error paying jail fine:", error);
-      throw error;
-    }
-  }, [gameAddress, wallet]);
-
-  const useGetOutOfJailCard = useCallback(async (): Promise<void> => {
+        console.log("[payJailFine] tx", signature);
+        
+        // Play money pay sound for jail fine
+        playSound("money-pay", SOUND_CONFIG.volumes.moneyPay);
+      } catch (error) {
+        console.error("Error paying jail fine:", error);
+        throw error;
+      }
+    }, [gameAddress, wallet]);  const useGetOutOfJailCard = useCallback(async (): Promise<void> => {
     if (!gameAddress || !wallet?.address || !wallet.delegated) {
       throw new Error("Game address or player signer not available");
     }
@@ -766,6 +767,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         );
 
         console.log("[buildHouse] tx", signature);
+        
+        // Play house build sound
+        playSound("house-build", SOUND_CONFIG.volumes.propertyBuy);
       } catch (error) {
         console.error("Error building house:", error);
         throw error;
@@ -797,6 +801,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         );
 
         console.log("[buildHotel] tx", signature);
+        
+        // Play hotel build sound
+        playSound("hotel-build", SOUND_CONFIG.volumes.propertyBuy);
       } catch (error) {
         console.error("Error building hotel:", error);
         throw error;
@@ -830,6 +837,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         );
 
         console.log("[sellBuilding] tx", signature);
+        
+        // Play money receive sound when selling building
+        playSound("money-receive", SOUND_CONFIG.volumes.moneyReceive);
       } catch (error) {
         console.error(`Error selling ${buildingType}:`, error);
         throw error;
@@ -859,6 +869,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[payMevTax] tx", signature);
+      
+      // Play money pay sound for MEV tax
+      playSound("money-pay", SOUND_CONFIG.volumes.moneyPay);
     } catch (error) {
       console.error("Error paying MEV tax:", error);
       throw error;
@@ -887,6 +900,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[payPriorityFeeTax] tx", signature);
+      
+      // Play money pay sound for priority fee tax
+      playSound("money-pay", SOUND_CONFIG.volumes.moneyPay);
     } catch (error) {
       console.error("Error paying Priority Fee tax:", error);
       throw error;
@@ -980,6 +996,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         // Refresh game state to get updated trades
 
+        // Play money receive sound for successful trade
+        playSound("money-receive", SOUND_CONFIG.volumes.moneyReceive);
+        
         toast.success("Trade accepted successfully!");
       } catch (error) {
         console.error("Error accepting trade:", error);

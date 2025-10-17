@@ -59,22 +59,22 @@ function MoneySelection({
 }: MoneySelectionProps) {
   if (maxValue <= 0) {
     return (
-      <div className="space-y-3">
-        <Label className="text-sm text-muted-foreground">{label}</Label>
-        <p className="text-sm text-muted-foreground">
-          No money available (${maxValue})
+      <div className="space-y-3 p-4 border-2 border-red-500 bg-red-50 dark:bg-red-950">
+        <Label className="text-sm font-black text-red-700 dark:text-red-300 uppercase">{label}</Label>
+        <p className="text-sm font-bold text-red-600 dark:text-red-400">
+          ✗ NO CASH AVAILABLE (${maxValue})
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 p-4 border-3 border-black dark:border-white bg-white dark:bg-slate-900">
       <div className="flex items-center justify-between">
-        <Label htmlFor={id} className="text-sm">
+        <Label htmlFor={id} className="text-base font-black uppercase">
           {label}
         </Label>
-        <span className="text-lg font-semibold text-primary">${value}</span>
+        <span className="text-3xl font-black text-black dark:text-white">${value}</span>
       </div>
       <div className="px-2">
         <Slider
@@ -85,9 +85,10 @@ function MoneySelection({
           value={[value]}
           onValueChange={(val) => onChange(val[0])}
           disabled={disabled}
+          className="h-3 bg-black dark:bg-white"
         />
       </div>
-      <div className="flex justify-between text-xs text-muted-foreground">
+      <div className="flex justify-between text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">
         <span>$0</span>
         <span>${maxValue}</span>
       </div>
@@ -338,44 +339,44 @@ export function CreateTradeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Create Trade Offer</DialogTitle>
-          <DialogDescription>
-            Select a player and choose what you want to trade
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-950 border-4 border-black dark:border-white shadow-lg">
+        <DialogHeader className="pb-4 border-b-4 border-black dark:border-white">
+          <DialogTitle className="text-3xl font-black tracking-tighter">TRADE</DialogTitle>
+          <DialogDescription className="text-base font-semibold text-black dark:text-white">
+            Select opponent and negotiate your terms
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-8 py-6">
           {/* Player Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="player">Trade With</Label>
+          <div className="space-y-3">
+            <Label htmlFor="player" className="text-xl font-black uppercase tracking-wider">Who Trade With?</Label>
             <Select
               value={selectedPlayerAddress}
               onValueChange={handlePlayerSelection}
             >
-              <SelectTrigger id="player">
-                <SelectValue placeholder="Select a player" />
+              <SelectTrigger id="player" className="h-12 bg-white dark:bg-slate-900 border-3 border-black dark:border-white text-base font-bold">
+                <SelectValue placeholder="SELECT PLAYER" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="border-4 border-black dark:border-white bg-white dark:bg-slate-900">
                 {availablePlayers.map((player) => (
-                  <SelectItem key={player.address} value={player.wallet}>
+                  <SelectItem key={player.address} value={player.wallet} className="text-base font-bold">
                     <div className="flex items-center gap-2">
-                      <Avatar className="size-6 rounded-full overflow-hidden">
+                      <Avatar className="size-6 rounded-full overflow-hidden border-2 border-black dark:border-white">
                         <AvatarImage
                           walletAddress={player.wallet}
                           alt={`Player ${player.address}`}
                         />
                         <AvatarFallback
                           walletAddress={player.wallet}
-                          className="text-white font-semibold"
+                          className="text-white font-black bg-black dark:bg-white dark:text-black text-sm"
                         >
                           {wallet?.address === player.wallet
-                            ? "You"
-                            : formatAddress(player.address)}
+                            ? "YOU"
+                            : formatAddress(player.address).substring(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <span>{formatAddress(player.address)}</span>
+                      <span className="font-bold">{formatAddress(player.address)}</span>
                     </div>
                   </SelectItem>
                 ))}
@@ -384,33 +385,32 @@ export function CreateTradeDialog({
           </div>
 
           {/* Trade Type Selection */}
-          {/* {selectedPlayerAddress && availableTradeTypes.length > 0 && ( */}
-          <div className="space-y-3">
-            <Label>Trade Type</Label>
+          <div className="space-y-4">
+            <Label className="text-xl font-black uppercase tracking-wider">Trade Type</Label>
             <RadioGroup
               value={tradeType}
               onValueChange={(value) => setTradeType(value as TradeType)}
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
                   {
                     value: "money-money",
-                    title: "Money for Money",
-                    desc: "Exchange cash amounts",
+                    title: "CASH ↔ CASH",
+                    desc: "Exchange money",
                   },
                   {
                     value: "money-property",
-                    title: "Money for Property",
-                    desc: "Offer cash for a property",
+                    title: "CASH ↔ PROPERTY",
+                    desc: "Cash for property",
                   },
                   {
                     value: "property-money",
-                    title: "Property for Money",
-                    desc: "Offer property for cash",
+                    title: "PROPERTY ↔ CASH",
+                    desc: "Property for cash",
                   },
                   {
                     value: "property-property",
-                    title: "Property for Property",
+                    title: "PROPERTY ↔ PROPERTY",
                     desc: "Exchange properties",
                   },
                 ].map((option) => {
@@ -424,27 +424,34 @@ export function CreateTradeDialog({
                   return (
                     <Card
                       key={option.value}
-                      className={`p-4 cursor-pointer transition-colors ${
-                        isDisabled
-                          ? "opacity-50 cursor-not-allowed bg-muted"
-                          : "hover:border-primary"
-                      }`}
+                      className={`border-3 transition-all cursor-pointer ${isDisabled
+                          ? "opacity-40 cursor-not-allowed bg-slate-200 dark:bg-slate-800 border-slate-400 dark:border-slate-600"
+                          : tradeType === option.value
+                            ? "bg-black dark:bg-white border-black dark:border-white shadow-lg scale-105"
+                            : "border-black dark:border-white bg-white dark:bg-slate-900 hover:shadow-lg hover:scale-105"
+                        }`}
                     >
                       <label
-                        className={`flex items-center gap-3 ${
-                          isDisabled ? "cursor-not-allowed" : "cursor-pointer"
-                        }`}
+                        className={`flex items-center gap-3 p-4 ${isDisabled ? "cursor-not-allowed" : "cursor-pointer"
+                          }`}
                       >
                         <RadioGroupItem
                           value={option.value}
                           id={option.value}
                           disabled={isDisabled}
+                          className="w-6 h-6 border-2"
                         />
                         <div className="flex-1">
-                          <div className="font-medium text-sm">
+                          <div className={`font-black text-base uppercase tracking-wide ${tradeType === option.value && !isDisabled
+                              ? "text-white dark:text-black"
+                              : "text-black dark:text-white"
+                            }`}>
                             {option.title}
                           </div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className={`text-xs font-bold ${tradeType === option.value && !isDisabled
+                              ? "text-gray-200 dark:text-gray-800"
+                              : "text-slate-600 dark:text-slate-400"
+                            }`}>
                             {isDisabled ? disabledReason : option.desc}
                           </div>
                         </div>
@@ -455,78 +462,78 @@ export function CreateTradeDialog({
               </div>
             </RadioGroup>
           </div>
-          {/* )} */}
 
           {/* Trade Details */}
           {selectedPlayerAddress && availableTradeTypes.includes(tradeType) && (
-            <Card>
-              <CardContent className="flex gap-4">
+            <div className="border-4 border-black dark:border-white bg-slate-50 dark:bg-slate-900 p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-6 items-start">
                 {/* Your Offer */}
-                <div className="flex-1 space-y-3">
-                  <Label className="text-base font-semibold">You Offer</Label>
+                <div className="space-y-4 border-r-4 border-black dark:border-white pr-6">
+                  <Label className="text-2xl font-black uppercase tracking-wider">YOU OFFER</Label>
                   {(tradeType === "money-money" ||
                     tradeType === "money-property") && (
-                    <MoneySelection
-                      label="Amount"
-                      value={offerMoney}
-                      maxValue={currentPlayerMoney}
-                      onChange={setOfferMoney}
-                      id="offer-money"
-                    />
-                  )}
+                      <MoneySelection
+                        label="Amount"
+                        value={offerMoney}
+                        maxValue={currentPlayerMoney}
+                        onChange={setOfferMoney}
+                        id="offer-money"
+                      />
+                    )}
                   {(tradeType === "property-money" ||
                     tradeType === "property-property") && (
-                    <PropertySelection
-                      label="Property"
-                      value={offerProperty}
-                      properties={currentPlayerProperties}
-                      onChange={setOfferProperty}
-                      id="offer-property"
-                    />
-                  )}
-                </div>
-
-                {/* Arrow */}
-                <div className="flex items-center justify-center pt-6">
-                  <ArrowRight className="h-6 w-6 text-muted-foreground" />
+                      <PropertySelection
+                        label="Property"
+                        value={offerProperty}
+                        properties={currentPlayerProperties}
+                        onChange={setOfferProperty}
+                        id="offer-property"
+                      />
+                    )}
                 </div>
 
                 {/* You Request */}
-                <div className="flex-1 space-y-3">
-                  <Label className="text-base font-semibold">You Request</Label>
+                <div className="space-y-4">
+                  <Label className="text-2xl font-black uppercase tracking-wider">THEY GIVE</Label>
                   {(tradeType === "money-money" ||
                     tradeType === "property-money") && (
-                    <MoneySelection
-                      label="Amount"
-                      value={requestMoney}
-                      maxValue={selectedPlayerMoney}
-                      onChange={setRequestMoney}
-                      id="request-money"
-                    />
-                  )}
+                      <MoneySelection
+                        label="Amount"
+                        value={requestMoney}
+                        maxValue={selectedPlayerMoney}
+                        onChange={setRequestMoney}
+                        id="request-money"
+                      />
+                    )}
                   {(tradeType === "money-property" ||
                     tradeType === "property-property") && (
-                    <PropertySelection
-                      label="Property"
-                      value={requestProperty}
-                      properties={selectedPlayerProperties}
-                      onChange={setRequestProperty}
-                      id="request-property"
-                    />
-                  )}
+                      <PropertySelection
+                        label="Property"
+                        value={requestProperty}
+                        properties={selectedPlayerProperties}
+                        onChange={setRequestProperty}
+                        id="request-property"
+                      />
+                    )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-2">
-            <Button onClick={() => onOpenChange(false)}>Cancel</Button>
+          <div className="flex justify-end gap-4 pt-6 border-t-4 border-black dark:border-white">
+            <Button
+              onClick={() => onOpenChange(false)}
+              className="h-12 px-6 border-3 border-black dark:border-white bg-white dark:bg-slate-900 text-black dark:text-white font-black uppercase text-sm tracking-wider hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              Cancel
+            </Button>
             <Button
               onClick={handleCreateTrade}
               loading={isRequesting}
               disabled={!isFormValid()}
+              className="h-12 px-8 border-3 border-black dark:border-white bg-black dark:bg-white text-white dark:text-black font-black uppercase text-sm tracking-wider hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Send Trade Offer
+              SEND OFFER
             </Button>
           </div>
         </div>

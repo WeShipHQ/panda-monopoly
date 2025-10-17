@@ -9,6 +9,7 @@ import { address } from "@solana/kit";
 import { LeftPanel } from "./left-panel";
 import { RightPanel } from "./right-panel";
 import { Spinner } from "@/components/ui/spinner";
+import { SoundControl } from "@/components/sound-control";
 
 export function GameView() {
   const { address: gameAddress } = useParams<{ address: string }>();
@@ -40,7 +41,12 @@ export function GameView() {
   }
 
   return (
-    <div className="max-h-screen xl:h-screen game-container w-full h-full">
+    <div className="max-h-screen xl:h-screen game-container w-full h-full relative">
+      {/* Sound Control - Fixed position in bottom left */}
+      <div className="fixed bottom-6 left-6 z-50">
+        <SoundControl />
+      </div>
+      
       <div
         style={{
           gridArea: "left",

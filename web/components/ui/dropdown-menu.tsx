@@ -6,6 +6,7 @@ import { Check, ChevronRight, Circle } from "lucide-react"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { playSound, SOUND_CONFIG } from "@/lib/soundUtil"
 
 function DropdownMenu({
   ...props
@@ -110,10 +111,20 @@ function DropdownMenuContent({
 function DropdownMenuItem({
   className,
   inset,
+  onSelect,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Item> & {
   inset?: boolean
 }) {
+  const handleSelect = (e: Event) => {
+    playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+    onSelect?.(e);
+  };
+
+  const handleMouseEnter = () => {
+    playSound("button-hover", SOUND_CONFIG.volumes.buttonHover);
+  };
+
   return (
     <DropdownMenuPrimitive.Item
       data-slot="dropdown-menu-item"
@@ -122,6 +133,8 @@ function DropdownMenuItem({
         "relative gap-2 [&_svg]:pointer-events-none [&_svg]:w-4 [&_svg]:h-4 [&_svg]:shrink-0 flex cursor-default select-none items-center rounded-base border-2 border-transparent data-[inset=true]:pl-8 bg-main px-2 py-1.5 text-sm font-base outline-hidden transition-colors focus:border-border data-disabled:pointer-events-none data-disabled:opacity-50",
         className,
       )}
+      onSelect={handleSelect}
+      onMouseEnter={handleMouseEnter}
       {...props}
     />
   )

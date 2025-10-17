@@ -16,6 +16,7 @@ import { getTypedSpaceData } from "@/lib/board-utils";
 import { colorMap, ColorGroup } from "@/configs/board-data";
 import type { TradeInfo } from "@/types/schema";
 import { useWallet } from "@/hooks/use-wallet";
+import { playSound, SOUND_CONFIG } from "@/lib/soundUtil";
 
 const getTradeStatusText = (status: TradeStatus): string => {
   switch (status) {

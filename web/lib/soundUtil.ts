@@ -25,8 +25,8 @@ export const SOUND_CONFIG = {
     diceLand: 0.4,
     buttonClick: 0.5,
     buttonHover: 0.2,
-    propertyBuy: 0.8,
-    moneyReceive: 0.5,
+    propertyBuy: 1.0,
+    moneyReceive: 1.0,
     moneyPay: 0.6,
     jail: 0.7,
     win: 1.0,
@@ -50,6 +50,9 @@ const soundMap = {
   "property-buy": "/sounds/property-buy.mp3",
   "money-receive": "/sounds/money-receive.mp3",
   "money-pay": "/sounds/money-pay.mp3",
+  "rent-pay": "/sounds/money-pay.mp3",
+  "house-build": "/sounds/up-house.wav",
+  "hotel-build": "/sounds/property-buy.mp3",
 
   // Special events
   jail: "/sounds/jail.mp3",
@@ -60,16 +63,69 @@ const soundMap = {
   "anime-wow": "/sounds/anime-wow.mp3",
   bruh: "/sounds/bruh.mp3",
   "vine-boom": "/sounds/vine-boom.mp3",
+  
+  // Background music
+  "background-music": "/sounds/background-music.mp3",
 };
 
-let globalVolume = 0.7;
+// Separate volume controls for effects and music
+let effectsVolume = 0.7;
+let musicVolume = 0.3;
+let isMusicMuted = false;
+let isEffectsMuted = false;
 
+// Background music instance
+let backgroundMusic: HTMLAudioElement | null = null;
+
+export function setEffectsVolume(volume: number) {
+  effectsVolume = Math.max(0, Math.min(1, volume));
+}
+
+export function getEffectsVolume(): number {
+  return effectsVolume;
+}
+
+export function setMusicVolume(volume: number) {
+  musicVolume = Math.max(0, Math.min(1, volume));
+  if (backgroundMusic) {
+    backgroundMusic.volume = musicVolume;
+  }
+}
+
+export function getMusicVolume(): number {
+  return musicVolume;
+}
+
+export function setEffectsMuted(muted: boolean) {
+  isEffectsMuted = muted;
+}
+
+export function getEffectsMuted(): boolean {
+  return isEffectsMuted;
+}
+
+export function setMusicMuted(muted: boolean) {
+  isMusicMuted = muted;
+  if (backgroundMusic) {
+    if (muted) {
+      backgroundMusic.pause();
+    } else {
+      backgroundMusic.play().catch(err => console.warn("Could not play background music:", err));
+    }
+  }
+}
+
+export function getMusicMuted(): boolean {
+  return isMusicMuted;
+}
+
+// Legacy support
 export function setGlobalVolume(volume: number) {
-  globalVolume = Math.max(0, Math.min(1, volume));
+  setEffectsVolume(volume);
 }
 
 export function getGlobalVolume(): number {
-  return globalVolume;
+  return getEffectsVolume();
 }
 
 export function playSound(
@@ -77,6 +133,11 @@ export function playSound(
   volume: number = 1,
   duration?: number
 ) {
+  // Skip if effects are muted
+  if (isEffectsMuted) {
+    return null;
+  }
+
   const url = soundMap[name];
   if (!url) {
     console.warn(`❌ Sound "${name}" not found!`);
@@ -85,7 +146,7 @@ export function playSound(
 
   try {
     const audio = new Audio(url);
-    audio.volume = Math.max(0, Math.min(1, volume * globalVolume));
+    audio.volume = Math.max(0, Math.min(1, volume * effectsVolume));
 
     // Add some randomization to prevent repetitive sounds
     audio.playbackRate = 0.9 + Math.random() * 0.2; // 0.9x to 1.1x speed
@@ -106,6 +167,55 @@ export function playSound(
   } catch (error) {
     console.warn(`🔇 Sound playback error for "${name}":`, error);
     return null;
+  }
+}
+
+// Background music controls
+export function playBackgroundMusic() {
+  if (backgroundMusic) {
+    return; // Already playing
+  }
+
+  const url = soundMap["background-music"];
+  if (!url) {
+    console.warn("Background music file not found");
+    return;
+  }
+
+  try {
+    backgroundMusic = new Audio(url);
+    backgroundMusic.loop = true;
+    backgroundMusic.volume = musicVolume;
+    
+    if (!isMusicMuted) {
+      backgroundMusic.play().catch((err) => {
+        console.warn("Could not play background music:", err.message);
+      });
+    }
+  } catch (error) {
+    console.warn("Background music error:", error);
+  }
+}
+
+export function stopBackgroundMusic() {
+  if (backgroundMusic) {
+    backgroundMusic.pause();
+    backgroundMusic.currentTime = 0;
+    backgroundMusic = null;
+  }
+}
+
+export function pauseBackgroundMusic() {
+  if (backgroundMusic) {
+    backgroundMusic.pause();
+  }
+}
+
+export function resumeBackgroundMusic() {
+  if (backgroundMusic && !isMusicMuted) {
+    backgroundMusic.play().catch((err) => {
+      console.warn("Could not resume background music:", err.message);
+    });
   }
 }
 
@@ -217,5 +327,17 @@ export default {
   playGameStateSound,
   setGlobalVolume,
   getGlobalVolume,
+  setEffectsVolume,
+  getEffectsVolume,
+  setMusicVolume,
+  getMusicVolume,
+  setEffectsMuted,
+  getEffectsMuted,
+  setMusicMuted,
+  getMusicMuted,
+  playBackgroundMusic,
+  stopBackgroundMusic,
+  pauseBackgroundMusic,
+  resumeBackgroundMusic,
   SOUND_CONFIG,
 };
