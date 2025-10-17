@@ -1,6 +1,4 @@
-/* Board space: tile-level responsive scaling via container queries */
 .board-space-container {
-  /* Declare a container so queries key off the tile itself */
   container-type: inline-size;
   container-name: space;
 
@@ -14,10 +12,10 @@
   --space-gap: clamp(2px, 1.2cqi, 8px);
 
   /* Thickness for color bar, uses container block/height */
-  --bar-thickness-inline: clamp(2px, 2cqh, 16px);
+  --bar-thickness-inline: clamp(2px, 1cqh, 16px);
 
   /* Owner indicator sizes */
-  --avatar-size: clamp(24px, 6cqi, 32px);
+  --avatar-size: 30cqw;
   --badge-size: clamp(24px, 6cqi, 32px);
 }
 
@@ -68,8 +66,8 @@
     display: none;
   }
   .owner-avatar {
-    width: var(--badge-size);
-    height: var(--badge-size);
+    width: 30cqw;
+    height: 30cqw;
   }
 }
 

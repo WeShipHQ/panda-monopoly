@@ -49,7 +49,6 @@ export const BaseSpace: React.FC<BaseSpaceComponentProps> = ({
       )}
       {...rest}
     >
-      {/* Color bar for properties */}
       {hasColorBar && (
         <div
           style={{

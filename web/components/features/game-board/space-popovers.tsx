@@ -264,7 +264,7 @@ export const PropertyPopover: React.FC<PropertyPopoverProps> = ({
           event.target.focus();
         }}
       >
-        <Card className="w-64 bg-white border-2 gap-0 border-black py-0 rounded-none overflow-hidden">
+        <Card className="w-60 lg:w-64 bg-white border-2 gap-0 border-black py-0 rounded-none overflow-hidden">
           <CardHeader
             className={cn("gap-0 border-b-2 border-black py-3")}
             style={{ backgroundColor: color }}

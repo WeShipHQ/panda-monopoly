@@ -52,7 +52,9 @@ export const GameLogs: React.FC<GameLogsProps> = ({
     >
       <ScrollArea
         ref={scrollAreaRef}
-        className={cn("flex flex-col mx-auto w-full max-w-xs h-20")}
+        className={cn(
+          "flex flex-col mx-auto w-full max-w-xs h-32 md:h-48 lg:hh-64 2xl:h-80"
+        )}
       >
         <div className="p-2 text-center flex flex-col gap-1.5 space-y-1.5 w-full">
           <AnimatePresence initial={false}>

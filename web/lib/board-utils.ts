@@ -183,15 +183,15 @@ export const getBorderClasses = (position: number): string => {
 export const getColorBarClasses = (side: BoardSide): string => {
   switch (side) {
     case "bottom":
-      return "absolute top-0 left-0 w-full h-4 border-b-2 border-black";
+      return "absolute top-0 left-0 w-full hh-4 border-b-2 border-black";
     case "left":
-      return "absolute top-0 right-0 h-full w-4 border-l-2 border-black";
+      return "absolute top-0 right-0 h-full ww-4 border-l-2 border-black";
     case "top":
-      return "absolute bottom-0 left-0 w-full h-4 border-t-2 border-black";
+      return "absolute bottom-0 left-0 w-full hh-4 border-t-2 border-black";
     case "right":
-      return "absolute top-0 left-0 h-full w-4 border-r-2 border-black";
+      return "absolute top-0 left-0 h-full ww-4 border-r-2 border-black";
     default:
-      return "absolute top-0 left-0 w-full h-4 border-b-2 border-black";
+      return "absolute top-0 left-0 w-full hh-4 border-b-2 border-black";
   }
 };
 

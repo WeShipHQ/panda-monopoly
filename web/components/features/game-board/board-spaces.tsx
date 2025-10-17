@@ -49,7 +49,6 @@ export const PropertySpace: React.FC<PropertySpaceProps> = ({
             "w-3/4": side === "top" || side === "bottom",
             "h-3/4": side === "left" || side === "right",
             "!rotate-90": side === "left",
-            // "!rotate-45": side === "right",
           })}
         >
           <div className="size-full relative rounded-full overflow-hidden">
@@ -58,7 +57,10 @@ export const PropertySpace: React.FC<PropertySpaceProps> = ({
         </div>
         <Badge
           variant="neutral"
-          className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-semibold"
+          className="px-1 lg:px-2.5"
+          style={{
+            fontSize: "var(--space-font-xs)",
+          }}
         >
           {formatPrice(Number(price))}
         </Badge>
