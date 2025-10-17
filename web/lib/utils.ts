@@ -1,4 +1,3 @@
-import { PropertyInfo } from "@/types/schema";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -87,6 +86,69 @@ export function formatPrice(
     notation: "scientific",
     maximumFractionDigits: 2,
   }).format(price);
+}
+
+export function formatTimeAgo(input: Date | number | string): string {
+  let ms: number;
+
+  if (input instanceof Date) {
+    ms = input.getTime();
+  } else if (typeof input === "number") {
+    ms = input < 1e11 ? input * 1000 : input;
+  } else if (typeof input === "string") {
+    const numeric = Number(input);
+    if (!isNaN(numeric)) {
+      ms = numeric < 1e11 ? numeric * 1000 : numeric;
+    } else {
+      const parsed = new Date(input);
+      ms = isNaN(parsed.getTime()) ? Date.now() : parsed.getTime();
+    }
+  } else {
+    ms = Date.now();
+  }
+
+  const now = Date.now();
+  let diff = now - ms;
+  const isFuture = diff < 0;
+  diff = Math.abs(diff);
+
+  if (diff < 5000) return "just now";
+
+  const SECOND = 1000;
+  const MINUTE = 60 * SECOND;
+  const HOUR = 60 * MINUTE;
+  const DAY = 24 * HOUR;
+  const WEEK = 7 * DAY;
+  const MONTH = 30 * DAY;
+  const YEAR = 365 * DAY;
+
+  let value: number;
+  let unit: string;
+
+  if (diff < MINUTE) {
+    value = Math.floor(diff / SECOND);
+    unit = "s";
+  } else if (diff < HOUR) {
+    value = Math.floor(diff / MINUTE);
+    unit = "m";
+  } else if (diff < DAY) {
+    value = Math.floor(diff / HOUR);
+    unit = "h";
+  } else if (diff < WEEK) {
+    value = Math.floor(diff / DAY);
+    unit = "d";
+  } else if (diff < MONTH) {
+    value = Math.floor(diff / WEEK);
+    unit = "w";
+  } else if (diff < YEAR) {
+    value = Math.floor(diff / MONTH);
+    unit = "mo";
+  } else {
+    value = Math.floor(diff / YEAR);
+    unit = "y";
+  }
+
+  return isFuture ? `in ${value}${unit}` : `${value}${unit} ago`;
 }
 
 type PlayerInfo = {
@@ -208,11 +270,3 @@ export function generatePlayerIcon(address: string): PlayerInfo {
 
   return availableItem;
 }
-
-// properties utils
-// export const getPropertyByPosition = (
-//   position: number,
-//   properties: PropertyInfo[]
-// ): PropertyInfo | null => {
-//   return properties.find((prop) => prop. === position) || null;
-// };

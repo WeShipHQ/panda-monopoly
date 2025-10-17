@@ -1,6 +1,7 @@
+// Imports: add useState and remove SoundControl import
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import GameBoard from "./game-board";
 
 import { useGameContext } from "@/components/providers/game-provider";
@@ -10,11 +11,23 @@ import { LeftPanel } from "./left-panel";
 import { RightPanel } from "./right-panel";
 import { Spinner } from "@/components/ui/spinner";
 import { SoundControl } from "@/components/sound-control";
+import { SoundControl } from "@/components/sound-control";
 
 export function GameView() {
   const { address: gameAddress } = useParams<{ address: string }>();
   const { setGameAddress, gameState, gameLoading, gameError } =
     useGameContext();
+
+  // Board rotation state lifted here
+  const [boardRotation, setBoardRotation] = useState<number>(0);
+
+  const handleRotateClockwise = () => {
+    setBoardRotation((prev) => (prev + 90) % 360);
+  };
+
+  const handleRotateCounterClockwise = () => {
+    setBoardRotation((prev) => (prev - 90 + 360) % 360);
+  };
 
   useEffect(() => {
     if (gameAddress) {
@@ -53,7 +66,11 @@ export function GameView() {
         }}
         className="overflow-hidden h-full"
       >
-        <LeftPanel />
+        <LeftPanel
+          onRotateCW={handleRotateClockwise}
+          onRotateCCW={handleRotateCounterClockwise}
+          boardRotation={boardRotation}
+        />
       </div>
       <div
         style={{
@@ -61,7 +78,7 @@ export function GameView() {
         }}
         className="aspect-square w-screen lg:w-auto lg:h-[80vh] xl:h-screen"
       >
-        <GameBoard />
+        <GameBoard boardRotation={boardRotation} />
       </div>
       <div
         style={{

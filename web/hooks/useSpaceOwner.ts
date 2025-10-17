@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { generatePlayerIcon } from "@/lib/utils";
+// import { generatePlayerIcon } from "@/lib/utils";
 import { PropertyAccount } from "@/types/schema";
 
 export const useSpaceOwner = (onChainProperty?: PropertyAccount | null) => {
@@ -7,11 +7,11 @@ export const useSpaceOwner = (onChainProperty?: PropertyAccount | null) => {
     const ownerAddress =
       onChainProperty && onChainProperty.owner ? onChainProperty.owner : null;
 
-    const ownerMeta = ownerAddress ? generatePlayerIcon(ownerAddress) : null;
+    // const ownerMeta = ownerAddress ? generatePlayerIcon(ownerAddress) : null;
 
     return {
       ownerAddress,
-      ownerMeta,
+      // ownerMeta,
       isOwned: !!ownerAddress,
     };
   }, [onChainProperty]);
