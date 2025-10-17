@@ -10,6 +10,7 @@ import {
 } from "@/lib/board-utils";
 import { useSpaceOwner } from "@/hooks/useSpaceOwner";
 import { BaseSpaceProps } from "@/types/space-types";
+import { UserAvatar } from "@/components/user-avatar";
 
 interface BaseSpaceComponentProps extends BaseSpaceProps {
   children: React.ReactNode;
@@ -29,8 +30,9 @@ export const BaseSpace: React.FC<BaseSpaceComponentProps> = ({
   contentContainerclassName = "",
   ...rest
 }) => {
-  const { ownerMeta, ownerAddress } = useSpaceOwner(onChainProperty);
+  const { ownerAddress } = useSpaceOwner(onChainProperty);
   const side = getBoardSide(position);
+  const hasColorBar = showColorBar && !!colorBarColor;
 
   const borderClasses = getBorderClasses(position);
   const colorBarClasses = getColorBarClasses(side);
@@ -41,41 +43,44 @@ export const BaseSpace: React.FC<BaseSpaceComponentProps> = ({
     // @ts-expect-error
     <div
       className={cn(
-        "bg-board-space relative cursor-pointer",
+        "bg-board-space relative cursor-pointer board-space-container",
         borderClasses,
         className
       )}
       {...rest}
     >
-      {/* Color bar for properties */}
-      {showColorBar && colorBarColor && (
+      {hasColorBar && (
         <div
-          style={{ backgroundColor: colorBarColor }}
+          style={{
+            backgroundColor: colorBarColor,
+            // scale thickness with the tile; horizontal vs vertical based on side
+            height:
+              side === "top" || side === "bottom"
+                ? "var(--bar-thickness-inline)"
+                : undefined,
+            width:
+              side === "left" || side === "right"
+                ? "var(--bar-thickness-inline)"
+                : undefined,
+          }}
           className={colorBarClasses}
         />
       )}
 
       {/* Owner indicator */}
-      {ownerMeta && ownerAddress && (
+      {ownerAddress && (
         <div
           className={cn(
             "flex items-center justify-center",
             ownerIndicatorClasses
           )}
-          // style={{ backgroundColor: ownerMeta.color || "red" }}
         >
-          <Avatar className="size-6">
-            <AvatarImage
-              walletAddress={ownerAddress}
-              alt={`Player ${ownerAddress}`}
-            />
-            <AvatarFallback
-              walletAddress={ownerAddress}
-              className="text-white font-semibold"
-            >
-              {ownerAddress}
-            </AvatarFallback>
-          </Avatar>
+          <UserAvatar
+            classNames={{
+              avatar: "owner-avatar",
+            }}
+            walletAddress={ownerAddress}
+          />
         </div>
       )}
 

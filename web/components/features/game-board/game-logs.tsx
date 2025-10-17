@@ -9,6 +9,7 @@ import { GameLogEntry } from "@/types/space-types";
 import { useWallet } from "@/hooks/use-wallet";
 import { UserAvatar } from "@/components/user-avatar";
 import { useGameLogs } from "@/components/providers/game-logs-provider";
+import { getTypedSpaceData } from "@/lib/board-utils";
 
 interface GameLogsProps {
   showTimestamps?: boolean;
@@ -24,6 +25,9 @@ export const GameLogs: React.FC<GameLogsProps> = ({
   const { gameLogs } = useGameLogs();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { wallet } = useWallet();
+
+  useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (autoScroll && scrollAreaRef.current) {
@@ -41,10 +45,16 @@ export const GameLogs: React.FC<GameLogsProps> = ({
   }
 
   return (
-    <div className="relative h-full">
+    <div
+      id="game-logs-container"
+      ref={containerRef}
+      className="relative h-full"
+    >
       <ScrollArea
         ref={scrollAreaRef}
-        className={cn("flex flex-col mx-auto w-xs h-[240px]")}
+        className={cn(
+          "flex flex-col mx-auto w-full max-w-xs h-32 md:h-48 lg:hh-64 2xl:h-80"
+        )}
       >
         <div className="p-2 text-center flex flex-col gap-1.5 space-y-1.5 w-full">
           <AnimatePresence initial={false}>
@@ -88,7 +98,6 @@ export const GameLogs: React.FC<GameLogsProps> = ({
           </AnimatePresence>
         </div>
       </ScrollArea>
-      {/* <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-background/80 via-background/40 to-transparent pointer-events-none backdrop-blur-sm" /> */}
     </div>
   );
 };
@@ -177,14 +186,14 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
 
       case "GameStarted":
         return (
-          <div className="text-center font-bold w-full text-green-600">
+          <div className="text-center font-semibold w-full text-green-600">
             🎲 Game started! 🎲
           </div>
         );
 
       case "GameCancelled":
         return (
-          <div className="text-center font-bold w-full text-red-600">
+          <div className="text-center font-semibold w-full text-red-600">
             ❌ Game cancelled ❌
           </div>
         );
@@ -199,7 +208,9 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
             <span> passed </span>
             <span className="font-medium text-yellow-600">Solana Genesis</span>
             <span> and collected </span>
-            <span className="font-bold text-green-500">${details.amount}</span>
+            <span className="font-semibold text-green-500">
+              ${details.amount}
+            </span>
           </>
         );
 
@@ -215,7 +226,9 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
             <span> bought </span>
             <span className="font-medium text-blue-600">{propertyName}</span>
             <span> for </span>
-            <span className="font-bold text-green-500">${details.price}</span>
+            <span className="font-semibold text-green-500">
+              ${details.price}
+            </span>
           </>
         );
 
@@ -245,7 +258,9 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
               currentPlayerAddress={currentPlayerAddress}
             />
             <span> paid </span>
-            <span className="font-bold text-red-500">${details.amount}</span>
+            <span className="font-semibold text-red-500">
+              ${details.amount}
+            </span>
             <span> rent to </span>
             <PlayerDisplay
               playerId={details.owner || ""}
@@ -355,7 +370,9 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
               {soldPropertyName}
             </span>
             <span> for </span>
-            <span className="font-bold text-green-500">${details.price}</span>
+            <span className="font-semibold text-green-500">
+              ${details.price}
+            </span>
           </>
         );
 
@@ -373,7 +390,9 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
               {mortgagedPropertyName}
             </span>
             <span> for </span>
-            <span className="font-bold text-green-500">${details.price}</span>
+            <span className="font-semibold text-green-500">
+              ${details.price}
+            </span>
           </>
         );
 
@@ -391,7 +410,7 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
               {unmortgagedPropertyName}
             </span>
             <span> for </span>
-            <span className="font-bold text-red-500">${details.price}</span>
+            <span className="font-semibold text-red-500">${details.price}</span>
           </>
         );
 
@@ -402,13 +421,14 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
               playerId={playerId}
               currentPlayerAddress={currentPlayerAddress}
             />
-            <span> paid </span>
-            <span className="font-bold text-red-500">${details.amount}</span>
-            <span> </span>
-            <span className="font-medium text-orange-600">
-              {details.taxType}
+            <span>paid</span>
+            <span className="font-semibold text-red-500">
+              ${details.amount}
             </span>
-            <span> tax</span>
+            <span className="font-semibold text-blue-500">
+              {getTypedSpaceData(details.position || 0, "tax")?.name}
+            </span>
+            <span>tax</span>
           </>
         );
 
@@ -509,7 +529,7 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
               currentPlayerAddress={currentPlayerAddress}
             />
             <span> declared </span>
-            <span className="font-bold text-red-600">bankruptcy</span>
+            <span className="font-semibold text-red-600">bankruptcy</span>
           </>
         );
 
@@ -517,7 +537,7 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
         const winner = details.winner;
         if (winner) {
           return (
-            <div className="text-center font-bold w-full text-yellow-600">
+            <div className="text-center font-semibold w-full text-yellow-600">
               🏆{" "}
               <PlayerDisplay
                 playerId={winner}
@@ -530,7 +550,7 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
           );
         }
         return (
-          <div className="text-center font-bold w-full text-gray-600">
+          <div className="text-center font-semibold w-full text-gray-600">
             🎮 Game ended with no winner 🎮
           </div>
         );
@@ -550,7 +570,7 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
               currentPlayerAddress={currentPlayerAddress}
             />
             <span> claimed their prize of </span>
-            <span className="font-bold text-green-500">
+            <span className="font-semibold text-green-500">
               ${details.prizeAmount}
             </span>
           </>
@@ -571,7 +591,7 @@ const LogMessageRenderer: React.FC<LogMessageRendererProps> = ({
   };
 
   return (
-    <div className="text-xs w-full text-center gap-x-1.5 gap-y-0.5 leading-relaxed flex justify-center items-center flex-wrap">
+    <div className="text-xs w-full text-center gap-x-1 gap-y-0.5 leading-relaxed flex justify-center items-center flex-wrap">
       {renderMessage()}
     </div>
   );

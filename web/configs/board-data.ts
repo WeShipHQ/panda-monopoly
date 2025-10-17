@@ -143,7 +143,7 @@ export const boardData: BoardSpace[] = [
   // Position 2 - Airdrop Chest
   {
     position: 2,
-    name: "Airdrop Chest",
+    name: "Airdrop",
     type: "community-chest",
     logo: "/images/airdrop.png",
   },
@@ -171,7 +171,7 @@ export const boardData: BoardSpace[] = [
   // Position 4 - MEV Tax
   {
     position: 4,
-    name: "MEV Tax",
+    name: "Rent Fee",
     type: "tax",
     taxAmount: 200,
     instructions: "Pay $200",
@@ -268,7 +268,7 @@ export const boardData: BoardSpace[] = [
   // Position 11 - SAGA Place (Pink Property)
   {
     position: 11,
-    name: "SAGA Place",
+    name: "Solanart Place",
     type: "property",
     price: 140,
     colorGroup: "pink",
@@ -283,13 +283,13 @@ export const boardData: BoardSpace[] = [
     hotelCost: 50,
     mortgageValue: 70,
     rotate: "left",
-    logo: "/images/sol.png",
+    logo: "/images/solanart.png",
   },
 
   // Position 12 - Pyth Oracle (Utility)
   {
     position: 12,
-    name: "Pyth Oracle",
+    name: "Pyth",
     type: "utility",
     price: 150,
     utilityMultiplier: [4, 10],
@@ -355,7 +355,7 @@ export const boardData: BoardSpace[] = [
   // Position 16 - HELIO Place (Orange Property)
   {
     position: 16,
-    name: "HELIO Place",
+    name: "Meteora Place",
     type: "property",
     price: 180,
     colorGroup: "orange",
@@ -370,13 +370,13 @@ export const boardData: BoardSpace[] = [
     hotelCost: 100,
     mortgageValue: 90,
     rotate: "left",
-    logo: "/images/helio.png",
+    logo: "/images/meteora.png",
   },
 
   // Position 17 - Airdrop Chest
   {
     position: 17,
-    name: "Airdrop Chest",
+    name: "Airdrop",
     type: "community-chest",
     rotate: "left",
     logo: "/images/airdrop.png",
@@ -435,7 +435,7 @@ export const boardData: BoardSpace[] = [
   // Position 21 - MANGO Markets (Red Property)
   {
     position: 21,
-    name: "MANGO Markets",
+    name: "Jito Markets",
     type: "property",
     price: 220,
     colorGroup: "red",
@@ -450,7 +450,7 @@ export const boardData: BoardSpace[] = [
     hotelCost: 150,
     mortgageValue: 110,
     rotate: "top",
-    logo: "/images/mango.png",
+    logo: "/images/jito.png",
   },
 
   // Position 22 - Pump.fun Surprise
@@ -465,7 +465,7 @@ export const boardData: BoardSpace[] = [
   // Position 23 - HUBBLE Avenue (Red Property)
   {
     position: 23,
-    name: "HUBBLE Avenue",
+    name: "Sanctum Avenue",
     type: "property",
     price: 220,
     colorGroup: "red",
@@ -480,7 +480,7 @@ export const boardData: BoardSpace[] = [
     hotelCost: 150,
     mortgageValue: 110,
     rotate: "top",
-    logo: "/images/hubble.png",
+    logo: "/images/sanctum.png",
   },
 
   // Position 24 - MARINADE Street (Red Property)
@@ -561,7 +561,7 @@ export const boardData: BoardSpace[] = [
   // Position 28 - Switchboard Oracle (Utility)
   {
     position: 28,
-    name: "Switchboard Oracle",
+    name: "Switchboard",
     type: "utility",
     price: 150,
     utilityMultiplier: [4, 10],
@@ -588,7 +588,7 @@ export const boardData: BoardSpace[] = [
     hotelCost: 150,
     mortgageValue: 140,
     rotate: "top",
-    logo: "/images/solflare.png",
+    logo: "/images/solfare.png",
   },
 
   // Position 30 - Go To Validator Jail
@@ -602,7 +602,7 @@ export const boardData: BoardSpace[] = [
   // Position 31 - ANATOLY Avenue (Green Property)
   {
     position: 31,
-    name: "ANATOLY Avenue",
+    name: "Helium Avenue",
     type: "property",
     price: 300,
     colorGroup: "green",
@@ -617,13 +617,13 @@ export const boardData: BoardSpace[] = [
     hotelCost: 200,
     mortgageValue: 150,
     rotate: "right",
-    logo: "/images/sol.png",
+    logo: "/images/helium.png",
   },
 
   // Position 32 - RAJ Street (Green Property)
   {
     position: 32,
-    name: "RAJ Street",
+    name: "Render Street",
     type: "property",
     price: 300,
     colorGroup: "green",
@@ -638,7 +638,7 @@ export const boardData: BoardSpace[] = [
     hotelCost: 200,
     mortgageValue: 150,
     rotate: "right",
-    logo: "/images/sol.png",
+    logo: "/images/render.png",
   },
 
   // Position 33 - Airdrop Chest
@@ -653,7 +653,7 @@ export const boardData: BoardSpace[] = [
   // Position 34 - FIREDANCER Avenue (Green Property)
   {
     position: 34,
-    name: "FIREDANCER Avenue",
+    name: "Hivemapper Avenue",
     type: "property",
     price: 320,
     colorGroup: "green",
@@ -668,7 +668,7 @@ export const boardData: BoardSpace[] = [
     hotelCost: 200,
     mortgageValue: 160,
     rotate: "right",
-    logo: "/images/sol.png",
+    logo: "/images/hivemapper.png",
   },
 
   // Position 35 - deBridge (Railroad)
@@ -680,7 +680,7 @@ export const boardData: BoardSpace[] = [
     railroadRent: [25, 50, 100, 200],
     mortgageValue: 100,
     rotate: "right",
-    logo: "/images/sol.png",
+    logo: "/images/debridge.png",
   },
 
   // Position 36 - Pump.fun Surprise
@@ -695,7 +695,7 @@ export const boardData: BoardSpace[] = [
   // Position 37 - SVM Place (Dark Blue Property)
   {
     position: 37,
-    name: "SVM Place",
+    name: "Triton One Place",
     type: "property",
     price: 350,
     colorGroup: "darkBlue",
@@ -710,13 +710,13 @@ export const boardData: BoardSpace[] = [
     hotelCost: 200,
     mortgageValue: 175,
     rotate: "right",
-    logo: "/images/sol.png",
+    logo: "/images/triton-one.png",
   },
 
   // Position 38 - Priority Fee Tax
   {
     position: 38,
-    name: "Priority Fee Tax",
+    name: "Priority Fee",
     type: "tax",
     taxAmount: 75,
     rotate: "right",
@@ -726,7 +726,7 @@ export const boardData: BoardSpace[] = [
   // Position 39 - SAGA Boardwalk (Dark Blue Property)
   {
     position: 39,
-    name: "SAGA Boardwalk",
+    name: "Helius Boardwalk",
     type: "property",
     price: 400,
     colorGroup: "darkBlue",
@@ -741,7 +741,7 @@ export const boardData: BoardSpace[] = [
     hotelCost: 200,
     mortgageValue: 200,
     rotate: "right",
-    logo: "/images/sol.png",
+    logo: "/images/helius.png",
   },
 ];
 

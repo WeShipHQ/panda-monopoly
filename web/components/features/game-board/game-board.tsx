@@ -40,14 +40,20 @@ import { GameLogs } from "./game-logs";
 import { useRouter } from "next/navigation";
 import { GameStatus } from "@/lib/sdk/generated";
 import { ClaimRewardButton } from "./claim-reward-button";
+import { useLogin } from "@privy-io/react-auth";
 
-interface MonopolyBoardProps {}
+interface MonopolyBoardProps {
+  boardRotation: number;
+}
 
-const GameBoard: React.FC<MonopolyBoardProps> = () => {
+const GameBoard: React.FC<MonopolyBoardProps> = ({ boardRotation }) => {
   const [isLoading, setIsLoading] = useState<string | null>(null);
-  const [boardRotation, setBoardRotation] = useState<number>(0);
+  // const [boardRotation, setBoardRotation] = useState<number>(0);
 
-  const { wallet } = useWallet();
+  const { ready, authenticated, wallet } = useWallet();
+  const { login } = useLogin();
+  const disableLogin = !ready || (ready && authenticated);
+
   const router = useRouter();
 
   const {
@@ -73,9 +79,6 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
     cancelGame,
     leaveGame,
   } = useGameContext();
-
-  // console.log("currentPlayerState", currentPlayerState);
-  // console.log("properties", properties);
 
   const handleStartGame = async (_gameAddress: string) => {
     try {
@@ -176,14 +179,6 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
     }
   };
 
-  const handleRotateClockwise = () => {
-    setBoardRotation((prev) => (prev + 90) % 360);
-  };
-
-  const handleRotateCounterClockwise = () => {
-    setBoardRotation((prev) => (prev - 90 + 360) % 360);
-  };
-
   const handleEndGame = async () => {
     setIsLoading("endGame");
     try {
@@ -263,29 +258,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
 
   return (
     <div className="h-full w-full overflow-hidden relative">
-      {/* Rotation Controls */}
-      <div className="absolute top-4 right-4 z-50 flex gap-2">
-        <Button
-          variant="neutral"
-          size="icon"
-          onClick={handleRotateCounterClockwise}
-          className="bg-white/90 hover:bg-white shadow-lg"
-          title="Xoay trái"
-        >
-          <RotateCcw className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="neutral"
-          size="icon"
-          onClick={handleRotateClockwise}
-          className="bg-white/90 hover:bg-white shadow-lg"
-          title="Xoay phải"
-        >
-          <RotateCw className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="h-full w-full flex items-center justify-center p-2 sm:p-4">
+      <div className="h-full w-full flex items-center justify-center p-4">
         <Card
           className="relative aspect-square bg-white transition-transform duration-500 ease-in-out border-2
                      w-full h-full max-w-[min(100vh,100vw)] max-h-[min(100vh,100vw)]
@@ -302,41 +275,45 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
 
             {/* Center - Responsive */}
             <div
-              className="col-start-3 col-end-13 row-start-3 row-end-13 bg-[#c7e9b5] flex flex-col items-center justify-center 
-                           p-1 sm:p-3 md:p-4 gap-1 sm:gap-3 md:gap-4"
+              className="col-start-3 col-end-13 row-start-3 row-end-13 flex flex-col items-center justify-center 
+                           p-1 sm:p-3 md:p-4 gap-1 sm:gap-3 md:gap-4 bg-chart-3/50"
               style={{
                 transform: `rotate(${-boardRotation}deg)`,
               }}
             >
-              <div className="flex-1 flex flex-col justify-end items-center">
+              <div className="w-full h-full flex flex-col justify-end items-center">
                 {gameState.gameStatus === GameStatus.Finished ? (
                   <GameEndedStatus />
                 ) : (
                   <>
-                    {wallet && wallet?.delegated ? (
-                      <DiceProvider>
-                        <PlayerActions
-                          handleStartGame={handleStartGame}
-                          handleJoinGame={handleJoinGame}
-                          handleEndTurn={handleEndTurn}
-                          handleBuyProperty={handleBuyProperty}
-                          handleSkipProperty={handleSkipProperty}
-                          handlePayMevTax={handlePayMevTax}
-                          handlePayPriorityFeeTax={handlePayPriorityFeeTax}
-                          handlePayJailFine={handlePayJailFine}
-                          handleGetOutOfJailCard={handleGetOutOfJailCard}
-                          handleEndGame={handleEndGame}
-                          handleCancelGame={handleCancelGame}
-                          handleLeaveGame={handleLeaveGame}
-                          isLoading={isLoading}
-                          wallet={wallet}
-                        />
-                      </DiceProvider>
-                    ) : (
-                      <Button>Connect Wallet</Button>
-                    )}
+                    <div className="flex-1 w-full flex flex-col items-center justify-end">
+                      {wallet && wallet?.delegated ? (
+                        <DiceProvider>
+                          <PlayerActions
+                            handleStartGame={handleStartGame}
+                            handleJoinGame={handleJoinGame}
+                            handleEndTurn={handleEndTurn}
+                            handleBuyProperty={handleBuyProperty}
+                            handleSkipProperty={handleSkipProperty}
+                            handlePayMevTax={handlePayMevTax}
+                            handlePayPriorityFeeTax={handlePayPriorityFeeTax}
+                            handlePayJailFine={handlePayJailFine}
+                            handleGetOutOfJailCard={handleGetOutOfJailCard}
+                            handleEndGame={handleEndGame}
+                            handleCancelGame={handleCancelGame}
+                            handleLeaveGame={handleLeaveGame}
+                            isLoading={isLoading}
+                            wallet={wallet}
+                          />
+                        </DiceProvider>
+                      ) : (
+                        <Button disabled={disableLogin} onClick={login}>
+                          Connect Wallet
+                        </Button>
+                      )}
+                    </div>
                     {/* game-logs */}
-                    <div className="flex-1 w-full">
+                    <div className="flex-1 w-full p-4 lg:py-6">
                       <GameLogs />
                     </div>
                   </>

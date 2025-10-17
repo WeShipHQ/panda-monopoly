@@ -164,19 +164,6 @@ export function GameList() {
 
   return (
     <div className="w-full">
-      {/* <Button
-        onClick={() => {
-          showGameEndedToast({
-            winner: "63EEC9FfGyksm7PkVC6z8uAmqozbQcTzbkWJNsgqjkFs",
-            reason: GameEndReason.BankruptcyVictory,
-            winnerNetWorth: 2000,
-            currentPlayerAddress:
-              "5AHKzmDcjeAAnafTivi5u7dWYw3jUQh2VBRDzSd9ztVr",
-          });
-        }}
-      >
-        Demo
-      </Button> */}
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex-1">

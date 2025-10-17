@@ -20,6 +20,7 @@ import { BaseSpaceProps } from "@/types/space-types";
 import { CircleQuestionMarkIcon } from "lucide-react";
 import { TaxIcon } from "@/components/ui/icons";
 import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
 
 export type PropertySpaceProps = BaseSpaceProps & PropertySpaceType;
 
@@ -42,25 +43,27 @@ export const PropertySpace: React.FC<PropertySpaceProps> = ({
       showColorBar={true}
       {...props}
     >
-      <div className="flex flex-col items-center justify-center size-full text-center relative">
+      <div className="flex flex-col w-full h-full gap-1.5 items-center justify-center text-center relative">
         <div
           className={cn("relative aspect-square", {
             "w-3/4": side === "top" || side === "bottom",
             "h-3/4": side === "left" || side === "right",
+            "!rotate-90": side === "left",
           })}
         >
           <div className="size-full relative rounded-full overflow-hidden">
             <Image src={props.logo || ""} fill alt={name} />
           </div>
         </div>
-        <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm bg-black/5">
-          <span className="text-[0.35vh] sm:text-[0.55vh] md:text-[0.7vh] lg:text-[0.9vh] xl:text-[1.1vh]">
-            💰
-          </span>
-          <span className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-semibold">
-            {formatPrice(Number(price))}
-          </span>
-        </div>
+        <Badge
+          variant="neutral"
+          className="px-1 lg:px-2.5"
+          style={{
+            fontSize: "var(--space-font-xs)",
+          }}
+        >
+          {formatPrice(Number(price))}
+        </Badge>
       </div>
     </BaseSpace>
   );
@@ -84,24 +87,29 @@ export const RailroadSpace: React.FC<RailroadSpaceProps> = ({
   onChainProperty,
   ...props
 }) => {
+  const side = getBoardSide(position);
   const content = (
     <BaseSpace position={position} onChainProperty={onChainProperty} {...props}>
-      <div className="text-center flex flex-col justify-between h-full">
-        <div className="text-[0.5vh] sm:text-[0.7vh] md:text-[0.9vh] lg:text-[1.1vh] xl:text-[1.3vh] font-bold leading-tight">
-          {name}
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-[1.5vh] sm:text-[2vh] md:text-[2.5vh] lg:text-[3vh] xl:text-[3.5vh]">
-            🚂
+      <div className="text-center flex flex-col items-center justify-center gap-1.5 w-full h-full">
+        <div
+          className={cn("relative aspect-square", {
+            "w-3/4": side === "top" || side === "bottom",
+            "h-3/4": side === "left" || side === "right",
+            "rotate-90": side === "left",
+          })}
+        >
+          <div className="size-full relative rounded-full overflow-hidden">
+            <Image src={props.logo || ""} fill alt={name} />
           </div>
         </div>
-        <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm bg-black/5 mx-auto">
-          <span className="text-[0.35vh] sm:text-[0.55vh] md:text-[0.7vh] lg:text-[0.9vh] xl:text-[1.1vh]">
-            💰
-          </span>
-          <span className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-semibold">
+
+        <div className="inline-flex items-center mx-auto">
+          <Badge
+            variant="neutral"
+            className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-semibold"
+          >
             {formatPrice(Number(price))}
-          </span>
+          </Badge>
         </div>
       </div>
     </BaseSpace>
@@ -126,26 +134,30 @@ export const UtilitySpace: React.FC<UtilitySpaceProps> = ({
   onChainProperty,
   ...props
 }) => {
-  const icon = name.includes("Electric") ? "💡" : "💧";
+  const side = getBoardSide(position);
 
   const content = (
     <BaseSpace position={position} onChainProperty={onChainProperty} {...props}>
-      <div className="text-center flex flex-col justify-between h-full">
-        <div className="text-[0.5vh] sm:text-[0.7vh] md:text-[0.9vh] lg:text-[1.1vh] xl:text-[1.3vh] font-bold leading-tight">
-          {name}
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-[1.5vh] sm:text-[2vh] md:text-[2.5vh] lg:text-[3vh] xl:text-[3.5vh]">
-            {icon}
+      <div className="text-center flex flex-col gap-1.5 items-center justify-center h-full">
+        <div
+          className={cn("relative aspect-square", {
+            "w-3/4": side === "top" || side === "bottom",
+            "h-3/4": side === "left" || side === "right",
+            "rotate-90": side === "left",
+          })}
+        >
+          <div className="size-full relative rounded-full overflow-hidden">
+            <Image src={props.logo || ""} fill alt={name} />
           </div>
         </div>
-        <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm bg-black/5 mx-auto">
-          <span className="text-[0.35vh] sm:text-[0.55vh] md:text-[0.7vh] lg:text-[0.9vh] xl:text-[1.1vh]">
-            💰
-          </span>
-          <span className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-semibold">
+
+        <div className="inline-flex items-center mx-auto">
+          <Badge
+            variant="neutral"
+            className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-semibold"
+          >
             {formatPrice(Number(price))}
-          </span>
+          </Badge>
         </div>
       </div>
     </BaseSpace>
@@ -225,17 +237,18 @@ export const TaxSpace: React.FC<TaxSpaceProps> = ({
 
   return (
     <BaseSpace position={position} onChainProperty={onChainProperty} {...props}>
-      <div className="text-center flex flex-col justify-between h-full">
+      <div className="text-center flex flex-col items-center justify-center h-full gap-1.5">
         <div className="text-[0.5vh] sm:text-[0.7vh] md:text-[0.9vh] lg:text-[1.1vh] xl:text-[1.3vh] font-bold leading-tight">
           {name}
         </div>
-        <div className="flex items-center justify-center">
-          <TaxIcon className="w-[1.5vh] h-[1.5vh] sm:w-[2vh] sm:h-[2vh] md:w-[2.5vh] md:h-[2.5vh] lg:w-[3vh] lg:h-[3vh] xl:w-[3.5vh] xl:h-[3.5vh] text-main" />
-        </div>
         {propertyData && (
-          <div className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-normal">
-            Pay {formatPrice(propertyData.taxAmount)}
-          </div>
+          <Badge
+            variant="neutral"
+            className="text-[0.4vh] sm:text-[0.6vh] md:text-[0.8vh] lg:text-[1vh] xl:text-[1.2vh] font-semibold"
+          >
+            Pay
+            <br /> {formatPrice(propertyData.taxAmount)}
+          </Badge>
         )}
       </div>
     </BaseSpace>
