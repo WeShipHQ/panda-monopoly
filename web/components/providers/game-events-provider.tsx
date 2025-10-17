@@ -145,54 +145,66 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
   }, []);
 
   useEffect(() => {
-    // const unsubscribeTaxPaid = registerEventHandler(
-    //   "TaxPaid",
-    //   (data, context) => {
-    //     showTaxPaidToast({
-    //       isCurrentPlayer: context.isCurrentPlayer(data.player),
-    //       playerAddress: data.player.toString(),
-    //       taxType: data.taxType,
-    //       amount: data.amount,
-    //       position: data.position,
-    //     });
-    //   }
-    // );
+    const unsubscribeTaxPaid = registerEventHandler(
+      "TaxPaid",
+      (data, context) => {
+        showTaxPaidToast({
+          isCurrentPlayer: context.isCurrentPlayer(data.player),
+          playerAddress: data.player.toString(),
+          taxType: data.taxType,
+          amount: data.amount,
+          position: data.position,
+        });
+        
+        // Play money pay sound for tax
+        if (context.isCurrentPlayer(data.player)) {
+          playSound("money-pay", 0.6);
+        }
+      }
+    );
 
-    // const unsubscribePlayerPassedGo = registerEventHandler(
-    //   "PlayerPassedGo",
-    //   (data, context) => {
-    //     if (context.isCurrentPlayer(data.player)) {
-    //       showPlayerPassedGoToast({
-    //         salaryCollected: data.salaryCollected,
-    //       });
+    const unsubscribePlayerPassedGo = registerEventHandler(
+      "PlayerPassedGo",
+      (data, context) => {
+        if (context.isCurrentPlayer(data.player)) {
+          showPlayerPassedGoToast({
+            salaryCollected: data.salaryCollected,
+          });
 
-    //       playSound("money-receive");
-    //     }
-    //   }
-    // );
+          playSound("money-receive");
+        }
+      }
+    );
 
-    // const unsubscribePlayerJoined = registerEventHandler(
-    //   "PlayerJoined",
-    //   (data, context) => {
-    //     if (!context.isCurrentPlayer(data.player)) {
-    //       showPlayerJoinedToast({
-    //         playerAddress: data.player,
-    //         playerIndex: data.playerIndex,
-    //         totalPlayers: data.totalPlayers,
-    //       });
-    //     }
-    //   }
-    // );
+    const unsubscribePlayerJoined = registerEventHandler(
+      "PlayerJoined",
+      (data, context) => {
+        // Show toast for everyone except the player who joined
+        if (!context.isCurrentPlayer(data.player)) {
+          showPlayerJoinedToast({
+            playerAddress: data.player,
+            playerIndex: data.playerIndex,
+            totalPlayers: data.totalPlayers,
+          });
+        }
+        
+        // Play sound for ALL players in lobby (including the one who joined)
+        playSound("player-join", 0.5);
+      }
+    );
 
-    // const unsubscribeGameStarted = registerEventHandler(
-    //   "GameStarted",
-    //   (data) => {
-    //     showGameStartedToast({
-    //       totalPlayers: data.totalPlayers,
-    //       firstPlayer: data.firstPlayer,
-    //     });
-    //   }
-    // );
+    const unsubscribeGameStarted = registerEventHandler(
+      "GameStarted",
+      (data) => {
+        showGameStartedToast({
+          totalPlayers: data.totalPlayers,
+          firstPlayer: data.firstPlayer,
+        });
+        
+        // Play game start sound for all players
+        playSound("game-start", 0.4);
+      }
+    );
 
     const unsubscribeChanceCard = registerEventHandler(
       "ChanceCardDrawn",
@@ -228,29 +240,92 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
             playerAddress: data.player,
             isCurrentPlayer: context.isCurrentPlayer(data.player),
           });
+          
+          // Play jail sound for all players
+          playSound("jail", 0.7);
         }
       }
     );
 
-    // const unsubscribePropertyPurchased = registerEventHandler(
-    //   "PropertyPurchased",
-    //   (data, context) => {
-    //     const propertyData = getBoardSpaceData(data.propertyPosition);
-    //     const propertyName =
-    //       propertyData?.name || `Property ${data.propertyPosition}`;
+    const unsubscribePropertyPurchased = registerEventHandler(
+      "PropertyPurchased",
+      (data, context) => {
+        const propertyData = getBoardSpaceData(data.propertyPosition);
+        const propertyName =
+          propertyData?.name || `Property ${data.propertyPosition}`;
 
-    //     const isCurrentPlayer = context.isCurrentPlayer(data.player);
+        const isCurrentPlayer = context.isCurrentPlayer(data.player);
 
-    //     showPropertyPurchasedToast({
-    //       propertyName,
-    //       price: data.price,
-    //       isCurrentPlayer,
-    //       playerAddress: isCurrentPlayer ? undefined : data.player,
-    //     });
+        showPropertyPurchasedToast({
+          propertyName,
+          price: data.price,
+          isCurrentPlayer,
+          playerAddress: isCurrentPlayer ? undefined : data.player,
+        });
 
-    //     playSound("property-buy");
-    //   }
-    // );
+        // Play property buy sound for all players
+        if (!isCurrentPlayer) {
+          playSound("property-buy", 0.3);
+        }
+      }
+    );
+
+    const unsubscribeRentPaid = registerEventHandler(
+      "RentPaid",
+      (data, context) => {
+        // Play rent payment sound for payer
+        if (context.isCurrentPlayer(data.payer)) {
+          playSound("money-pay", 0.6);
+        }
+        // Play money receive sound for owner
+        else if (context.isCurrentPlayer(data.owner)) {
+          playSound("money-receive", 0.6);
+        }
+      }
+    );
+
+    const unsubscribeHouseBuilt = registerEventHandler(
+      "HouseBuilt",
+      (data, context) => {
+        // Play house build sound for all players
+        if (!context.isCurrentPlayer(data.player)) {
+          playSound("house-build", 0.4);
+        }
+      }
+    );
+
+    const unsubscribeHotelBuilt = registerEventHandler(
+      "HotelBuilt",
+      (data, context) => {
+        // Play hotel build sound for all players
+        if (!context.isCurrentPlayer(data.player)) {
+          playSound("hotel-build", 0.4);
+        }
+      }
+    );
+
+    const unsubscribeBuildingSold = registerEventHandler(
+      "BuildingSold",
+      (data, context) => {
+        // Play building sell sound for all players
+        if (!context.isCurrentPlayer(data.player)) {
+          playSound("building-sell", 0.4);
+        }
+      }
+    );
+
+    const unsubscribePlayerBankrupt = registerEventHandler(
+      "PlayerBankrupt",
+      (data, context) => {
+        // Play lose sound when a player goes bankrupt
+        if (context.isCurrentPlayer(data.player)) {
+          playSound("lose", 0.8);
+        } else {
+          // Other players hear a lighter sound
+          playSound("bruh", 0.3);
+        }
+      }
+    );
 
     const unsubscribeGameEnded = registerEventHandler(
       "GameEnded",
@@ -273,15 +348,19 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
     );
 
     return () => {
-      // unsubscribeTaxPaid();
-      // unsubscribePlayerPassedGo();
-      // unsubscribePlayerJoined();
-      // unsubscribeGameStarted();
+      unsubscribeTaxPaid();
+      unsubscribePlayerPassedGo();
+      unsubscribePlayerJoined();
+      unsubscribeGameStarted();
       unsubscribeChanceCard();
       unsubscribeCommunityChestCard();
       unsubscribeSpecialSpaceAction();
-      // unsubscribeGameEndConditionMet();
-      // unsubscribePropertyPurchased();
+      unsubscribePropertyPurchased();
+      unsubscribeRentPaid();
+      unsubscribeHouseBuilt();
+      unsubscribeHotelBuilt();
+      unsubscribeBuildingSold();
+      unsubscribePlayerBankrupt();
       unsubscribeGameEnded();
     };
   }, [registerEventHandler]);
