@@ -512,25 +512,25 @@ export const RailroadPopover: React.FC<RailroadPopoverProps> = ({
             {propertyData.railroadRent && (
               <div className="space-y-1">
                 <div className="flex justify-between text-sm">
-                  <span>Rent (1 Railroad)</span>
+                  <span>Rent (1 Bridge)</span>
                   <span className="font-medium">
                     {formatPrice(propertyData.railroadRent[0] || 0)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Rent (2 Railroads)</span>
+                  <span>Rent (2 Bridges)</span>
                   <span className="font-medium">
                     {formatPrice(propertyData.railroadRent[1])}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Rent (3 Railroads)</span>
+                  <span>Rent (3 Bridges)</span>
                   <span className="font-medium">
                     {formatPrice(propertyData.railroadRent[2])}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Rent (4 Railroads)</span>
+                  <span>Rent (4 Bridges)</span>
                   <span className="font-medium">
                     {formatPrice(propertyData.railroadRent[3])}
                   </span>
@@ -589,23 +589,20 @@ export const UtilityPopover: React.FC<UtilityPopoverProps> = ({
       >
         <Card className="w-64 rounded-none py-0 bg-white border-2 border-black gap-0">
           <CardHeader className="gap-0 border-b-2 border-black py-3">
-            <CardTitle className="text-center">
-              {propertyData.name}
-              {propertyData.name.includes("Electric") ? "💡" : "💧"}
-            </CardTitle>
+            <CardTitle className="text-center">{propertyData.name}</CardTitle>
           </CardHeader>
 
           <CardContent className="p-4 space-y-2">
             {propertyData.utilityMultiplier && (
               <div className="space-y-1">
                 <div className="flex justify-between text-sm">
-                  <span>Rent (1 Utility)</span>
+                  <span>Rent (1 Oracle)</span>
                   <span className="font-medium">
                     {propertyData.utilityMultiplier[0]}x dice roll
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Rent (2 Utilities)</span>
+                  <span>Rent (2 Oracles)</span>
                   <span className="font-medium">
                     {propertyData.utilityMultiplier[1]}x dice roll
                   </span>

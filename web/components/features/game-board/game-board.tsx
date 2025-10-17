@@ -341,7 +341,7 @@ const GameBoard: React.FC<MonopolyBoardProps> = () => {
                       )}
                     </div>
                     {/* game-logs */}
-                    <div className="flex-1 w-full">
+                    <div className="flex-1 w-full py-6">
                       <GameLogs />
                     </div>
                   </>

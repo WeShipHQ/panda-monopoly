@@ -211,21 +211,20 @@ export const getOwnerIndicatorClasses = (side: BoardSide): string => {
 };
 
 export const getTextContainerClasses = (side: BoardSide): string => {
-  const basePadding = "p-1";
-
   switch (side) {
     case "bottom":
-      return `flex flex-col justify-between h-full ${basePadding} pt-5`; // Extra padding top for color bar
+      return `flex flex-col justify-between h-full p-1 pt-5`; // Extra padding top for color bar
     case "left":
       // For left column: vertical writing mode, left to right
-      return `flex flex-col justify-between size-full ${basePadding} [writing-mode:vertical-rl]`;
+      return `flex flex-col justify-between size-full p-1 pr-5 [writing-mode:vertical-rl]`;
     case "top":
-      return `flex flex-col justify-between size-full ${basePadding} pb-5 [transform:rotate(180deg)] pt-5`; // Extra padding bottom for color bar
+      // return `flex flex-col justify-between size-full p-1 pb-5 [transform:rotate(180deg)] pt-5`;
+      return `flex flex-col justify-between size-full p-1 pb-5`;
     case "right":
       // For right column: vertical writing mode, right to left with 180deg rotation
-      return `flex flex-col justify-between size-full ${basePadding} pl-5 [writing-mode:vertical-lr] [transform:rotate(180deg)]`;
+      return `flex flex-col justify-between size-full p-1 pr-5 [writing-mode:vertical-rl] [transform:rotate(180deg)]`;
     default:
-      return `flex flex-col justify-between h-full ${basePadding} pt-5`;
+      return `flex flex-col justify-between h-full p-1 pt-5`;
   }
 };
 

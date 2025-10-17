@@ -30,8 +30,9 @@ export const BaseSpace: React.FC<BaseSpaceComponentProps> = ({
   contentContainerclassName = "",
   ...rest
 }) => {
-  const { ownerMeta, ownerAddress } = useSpaceOwner(onChainProperty);
+  const { ownerAddress } = useSpaceOwner(onChainProperty);
   const side = getBoardSide(position);
+  const hasColorBar = showColorBar && !!colorBarColor;
 
   const borderClasses = getBorderClasses(position);
   const colorBarClasses = getColorBarClasses(side);
@@ -49,7 +50,7 @@ export const BaseSpace: React.FC<BaseSpaceComponentProps> = ({
       {...rest}
     >
       {/* Color bar for properties */}
-      {showColorBar && colorBarColor && (
+      {hasColorBar && (
         <div
           style={{
             backgroundColor: colorBarColor,
@@ -68,30 +69,16 @@ export const BaseSpace: React.FC<BaseSpaceComponentProps> = ({
       )}
 
       {/* Owner indicator */}
-      {ownerMeta && ownerAddress && (
+      {ownerAddress && (
         <div
           className={cn(
             "flex items-center justify-center",
             ownerIndicatorClasses
           )}
         >
-          {/* <Avatar className="owner-avatar">
-            <AvatarImage
-              walletAddress={ownerAddress}
-              alt={`Player ${ownerAddress}`}
-            />
-            <AvatarFallback
-              walletAddress={ownerAddress}
-              className="text-white font-semibold"
-            >
-              {ownerAddress}
-            </AvatarFallback>
-          </Avatar> */}
           <UserAvatar
             classNames={{
               avatar: "owner-avatar",
-              // avatar: "w-[clamp(16px,4cqi,24px)] h-[clamp(16px,4cqi,24px)]",
-              // image: "owner-avatar",
             }}
             walletAddress={ownerAddress}
           />

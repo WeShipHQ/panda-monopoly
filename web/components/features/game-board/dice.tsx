@@ -69,7 +69,6 @@ export const DiceProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Call Solana program to roll dice
     try {
-      console.log("DICE call smart contract");
       await rollDice(demoDices ? demoDices : undefined);
       await new Promise((resolve) => setTimeout(resolve, 6000));
     } catch (error) {
@@ -90,7 +89,6 @@ export const DiceProvider: React.FC<{ children: React.ReactNode }> = ({
     ) {
       const dice1Value = currentPlayerState.lastDiceRoll[0];
       const dice2Value = currentPlayerState.lastDiceRoll[1];
-      console.log("DICE received dice values", dice1Value, dice2Value);
 
       if (
         dice1Value >= 1 &&
@@ -107,7 +105,6 @@ export const DiceProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // Start throw animation
         setIsThrowAnimation(true);
-        console.log("DICE startthrow animation");
         // Set final rotations
         if (dice1Ref.current) {
           const [x, y, z] =
@@ -122,12 +119,10 @@ export const DiceProvider: React.FC<{ children: React.ReactNode }> = ({
         }
 
         stopDiceRollSequence();
-        console.log("DICE stop sound");
 
         // Reset states after animation
         setTimeout(() => {
           setIsThrowAnimation(false);
-          console.log("DICE stop throw animation");
           isWaitingForResult.current = false;
         }, 1000);
       }
@@ -150,7 +145,6 @@ export const DiceProvider: React.FC<{ children: React.ReactNode }> = ({
       currentPlayerState.lastDiceRoll.length >= 2
     ) {
       const dices = Array.from(currentPlayerState.lastDiceRoll);
-      console.log("DICE set dice values dont know why", dices);
       setDice1(dices[0]);
       setDice2(dices[1]);
     }
@@ -198,7 +192,7 @@ export const DicesOnly: React.FC = () => {
 
   return (
     <div className="flex justify-center">
-      <div className="flex gap-8">
+      <div className="flex gap-[var(--dice-gap)]">
         {/* Dice 1 - 3D */}
         <div className="dice-wrapper">
           <div

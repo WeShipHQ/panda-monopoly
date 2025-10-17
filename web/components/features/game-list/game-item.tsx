@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Eye } from "lucide-react";
 import { GameAccount } from "@/types/schema";
 import { GameStatus } from "@/lib/sdk/generated";
-import { formatAddress, formatPrice } from "@/lib/utils";
+import { formatAddress, formatPrice, formatTimeAgo } from "@/lib/utils";
 
 interface GameItemProps {
   game: GameAccount;
@@ -159,8 +159,7 @@ export function GameItem({
               )} */}
             </div>
             <div>
-              Created:{" "}
-              {new Date(Number(game.createdAt) * 1000).toLocaleDateString()}
+              Created: {formatTimeAgo(new Date(Number(game.createdAt) * 1000))}
             </div>
           </div>
         </div>

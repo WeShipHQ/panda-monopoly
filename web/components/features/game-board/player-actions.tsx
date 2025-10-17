@@ -3,7 +3,7 @@ import { useGameContext } from "@/components/providers/game-provider";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { formatAddress, formatPrice } from "@/lib/utils";
-import { getBoardSpaceData } from "@/lib/board-utils";
+import { getBoardSpaceData, getTypedSpaceData } from "@/lib/board-utils";
 import { PlayerAccount } from "@/types/schema";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -338,7 +338,8 @@ export const PlayerActions = ({
                   onClick={() => handlePayMevTax()}
                   loading={isLoading === "tax"}
                 >
-                  Pay MEV Tax
+                  Pay {getTypedSpaceData(MEV_TAX_POSITION, "tax")?.name} ($
+                  {getTypedSpaceData(MEV_TAX_POSITION, "tax")?.taxAmount})
                 </Button>
               )}
 

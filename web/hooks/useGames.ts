@@ -48,6 +48,11 @@ export function useGames(config: UseGamesConfig = {}): UseGamesResult {
         }
       }
 
+      console.log(
+        "allGames",
+        Array.from(map.values()).map((game) => new Date(game.createdAt * 1000))
+      );
+
       return Array.from(map.values()).sort((a, b) => {
         if (a.createdAt > b.createdAt) {
           return -1;
