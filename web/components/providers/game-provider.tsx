@@ -308,6 +308,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[startGame] tx", signature);
+      
+      // Play game start sound
+      playSound("game-start", SOUND_CONFIG.volumes.specialEvents);
     } catch (error) {
       console.error("Error starting game:", error);
       throw error;
@@ -401,6 +404,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[joinGame] tx", signature);
+      
+      // Play player join sound
+      playSound("player-join", SOUND_CONFIG.volumes.buttonClick);
     } catch (error) {
       console.error("Error joining game:", error);
       throw error;
@@ -426,6 +432,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[leaveGame] tx", signature);
+      
+      // Play player leave sound
+      playSound("player-leave", SOUND_CONFIG.volumes.buttonClick);
     } catch (error) {
       console.error("Error leaving game:", error);
       throw error;
@@ -453,6 +462,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[cancelGame] tx", signature);
+      
+      // Play game cancel sound
+      playSound("game-cancel", SOUND_CONFIG.volumes.specialEvents);
     } catch (error) {
       console.error("Error canceling game:", error);
       throw error;
@@ -838,8 +850,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[sellBuilding] tx", signature);
         
-        // Play money receive sound when selling building
-        playSound("money-receive", SOUND_CONFIG.volumes.moneyReceive);
+        // Play building sell sound when selling building
+        playSound("building-sell", SOUND_CONFIG.volumes.moneyReceive);
       } catch (error) {
         console.error(`Error selling ${buildingType}:`, error);
         throw error;
@@ -959,6 +971,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[createTrade] tx", signature);
 
+        // Play button click sound for creating trade
+        playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+        
         toast.success("Trade created successfully!");
       } catch (error) {
         console.error("Error creating trade:", error);
@@ -1034,6 +1049,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[rejectTrade] tx", signature);
 
+        // Play button click sound for rejecting trade
+        playSound("button-click2", SOUND_CONFIG.volumes.buttonClick);
+        
         toast.success("Trade rejected successfully!");
       } catch (error) {
         console.error("Error rejecting trade:", error);
@@ -1068,6 +1086,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[cancelTrade] tx", signature);
 
+        // Play button click sound for canceling trade
+        playSound("button-click2", SOUND_CONFIG.volumes.buttonClick);
+        
         toast.success("Trade cancelled successfully!");
       } catch (error) {
         console.error("Error canceling trade:", error);
@@ -1105,6 +1126,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[declareBankruptcy] tx", signature);
+      
+      // Play lose sound for bankruptcy
+      playSound("lose", SOUND_CONFIG.volumes.lose, SOUND_CONFIG.durations.loseSound);
     } catch (error) {
       console.error("Error declaring bankruptcy:", error);
       throw error;
@@ -1163,6 +1187,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[claimReward] tx", signature);
+      
+      // Play win sound for claiming reward
+      playSound("win", SOUND_CONFIG.volumes.win, SOUND_CONFIG.durations.winSound);
     } catch (error) {
       console.error("Error claiming reward:", error);
       throw error;

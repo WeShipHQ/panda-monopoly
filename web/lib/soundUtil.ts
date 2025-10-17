@@ -23,7 +23,7 @@ export const SOUND_CONFIG = {
   volumes: {
     diceRoll: 0.5,
     diceLand: 0.4,
-    buttonClick: 0.5,
+    buttonClick: 0.9,
     buttonHover: 0.2,
     propertyBuy: 1.0,
     moneyReceive: 1.0,
@@ -64,6 +64,13 @@ const soundMap = {
   "anime-wow": "/sounds/anime-wow.mp3",
   bruh: "/sounds/bruh.mp3",
   "vine-boom": "/sounds/vine-boom.mp3",
+
+  // Game events
+  "player-join": "/sounds/button-click.mp3",
+  "player-leave": "/sounds/button-click2.mp3",
+  "game-start": "/sounds/game-start.mp3",
+  "game-cancel": "/sounds/bruh.mp3",
+  "building-sell": "/sounds/money-receive.mp3",
 
   // Background music
   "background-music": "/sounds/background-music.mp3",
