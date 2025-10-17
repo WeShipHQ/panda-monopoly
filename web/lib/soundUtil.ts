@@ -51,7 +51,7 @@ const soundMap = {
   "money-receive": "/sounds/money-receive.mp3",
   "money-pay": "/sounds/money-pay.mp3",
   "rent-pay": "/sounds/money-pay.mp3",
-  "house-build": "/sounds/property-buy.mp3",
+  "house-build": "/sounds/up-house.wav",
   "hotel-build": "/sounds/property-buy.mp3",
 
   // Special events
