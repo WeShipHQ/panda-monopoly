@@ -5,6 +5,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 import { Spinner } from "./spinner";
+import { playSound, SOUND_CONFIG } from "@/lib/soundUtil";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center cursor-pointer whitespace-nowrap rounded-base text-sm font-base ring-offset-white transition-all gap-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
@@ -44,13 +45,39 @@ function Button({
   disabled,
   asChild = false,
   loading = false,
+  noSound = false,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
     loading?: boolean;
+    noSound?: boolean;
   }) {
   const Comp = asChild ? Slot : "button";
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    // Play click sound
+    if (!noSound && !disabled && !loading) {
+      playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+    }
+    
+    // Call original onClick if provided
+    if (props.onClick) {
+      props.onClick(e);
+    }
+  };
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
+    // Play hover sound
+    if (!noSound && !disabled && !loading) {
+      playSound("button-hover", SOUND_CONFIG.volumes.buttonHover);
+    }
+    
+    // Call original onMouseEnter if provided
+    if (props.onMouseEnter) {
+      props.onMouseEnter(e);
+    }
+  };
 
   return (
     <Comp
@@ -58,6 +85,8 @@ function Button({
       className={cn(buttonVariants({ variant, size, className, loading }))}
       disabled={disabled || loading}
       {...props}
+      onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
     >
       {loading && (
         <Spinner variant="bars" className={cn("!text-foreground absolute")} />

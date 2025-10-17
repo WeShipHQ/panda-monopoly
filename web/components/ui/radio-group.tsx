@@ -6,6 +6,7 @@ import { Circle } from "lucide-react"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { playSound, SOUND_CONFIG } from "@/lib/soundUtil"
 
 function RadioGroup({
   className,
@@ -22,8 +23,18 @@ function RadioGroup({
 
 function RadioGroupItem({
   className,
+  onClick,
   ...props
 }: React.ComponentProps<typeof RadioGroupPrimitive.Item>) {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
+    onClick?.(e);
+  };
+
+  const handleMouseEnter = () => {
+    playSound("button-hover", SOUND_CONFIG.volumes.buttonHover);
+  };
+
   return (
     <RadioGroupPrimitive.Item
       data-slot="radio-group-item"
@@ -31,6 +42,8 @@ function RadioGroupItem({
         "aspect-square size-4 rounded-full border-2 border-border text-black dark:text-white focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
+      onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
       {...props}
     >
       <RadioGroupPrimitive.Indicator className="flex items-center justify-center">

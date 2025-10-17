@@ -5,6 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import type { PlayerAccount } from "@/types/schema";
 import { Card, CardContent } from "./ui/card";
 import { formatAddress } from "@/lib/utils";
+import { playSound, SOUND_CONFIG } from "@/lib/soundUtil";
 
 interface PlayerSelectionStepProps {
   players: PlayerAccount[];
