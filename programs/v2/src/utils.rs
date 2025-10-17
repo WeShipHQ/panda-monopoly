@@ -171,3 +171,82 @@ pub fn bytes_to_option_pubkey(flag: u8, bytes: &[u8; 32]) -> Option<Pubkey> {
         Some(Pubkey::from(*bytes))
     }
 }
+
+/// Helper to get next account from iterator
+pub fn next_account_info<'a, 'b>(
+    iter: &'b mut core::slice::Iter<'a, AccountInfo>,
+) -> Result<&'a AccountInfo, ProgramError> {
+    iter.next().ok_or(ProgramError::NotEnoughAccountKeys)
+}
+
+/// Allocate and initialize an account
+pub fn allocate_account(
+    account: &AccountInfo,
+    space: usize,
+    owner: &Pubkey,
+    payer: &AccountInfo,
+    system_program: &AccountInfo,
+    signer_seeds: &[&[&[u8]]],
+) -> Result<(), ProgramError> {
+    let rent = pinocchio::sysvars::rent::Rent::get()?;
+    let required_lamports = rent.minimum_balance(space);
+    
+    // Transfer lamports for rent
+    if account.lamports() < required_lamports {
+        let additional_lamports = required_lamports - account.lamports();
+        transfer_lamports(payer, account, additional_lamports)?;
+    }
+    
+    // Allocate space
+    unsafe {
+        let account_info_data = account.borrow_mut_data_unchecked();
+        pinocchio::program::invoke_signed(
+            &pinocchio::instruction::Instruction {
+                program_id: pinocchio::ID,
+                accounts: vec![
+                    pinocchio::instruction::AccountMeta {
+                        pubkey: *account.key(),
+                        is_signer: true,
+                        is_writable: true,
+                    },
+                ],
+                data: {
+                    // System program allocate instruction
+                    let mut data = [0u8; 12];
+                    data[0..4].copy_from_slice(&8u32.to_le_bytes()); // Allocate discriminator
+                    data[4..12].copy_from_slice(&(space as u64).to_le_bytes());
+                    data.to_vec()
+                },
+            },
+            &[account],
+            signer_seeds,
+        )?;
+    }
+    
+    // Assign to owner
+    unsafe {
+        pinocchio::program::invoke_signed(
+            &pinocchio::instruction::Instruction {
+                program_id: pinocchio::ID,
+                accounts: vec![
+                    pinocchio::instruction::AccountMeta {
+                        pubkey: *account.key(),
+                        is_signer: true,
+                        is_writable: true,
+                    },
+                ],
+                data: {
+                    // System program assign instruction
+                    let mut data = [0u8; 36];
+                    data[0..4].copy_from_slice(&1u32.to_le_bytes()); // Assign discriminator
+                    data[4..36].copy_from_slice(owner.as_ref());
+                    data.to_vec()
+                },
+            },
+            &[account],
+            signer_seeds,
+        )?;
+    }
+    
+    Ok(())
+}

@@ -44,17 +44,25 @@ All 39 instructions have enum variants and data structures:
 ## ⚠️ In Progress / TODO
 
 ### Instruction Handlers
-None of the 39 instruction handlers are implemented yet. They all return `FeatureNotImplemented` error.
+**6 of 39 instruction handlers implemented (Phase 1 complete):**
+- ✅ create_platform_config
+- ✅ initialize_game (free games only)
+- ✅ join_game (free games only) 
+- ✅ start_game (no delegation)
+- ✅ roll_dice (no VRF)
+- ✅ end_turn
+
+**Remaining: 33 handlers to implement**
 
 Priority order for implementation:
 
-#### Phase 1: Core Game Flow (HIGH PRIORITY)
-- [ ] `create_platform_config` (platform.rs)
-- [ ] `initialize_game` (initialize.rs)
-- [ ] `join_game` (initialize.rs)
-- [ ] `start_game` (initialize.rs)
-- [ ] `roll_dice` (dice.rs)
-- [ ] `end_turn` (end_turn.rs)
+#### Phase 1: Core Game Flow (HIGH PRIORITY) ✅ COMPLETED
+- [x] `create_platform_config` (platform.rs) - **IMPLEMENTED**
+- [x] `initialize_game` (initialize.rs) - **IMPLEMENTED** (free games only, no token support yet)
+- [x] `join_game` (initialize.rs) - **IMPLEMENTED** (free games only)
+- [x] `start_game` (initialize.rs) - **IMPLEMENTED** (no ephemeral rollups delegation yet)
+- [x] `roll_dice` (dice.rs) - **IMPLEMENTED** (no VRF support yet, requires client-side dice roll)
+- [x] `end_turn` (end_turn.rs) - **IMPLEMENTED**
 
 #### Phase 2: Properties (HIGH PRIORITY)
 - [ ] `buy_property_v2` (property.rs)
