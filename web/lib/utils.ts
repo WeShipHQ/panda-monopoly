@@ -151,122 +151,191 @@ export function formatTimeAgo(input: Date | number | string): string {
   return isFuture ? `in ${value}${unit}` : `${value}${unit} ago`;
 }
 
-type PlayerInfo = {
-  id: number;
-  name: string;
-  color: string;
-  avatar: string;
-  position: number;
-  money: number;
-  properties: string[];
-  inJail: boolean;
-  jailTurns: number;
-};
-
-export function generatePlayerIcon(address: string): PlayerInfo {
-  // const icons = [
-  //   "🎩",
-  //   "🎯",
-  //   "🎲",
-  //   "🎪",
-  //   "🎨",
-  //   "🎭",
-  //   "🎸",
-  //   "🎺",
-  //   "🚗",
-  //   "🚕",
-  //   "🚙",
-  //   "🚌",
-  //   "🚎",
-  //   "🏎️",
-  //   "🚓",
-  //   "🚑",
-  //   "⭐",
-  //   "🌟",
-  //   "✨",
-  //   "💎",
-  //   "💰",
-  //   "🏆",
-  //   "🎖️",
-  //   "🏅",
-  //   "🦄",
-  //   "🐉",
-  //   "🦅",
-  //   "🦋",
-  //   "🐺",
-  //   "🦊",
-  //   "🐯",
-  //   "🦁",
-  // ];
-
-  const playerInfos = [
-    {
-      id: 1,
-      name: "Blue Baron",
-      color: "#4444ff",
-      avatar: "/images/blue-figure.png",
-      position: 0,
-      money: 1500,
-      properties: [],
-      inJail: false,
-      jailTurns: 0,
-    },
-    {
-      id: 2,
-      name: "Green Giant",
-      color: "#44ff44",
-      avatar: "/images/green-figure.png",
-      position: 0,
-      money: 1500,
-      properties: [],
-      inJail: false,
-      jailTurns: 0,
-    },
-    {
-      id: 3,
-      name: "Red Tycoon",
-      color: "#ff4444",
-      avatar: "/images/red-figure.png",
-      position: 0,
-      money: 1500,
-      properties: [],
-      inJail: false,
-      jailTurns: 0,
-    },
-    {
-      id: 4,
-      name: "Yellow Mogul",
-      color: "#ffdd44",
-      avatar: "/images/yellow-figure.png",
-      position: 0,
-      money: 1500,
-      properties: [],
-      inJail: false,
-      jailTurns: 0,
-    },
-  ];
-
-  let saved = {} as { [key: string]: PlayerInfo };
-
-  try {
-    saved = JSON.parse(localStorage.getItem("assignedPlayers") || "{}");
-  } catch (error) {
-    saved = {};
+export function lamportsToSol(lamports: number | bigint): number {
+  if (typeof lamports === "bigint") {
+    return Math.abs(Number(lamports)) / 1000000000;
   }
 
-  if (saved[address]) {
-    return saved[address];
-  }
-
-  const selectedIds = Object.values(saved).map((item) => item.id);
-
-  const availableItem = playerInfos.find(
-    (item) => !selectedIds.includes(item.id)
-  );
-  if (!availableItem) return {} as PlayerInfo;
-
-  saved[address] = availableItem;
-  localStorage.setItem("assignedPlayers", JSON.stringify(saved));
-
-  return availableItem;
+  return Math.abs(lamports) / 1000000000;
 }
+
+/**
+ * Format numbers with appropriate suffixes (K, M, B)
+ */
+export function formatNumber(
+  num: number | string,
+  options: {
+    locale?: string;
+    minDecimals?: number;
+    maxDecimals?: number;
+    useSuffixes?: boolean;
+  } = {}
+): string {
+  const {
+    locale = "en-US",
+    minDecimals = 0,
+    maxDecimals = 2,
+    useSuffixes = false,
+  } = options;
+
+  num = Number(num);
+
+  if (!isFinite(num) || isNaN(num)) return "N/A";
+
+  // Apply suffixes only when requested
+  if (useSuffixes) {
+    if (num >= 1e9) {
+      const value = num / 1e9;
+      return (
+        new Intl.NumberFormat(locale, {
+          minimumFractionDigits: minDecimals,
+          maximumFractionDigits: maxDecimals,
+        }).format(value) + "B"
+      );
+    }
+    if (num >= 1e6) {
+      const value = num / 1e6;
+      return (
+        new Intl.NumberFormat(locale, {
+          minimumFractionDigits: minDecimals,
+          maximumFractionDigits: maxDecimals,
+        }).format(value) + "M"
+      );
+    }
+    if (num >= 1e3) {
+      const value = num / 1e3;
+      return (
+        new Intl.NumberFormat(locale, {
+          minimumFractionDigits: minDecimals,
+          maximumFractionDigits: maxDecimals,
+        }).format(value) + "K"
+      );
+    }
+  }
+
+  // Format without suffixes
+  return new Intl.NumberFormat(locale, {
+    minimumFractionDigits: minDecimals,
+    maximumFractionDigits: maxDecimals,
+  }).format(num);
+}
+
+// type PlayerInfo = {
+//   id: number;
+//   name: string;
+//   color: string;
+//   avatar: string;
+//   position: number;
+//   money: number;
+//   properties: string[];
+//   inJail: boolean;
+//   jailTurns: number;
+// };
+
+// export function generatePlayerIcon(address: string): PlayerInfo {
+//   // const icons = [
+//   //   "🎩",
+//   //   "🎯",
+//   //   "🎲",
+//   //   "🎪",
+//   //   "🎨",
+//   //   "🎭",
+//   //   "🎸",
+//   //   "🎺",
+//   //   "🚗",
+//   //   "🚕",
+//   //   "🚙",
+//   //   "🚌",
+//   //   "🚎",
+//   //   "🏎️",
+//   //   "🚓",
+//   //   "🚑",
+//   //   "⭐",
+//   //   "🌟",
+//   //   "✨",
+//   //   "💎",
+//   //   "💰",
+//   //   "🏆",
+//   //   "🎖️",
+//   //   "🏅",
+//   //   "🦄",
+//   //   "🐉",
+//   //   "🦅",
+//   //   "🦋",
+//   //   "🐺",
+//   //   "🦊",
+//   //   "🐯",
+//   //   "🦁",
+//   // ];
+
+//   const playerInfos = [
+//     {
+//       id: 1,
+//       name: "Blue Baron",
+//       color: "#4444ff",
+//       avatar: "/images/blue-figure.png",
+//       position: 0,
+//       money: 1500,
+//       properties: [],
+//       inJail: false,
+//       jailTurns: 0,
+//     },
+//     {
+//       id: 2,
+//       name: "Green Giant",
+//       color: "#44ff44",
+//       avatar: "/images/green-figure.png",
+//       position: 0,
+//       money: 1500,
+//       properties: [],
+//       inJail: false,
+//       jailTurns: 0,
+//     },
+//     {
+//       id: 3,
+//       name: "Red Tycoon",
+//       color: "#ff4444",
+//       avatar: "/images/red-figure.png",
+//       position: 0,
+//       money: 1500,
+//       properties: [],
+//       inJail: false,
+//       jailTurns: 0,
+//     },
+//     {
+//       id: 4,
+//       name: "Yellow Mogul",
+//       color: "#ffdd44",
+//       avatar: "/images/yellow-figure.png",
+//       position: 0,
+//       money: 1500,
+//       properties: [],
+//       inJail: false,
+//       jailTurns: 0,
+//     },
+//   ];
+
+//   let saved = {} as { [key: string]: PlayerInfo };
+
+//   try {
+//     saved = JSON.parse(localStorage.getItem("assignedPlayers") || "{}");
+//   } catch (error) {
+//     saved = {};
+//   }
+
+//   if (saved[address]) {
+//     return saved[address];
+//   }
+
+//   const selectedIds = Object.values(saved).map((item) => item.id);
+
+//   const availableItem = playerInfos.find(
+//     (item) => !selectedIds.includes(item.id)
+//   );
+//   if (!availableItem) return {} as PlayerInfo;
+
+//   saved[address] = availableItem;
+//   localStorage.setItem("assignedPlayers", JSON.stringify(saved));
+
+//   return availableItem;
+// }

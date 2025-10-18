@@ -7,7 +7,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Eye } from "lucide-react";
 import { GameAccount } from "@/types/schema";
 import { GameStatus } from "@/lib/sdk/generated";
-import { formatAddress, formatPrice, formatTimeAgo } from "@/lib/utils";
+import {
+  formatAddress,
+  formatNumber,
+  formatPrice,
+  formatTimeAgo,
+  lamportsToSol,
+} from "@/lib/utils";
 
 interface GameItemProps {
   game: GameAccount;
@@ -90,26 +96,18 @@ export function GameItem({
     <Card className="bg-chart-3">
       <CardContent className="p-4 sm:p-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          {/* Left side - Player avatars and game info */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 flex-1">
-            {/* Player avatars */}
             <div className="flex items-center gap-3">
               <div className="flex -space-x-2">
                 {getPlayerAvatars(game.players, game.maxPlayers)}
               </div>
-              {/* <span className="text-sm font-medium">VS</span> */}
             </div>
 
-            {/* Entry fee and status */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-              {/* Entry fee */}
               <div className="flex items-center gap-2">
-                {/* <div className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">◎</span>
-                </div> */}
                 <span className="text-base sm:text-lg font-semibold text-foreground">
                   {game.entryFee > 0
-                    ? `◎ ${formatPrice(Number(game.entryFee) / 1e9)}`
+                    ? `◎ ${formatNumber(lamportsToSol(Number(game.entryFee)))}`
                     : "FREE"}
                 </span>
               </div>

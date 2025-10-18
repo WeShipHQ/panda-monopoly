@@ -9,36 +9,43 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { useWallet } from "@/hooks/use-wallet";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
-import { usePrivy, useSessionSigners } from "@privy-io/react-auth";
+import { useSessionSigners } from "@privy-io/react-auth";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import envConfig from "@/configs/env";
+import { useSolBalance } from "@/hooks/use-sol-balance";
+import { DepositDialog } from "@/components/deposit-dialog";
 
-type Step = "create" | "delegate" | "complete";
+type Step = "create" | "delegate" | "topup" | "complete";
 
 interface CreateGameWalletDialogProps {
   isOpen?: boolean;
   onClose?: () => void;
 }
 
-export function CreateGameWalletDialog({ isOpen: externalIsOpen, onClose: externalOnClose }: CreateGameWalletDialogProps = {}) {
+export function CreateGameWalletDialog({
+  isOpen: externalIsOpen,
+  onClose: externalOnClose,
+}: CreateGameWalletDialogProps = {}) {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<Step>("create");
   const [isCreating, setIsCreating] = useState(false);
   const [isDelegating, setIsDelegating] = useState(false);
+  const [isDepositDialogOpen, setIsDepositDialogOpen] = useState(false);
 
   const { authenticated, ready, wallet } = useWallet();
   const { createWallet } = useSolanaWallets();
   const { addSessionSigners } = useSessionSigners();
+  const { balanceInSol, isLoading: isBalanceLoading, refetch: refetchBalance } = useSolBalance(wallet?.address);
+  const MIN_SOL = 0.1;
 
   // Use external isOpen if provided, otherwise use internal state
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
-  
+
   const handleClose = () => {
     if (externalOnClose) {
       externalOnClose();
@@ -48,7 +55,12 @@ export function CreateGameWalletDialog({ isOpen: externalIsOpen, onClose: extern
   };
 
   useEffect(() => {
-    if (authenticated && ready && !wallet?.delegated && externalIsOpen === undefined) {
+    if (
+      authenticated &&
+      ready &&
+      !wallet?.delegated &&
+      externalIsOpen === undefined
+    ) {
       setTimeout(() => {
         setInternalIsOpen(true);
       }, 300);
@@ -97,11 +109,30 @@ export function CreateGameWalletDialog({ isOpen: externalIsOpen, onClose: extern
       });
 
       toast.success("Game wallet delegated successfully!");
-      setCurrentStep("complete");
 
-      setTimeout(() => {
-        handleClose();
-      }, 500);
+      // After delegation, check balance and route to topup if needed
+      try {
+        const newLamports = await refetchBalance();
+        const newSol =
+          typeof newLamports === "number"
+            ? Number(newLamports) / 1_000_000_000
+            : balanceInSol;
+
+        if (newSol < MIN_SOL) {
+          setCurrentStep("topup");
+        } else {
+          setCurrentStep("complete");
+          setTimeout(() => {
+            handleClose();
+          }, 500);
+        }
+      } catch {
+        // If balance check fails, proceed to complete to avoid blocking
+        setCurrentStep("complete");
+        setTimeout(() => {
+          handleClose();
+        }, 500);
+      }
     } catch (error) {
       console.error("Failed to delegate game wallet:", error);
       toast.error("Failed to delegate game wallet. Please try again.");
@@ -117,7 +148,28 @@ export function CreateGameWalletDialog({ isOpen: externalIsOpen, onClose: extern
     }, 500);
   };
 
-  if (externalIsOpen === undefined && wallet && wallet.delegated) return null;
+  const handleCheckBalanceAndProceed = async () => {
+    try {
+      const newLamports = await refetchBalance();
+      const newSol =
+        typeof newLamports === "number"
+          ? Number(newLamports) / 1_000_000_000
+          : balanceInSol;
+
+      if (newSol >= MIN_SOL) {
+        setCurrentStep("complete");
+        setTimeout(() => {
+          handleClose();
+        }, 500);
+      } else {
+        toast.info("Balance is still below 0.1 SOL. Please top up.");
+      }
+    } catch {
+      toast.error("Unable to refresh balance. Try again in a moment.");
+    }
+  };
+
+  if (externalIsOpen === undefined && wallet && wallet.delegated && currentStep !== "topup") return null;
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -230,6 +282,60 @@ export function CreateGameWalletDialog({ isOpen: externalIsOpen, onClose: extern
                 Delegate Wallet
               </Button>
             </DialogFooter>
+          </>
+        );
+
+      case "topup":
+        return (
+          <>
+            <DialogHeader>
+              <DialogTitle>Low Balance Detected</DialogTitle>
+              <DialogDescription>
+                Your game wallet is running on Solana Devnet. For smoother gameplay,
+                we recommend having at least {MIN_SOL} SOL. Current balance:
+                {isBalanceLoading ? (
+                  <span className="ml-1 inline-flex items-center">
+                    <Spinner className="h-4 w-4" />
+                  </span>
+                ) : (
+                  <span className="ml-1 font-medium">{balanceInSol.toFixed(4)} SOL</span>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-6 space-y-4">
+              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <p className="text-sm text-yellow-800">
+                  Tip: Use the Devnet faucet to receive free SOL, or deposit directly to your game wallet.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Button
+                  variant="neutral"
+                  onClick={() => setIsDepositDialogOpen(true)}
+                >
+                  Deposit SOL (QR)
+                </Button>
+                <Button
+                  onClick={() => window.open("https://faucet.solana.com/", "_blank")}
+                >
+                  Open Devnet Faucet
+                </Button>
+              </div>
+              <div className="flex justify-between gap-2">
+                <Button variant="neutral" onClick={handleSkipDelegation}>
+                  Skip for Now
+                </Button>
+                <Button onClick={handleCheckBalanceAndProceed}>
+                  I topped up, check balance
+                </Button>
+              </div>
+            </div>
+
+            <DepositDialog
+              isOpen={isDepositDialogOpen}
+              onClose={() => setIsDepositDialogOpen(false)}
+              walletAddress={wallet?.address || ""}
+            />
           </>
         );
 

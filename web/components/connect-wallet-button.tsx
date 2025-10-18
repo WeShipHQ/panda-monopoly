@@ -49,7 +49,11 @@ function WalletAddressWithCopy({
   );
 }
 
-export function ConnectWalletButton() {
+export function ConnectWalletButton({
+  onCreateGameWallet,
+}: {
+  onCreateGameWallet: () => void;
+}) {
   const { ready, authenticated, user, wallet } = useWallet();
 
   const { exportWallet } = useExportWallet();
@@ -63,10 +67,10 @@ export function ConnectWalletButton() {
     <div className="flex items-center gap-4">
       {authenticated ? (
         <>
-          {wallet && (
-            <>
-              <BalanceButton walletAddress={wallet.address} />
-            </>
+          {wallet && wallet.delegated ? (
+            <BalanceButton walletAddress={wallet.address} />
+          ) : (
+            <Button onClick={onCreateGameWallet}>Create Game Wallet</Button>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
