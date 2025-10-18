@@ -15,14 +15,14 @@ import { useWallet } from "@/hooks/use-wallet";
 import { playSound } from "@/lib/soundUtil";
 import { useGameContext } from "./game-provider";
 import {
-  showTaxPaidToast,
-  showPlayerPassedGoToast,
-  showPlayerJoinedToast,
-  showGameStartedToast,
-  showChanceCardDrawnToast,
-  showCommunityChestCardDrawnToast,
-  showGoToJailToast,
-  showPropertyPurchasedToast,
+  // showTaxPaidToast,
+  // showPlayerPassedGoToast,
+  // showPlayerJoinedToast,
+  // showGameStartedToast,
+  // showChanceCardDrawnToast,
+  // showCommunityChestCardDrawnToast,
+  // showGoToJailToast,
+  // showPropertyPurchasedToast,
   showGameEndedToast,
 } from "@/lib/toast-utils";
 import { getBoardSpaceData } from "@/lib/board-utils";
@@ -148,14 +148,14 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
     const unsubscribeTaxPaid = registerEventHandler(
       "TaxPaid",
       (data, context) => {
-        showTaxPaidToast({
-          isCurrentPlayer: context.isCurrentPlayer(data.player),
-          playerAddress: data.player.toString(),
-          taxType: data.taxType,
-          amount: data.amount,
-          position: data.position,
-        });
-        
+        // showTaxPaidToast({
+        //   isCurrentPlayer: context.isCurrentPlayer(data.player),
+        //   playerAddress: data.player.toString(),
+        //   taxType: data.taxType,
+        //   amount: data.amount,
+        //   position: data.position,
+        // });
+
         // Play money pay sound for tax
         if (context.isCurrentPlayer(data.player)) {
           playSound("money-pay", 0.6);
@@ -167,9 +167,9 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
       "PlayerPassedGo",
       (data, context) => {
         if (context.isCurrentPlayer(data.player)) {
-          showPlayerPassedGoToast({
-            salaryCollected: data.salaryCollected,
-          });
+          // showPlayerPassedGoToast({
+          //   salaryCollected: data.salaryCollected,
+          // });
 
           playSound("money-receive");
         }
@@ -180,14 +180,14 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
       "PlayerJoined",
       (data, context) => {
         // Show toast for everyone except the player who joined
-        if (!context.isCurrentPlayer(data.player)) {
-          showPlayerJoinedToast({
-            playerAddress: data.player,
-            playerIndex: data.playerIndex,
-            totalPlayers: data.totalPlayers,
-          });
-        }
-        
+        // if (!context.isCurrentPlayer(data.player)) {
+        //   showPlayerJoinedToast({
+        //     playerAddress: data.player,
+        //     playerIndex: data.playerIndex,
+        //     totalPlayers: data.totalPlayers,
+        //   });
+        // }
+
         // Play sound for ALL players in lobby (including the one who joined)
         playSound("player-join", 0.5);
       }
@@ -196,11 +196,11 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
     const unsubscribeGameStarted = registerEventHandler(
       "GameStarted",
       (data) => {
-        showGameStartedToast({
-          totalPlayers: data.totalPlayers,
-          firstPlayer: data.firstPlayer,
-        });
-        
+        // showGameStartedToast({
+        //   totalPlayers: data.totalPlayers,
+        //   firstPlayer: data.firstPlayer,
+        // });
+
         // Play game start sound for all players
         playSound("game-start", 0.4);
       }
@@ -210,11 +210,11 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
       "ChanceCardDrawn",
       (data, context) => {
         if (!context.isCurrentPlayer(data.player)) {
-          showChanceCardDrawnToast({
-            playerAddress: data.player,
-            cardIndex: data.cardIndex,
-            isCurrentPlayer: context.isCurrentPlayer(data.player),
-          });
+          // showChanceCardDrawnToast({
+          //   playerAddress: data.player,
+          //   cardIndex: data.cardIndex,
+          //   isCurrentPlayer: context.isCurrentPlayer(data.player),
+          // });
         }
       }
     );
@@ -223,11 +223,11 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
       "CommunityChestCardDrawn",
       (data, context) => {
         if (!context.isCurrentPlayer(data.player)) {
-          showCommunityChestCardDrawnToast({
-            playerAddress: data.player,
-            cardIndex: data.cardIndex,
-            isCurrentPlayer: context.isCurrentPlayer(data.player),
-          });
+          // showCommunityChestCardDrawnToast({
+          //   playerAddress: data.player,
+          //   cardIndex: data.cardIndex,
+          //   isCurrentPlayer: context.isCurrentPlayer(data.player),
+          // });
         }
       }
     );
@@ -236,11 +236,11 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
       "SpecialSpaceAction",
       (data, context) => {
         if (data.spaceType === 2) {
-          showGoToJailToast({
-            playerAddress: data.player,
-            isCurrentPlayer: context.isCurrentPlayer(data.player),
-          });
-          
+          // showGoToJailToast({
+          //   playerAddress: data.player,
+          //   isCurrentPlayer: context.isCurrentPlayer(data.player),
+          // });
+
           // Play jail sound for all players
           playSound("jail", 0.7);
         }
@@ -256,12 +256,12 @@ export const GameEventsProvider: React.FC<GameEventsProviderProps> = ({
 
         const isCurrentPlayer = context.isCurrentPlayer(data.player);
 
-        showPropertyPurchasedToast({
-          propertyName,
-          price: data.price,
-          isCurrentPlayer,
-          playerAddress: isCurrentPlayer ? undefined : data.player,
-        });
+        // showPropertyPurchasedToast({
+        //   propertyName,
+        //   price: data.price,
+        //   isCurrentPlayer,
+        //   playerAddress: isCurrentPlayer ? undefined : data.player,
+        // });
 
         // Play property buy sound for all players
         if (!isCurrentPlayer) {
