@@ -15,7 +15,8 @@
     "db:migrate": "drizzle-kit push",
     "db:migrate:files": "npx tsx src/infra/db/migrate.ts",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "blockchain:sync": "tsx src/scripts/blockchain-sync/index.ts"
   },
   "keywords": [],
   "author": "",
@@ -63,7 +64,7 @@
     "compression": "^1.8.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
-    "drizzle-orm": "^0.44.5",
+    "drizzle-orm": "^0.44.6",
     "env-schema": "^6.0.1",
     "express": "^5.1.0",
     "fastify": "^5.6.1",
