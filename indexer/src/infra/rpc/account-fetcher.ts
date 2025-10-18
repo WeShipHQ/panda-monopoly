@@ -191,9 +191,15 @@ type DecodedGameStateAccount = {
   activePlayers: number
 }
 
-function decodeGameStateAccountBuffer(data: Buffer): DecodedGameStateAccount | null {
+function decodeGameStateAccountBuffer(
+  data: Buffer,
+  ctx?: { accountAddress?: string; slot?: number }
+): DecodedGameStateAccount | null {
   if (data.length < MIN_GAME_STATE_ACCOUNT_SIZE) {
-    console.warn(`⚠️ GameState account too small (${data.length} bytes), skipping`)
+    logger.debug(
+      { account: ctx?.accountAddress, size: data.length, slot: ctx?.slot },
+      '⚠️ GameState account too small, skipping'
+    )
     return null
   }
   try {
@@ -404,7 +410,14 @@ function decodeGameStateAccountBuffer(data: Buffer): DecodedGameStateAccount | n
       activePlayers
     }
   } catch (error) {
-    console.warn('⚠️ Error decoding GameState account:', error)
+    logger.debug(
+      {
+        account: ctx?.accountAddress,
+        size: data.length,
+        error: error instanceof Error ? error.message : String(error)
+      },
+      '⚠️ Error decoding GameState account'
+    )
     return null
   }
 }
@@ -451,7 +464,7 @@ export function buildEnhancedGameDataFromBuffer(
   gameAccountAddress: string,
   slot = 0
 ): EnhancedGameData | null {
-  const decoded = decodeGameStateAccountBuffer(data)
+  const decoded = decodeGameStateAccountBuffer(data, { accountAddress: gameAccountAddress, slot })
   if (!decoded) return null
 
   const activeTrades = decoded.activeTrades.map(toTradeInfoFromDecoded)
@@ -537,7 +550,7 @@ export class BlockchainAccountFetcher {
       }
 
       const data = accountInfo.data
-      const decoded = decodeGameStateAccountBuffer(data)
+      const decoded = decodeGameStateAccountBuffer(data, { accountAddress: gameAccountAddress })
 
       if (!decoded) {
         console.warn(`⚠️ Could not decode GameState account ${gameAccountAddress}`)
