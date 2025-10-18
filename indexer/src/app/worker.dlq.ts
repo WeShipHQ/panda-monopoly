@@ -33,6 +33,7 @@ export function startDlqReplayer() {
       const record = data.record as { data?: { pubkey?: string } } | undefined
       await writerQueue.add('write', replayData, {
         delay: REPLAY_DELAY_MS,
+        priority: 10, // Low priority for DLQ replays
         jobId: record?.data?.pubkey ?? undefined // idempotent nếu có pubkey
       })
       metrics.incr('dlq:requeued')
