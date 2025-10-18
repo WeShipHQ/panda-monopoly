@@ -68,6 +68,8 @@ function MoneySelection({
     );
   }
 
+  const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0;
+
   return (
     <div className="space-y-3 p-4 border-3 border-black dark:border-white bg-white dark:bg-slate-900">
       <div className="flex items-center justify-between">
@@ -77,21 +79,62 @@ function MoneySelection({
         <span className="text-3xl font-black text-black dark:text-white">${value}</span>
       </div>
       <div className="px-2">
-        <Slider
+        <input
+          type="range"
           id={id}
           min={0}
           max={maxValue}
           step={10}
-          value={[value]}
-          onValueChange={(val) => onChange(val[0])}
+          value={value}
+          onChange={(e) => onChange(parseInt(e.target.value))}
           disabled={disabled}
-          className="h-3 bg-black dark:bg-white"
+          className="w-full h-4 bg-gray-200 border-3 border-black rounded-none appearance-none cursor-pointer trade-slider"
+          style={{
+            background: `linear-gradient(to right, #10b981 ${percentage}%, #e5e7eb ${percentage}%)`,
+          }}
         />
       </div>
       <div className="flex justify-between text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">
         <span>$0</span>
         <span>${maxValue}</span>
       </div>
+
+      <style jsx>{`
+        .trade-slider::-webkit-slider-thumb {
+          appearance: none;
+          height: 24px;
+          width: 24px;
+          border-radius: 0;
+          background: black;
+          cursor: pointer;
+          border: 3px solid white;
+          box-shadow: 3px 3px 0px 0px rgba(0, 0, 0, 0.8);
+        }
+
+        .trade-slider::-moz-range-thumb {
+          height: 24px;
+          width: 24px;
+          border-radius: 0;
+          background: black;
+          cursor: pointer;
+          border: 3px solid white;
+          box-shadow: 3px 3px 0px 0px rgba(0, 0, 0, 0.8);
+        }
+
+        .trade-slider::-webkit-slider-thumb:hover {
+          transform: scale(1.1);
+        }
+
+        .trade-slider::-webkit-slider-thumb:active {
+          transform: scale(0.95);
+          box-shadow: none;
+        }
+
+        .trade-slider:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      `}</style>
     </div>
   );
 }
@@ -339,18 +382,18 @@ export function CreateTradeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-950 border-4 border-black dark:border-white shadow-lg">
-        <DialogHeader className="pb-4 border-b-4 border-black dark:border-white">
-          <DialogTitle className="text-3xl font-black tracking-tighter">TRADE</DialogTitle>
-          <DialogDescription className="text-base font-semibold text-black dark:text-white">
+      <DialogContent className="w-[95vw] sm:w-[90vw] md:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-950 border-4 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] sm:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
+        <DialogHeader className="pb-3 sm:pb-4 border-b-4 border-black dark:border-white">
+          <DialogTitle className="text-2xl sm:text-3xl font-black tracking-tighter">TRADE</DialogTitle>
+          <DialogDescription className="text-sm sm:text-base font-semibold text-black dark:text-white">
             Select opponent and negotiate your terms
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-8 py-6">
+        <div className="space-y-4 sm:space-y-6 md:space-y-8 py-3 sm:py-4 md:py-6">
           {/* Player Selection */}
-          <div className="space-y-3">
-            <Label htmlFor="player" className="text-xl font-black uppercase tracking-wider">Who Trade With?</Label>
+          <div className="space-y-2 sm:space-y-3">
+            <Label htmlFor="player" className="text-base sm:text-lg md:text-xl font-black uppercase tracking-wider">Who Trade With?</Label>
             <Select
               value={selectedPlayerAddress}
               onValueChange={handlePlayerSelection}
@@ -385,8 +428,8 @@ export function CreateTradeDialog({
           </div>
 
           {/* Trade Type Selection */}
-          <div className="space-y-4">
-            <Label className="text-xl font-black uppercase tracking-wider">Trade Type</Label>
+          <div className="space-y-3 sm:space-y-4">
+            <Label className="text-base sm:text-lg md:text-xl font-black uppercase tracking-wider">Trade Type</Label>
             <RadioGroup
               value={tradeType}
               onValueChange={(value) => setTradeType(value as TradeType)}
@@ -425,10 +468,10 @@ export function CreateTradeDialog({
                     <Card
                       key={option.value}
                       className={`border-3 transition-all cursor-pointer ${isDisabled
-                          ? "opacity-40 cursor-not-allowed bg-slate-200 dark:bg-slate-800 border-slate-400 dark:border-slate-600"
-                          : tradeType === option.value
-                            ? "bg-black dark:bg-white border-black dark:border-white shadow-lg scale-105"
-                            : "border-black dark:border-white bg-white dark:bg-slate-900 hover:shadow-lg hover:scale-105"
+                        ? "opacity-40 cursor-not-allowed bg-slate-200 dark:bg-slate-800 border-slate-400 dark:border-slate-600"
+                        : tradeType === option.value
+                          ? "bg-black dark:bg-white border-black dark:border-white shadow-lg scale-105"
+                          : "border-black dark:border-white bg-white dark:bg-slate-900 hover:shadow-lg hover:scale-105"
                         }`}
                     >
                       <label
@@ -443,14 +486,14 @@ export function CreateTradeDialog({
                         />
                         <div className="flex-1">
                           <div className={`font-black text-base uppercase tracking-wide ${tradeType === option.value && !isDisabled
-                              ? "text-white dark:text-black"
-                              : "text-black dark:text-white"
+                            ? "text-white dark:text-black"
+                            : "text-black dark:text-white"
                             }`}>
                             {option.title}
                           </div>
                           <div className={`text-xs font-bold ${tradeType === option.value && !isDisabled
-                              ? "text-gray-200 dark:text-gray-800"
-                              : "text-slate-600 dark:text-slate-400"
+                            ? "text-gray-200 dark:text-gray-800"
+                            : "text-slate-600 dark:text-slate-400"
                             }`}>
                             {isDisabled ? disabledReason : option.desc}
                           </div>
@@ -465,11 +508,11 @@ export function CreateTradeDialog({
 
           {/* Trade Details */}
           {selectedPlayerAddress && availableTradeTypes.includes(tradeType) && (
-            <div className="border-4 border-black dark:border-white bg-slate-50 dark:bg-slate-900 p-6 space-y-6">
-              <div className="grid grid-cols-2 gap-6 items-start">
+            <div className="border-4 border-black dark:border-white bg-slate-50 dark:bg-slate-900 p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 items-start">
                 {/* Your Offer */}
-                <div className="space-y-4 border-r-4 border-black dark:border-white pr-6">
-                  <Label className="text-2xl font-black uppercase tracking-wider">YOU OFFER</Label>
+                <div className="space-y-3 sm:space-y-4 sm:border-r-4 border-black dark:border-white sm:pr-4 md:pr-6 pb-4 sm:pb-0 border-b-4 sm:border-b-0">
+                  <Label className="text-lg sm:text-xl md:text-2xl font-black uppercase tracking-wider">YOU OFFER</Label>
                   {(tradeType === "money-money" ||
                     tradeType === "money-property") && (
                       <MoneySelection
@@ -493,8 +536,8 @@ export function CreateTradeDialog({
                 </div>
 
                 {/* You Request */}
-                <div className="space-y-4">
-                  <Label className="text-2xl font-black uppercase tracking-wider">THEY GIVE</Label>
+                <div className="space-y-3 sm:space-y-4">
+                  <Label className="text-lg sm:text-xl md:text-2xl font-black uppercase tracking-wider">THEY GIVE</Label>
                   {(tradeType === "money-money" ||
                     tradeType === "property-money") && (
                       <MoneySelection
@@ -520,10 +563,10 @@ export function CreateTradeDialog({
             </div>
           )}
 
-          <div className="flex justify-end gap-4 pt-6 border-t-4 border-black dark:border-white">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-4 sm:pt-6 border-t-4 border-black dark:border-white">
             <Button
               onClick={() => onOpenChange(false)}
-              className="h-12 px-6 border-3 border-black dark:border-white bg-white dark:bg-slate-900 text-black dark:text-white font-black uppercase text-sm tracking-wider hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="h-10 sm:h-12 px-4 sm:px-6 border-3 border-black dark:border-white bg-white dark:bg-slate-900 text-black dark:text-white font-black uppercase text-xs sm:text-sm tracking-wider hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               Cancel
             </Button>
@@ -531,7 +574,7 @@ export function CreateTradeDialog({
               onClick={handleCreateTrade}
               loading={isRequesting}
               disabled={!isFormValid()}
-              className="h-12 px-8 border-3 border-black dark:border-white bg-black dark:bg-white text-white dark:text-black font-black uppercase text-sm tracking-wider hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-10 sm:h-12 px-6 sm:px-8 border-3 border-black dark:border-white bg-black dark:bg-white text-white dark:text-black font-black uppercase text-xs sm:text-sm tracking-wider hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               SEND OFFER
             </Button>
