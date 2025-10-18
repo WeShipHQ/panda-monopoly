@@ -308,7 +308,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[startGame] tx", signature);
-      
+
       // Play game start sound
       playSound("game-start", SOUND_CONFIG.volumes.specialEvents);
     } catch (error) {
@@ -404,7 +404,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[joinGame] tx", signature);
-      
+
       // Play player join sound
       playSound("player-join", SOUND_CONFIG.volumes.buttonClick);
     } catch (error) {
@@ -432,7 +432,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[leaveGame] tx", signature);
-      
+
       // Play player leave sound
       playSound("player-leave", SOUND_CONFIG.volumes.buttonClick);
     } catch (error) {
@@ -462,7 +462,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[cancelGame] tx", signature);
-      
+
       // Play game cancel sound
       playSound("game-cancel", SOUND_CONFIG.volumes.specialEvents);
     } catch (error) {
@@ -530,7 +530,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         // Play property buy sound
         playPropertySound("buy");
 
-        const propertyData = getTypedSpaceData(position, "property");
         soundUtil.playPropertySound("buy");
       } catch (error) {
         console.error("Error buying property:", error);
@@ -564,8 +563,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         );
 
         console.log("[skipProperty] tx", signature);
-
-        const propertyData = getTypedSpaceData(position, "property");
       } catch (error) {
         console.error("Error skipping property:", error);
         throw error;
@@ -601,8 +598,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         console.log("[payRent] tx", signature);
 
         playPropertySound("rent");
-
-        const propertyData = getTypedSpaceData(position, "property");
 
         console.log("Rent paid:", signature);
       } catch (error) {
@@ -721,15 +716,16 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         true
       );
 
-        console.log("[payJailFine] tx", signature);
-        
-        // Play money pay sound for jail fine
-        playSound("money-pay", SOUND_CONFIG.volumes.moneyPay);
-      } catch (error) {
-        console.error("Error paying jail fine:", error);
-        throw error;
-      }
-    }, [gameAddress, wallet]);  const useGetOutOfJailCard = useCallback(async (): Promise<void> => {
+      console.log("[payJailFine] tx", signature);
+
+      // Play money pay sound for jail fine
+      playSound("money-pay", SOUND_CONFIG.volumes.moneyPay);
+    } catch (error) {
+      console.error("Error paying jail fine:", error);
+      throw error;
+    }
+  }, [gameAddress, wallet]);
+  const useGetOutOfJailCard = useCallback(async (): Promise<void> => {
     if (!gameAddress || !wallet?.address || !wallet.delegated) {
       throw new Error("Game address or player signer not available");
     }
@@ -779,7 +775,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         );
 
         console.log("[buildHouse] tx", signature);
-        
+
         // Play house build sound
         playSound("house-build", SOUND_CONFIG.volumes.propertyBuy);
       } catch (error) {
@@ -813,7 +809,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         );
 
         console.log("[buildHotel] tx", signature);
-        
+
         // Play hotel build sound
         playSound("hotel-build", SOUND_CONFIG.volumes.propertyBuy);
       } catch (error) {
@@ -849,7 +845,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         );
 
         console.log("[sellBuilding] tx", signature);
-        
+
         // Play building sell sound when selling building
         playSound("building-sell", SOUND_CONFIG.volumes.moneyReceive);
       } catch (error) {
@@ -881,7 +877,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[payMevTax] tx", signature);
-      
+
       // Play money pay sound for MEV tax
       playSound("money-pay", SOUND_CONFIG.volumes.moneyPay);
     } catch (error) {
@@ -912,7 +908,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[payPriorityFeeTax] tx", signature);
-      
+
       // Play money pay sound for priority fee tax
       playSound("money-pay", SOUND_CONFIG.volumes.moneyPay);
     } catch (error) {
@@ -973,8 +969,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         // Play button click sound for creating trade
         playSound("button-click", SOUND_CONFIG.volumes.buttonClick);
-        
-        toast.success("Trade created successfully!");
       } catch (error) {
         console.error("Error creating trade:", error);
         toast.error("Failed to create trade");
@@ -1009,12 +1003,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         console.log("[acceptTrade] tx", signature);
 
-        // Refresh game state to get updated trades
-
         // Play money receive sound for successful trade
         playSound("money-receive", SOUND_CONFIG.volumes.moneyReceive);
-        
-        toast.success("Trade accepted successfully!");
       } catch (error) {
         console.error("Error accepting trade:", error);
         toast.error("Failed to accept trade");
@@ -1051,8 +1041,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         // Play button click sound for rejecting trade
         playSound("button-click2", SOUND_CONFIG.volumes.buttonClick);
-        
-        toast.success("Trade rejected successfully!");
       } catch (error) {
         console.error("Error rejecting trade:", error);
         toast.error("Failed to reject trade");
@@ -1088,8 +1076,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         // Play button click sound for canceling trade
         playSound("button-click2", SOUND_CONFIG.volumes.buttonClick);
-        
-        toast.success("Trade cancelled successfully!");
       } catch (error) {
         console.error("Error canceling trade:", error);
         toast.error("Failed to cancel trade");
@@ -1126,9 +1112,13 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[declareBankruptcy] tx", signature);
-      
+
       // Play lose sound for bankruptcy
-      playSound("lose", SOUND_CONFIG.volumes.lose, SOUND_CONFIG.durations.loseSound);
+      playSound(
+        "lose",
+        SOUND_CONFIG.volumes.lose,
+        SOUND_CONFIG.durations.loseSound
+      );
     } catch (error) {
       console.error("Error declaring bankruptcy:", error);
       throw error;
@@ -1187,9 +1177,13 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       console.log("[claimReward] tx", signature);
-      
+
       // Play win sound for claiming reward
-      playSound("win", SOUND_CONFIG.volumes.win, SOUND_CONFIG.durations.winSound);
+      playSound(
+        "win",
+        SOUND_CONFIG.volumes.win,
+        SOUND_CONFIG.durations.winSound
+      );
     } catch (error) {
       console.error("Error claiming reward:", error);
       throw error;
@@ -1260,28 +1254,26 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
             const ownerPlayer = getPlayerByAddress(property.owner as Address);
             if (ownerPlayer) {
-              const rentAmount = calculateRentForProperty(
-                property,
-                ownerPlayer,
-                player.lastDiceRoll as [number, number],
-                properties
-              );
-
-              const propertyData = getBoardSpaceData(property.position);
-              const propertyName = propertyData?.name || "Property";
-
-              showRentPaymentToast({
-                rentAmount,
-                ownerAddress: property.owner,
-                propertyName,
-              });
+              // const rentAmount = calculateRentForProperty(
+              //   property,
+              //   ownerPlayer,
+              //   player.lastDiceRoll as [number, number],
+              //   properties
+              // );
+              // const propertyData = getBoardSpaceData(property.position);
+              // const propertyName = propertyData?.name || "Property";
+              // showRentPaymentToast({
+              //   rentAmount,
+              //   ownerAddress: property.owner,
+              //   propertyName,
+              // });
             } else {
               // Fallback toast if owner player data is not available
-              const propertyData = getBoardSpaceData(property.position);
-              showRentPaymentFallbackToast({
-                ownerAddress: property.owner,
-                propertyName: propertyData?.name || "Property",
-              });
+              // const propertyData = getBoardSpaceData(property.position);
+              // showRentPaymentFallbackToast({
+              //   ownerAddress: property.owner,
+              //   propertyName: propertyData?.name || "Property",
+              // });
             }
           } catch (error) {
             console.error("Error auto-paying rent:", error);

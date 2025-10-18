@@ -30,13 +30,13 @@ export default function Header() {
             <div className="relative w-12 h-12 md:w-14 md:h-14 border-4 border-black bg-white shadow-[4px_4px_0_#000] group-hover:shadow-[6px_6px_0_#000] group-hover:-translate-y-1 transition-all duration-300">
               <Image
                 src="/logo.jpg"
-                alt="Panda Monopoly"
+                alt="Poo Town"
                 fill
                 className="object-cover"
               />
             </div>
             <span className="text-xl md:text-2xl font-black uppercase tracking-tight text-black group-hover:text-[#ff0080] transition-colors duration-300">
-              PANDA MONOPOLY
+              POO TOWN
             </span>
           </Link>
 
@@ -74,11 +74,6 @@ export default function Header() {
               href="/lobby"
               className="bg-[#9945ff] text-black border-4 border-black shadow-[5px_5px_0_#000] px-5 md:px-6 py-2 md:py-3 font-black uppercase text-sm md:text-base transition-all duration-300 hover:bg-[#14f195] hover:shadow-[7px_7px_0_#000] hover:-translate-y-1 active:shadow-[3px_3px_0_#000] active:translate-y-0 flex items-center gap-2"
             >
-              {/* <img 
-                                src="/images/panda-background-hero.png" 
-                                alt="Panda" 
-                                className="w-6 h-6 md:w-7 md:h-7 object-contain"
-                            /> */}
               PLAY NOW
             </Link>
 

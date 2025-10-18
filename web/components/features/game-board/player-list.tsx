@@ -4,8 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn, formatAddress, formatPrice } from "@/lib/utils";
 import { useGameContext } from "@/components/providers/game-provider";
-import Link from "next/link";
-import { HomeIcon } from "lucide-react";
 import { useWallet } from "@/hooks/use-wallet";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
@@ -58,7 +56,7 @@ function BalanceChangeAnimation({
       )}
     >
       {sign}
-      {formatPrice(Math.abs(change))}
+      {formatPrice(Math.abs(change), { maxDecimals: 0, minDecimals: 0 })}
     </motion.div>
   );
 }
@@ -86,7 +84,7 @@ function PlayerItem({
     if (previousBalance !== null && previousBalance !== currentBalance) {
       const change = currentBalance - previousBalance;
       setBalanceChange(change);
-      setAnimationKey((prev) => prev + 1); // Force new animation instance
+      setAnimationKey((prev) => prev + 1);
     }
     setPreviousBalance(currentBalance);
   }, [currentBalance, previousBalance]);

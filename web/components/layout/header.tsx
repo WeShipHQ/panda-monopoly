@@ -5,6 +5,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { ConnectWalletButton } from "../connect-wallet-button";
 import Link from "next/link";
+import { CreateGameWalletDialog } from "../create-game-wallet-dialog";
 
 const scrolltoHash = function (element_id: string) {
   const element = document.getElementById(element_id);
@@ -17,6 +18,8 @@ const scrolltoHash = function (element_id: string) {
 
 const NavBar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isCreateGameWalletDialogOpen, setIsCreateGameWalletDialogOpen] =
+    useState(false);
 
   return (
     <>
@@ -38,7 +41,7 @@ const NavBar = () => {
     text-black dark:text-white transform -rotate-2 hover:rotate-0 transition-transform
     duration-300 min-w-[80px] xs:min-w-[100px] lg:text-5xl"
             >
-              <Link href="/">
+              <Link href="/lobby">
                 <Image
                   src="/logo.jpg"
                   alt="Panda Monopoly Logo"
@@ -54,7 +57,9 @@ const NavBar = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center text-base lg:text-lg space-x-6">
             <div className="flex items-center gap-4">
-              <ConnectWalletButton />
+              <ConnectWalletButton
+                onCreateGameWallet={() => setIsCreateGameWalletDialogOpen(true)}
+              />
             </div>
           </div>
 
@@ -87,21 +92,15 @@ const NavBar = () => {
             }}
           >
             <MobileNavLinks setIsOpen={setIsOpen} />
-            <div className="mt-4 p-2">
-              {/* <DialogComponent
-                triggerButtonText="Get in Touch!"
-                dialogTitle="Get in Touch"
-                dialogDescription="Please fill out the form below to get in touch with us."
-                inputLabels={{
-                  name: "Name",
-                  email: "Email",
-                  message: "Message",
-                }}
-              /> */}
-            </div>
+            <div className="mt-4 p-2"></div>
           </div>
         </div>
       )}
+
+      <CreateGameWalletDialog
+        isOpen={isCreateGameWalletDialogOpen}
+        onClose={() => setIsCreateGameWalletDialogOpen(false)}
+      />
     </>
   );
 };

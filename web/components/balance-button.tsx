@@ -5,13 +5,17 @@ import { useSolBalance } from "@/hooks/use-sol-balance";
 import { WalletIcon } from "@/components/ui/icons";
 import { DepositDialog } from "./deposit-dialog";
 import { useState } from "react";
+import { formatNumber } from "@/lib/utils";
 
 interface BalanceButtonProps {
   walletAddress: string;
   className?: string;
 }
 
-export function BalanceButton({ walletAddress, className }: BalanceButtonProps) {
+export function BalanceButton({
+  walletAddress,
+  className,
+}: BalanceButtonProps) {
   const { balanceInSol, isLoading, error } = useSolBalance(walletAddress);
   const [isDepositDialogOpen, setIsDepositDialogOpen] = useState(false);
 
@@ -35,16 +39,16 @@ export function BalanceButton({ walletAddress, className }: BalanceButtonProps) 
 
   return (
     <>
-      <Button 
-        variant="neutral" 
-        size="default" 
+      <Button
+        variant="neutral"
+        size="default"
         className={className}
         onClick={() => setIsDepositDialogOpen(true)}
       >
         <WalletIcon className="w-4 h-4 mr-2" />
-        {balanceInSol.toFixed(4)} SOL
+        {formatNumber(balanceInSol)} SOL
       </Button>
-      
+
       <DepositDialog
         isOpen={isDepositDialogOpen}
         onClose={() => setIsDepositDialogOpen(false)}

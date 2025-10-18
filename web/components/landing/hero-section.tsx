@@ -3,63 +3,12 @@
 import { useState, useEffect, useMemo } from "react";
 import AnimatedGridBackground from "./animated-grid-background";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import Link from "next/link";
 
 export default function HeroSection() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [layoutKey, setLayoutKey] = useState(0);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
-  const randomizeLayout = () => {
-    setLayoutKey((prev) => prev + 1);
-  };
-
-  // Generate stable layout based on layoutKey
-  const blocks = useMemo(() => {
-    const sizes = [1, 1, 1, 1, 2];
-    const rotations = [-4, -2, 0, 2, 4, 6];
-
-    return [...Array(35)].map((_, i) => ({
-      size: sizes[Math.floor(Math.random() * sizes.length)],
-      rotation: rotations[Math.floor(Math.random() * rotations.length)],
-      color:
-        i % 4 === 0
-          ? "#ff0080"
-          : i % 4 === 1
-          ? "#9945ff"
-          : i % 4 === 2
-          ? "#14f195"
-          : "#ffed00",
-    }));
-  }, [layoutKey]);
-
   return (
     <div className="relative min-h-screen flex flex-col pt-[50px] bg-white/90 border-b-8 border-black">
       <AnimatedGridBackground />
-
-      {/* Property Blocks Grid */}
-      {/* <div className="bg-grid">
-                {blocks.map((block, i) => (
-                    <div
-                        key={i}
-                        className="property-block"
-                        style={{
-                            // @ts-ignore
-                            "--bg-color": block.color,
-                            gridColumn: `span ${block.size}`,
-                            gridRow: `span ${block.size}`,
-                            transform: `rotate(${block.rotation}deg)`,
-                            animationDelay: `${i * 0.08}s`,
-                        }}
-                    />
-                ))}
-            </div> */}
 
       {/* Panda Character - Centered Vertically */}
       <div className="absolute top-1/2 -translate-y-1/2 right-[3%] lg:right-[5%] xl:right-[8%] z-20 hidden lg:block pointer-events-none">
@@ -100,10 +49,12 @@ export default function HeroSection() {
           </p>
         </div>
 
-        <button className="bg-[#9945ff] text-white border-4 lg:border-5 border-black shadow-[11px_11px_0_#000] lg:shadow-[14px_14px_0_#000] px-7 lg:px-9 py-5 lg:py-6 text-xl md:text-2xl lg:text-3xl font-black uppercase max-w-fit transition-all duration-500 hover:bg-[#14f195] hover:text-black hover:scale-110 hover:rotate-3 hover:shadow-[16px_16px_0_#000] lg:hover:shadow-[20px_20px_0_#000] active:scale-95 active:shadow-[7px_7px_0_#000] lg:active:shadow-[9px_9px_0_#000] animate-[slide-in-bottom_0.8s_ease-out_0.5s] animate-fill-both group relative overflow-hidden">
-          <span className="relative z-10">🚀 CONNECT WALLET & PLAY</span>
-          <div className="absolute inset-0 bg-[#ff0080] translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-        </button>
+        <Link href="/lobby">
+          <button className="bg-[#9945ff] text-white border-4 lg:border-5 border-black shadow-[11px_11px_0_#000] lg:shadow-[14px_14px_0_#000] px-7 lg:px-9 py-5 lg:py-6 text-xl md:text-2xl lg:text-3xl font-black uppercase max-w-fit transition-all duration-500 hover:bg-[#14f195] hover:text-black hover:scale-110 hover:rotate-3 hover:shadow-[16px_16px_0_#000] lg:hover:shadow-[20px_20px_0_#000] active:scale-95 active:shadow-[7px_7px_0_#000] lg:active:shadow-[9px_9px_0_#000] animate-[slide-in-bottom_0.8s_ease-out_0.5s] animate-fill-both group relative overflow-hidden">
+            <span className="relative z-10">🚀 CONNECT WALLET & PLAY</span>
+            <div className="absolute inset-0 bg-[#ff0080] translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+          </button>
+        </Link>
 
         {/* Panda for Mobile/Tablet */}
         <div className="lg:hidden flex justify-center mt-12">
