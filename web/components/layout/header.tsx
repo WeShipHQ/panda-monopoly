@@ -92,18 +92,7 @@ const NavBar = () => {
             }}
           >
             <MobileNavLinks setIsOpen={setIsOpen} />
-            <div className="mt-4 p-2">
-              {/* <DialogComponent
-                triggerButtonText="Get in Touch!"
-                dialogTitle="Get in Touch"
-                dialogDescription="Please fill out the form below to get in touch with us."
-                inputLabels={{
-                  name: "Name",
-                  email: "Email",
-                  message: "Message",
-                }}
-              /> */}
-            </div>
+            <div className="mt-4 p-2"></div>
           </div>
         </div>
       )}
