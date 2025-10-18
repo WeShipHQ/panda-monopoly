@@ -1,23 +1,26 @@
 import { env } from '#config'
-import { bullJobDefaults, bullLimiter } from '#config/env'
+
 import { Queue, Worker, QueueEvents, QueueOptions, WorkerOptions } from 'bullmq'
 import IORedis from 'ioredis'
 
 export const connection = new IORedis(env.redis.url, {
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
-  lazyConnect: false
+  lazyConnect: false,
+  connectTimeout: 30000,
+  commandTimeout: 30000,
+  enableOfflineQueue: true
 })
 
 const baseQueueOpts: Omit<QueueOptions, 'connection'> = {
-  prefix: env.bullmq.prefix
+  prefix: env.queue.prefix
 }
 
 const queueOpts = {
   connection,
-  prefix: env.bullmq.prefix,
-  defaultJobOptions: bullJobDefaults,
-  ...(bullLimiter ? { limiter: bullLimiter } : {})
+  prefix: env.queue.prefix,
+  defaultJobOptions: env.queue.jobDefaults,
+  ...(env.queue.limiter ? { limiter: env.queue.limiter } : {})
 }
 
 export function createQueue(name: string) {
@@ -28,7 +31,7 @@ export function createQueueEvents(name: string) {
 }
 const baseWorkerOpts = {
   connection,
-  prefix: env.bullmq.prefix
+  prefix: env.queue.prefix
 }
 
 export function createWorker<Name extends string, Data = any>(
@@ -40,12 +43,12 @@ export function createWorker<Name extends string, Data = any>(
 }
 
 export const realtimeQueue = new Queue('realtime', queueOpts)
-export const backfillQueue = new Queue('backfill', queueOpts)
+
 export const writerQueue = new Queue('writer', queueOpts)
 export const writerDlq = new Queue('writer-dlq', queueOpts)
 
-export const writerEvents = new QueueEvents('writer', { connection, prefix: env.bullmq.prefix })
-export const writerDlqEvents = new QueueEvents('writer-dlq', { connection, prefix: env.bullmq.prefix })
+export const writerEvents = new QueueEvents('writer', { connection, prefix: env.queue.prefix })
+export const writerDlqEvents = new QueueEvents('writer-dlq', { connection, prefix: env.queue.prefix })
 
 export const workerBaseOpts = baseWorkerOpts
 

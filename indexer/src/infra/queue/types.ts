@@ -1,25 +1,10 @@
-/**
- * Queue job types for Panda Monopoly Indexer
- *
- * Defines the data structures for different types of background processing jobs.
- * Each job type corresponds to a specific blockchain account type that needs indexing.
- *
- * Architecture:
- * - RealtimeJob: Processes live blockchain events as they occur
- * - BackfillJob: Processes historical blockchain data during sync
- * - WriterJob: Persists processed data to the database
- * - MonopolyRecord: Union type for all supported blockchain account types
- *
- * @author Senior Engineer - Following Google Code Standards
- */
-
 import type {
   NewGameState,
   NewPlayerState,
-  NewPropertyState,
-  NewTradeState,
   NewAuctionState,
-  NewPlatformConfig
+  NewPlatformConfig,
+  NewPropertyState,
+  NewTradeState
 } from '#infra/db/schema'
 
 /**
@@ -34,6 +19,15 @@ export interface RealtimeJob {
  */
 export interface BackfillJob {
   readonly signature: string
+}
+
+/**
+ * Program account discovery job for scanning existing accounts
+ */
+export interface DiscoveryJob {
+  readonly signature: string
+  readonly accountAddress: string
+  readonly accountType: 'gameState' | 'platformConfig' | 'playerState' | 'propertyState'
 }
 
 /**
