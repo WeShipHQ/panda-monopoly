@@ -1,5 +1,6 @@
 import '@/global.css';
 
+import { PrivyProvider } from '@privy-io/expo';
 import { NAV_THEME } from '@/lib/theme';
 import { ThemeProvider } from '@react-navigation/native';
 import { PortalHost } from '@rn-primitives/portal';
@@ -16,10 +17,14 @@ export default function RootLayout() {
   const { colorScheme } = useColorScheme();
 
   return (
-    <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      <Stack />
-      <PortalHost />
-    </ThemeProvider>
+    <PrivyProvider
+      appId="cmg1of716002lld0dxohylrr1"
+      clientId="client-WY6RPwsqAjBzVGqo8WZ7g4mQqsQZCgLDh69RgKGJy1E8R">
+      <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+        <Stack />
+        <PortalHost />
+      </ThemeProvider>
+    </PrivyProvider>
   );
 }

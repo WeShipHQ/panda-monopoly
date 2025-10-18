@@ -11,6 +11,7 @@ module.exports = {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
+        shadow: 'hsl(var(--shadow))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         primary: {
@@ -63,6 +64,13 @@ module.exports = {
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+      },
+      boxShadow: {
+        shadow: '4px 4px 0px 0px black',
+      },
+      spacing: {
+        boxShadowX: '4px',
+        boxShadowY: '4px',
       },
     },
   },
