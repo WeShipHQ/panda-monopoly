@@ -1,15 +1,3 @@
-/**
- * Property Utilities Module
- *
- * Contains all utility functions for property-related calculations,
- * validations, and data retrieval based on board positions.
- *
- * This module provides highly reusable functions for property pricing,
- * rent calculations, color group determination, and property type classification.
- *
- * @author Senior Engineer - Following Google Code Standards
- */
-
 import type { ColorGroup, PropertyType } from '#infra/db/schema'
 import {
   MONOPOLY_BOARD_SPACES,

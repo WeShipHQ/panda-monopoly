@@ -29,13 +29,12 @@ export default async function routes(fastify: FastifyInstance) {
     }
   }))
 
-  // Register all route modules
   await fastify.register(healthRoutes)
-  await fastify.register(gameStatesRoutes)
-  await fastify.register(playerStatesRoutes)
-  await fastify.register(propertyStatesRoutes)
-  await fastify.register(tradeStatesRoutes)
-  await fastify.register(gameLogsRoutes)
+  // await fastify.register(gameStatesRoutes)
+  // await fastify.register(playerStatesRoutes)
+  // await fastify.register(propertyStatesRoutes)
+  // await fastify.register(tradeStatesRoutes)
+  // await fastify.register(gameLogsRoutes)
   await fastify.register(leaderboardRoutes)
   await fastify.register(rpcStatusRoutes)
   await fastify.register(metricsRoutes)

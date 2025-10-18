@@ -1,13 +1,3 @@
-/**
- * Game Log Service - Manages game event logging operations
- *
- * Handles all database operations related to game logs for tracking
- * player actions and game events. Provides structured logging for
- * frontend consumption and game analytics.
- *
- * @author Senior Engineer - Following Google Code Standards
- */
-
 import type { GameLog, NewGameLog, GameLogType, GameLogEntry } from '#infra/db/schema'
 import type { DatabasePort } from '#infra/db/db.port'
 import type { BaseService, QueryFilters, PaginatedResult } from './base.service'

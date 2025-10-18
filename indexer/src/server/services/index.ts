@@ -1,12 +1,3 @@
-/**
- * Service Layer Exports
- *
- * Provides centralized access to all business logic services.
- * Each service encapsulates operations for a specific blockchain entity type.
- *
- * @author Senior Engineer - Following Google Code Standards
- */
-
 // Base service types and utilities
 export * from './base.service'
 
@@ -71,16 +62,10 @@ export class ServiceContainer {
   /**
    * Initialize all services (if needed)
    */
-  async initialize(): Promise<void> {
-    // Services don't currently need initialization
-    // This is a hook for future service setup requirements
-  }
+  async initialize(): Promise<void> {}
 
   /**
    * Cleanup resources when shutting down
    */
-  async cleanup(): Promise<void> {
-    // Services don't currently need cleanup
-    // This is a hook for future resource cleanup requirements
-  }
+  async cleanup(): Promise<void> {}
 }

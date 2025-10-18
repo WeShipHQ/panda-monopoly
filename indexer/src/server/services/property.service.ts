@@ -1,21 +1,8 @@
-/**
- * PropertyState Service - Manages property state and real estate operations
- *
- * Handles all database operations related to PropertyStateState blockchain accounts.
- * Provides property-specific business logic and ownership tracking.
- *
- * @author Senior Engineer - Following Google Code Standards
- */
-
 import type { PropertyState, NewPropertyState, ColorGroup, PropertyType } from '#infra/db/schema'
 import type { DatabasePort } from '#infra/db/db.port'
 import type { BaseService, QueryFilters, PaginationOptions, PaginatedResult } from './base.service'
 import { ServiceError, EntityNotFoundError, DatabaseError } from './base.service'
 
-/**
- * PropertyState-specific query filters
- * Provides type-safe filtering for property queries
- */
 export interface PropertyStateQueryFilters extends QueryFilters {
   readonly owner?: string
   readonly game?: string // game pubkey, not numeric gameId
@@ -286,7 +273,7 @@ export class PropertyService implements BaseService<PropertyState, NewPropertySt
   /**
    * Calculate rent for a property based on current state
    */
-  async calculateRent(propertyPubkey: string, gameId?: string): Promise<RentCalculation> {
+  async calculateRent(propertyPubkey: string, gamePubkeyOverride?: string): Promise<RentCalculation> {
     try {
       const property = await this.getByPubkey(propertyPubkey)
       if (!property) {
@@ -299,17 +286,16 @@ export class PropertyService implements BaseService<PropertyState, NewPropertySt
       let buildingMultiplier = 1
       const specialModifiers: string[] = []
 
-      // Check for color group monopoly
+      // Check for color group monopoly (requires game pubkey)
       if (property.owner && property.colorGroup) {
-        const monopoly = await this.checkColorGroupMonopoly(
-          property.owner,
-          property.colorGroup,
-          gameId ?? property.game
-        )
-        if (monopoly) {
-          hasMonopoly = true
-          actualRent = property.rentWithColorGroup ?? baseRent * 2
-          specialModifiers.push('Color group monopoly')
+        const effectiveGamePubkey = gamePubkeyOverride ?? property.game
+        if (effectiveGamePubkey) {
+          const monopoly = await this.checkColorGroupMonopoly(property.owner, property.colorGroup, effectiveGamePubkey)
+          if (monopoly) {
+            hasMonopoly = true
+            actualRent = property.rentWithColorGroup ?? baseRent * 2
+            specialModifiers.push('Color group monopoly')
+          }
         }
       }
 

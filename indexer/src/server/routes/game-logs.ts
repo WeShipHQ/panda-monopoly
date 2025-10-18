@@ -1,18 +1,3 @@
-/**
- * Game Logs Routes
- *
- * Handles REST API endpoints for game log operations.
- * Provides endpoints for creating game logs and querying game history.
- *
- * Architecture principles:
- * - All responses use standardized API format
- * - Consistent error handling and logging
- * - Game-scoped operations for log management
- * - Performance optimized with proper pagination and filtering
- *
- * @author Senior Engineer - Following Google Code Standards
- */
-
 import { FastifyInstance } from 'fastify'
 import { Type } from '@sinclair/typebox'
 import { DatabasePort } from '#infra/db/db.port'

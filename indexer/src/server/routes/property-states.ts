@@ -1,18 +1,3 @@
-/**
- * Property States Routes
- *
- * Handles REST API endpoints for PropertyState blockchain accounts.
- * ALL operations are game-scoped - properties belong to specific games.
- *
- * Architecture principles:
- * - Game-scoped operations (all endpoints require gameId)
- * - Standardized API response format
- * - Efficient filtering and pagination
- * - Board position-based queries for gameplay logic
- *
- * @author Senior Engineer - Following Google Code Standards
- */
-
 import { FastifyInstance } from 'fastify'
 import { Type } from '@sinclair/typebox'
 import { DatabasePort } from '#infra/db/db.port'

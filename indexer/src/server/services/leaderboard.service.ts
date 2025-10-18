@@ -1,16 +1,3 @@
-/**
- * Leaderboard Service - Manages player statistics and rankings
- *
- * Handles all operations related to player leaderboards, statistics,
- *      // Filter by minimum games if specified
-      let filteredStats = playerStats
-      if (filters.minGames && filters.minGames > 0) {
-        filteredStats = playerStats.filter(p => p.totalGamesPlayed >= (filters.minGames || 0))
-      }game analytics for marketing and engagement purposes.
- *
- * @author Senior Engineer - Following Google Code Standards
- */
-
 import type { DatabasePort, QueryFilters, PaginatedResult } from '#infra/db/db.port'
 import type { GameState, GameStatus } from '#infra/db/schema'
 import { DatabaseError } from './base.service'
@@ -431,14 +418,144 @@ export class LeaderboardService {
     pagination = { limit: 10, page: 1 }
   ): Promise<PaginatedResult<PlayerStats & { leaderboardScore: number }>> {
     try {
-      // Optimized: Parallel data fetching with dynamic configuration
-      const [queryDefaults, playerStates, winThreshold] = await Promise.all([
-        this.getQueryDefaults(),
+      const page = Math.max(1, pagination.page || 1)
+      const limit = Math.min(pagination.limit || 10, 50)
+      const offset = (page - 1) * limit
+
+      // Load dynamic defaults
+      const queryDefaults = await this.getQueryDefaults()
+      const minGames = filters.minGames ?? queryDefaults.minGamesThreshold
+
+      // Prefer SQL aggregation if adapter supports raw queries and is connected
+      const adapter: any = this.db as any
+      const activityWeight = LeaderboardUtils.SCORING.ACTIVITY_WEIGHT
+      const successWeight = LeaderboardUtils.SCORING.SUCCESS_WEIGHT
+
+      // Build time range predicate
+      const timePredicates: string[] = []
+      if (filters.timeRange && filters.timeRange !== 'all') {
+        const days = filters.timeRange === 'day' ? 1 : filters.timeRange === 'week' ? 7 : 30
+        timePredicates.push(`account_updated_at >= NOW() - INTERVAL '${days} days'`)
+      }
+      const psWhere = timePredicates.length ? `WHERE ${timePredicates.map((p) => `ps.${p}`).join(' AND ')}` : ''
+      const gsWhere = `WHERE gs.winner IS NOT NULL${timePredicates.length ? ' AND ' + timePredicates.map((p) => `gs.${p}`).join(' AND ') : ''}`
+
+      if (adapter?.query && adapter?.isConnected) {
+        // Optimized SQL aggregation combining player_states and game_states
+        const sql = `
+          WITH filtered_ps AS (
+            SELECT ps.wallet, ps.game, ps.cash_balance, ps.properties_owned, ps.account_updated_at
+            FROM player_states ps
+            ${psWhere}
+          ), played AS (
+            SELECT wallet,
+                   COUNT(DISTINCT game) AS total_games_played,
+                   MAX(account_updated_at) AS last_active
+            FROM filtered_ps
+            GROUP BY wallet
+          ), wins AS (
+            SELECT gs.winner AS wallet,
+                   COUNT(*) AS total_games_won
+            FROM game_states gs
+            ${gsWhere}
+            GROUP BY gs.winner
+          ), cash AS (
+            SELECT wallet,
+                   AVG(cash_balance) AS avg_cash,
+                   MAX(cash_balance) AS max_cash,
+                   MIN(cash_balance) AS min_cash,
+                   PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY cash_balance::numeric) AS median_cash,
+                   SUM(COALESCE(json_array_length(properties_owned), 0)) AS total_properties_owned
+            FROM filtered_ps
+            GROUP BY wallet
+          ), aggregated AS (
+            SELECT p.wallet,
+                   p.total_games_played,
+                   COALESCE(w.total_games_won, 0) AS total_games_won,
+                   COALESCE(c.avg_cash, 0) AS avg_cash,
+                   COALESCE(c.max_cash, 0) AS max_cash,
+                   COALESCE(c.min_cash, 0) AS min_cash,
+                   COALESCE(c.median_cash, 0) AS median_cash,
+                   COALESCE(c.total_properties_owned, 0) AS total_properties_owned,
+                   p.last_active
+            FROM played p
+            LEFT JOIN wins w ON w.wallet = p.wallet
+            LEFT JOIN cash c ON c.wallet = p.wallet
+          ), with_rate AS (
+            SELECT wallet,
+                   total_games_played,
+                   total_games_won,
+                   (total_games_played - total_games_won) AS total_games_lost,
+                   CASE WHEN total_games_played > 0 THEN (total_games_won::float / total_games_played) * 100 ELSE 0 END AS win_rate,
+                   avg_cash,
+                   max_cash,
+                   min_cash,
+                   median_cash,
+                   total_properties_owned,
+                   last_active
+            FROM aggregated
+          ), ranked AS (
+            SELECT wallet,
+                   total_games_played,
+                   total_games_won,
+                   total_games_lost,
+                   win_rate,
+                   avg_cash,
+                   max_cash,
+                   min_cash,
+                   median_cash,
+                   total_properties_owned,
+                   last_active,
+                   ((total_games_played * ${activityWeight}) + (total_games_won * ${successWeight})) AS leaderboard_score
+            FROM with_rate
+            WHERE total_games_played >= ${minGames}
+          )
+          SELECT *
+          FROM ranked
+          ORDER BY leaderboard_score DESC, win_rate DESC, total_games_played DESC, wallet ASC
+          LIMIT ${limit} OFFSET ${offset};
+        `
+
+        const rows = await this.db.query(sql)
+
+        const countSql = `
+          SELECT COUNT(*) AS total
+          FROM (
+            SELECT ps.wallet
+            FROM player_states ps
+            ${psWhere}
+            GROUP BY ps.wallet
+            HAVING COUNT(DISTINCT ps.game) >= ${minGames}
+          ) t;
+        `
+        const countRows = await this.db.query(countSql)
+        const total = Number((countRows?.[0] as any)?.total ?? rows.length)
+
+        const data = (rows as any[]).map((r, idx) => ({
+          playerId: r.wallet,
+          walletAddress: r.wallet,
+          playerName: undefined,
+          totalGamesPlayed: Number(r.total_games_played ?? 0),
+          totalGamesWon: Number(r.total_games_won ?? 0),
+          totalGamesLost: Number(r.total_games_lost ?? 0),
+          winRate: Number(r.win_rate ?? 0),
+          averageCashBalance: Number(r.avg_cash ?? 0),
+          highestCashBalance: Number(r.max_cash ?? 0),
+          totalPropertiesOwned: Number(r.total_properties_owned ?? 0),
+          lastActiveDate: r.last_active ? new Date(r.last_active).toISOString() : new Date(0).toISOString(),
+          leaderboardScore: Number(r.leaderboard_score ?? 0),
+          rank: offset + idx + 1
+        }))
+
+        return { data, total, page, limit }
+      }
+
+      // Fallback to in-memory aggregation if SQL not available
+      const [playerStates, winThreshold] = await Promise.all([
         this.db.getPlayerStates({}, { limit: 2000, sortBy: 'accountUpdatedAt', sortOrder: 'desc' }),
         this.getDynamicWinThreshold()
       ])
 
-      // Optimized: Single-pass aggregation with efficient data structures
       const playerStatsMap = new Map<
         string,
         {
@@ -452,10 +569,8 @@ export class LeaderboardService {
         }
       >()
 
-      // Fixed: Track game-level wins instead of state-level wins
       const gameWinTracker = new Map<string, { game: string; maxCash: number; playerId: string }>()
 
-      // Single pass through data for O(n) complexity
       for (const player of playerStates.data) {
         const playerId = player.wallet
         const cashBalance = Number(player.cashBalance || 0)
@@ -484,7 +599,6 @@ export class LeaderboardService {
           data.lastActive = updated
         }
 
-        // Track highest cash per game for win detection
         if (!gameWinTracker.has(gameKey) || cashBalance > gameWinTracker.get(gameKey)!.maxCash) {
           gameWinTracker.set(gameKey, {
             game: player.game,
@@ -494,7 +608,6 @@ export class LeaderboardService {
         }
       }
 
-      // Calculate wins based on best performance per game with dynamic threshold
       for (const [, gameData] of gameWinTracker) {
         if (LeaderboardUtils.isWin(gameData.maxCash, winThreshold)) {
           const playerData = playerStatsMap.get(gameData.playerId)!
@@ -502,24 +615,20 @@ export class LeaderboardService {
         }
       }
 
-      // Optimized: Convert to comprehensive stats with data validation
       const playerStats = Array.from(playerStatsMap.values()).map((data) => {
         const totalGames = data.gamesPlayed.size
 
-        // Fix: Ensure wins never exceed total games
         const validatedWins = Math.min(data.gamesWon, totalGames)
         const validatedLost = Math.max(totalGames - validatedWins, 0)
 
         const winRate = LeaderboardUtils.calculateWinRate(validatedWins, totalGames)
         const avgCash = totalGames > 0 ? LeaderboardUtils.roundCash(data.totalCash / totalGames) : 0
-
-        // Optimized scoring using validated data
         const leaderboardScore = LeaderboardUtils.calculateScore(totalGames, validatedWins)
 
         return {
           playerId: data.playerId,
           walletAddress: data.playerId,
-          playerName: undefined, // Not available in PlayerState
+          playerName: undefined,
           totalGamesPlayed: totalGames,
           totalGamesWon: validatedWins,
           totalGamesLost: validatedLost,
@@ -532,48 +641,25 @@ export class LeaderboardService {
         }
       })
 
-      // Apply minimum games filter with fallback
       const minGamesFilter = filters.minGames || queryDefaults.minGamesThreshold
       let filteredStats = playerStats
       if (minGamesFilter > 0) {
         filteredStats = playerStats.filter((p) => p.totalGamesPlayed >= minGamesFilter)
       }
 
-      // Optimized multi-criteria sorting for stable rankings
       filteredStats.sort((a, b) => {
-        // Primary: leaderboard score (higher is better)
-        if (b.leaderboardScore !== a.leaderboardScore) {
-          return b.leaderboardScore - a.leaderboardScore
-        }
-        // Tie-breaker 1: win rate (higher is better)
-        if (b.winRate !== a.winRate) {
-          return b.winRate - a.winRate
-        }
-        // Tie-breaker 2: total games (more is better)
-        if (b.totalGamesPlayed !== a.totalGamesPlayed) {
-          return b.totalGamesPlayed - a.totalGamesPlayed
-        }
-        // Final: wallet address for consistency
+        if (b.leaderboardScore !== a.leaderboardScore) return b.leaderboardScore - a.leaderboardScore
+        if (b.winRate !== a.winRate) return b.winRate - a.winRate
+        if (b.totalGamesPlayed !== a.totalGamesPlayed) return b.totalGamesPlayed - a.totalGamesPlayed
         return a.walletAddress.localeCompare(b.walletAddress)
       })
 
-      // Efficient ranking and pagination
-      const rankedStats = filteredStats.map((player, index) => ({
-        ...player,
-        rank: index + 1
-      }))
+      const rankedStats = filteredStats.map((player, index) => ({ ...player, rank: index + 1 }))
 
-      // Apply pagination with bounds checking
-      const pageSize = Math.min(pagination.limit || 10, 50) // Cap at 50 for performance
-      const start = Math.max(((pagination.page || 1) - 1) * pageSize, 0)
-      const paginatedData = rankedStats.slice(start, start + pageSize)
+      const start = Math.max(((page || 1) - 1) * limit, 0)
+      const paginatedData = rankedStats.slice(start, start + limit)
 
-      return {
-        data: paginatedData,
-        total: rankedStats.length,
-        page: pagination.page || 1,
-        limit: pageSize
-      }
+      return { data: paginatedData, total: rankedStats.length, page, limit }
     } catch (error) {
       throw new DatabaseError('Failed to get top players leaderboard', error as Error)
     }

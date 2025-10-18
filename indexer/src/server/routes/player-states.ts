@@ -1,18 +1,3 @@
-/**
- * Player States Routes
- *
- * Handles REST API endpoints for PlayerState blockchain accounts.
- * ALL operations are game-scoped - players belong to specific games.
- *
- * Architecture principles:
- * - Game-scoped operations (all endpoints require gameId)
- * - Standardized API response format
- * - Efficient filtering and pagination
- * - Proper error handling and logging
- *
- * @author Senior Engineer - Following Google Code Standards
- */
-
 import { FastifyInstance } from 'fastify'
 import { Type } from '@sinclair/typebox'
 import { DatabasePort } from '#infra/db/db.port'

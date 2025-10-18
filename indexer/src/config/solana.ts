@@ -3,7 +3,7 @@ import env from './env'
 export default {
   config: {
     commitment: env.solana.commitment,
-    wsEndpoint: env.solana.wsUrl,
+    wsEndpoint: env.rpc.er.ws,
     rateLimit: env.solana.rateLimit
   }
 }

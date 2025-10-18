@@ -1,12 +1,3 @@
-/**
- * Game Service - Manages game state and lifecycle operations
- *
- * Handles all database operations related to GameState blockchain accounts.
- * Provides game-specific business logic and query optimizations.
- *
- * @author Senior Engineer - Following Google Code Standards
- */
-
 import type { GameState, NewGameState, GameStatus } from '#infra/db/schema'
 import type { DatabasePort } from '#infra/db/db.port'
 import type { BaseService, QueryFilters, PaginatedResult } from './base.service'

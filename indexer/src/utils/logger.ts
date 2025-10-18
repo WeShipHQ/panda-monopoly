@@ -3,7 +3,7 @@ import pino from 'pino'
 import { hostname } from 'os'
 
 const createLogger = () => {
-  const logLevel = env.log?.level || (env.isDevelopment ? 'debug' : 'warn')
+  const logLevel = env.log?.level || (env.isDevelopment ? 'info' : 'warn')
 
   return pino({
     level: logLevel,

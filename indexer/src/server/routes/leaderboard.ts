@@ -1,18 +1,3 @@
-/**
- * Leaderboard Routes
- *
- * Handles REST API endpoints for leaderboards, player statistics,
- * and game analytics for marketing and engagement purposes.
- *
- * Architecture principles:
- * - Comprehensive player statistics and rankings
- * - Game analytics for business intelligence
- * - Performance optimized with pagination
- * - Flexible filtering and time ranges
- *
- * @author Senior Engineer - Following Google Code Standards
- */
-
 import { FastifyInstance } from 'fastify'
 import { Type } from '@sinclair/typebox'
 import { DatabasePort } from '#infra/db/db.port'

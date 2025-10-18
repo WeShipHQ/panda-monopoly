@@ -1,19 +1,3 @@
-/**
- * Refactored Drizzle Database Adapter Implementation
- *
- * Updated to use proper naming conventions:
- * - players -> playerStates (game-specific player accounts)
- * - properties -> propertyStates (game-specific property accounts)
- * - trades -> tradeStates (game-specific trade accounts)
- * - auctions -> auctionStates (game-specific auction accounts)
- *
- * This allows for future expansion with aggregated tables like:
- * - players (cross-game player profiles)
- * - leaderboards (player statistics)
- *
- * @author Senior Engineer - Following Google Code Standards
- */
-
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import { eq, count, and, gte, desc, asc } from 'drizzle-orm'
@@ -22,8 +6,6 @@ import {
   platformConfigs,
   gameStates,
   playerStates,
-  propertyStates,
-  tradeStates,
   auctionStates,
   gameLogs,
   type NewPlatformConfig,
@@ -48,33 +30,188 @@ import { env } from '#config'
  * PostgreSQL adapter implementation using Drizzle ORM with proper naming
  */
 export class DrizzleAdapter implements DatabasePort {
-  public readonly pool: Pool
-  public readonly db: ReturnType<typeof drizzle>
+  public pool: Pool
+  public db: ReturnType<typeof drizzle>
+  public isConnected = false
 
   constructor() {
+    // Khởi tạo lại Pool với cấu hình mới để đảm bảo sử dụng DATABASE_URL mới nhất
+    const dbUrl = process.env.DATABASE_URL
+    console.log(`Connecting to database with URL pattern: ${dbUrl ? dbUrl.substring(0, 10) + '...' : 'undefined'}`)
+
     this.pool = new Pool({
-      connectionString: env.db.url,
-      ssl: env.nodeEnv === 'production' ? { rejectUnauthorized: true } : { rejectUnauthorized: false },
-      max: 10,
+      connectionString: dbUrl,
+      ssl: {
+        rejectUnauthorized: false
+      },
+      max: 10, // Giảm số lượng kết nối để tránh quá tải
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000
+      connectionTimeoutMillis: 10000,
+      // Thêm các tùy chọn để tăng độ tin cậy
+      application_name: 'monopoly-indexer',
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10000
     })
+
+    // Thêm xử lý lỗi cho pool
+    this.pool.on('error', (err) => {
+      console.error('Unexpected database pool error:', err)
+    })
+
     this.db = drizzle(this.pool)
+  }
+
+  private buildDirectSupabaseUrl(url?: string): string | null {
+    if (!url) return null
+    try {
+      const parsed = new URL(url)
+      const hostname = parsed.hostname
+
+      const envDirectHost = process.env.SUPABASE_DIRECT_DB_HOST
+      const projectRef = process.env.SUPABASE_PROJECT_REF
+
+      let directHost: string | null = null
+
+      // Prefer explicit override via env
+      if (envDirectHost && envDirectHost.length > 0) {
+        directHost = envDirectHost
+      } else if (hostname.includes('pooler.supabase.com') && projectRef && projectRef.length > 0) {
+        // Build direct host from project ref when original is region pooler
+        directHost = `db.${projectRef}.supabase.co`
+      } else if (/^db\.[a-z0-9-]{20,}\.supabase\.co$/.test(hostname)) {
+        // Already a direct host
+        directHost = hostname
+      }
+
+      if (!directHost) return null
+
+      parsed.hostname = directHost
+      parsed.port = '5432'
+      return parsed.toString()
+    } catch {
+      return null
+    }
   }
 
   async init(): Promise<void> {
     try {
-      await this.pool.query('SELECT 1')
+      // Thử kết nối với timeout ngắn hơn để phát hiện lỗi sớm
+      const client = await this.pool.connect()
+      try {
+        await client.query('SELECT 1 as connection_test')
+        console.log('✅ Database connection successful')
+        this.isConnected = true
+      } finally {
+        client.release()
+      }
     } catch (error) {
-      throw new Error(`Database initialization failed: ${error}`)
+      console.warn(`Database initialization failed: ${this.formatDbError(error)}`)
+
+      // Kiểm tra xem có phải lỗi kết nối không và thử fallback sang direct 5432
+      if ((error as any).code === 'ECONNREFUSED') {
+        const fallbackUrl = this.buildDirectSupabaseUrl(process.env.DATABASE_URL)
+        if (fallbackUrl) {
+          console.warn('Primary DB refused; retrying with direct Supabase port 5432')
+          try {
+            const newPool = new Pool({
+              connectionString: fallbackUrl,
+              ssl: { rejectUnauthorized: false },
+              max: 10,
+              idleTimeoutMillis: 30000,
+              connectionTimeoutMillis: 10000,
+              application_name: 'monopoly-indexer',
+              keepAlive: true,
+              keepAliveInitialDelayMillis: 10000
+            })
+            newPool.on('error', (err) => {
+              console.error('Unexpected database pool error (fallback):', err)
+            })
+
+            const client2 = await newPool.connect()
+            try {
+              await client2.query('SELECT 1 as connection_test')
+              console.log('✅ Fallback database connection successful')
+              this.isConnected = true
+            } finally {
+              client2.release()
+            }
+
+            // Đóng pool cũ và hoán đổi sang pool fallback
+            try {
+              await this.pool.end()
+            } catch (e) {
+              console.warn('Failed to end old pool:', e)
+            }
+            this.pool = newPool
+            this.db = drizzle(this.pool)
+            return
+          } catch (fallbackErr) {
+            console.warn(`Fallback connection failed: ${this.formatDbError(fallbackErr)}`)
+          }
+        } else {
+          console.warn('Direct Supabase host not resolvable from current DATABASE_URL; skipping fallback to 5432')
+        }
+      }
+
+      console.warn(`⚠️ Database connection failed, continuing without DB: ${this.formatDbError(error)}`)
+      // Keep isConnected=false and allow app to continue
+      return
     }
   }
 
   async query(sql: string, params?: unknown[]): Promise<unknown[]> {
+    if (!this.isConnected) {
+      console.warn('DB not connected; skipping query execution')
+      return []
+    }
     try {
       const result = await this.pool.query(sql, params)
       return result.rows
-    } catch (error) {
+    } catch (error: any) {
+      // Nếu lỗi kết nối bị từ chối, thử chuyển sang endpoint direct 5432 và retry
+      if (error?.code === 'ECONNREFUSED' || error?.name === 'AggregateError') {
+        const fallbackUrl = this.buildDirectSupabaseUrl(process.env.DATABASE_URL)
+        if (fallbackUrl) {
+          console.warn('Query failed (ECONNREFUSED); switching to direct Supabase 5432 and retrying')
+          try {
+            const newPool = new Pool({
+              connectionString: fallbackUrl,
+              ssl: { rejectUnauthorized: false },
+              max: 10,
+              idleTimeoutMillis: 30000,
+              connectionTimeoutMillis: 10000,
+              application_name: 'monopoly-indexer',
+              keepAlive: true,
+              keepAliveInitialDelayMillis: 10000
+            })
+            newPool.on('error', (err) => {
+              console.error('Unexpected database pool error (fallback):', err)
+            })
+
+            const client = await newPool.connect()
+            try {
+              await client.query('SELECT 1')
+              this.isConnected = true
+            } finally {
+              client.release()
+            }
+
+            try {
+              await this.pool.end()
+            } catch (e) {
+              console.warn('Failed to end old pool:', e)
+            }
+            this.pool = newPool
+            this.db = drizzle(this.pool)
+
+            const retry = await this.pool.query(sql, params)
+            return retry.rows
+          } catch (fallbackErr) {
+            console.error('Fallback retry failed:', fallbackErr)
+          }
+        }
+      }
+
       throw new Error(`Raw query failed: ${error}`)
     }
   }
@@ -124,7 +261,7 @@ export class DrizzleAdapter implements DatabasePort {
     try {
       // Auto-create platform config if it doesn't exist
       if (gameState.configId && gameState.configId !== 'UNKNOWN') {
-        await this.ensurePlatformConfigExists(gameState.configId, gameState.authority)
+        await this.ensurePlatformConfigExists(gameState.configId)
 
         // Calculate actual gameId from platform config if placeholder value
         if (processedGameState.gameId === -1) {
@@ -132,22 +269,113 @@ export class DrizzleAdapter implements DatabasePort {
         }
       }
 
-      await this.db
-        .insert(gameStates)
-        .values(processedGameState)
-        .onConflictDoUpdate({
-          target: gameStates.pubkey,
-          set: {
-            ...processedGameState,
-            accountUpdatedAt: new Date()
-          }
-        })
+      // Xử lý dữ liệu JSON lớn
+      // Giới hạn kích thước của các trường JSON
+      if (processedGameState.properties && Array.isArray(processedGameState.properties)) {
+        // Giữ lại thông tin cần thiết, loại bỏ dữ liệu không cần thiết
+        processedGameState.properties = processedGameState.properties.map((prop) => ({
+          pubkey: prop.pubkey,
+          game: prop.game,
+          position: prop.position,
+          owner: prop.owner,
+          price: prop.price,
+          colorGroup: prop.colorGroup,
+          propertyType: prop.propertyType,
+          houses: prop.houses,
+          hasHotel: prop.hasHotel,
+          isMortgaged: prop.isMortgaged,
+          rentBase: prop.rentBase || 0,
+          rentWithColorGroup: prop.rentWithColorGroup || 0,
+          rentWithHouses: prop.rentWithHouses || [0, 0, 0, 0],
+          rentWithHotel: prop.rentWithHotel || 0,
+          houseCost: prop.houseCost || 0,
+          mortgageValue: prop.mortgageValue || 0,
+          lastRentPaid: prop.lastRentPaid,
+          init: prop.init
+        }))
+      }
+
+      // Sử dụng raw query để tránh lỗi khi dữ liệu quá lớn
+      const query = `
+        INSERT INTO game_states (
+          pubkey, game_id, config_id, authority, bump, max_players, 
+          current_players, current_turn, players, created_at, game_status, 
+          turn_started_at, time_limit, bank_balance, free_parking_pool, 
+          houses_remaining, hotels_remaining, winner, next_trade_id, 
+          active_trades, properties, trades, account_created_at, 
+          account_updated_at, created_slot, updated_slot, last_signature
+        ) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
+        ON CONFLICT (pubkey) DO UPDATE SET
+          game_id = $2,
+          config_id = $3,
+          authority = $4,
+          bump = $5,
+          max_players = $6,
+          current_players = $7,
+          current_turn = $8,
+          players = $9,
+          created_at = $10,
+          game_status = $11,
+          turn_started_at = $12,
+          time_limit = $13,
+          bank_balance = $14,
+          free_parking_pool = $15,
+          houses_remaining = $16,
+          hotels_remaining = $17,
+          winner = $18,
+          next_trade_id = $19,
+          active_trades = $20,
+          properties = $21,
+          trades = $22,
+          account_created_at = $23,
+          account_updated_at = $24,
+          created_slot = $25,
+          updated_slot = $26,
+          last_signature = $27
+      `
+
+      // Chuẩn bị các tham số
+      const params = [
+        processedGameState.pubkey,
+        processedGameState.gameId,
+        processedGameState.configId,
+        processedGameState.authority,
+        processedGameState.bump,
+        processedGameState.maxPlayers,
+        processedGameState.currentPlayers,
+        processedGameState.currentTurn,
+        JSON.stringify(processedGameState.players || []),
+        processedGameState.createdAt,
+        processedGameState.gameStatus,
+        processedGameState.turnStartedAt,
+        processedGameState.timeLimit,
+        processedGameState.bankBalance,
+        processedGameState.freeParkingPool,
+        processedGameState.housesRemaining,
+        processedGameState.hotelsRemaining,
+        processedGameState.winner,
+        processedGameState.nextTradeId,
+        JSON.stringify(processedGameState.activeTrades || []),
+        JSON.stringify(processedGameState.properties || []),
+        JSON.stringify(processedGameState.trades || []),
+        processedGameState.accountCreatedAt,
+        processedGameState.accountUpdatedAt || new Date(),
+        processedGameState.createdSlot,
+        processedGameState.updatedSlot,
+        processedGameState.lastSignature
+      ]
+
+      // Thực hiện truy vấn
+      await this.pool.query(query, params)
     } catch (error) {
-      throw new Error(`Failed to upsert game state ${gameState.pubkey}: ${error}`)
+      console.error(`Error details for game state ${gameState.pubkey}:`, error)
+      // Ghi log lỗi nhưng không dừng quá trình xử lý
+      console.warn(`⚠️ Failed to upsert game state ${gameState.pubkey}, continuing with processing: ${error}`)
     }
   }
 
-  private async ensurePlatformConfigExists(configId: string, authority: string): Promise<void> {
+  private async ensurePlatformConfigExists(configId: string): Promise<void> {
     try {
       // Check if platform config already exists
       const existing = await this.db
@@ -157,63 +385,51 @@ export class DrizzleAdapter implements DatabasePort {
         .limit(1)
 
       if (existing.length === 0) {
-        // Create default platform config
-        const defaultPlatformConfig = {
-          pubkey: configId,
+        // Create fallback platform config to prevent blocking gameState processing
+        console.warn(`⚠️ Platform config ${configId} not found - creating fallback to unblock processing`)
+
+        const fallbackConfig = {
           id: configId,
-          feeBasisPoints: 500, // Default 5%
-          authority: authority,
-          feeVault: authority, // Default to authority
+          pubkey: configId,
+          feeBasisPoints: 500, // Default 5% fee
+          authority: configId, // Placeholder - will be enriched later
+          feeVault: configId, // Placeholder - will be enriched later
           totalGamesCreated: 0,
-          nextGameId: 1,
-          bump: 255,
+          nextGameId: 0,
+          bump: 255, // Placeholder bump
           accountCreatedAt: new Date(),
           accountUpdatedAt: new Date(),
           createdSlot: 0,
           updatedSlot: 0,
-          lastSignature: ''
+          lastSignature: null
         }
 
-        await this.db.insert(platformConfigs).values(defaultPlatformConfig).onConflictDoNothing()
-
-        console.log(`🏗️ Auto-created platform config: ${configId}`)
+        await this.db.insert(platformConfigs).values(fallbackConfig).onConflictDoNothing()
+        console.info(`✅ Created fallback platform config ${configId}`)
       }
-    } catch (error) {
-      console.warn(`Failed to ensure platform config exists: ${error}`)
-      // Don't throw - let gameState insert continue
+    } catch (error: unknown) {
+      const err = error as { message?: string }
+      if (err.message?.includes('RETRYABLE:')) {
+        throw error // Re-throw retryable errors
+      }
+      console.warn(`Failed to check platform config exists: ${error}`)
+      // Don't throw non-retryable errors - let gameState insert continue
     }
   }
 
   private async calculateGameId(configId: string): Promise<number> {
     try {
-      // Get current platform config
-      const config = await this.db
-        .select({ totalGamesCreated: platformConfigs.totalGamesCreated })
-        .from(platformConfigs)
-        .where(eq(platformConfigs.id, configId))
-        .limit(1)
+      // GameId should come from blockchain data, not calculated here
+      // This method is only called when gameId is placeholder (-1)
+      // In proper implementation, gameId should be extracted from GameState account data
 
-      if (config.length > 0) {
-        // Return the current total games as the gameId for this new game
-        const gameId = config[0].totalGamesCreated || 0
+      console.warn(`⚠️ GameId calculation should not be needed - gameId should come from blockchain`)
+      console.warn(`⚠️ This indicates incomplete blockchain data parsing for config ${configId}`)
 
-        // Update platform config to increment games counter
-        await this.db
-          .update(platformConfigs)
-          .set({
-            totalGamesCreated: gameId + 1,
-            accountUpdatedAt: new Date()
-          })
-          .where(eq(platformConfigs.id, configId))
-
-        console.log(`🎮 Assigned gameId ${gameId} for config ${configId}`)
-        return gameId
-      }
-
-      console.warn(`Platform config not found for ${configId}, using gameId 0`)
+      // Return 0 as fallback, but this should be addressed in account parsing
       return 0
     } catch (error) {
-      console.warn(`Failed to calculate gameId for config ${configId}: ${error}`)
+      console.warn(`Failed to process gameId for config ${configId}: ${error}`)
       return 0
     }
   }
@@ -227,11 +443,47 @@ export class DrizzleAdapter implements DatabasePort {
     }
   }
 
+  async checkGameExists(pubkey: string): Promise<boolean> {
+    try {
+      const result = await this.db
+        .select({ pubkey: gameStates.pubkey })
+        .from(gameStates)
+        .where(eq(gameStates.pubkey, pubkey))
+        .limit(1)
+      return result.length > 0
+    } catch (error) {
+      throw new Error(`Failed to check game existence ${pubkey}: ${error}`)
+    }
+  }
+
   async getGameStates(
     filters: QueryFilters = {},
     pagination: PaginationOptions = {}
   ): Promise<PaginatedResult<GameState>> {
     return this.executeFilteredQuery(gameStates, filters, pagination, this.buildGameStateFilters)
+  }
+
+  async getAllGameStates(): Promise<GameState[]> {
+    try {
+      return await this.db.select().from(gameStates)
+    } catch (error) {
+      throw new Error(`Failed to get all game states: ${error}`)
+    }
+  }
+
+  async updateGameState(pubkey: string, updates: Partial<NewGameState>): Promise<void> {
+    try {
+      const processedUpdates = this.processDateFields(updates)
+      await this.db
+        .update(gameStates)
+        .set({
+          ...processedUpdates,
+          accountUpdatedAt: new Date()
+        })
+        .where(eq(gameStates.pubkey, pubkey))
+    } catch (error) {
+      throw new Error(`Failed to update game state ${pubkey}: ${error}`)
+    }
   }
 
   // ==================== PLAYER STATE OPERATIONS ====================
@@ -274,19 +526,39 @@ export class DrizzleAdapter implements DatabasePort {
   // ==================== PROPERTY STATE OPERATIONS ====================
 
   async upsertPropertyState(propertyState: NewPropertyState): Promise<void> {
-    const processedPropertyState = this.processDateFields(propertyState)
+    const processed = this.processDateFields(propertyState)
+
+    const targetGamePubkey = (processed as any).game as string | undefined
+    if (!targetGamePubkey) {
+      throw new Error(`Failed to upsert property state ${propertyState.pubkey}: missing game pubkey for embedding`)
+    }
 
     try {
-      await this.db
-        .insert(propertyStates)
-        .values(processedPropertyState)
-        .onConflictDoUpdate({
-          target: propertyStates.pubkey,
-          set: {
-            ...processedPropertyState,
-            accountUpdatedAt: new Date()
-          }
+      const games = await this.db.select().from(gameStates).where(eq(gameStates.pubkey, targetGamePubkey)).limit(1)
+      const game = games[0] as any
+      if (!game) {
+        // Log more details for debugging
+        console.warn(`⚠️ Target game ${targetGamePubkey} not found for property ${propertyState.pubkey}`)
+        console.warn(`⚠️ This might be a race condition - game may not be processed yet`)
+        console.warn(`⚠️ Property details:`, {
+          property: propertyState.pubkey,
+          position: propertyState.position,
+          owner: propertyState.owner
         })
+
+        // Throw a retryable error - this will be handled by the worker with exponential backoff
+        throw new Error(
+          `RETRYABLE: Target game ${targetGamePubkey} not found for property ${propertyState.pubkey} - likely race condition`
+        )
+      }
+
+      const currentList: PropertyState[] = game.properties ?? []
+      const nextList = updateEmbeddedPropertyList(currentList, processed)
+
+      await this.db
+        .update(gameStates)
+        .set({ properties: nextList as any, accountUpdatedAt: new Date() })
+        .where(eq(gameStates.pubkey, targetGamePubkey))
     } catch (error) {
       throw new Error(`Failed to upsert property state ${propertyState.pubkey}: ${error}`)
     }
@@ -294,8 +566,13 @@ export class DrizzleAdapter implements DatabasePort {
 
   async getPropertyState(pubkey: string): Promise<PropertyState | null> {
     try {
-      const result = await this.db.select().from(propertyStates).where(eq(propertyStates.pubkey, pubkey)).limit(1)
-      return result[0] ?? null
+      const games = (await this.db.select().from(gameStates)) as any[]
+      for (const game of games) {
+        const props: PropertyState[] = game.properties ?? []
+        const found = props.find((p) => p.pubkey === pubkey)
+        if (found) return { ...found, game: game.pubkey }
+      }
+      return null
     } catch (error) {
       throw new Error(`Failed to get property state ${pubkey}: ${error}`)
     }
@@ -305,25 +582,83 @@ export class DrizzleAdapter implements DatabasePort {
     filters: QueryFilters = {},
     pagination: PaginationOptions = {}
   ): Promise<PaginatedResult<PropertyState>> {
-    return this.executeFilteredQuery(propertyStates, filters, pagination, this.buildPropertyStateFilters)
+    try {
+      const page = pagination.page ?? 1
+      const limit = Math.min(pagination.limit ?? 20, 100)
+      const offset = (page - 1) * limit
+
+      let games: any[]
+      if (filters.game) {
+        games = (await this.db
+          .select()
+          .from(gameStates)
+          .where(eq(gameStates.pubkey, filters.game as string))) as any[]
+      } else {
+        games = (await this.db.select().from(gameStates)) as any[]
+      }
+
+      let all: PropertyState[] = []
+      for (const g of games) {
+        const props: PropertyState[] = g.properties ?? []
+        all = all.concat(props.map((p) => ({ ...p, game: g.pubkey }) as any))
+      }
+
+      const predicates = this.buildEmbeddedPropertyPredicates(filters)
+      const filtered = all.filter((p) => predicates.every((fn) => fn(p)))
+
+      const sortBy = (pagination.sortBy as keyof PropertyState) || 'accountUpdatedAt'
+      const sortOrder = pagination.sortOrder === 'asc' ? 1 : -1
+      filtered.sort((a: any, b: any) => {
+        const av = a?.[sortBy]
+        const bv = b?.[sortBy]
+        if (av === bv) return 0
+        return av > bv ? sortOrder : -sortOrder
+      })
+
+      const data = filtered.slice(offset, offset + limit)
+      return { data, total: filtered.length, page, limit }
+    } catch (error) {
+      throw new Error(`Failed to get property states: ${error}`)
+    }
   }
 
   // ==================== TRADE STATE OPERATIONS ====================
 
   async upsertTradeState(tradeState: NewTradeState): Promise<void> {
-    const processedTradeState = this.processDateFields(tradeState)
+    const processed = this.processDateFields(tradeState)
+
+    const targetGamePubkey = (processed as any).game as string | undefined
+    if (!targetGamePubkey) {
+      throw new Error(`Failed to upsert trade state ${tradeState.pubkey}: missing game pubkey for embedding`)
+    }
 
     try {
-      await this.db
-        .insert(tradeStates)
-        .values(processedTradeState)
-        .onConflictDoUpdate({
-          target: tradeStates.pubkey,
-          set: {
-            ...processedTradeState,
-            accountUpdatedAt: new Date()
-          }
+      const games = await this.db.select().from(gameStates).where(eq(gameStates.pubkey, targetGamePubkey)).limit(1)
+      const game = games[0] as any
+      if (!game) {
+        // Log more details for debugging
+        console.warn(`⚠️ Target game ${targetGamePubkey} not found for trade ${tradeState.pubkey}`)
+        console.warn(`⚠️ This might be a race condition - game may not be processed yet`)
+        console.warn(`⚠️ Trade details:`, {
+          trade: tradeState.pubkey,
+          proposer: tradeState.proposer,
+          receiver: tradeState.receiver,
+          status: tradeState.status
         })
+
+        // Throw a retryable error instead of skipping - this will allow the job to be retried
+        throw new Error(
+          `RETRYABLE: Target game ${targetGamePubkey} not found for trade ${tradeState.pubkey} - likely race condition`
+        )
+      }
+
+      const currentList: TradeState[] = game.trades ?? []
+      const nextList = updateEmbeddedTradeList(currentList, processed)
+
+      await this.db
+        .update(gameStates)
+        .set({ trades: nextList as any, accountUpdatedAt: new Date() })
+        .where(eq(gameStates.pubkey, targetGamePubkey))
     } catch (error) {
       throw new Error(`Failed to upsert trade state ${tradeState.pubkey}: ${error}`)
     }
@@ -331,8 +666,13 @@ export class DrizzleAdapter implements DatabasePort {
 
   async getTradeState(pubkey: string): Promise<TradeState | null> {
     try {
-      const result = await this.db.select().from(tradeStates).where(eq(tradeStates.pubkey, pubkey)).limit(1)
-      return result[0] ?? null
+      const games = (await this.db.select().from(gameStates)) as any[]
+      for (const game of games) {
+        const trades: TradeState[] = game.trades ?? []
+        const found = trades.find((t) => t.pubkey === pubkey)
+        if (found) return { ...found, game: game.pubkey }
+      }
+      return null
     } catch (error) {
       throw new Error(`Failed to get trade state ${pubkey}: ${error}`)
     }
@@ -342,7 +682,44 @@ export class DrizzleAdapter implements DatabasePort {
     filters: QueryFilters = {},
     pagination: PaginationOptions = {}
   ): Promise<PaginatedResult<TradeState>> {
-    return this.executeFilteredQuery(tradeStates, filters, pagination, this.buildTradeStateFilters)
+    try {
+      const page = pagination.page ?? 1
+      const limit = Math.min(pagination.limit ?? 20, 100)
+      const offset = (page - 1) * limit
+
+      let games: any[]
+      if (filters.game) {
+        games = (await this.db
+          .select()
+          .from(gameStates)
+          .where(eq(gameStates.pubkey, filters.game as string))) as any[]
+      } else {
+        games = (await this.db.select().from(gameStates)) as any[]
+      }
+
+      let all: TradeState[] = []
+      for (const g of games) {
+        const trades: TradeState[] = g.trades ?? []
+        all = all.concat(trades.map((t) => ({ ...t, game: g.pubkey }) as any))
+      }
+
+      const predicates = this.buildEmbeddedTradePredicates(filters)
+      const filtered = all.filter((t) => predicates.every((fn) => fn(t)))
+
+      const sortBy = (pagination.sortBy as keyof TradeState) || 'accountUpdatedAt'
+      const sortOrder = pagination.sortOrder === 'asc' ? 1 : -1
+      filtered.sort((a: any, b: any) => {
+        const av = a?.[sortBy]
+        const bv = b?.[sortBy]
+        if (av === bv) return 0
+        return av > bv ? sortOrder : -sortOrder
+      })
+
+      const data = filtered.slice(offset, offset + limit)
+      return { data, total: filtered.length, page, limit }
+    } catch (error) {
+      throw new Error(`Failed to get trade states: ${error}`)
+    }
   }
 
   // ==================== AUCTION STATE OPERATIONS ====================
@@ -474,7 +851,7 @@ export class DrizzleAdapter implements DatabasePort {
 
   // ==================== PRIVATE UTILITY METHODS ====================
 
-  private processDateFields<T extends Record<string, unknown>>(data: T): T {
+  private processDateFields<T extends object>(data: T): T {
     const processed = { ...data } as any
 
     if ('accountCreatedAt' in processed && typeof processed.accountCreatedAt === 'string') {
@@ -499,31 +876,160 @@ export class DrizzleAdapter implements DatabasePort {
     filterBuilder: (filters: QueryFilters) => any[]
   ): Promise<PaginatedResult<T>> {
     try {
-      const page = pagination.page ?? 1
+      const page = Math.max(1, pagination.page ?? 1)
       const limit = Math.min(pagination.limit ?? 20, 100)
       const offset = (page - 1) * limit
+
+      // Nếu DB chưa kết nối, trả về kết quả rỗng an toàn
+      if (!this.isConnected) {
+        return { data: [], total: 0, page, limit }
+      }
 
       const conditions = filterBuilder.call(this, filters)
       const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
-      const sortField = pagination.sortBy || 'accountUpdatedAt'
+      const fallbackSortField = 'accountUpdatedAt'
+      const resolvedSortField = this.resolveSortField(table, pagination.sortBy, fallbackSortField)
       const sortDirection = pagination.sortOrder === 'asc' ? asc : desc
-      const orderBy = sortDirection((table as any)[sortField])
+      const orderBy = sortDirection((table as any)[resolvedSortField])
 
-      const [data, totalResult] = await Promise.all([
-        this.db.select().from(table).where(whereClause).orderBy(orderBy).limit(limit).offset(offset),
-        this.db.select({ count: count() }).from(table).where(whereClause)
-      ])
+      // Kiểm tra nếu đang truy vấn bảng game_states
+      if (table === gameStates) {
+        // Xây dựng WHERE clause an toàn với các bộ lọc đã biết
+        const whereParts: string[] = []
+        const params: unknown[] = []
+        let idx = 1
 
-      return {
-        data,
-        total: totalResult[0]?.count ?? 0,
-        page,
-        limit
+        const f = filters || {}
+
+        if (f.gameStatus !== undefined) {
+          whereParts.push(`game_status = $${idx++}`)
+          params.push(f.gameStatus as string)
+        }
+        if (f.authority !== undefined) {
+          whereParts.push(`authority = $${idx++}`)
+          params.push(f.authority as string)
+        }
+        if (f.maxPlayers !== undefined) {
+          whereParts.push(`max_players = $${idx++}`)
+          params.push(Number(f.maxPlayers))
+        }
+        if (f.winner !== undefined) {
+          whereParts.push(`winner = $${idx++}`)
+          params.push(f.winner as string)
+        }
+        if (f.gameId !== undefined) {
+          whereParts.push(`game_id = $${idx++}`)
+          params.push(Number(f.gameId))
+        }
+
+        const whereSql = whereParts.length > 0 ? `WHERE ${whereParts.join(' AND ')}` : ''
+
+        // Chuyển sort field về snake_case cột DB và xác thực
+        const toSnake = (s: string) => s.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase())
+        const sortRequested = pagination.sortBy ?? 'accountUpdatedAt'
+        const candidate = sortRequested.includes('_') ? sortRequested : toSnake(sortRequested)
+        const allowedSortColumns = new Set([
+          'pubkey',
+          'game_id',
+          'config_id',
+          'authority',
+          'bump',
+          'max_players',
+          'current_players',
+          'current_turn',
+          'created_at',
+          'game_status',
+          'turn_started_at',
+          'time_limit',
+          'bank_balance',
+          'free_parking_pool',
+          'houses_remaining',
+          'hotels_remaining',
+          'winner',
+          'next_trade_id',
+          'account_created_at',
+          'account_updated_at',
+          'created_slot',
+          'updated_slot',
+          'last_signature'
+        ])
+        const sortColumn = allowedSortColumns.has(candidate) ? candidate : 'account_updated_at'
+        const sortDir = pagination.sortOrder === 'asc' ? 'ASC' : 'DESC'
+        const orderByClause = `ORDER BY ${sortColumn} ${sortDir}`
+
+        // Truy vấn đếm tổng số bản ghi (có tham số)
+        const countQuery = `SELECT COUNT(*) FROM game_states ${whereSql}`
+        const countRows = (await this.query(countQuery, params)) as any[]
+        const total = parseInt(countRows[0]?.count ?? '0', 10)
+
+        // Truy vấn dữ liệu với các trường cần thiết (bỏ qua các trường JSON lớn)
+        const dataQuery = `
+          SELECT 
+            pubkey, game_id, config_id, authority, bump, max_players, 
+            current_players, current_turn, players, created_at, game_status, 
+            turn_started_at, time_limit, bank_balance, free_parking_pool, 
+            houses_remaining, hotels_remaining, winner, next_trade_id,
+            account_created_at, account_updated_at, created_slot, updated_slot, last_signature
+          FROM game_states
+          ${whereSql}
+          ${orderByClause}
+          LIMIT ${limit} OFFSET ${offset}
+        `
+        const dataRows = (await this.query(dataQuery, params)) as any[]
+
+        // Chuyển đổi kết quả từ snake_case sang camelCase
+        const data = dataRows.map((row) => {
+          const camelCaseRow: any = {}
+          for (const [key, value] of Object.entries(row)) {
+            const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase())
+            camelCaseRow[camelKey] = value
+          }
+
+          // Thêm các trường JSON rỗng để tránh lỗi
+          camelCaseRow.activeTrades = []
+          camelCaseRow.properties = []
+          camelCaseRow.trades = []
+
+          return camelCaseRow
+        })
+
+        return {
+          data: data as T[],
+          total,
+          page,
+          limit
+        }
+      } else {
+        // Sử dụng Drizzle ORM cho các bảng khác
+        const [data, totalResult] = await Promise.all([
+          this.db.select().from(table).where(whereClause).orderBy(orderBy).limit(limit).offset(offset),
+          this.db.select({ count: count() }).from(table).where(whereClause)
+        ])
+
+        return {
+          data,
+          total: totalResult[0]?.count ?? 0,
+          page,
+          limit
+        }
       }
     } catch (error) {
+      console.error('Query error details:', error)
       throw new Error(`Failed to execute filtered query: ${error}`)
     }
+  }
+
+  private resolveSortField(table: any, requested: string | undefined, fallback: string): string {
+    const target = requested ?? fallback
+    const camelCase = target.replace(/_([a-z])/g, (_, c) => c.toUpperCase())
+    if ((table as any)[camelCase]) {
+      return camelCase
+    }
+    if ((table as any)[target]) {
+      return target
+    }
+    return fallback
   }
 
   // ==================== FILTER BUILDERS ====================
@@ -544,20 +1050,20 @@ export class DrizzleAdapter implements DatabasePort {
   private buildGameStateFilters(filters: QueryFilters) {
     const conditions: any[] = []
 
-    if (filters.gameStatus) {
+    if (filters.gameStatus != null) {
       conditions.push(eq(gameStates.gameStatus, filters.gameStatus as any))
     }
-    if (filters.authority) {
+    if (filters.authority != null) {
       conditions.push(eq(gameStates.authority, filters.authority as string))
     }
-    if (filters.maxPlayers) {
-      conditions.push(eq(gameStates.maxPlayers, filters.maxPlayers as number))
+    if (filters.maxPlayers != null) {
+      conditions.push(eq(gameStates.maxPlayers, Number(filters.maxPlayers)))
     }
-    if (filters.winner) {
+    if (filters.winner != null) {
       conditions.push(eq(gameStates.winner, filters.winner as string))
     }
-    if (filters.gameId) {
-      conditions.push(eq(gameStates.gameId, filters.gameId as number))
+    if (filters.gameId != null) {
+      conditions.push(eq(gameStates.gameId, Number(filters.gameId)))
     }
 
     return conditions
@@ -585,48 +1091,59 @@ export class DrizzleAdapter implements DatabasePort {
     return conditions
   }
 
-  private buildPropertyStateFilters(filters: QueryFilters) {
-    const conditions: any[] = []
+  private buildEmbeddedPropertyPredicates(filters: QueryFilters) {
+    const conditions: Array<(p: PropertyState) => boolean> = []
 
     if (filters.owner) {
-      conditions.push(eq(propertyStates.owner, filters.owner as string))
-    }
-    if (filters.gameId) {
-      conditions.push(eq(propertyStates.game, filters.gameId as string))
+      const owner = filters.owner as string
+      conditions.push((p) => (p.owner ?? undefined) === owner)
     }
     if (filters.colorGroup) {
-      conditions.push(eq(propertyStates.colorGroup, filters.colorGroup as any))
+      const cg = filters.colorGroup as any
+      conditions.push((p) => (p as any).colorGroup === cg)
     }
     if (filters.propertyType) {
-      conditions.push(eq(propertyStates.propertyType, filters.propertyType as any))
+      const pt = filters.propertyType as any
+      conditions.push((p) => (p as any).propertyType === pt)
     }
     if (filters.isMortgaged !== undefined) {
-      conditions.push(eq(propertyStates.isMortgaged, filters.isMortgaged as boolean))
+      const m = !!filters.isMortgaged
+      conditions.push((p) => !!p.isMortgaged === m)
     }
     if (filters.position !== undefined) {
-      conditions.push(eq(propertyStates.position, filters.position as number))
+      const pos = filters.position as number
+      conditions.push((p) => (p.position as number) === pos)
     }
 
     return conditions
   }
 
-  private buildTradeStateFilters(filters: QueryFilters) {
-    const conditions: any[] = []
+  private buildEmbeddedTradePredicates(filters: QueryFilters) {
+    const conditions: Array<(t: TradeState) => boolean> = []
 
-    if (filters.gameId) {
-      conditions.push(eq(tradeStates.game, filters.gameId as string))
-    }
     if (filters.proposer) {
-      conditions.push(eq(tradeStates.proposer, filters.proposer as string))
+      const proposer = filters.proposer as string
+      conditions.push((t) => t.proposer === proposer)
     }
     if (filters.receiver) {
-      conditions.push(eq(tradeStates.receiver, filters.receiver as string))
+      const receiver = filters.receiver as string
+      conditions.push((t) => t.receiver === receiver)
     }
     if (filters.status) {
-      conditions.push(eq(tradeStates.status, filters.status as any))
+      const status = filters.status as any
+      conditions.push((t) => (t as any).status === status)
     }
     if (filters.tradeType) {
-      conditions.push(eq(tradeStates.tradeType, filters.tradeType as any))
+      const tt = filters.tradeType as any
+      conditions.push((t) => (t as any).tradeType === tt)
+    }
+    if (filters.expiresBefore !== undefined) {
+      const v = filters.expiresBefore as number
+      conditions.push((t) => (t.expiresAt ?? Number.MAX_SAFE_INTEGER) < v)
+    }
+    if (filters.expiresAfter !== undefined) {
+      const v = filters.expiresAfter as number
+      conditions.push((t) => (t.expiresAt ?? 0) > v)
     }
 
     return conditions
@@ -669,4 +1186,72 @@ export class DrizzleAdapter implements DatabasePort {
 
     return conditions
   }
+
+  private formatDbError(error: unknown): string {
+    if (error instanceof AggregateError) {
+      const collected: unknown[] = []
+
+      // Handle errors array
+      if (Array.isArray(error.errors)) {
+        collected.push(...error.errors)
+      }
+
+      if (collected.length === 0) {
+        return error.message || 'AggregateError'
+      }
+
+      const formatted = collected.map((err) => this.formatDbError(err)).join('; ')
+      return formatted ? `AggregateError(${formatted})` : 'AggregateError'
+    }
+
+    if (error instanceof Error) {
+      const parts = [error.message]
+      const pgError = error as { code?: string; detail?: string }
+
+      if (pgError.code) {
+        parts.push(`code=${pgError.code}`)
+      }
+      if (pgError.detail) {
+        parts.push(`detail=${pgError.detail}`)
+      }
+      if (error.cause) {
+        parts.push(`cause=${this.formatDbError(error.cause)}`)
+      }
+      return parts.join(' | ')
+    }
+
+    return typeof error === 'string' ? error : JSON.stringify(error)
+  }
+}
+
+// ==================== EMBEDDED LIST HELPERS ====================
+
+function updateEmbeddedPropertyList(list: PropertyState[], incoming: NewPropertyState): PropertyState[] {
+  const idx = list.findIndex((p) => p.pubkey === (incoming as any).pubkey)
+  if (idx >= 0) {
+    const next = [...list]
+    const merged = { ...next[idx], ...(incoming as any) }
+    delete (merged as any).game
+    next[idx] = merged as any
+    return next
+  }
+
+  const item = { ...(incoming as any) }
+  delete (item as any).game
+  return [...list, item as any]
+}
+
+function updateEmbeddedTradeList(list: TradeState[], incoming: NewTradeState): TradeState[] {
+  const idx = list.findIndex((t) => t.pubkey === (incoming as any).pubkey)
+  if (idx >= 0) {
+    const next = [...list]
+    const merged = { ...next[idx], ...(incoming as any) }
+    delete (merged as any).game
+    next[idx] = merged as any
+    return next
+  }
+
+  const item = { ...(incoming as any) }
+  delete (item as any).game
+  return [...list, item as any]
 }

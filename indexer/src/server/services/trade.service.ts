@@ -1,12 +1,3 @@
-/**
- * TradeState Service - Manages trade proposals and transactions
- *
- * Handles all database operations related to TradeStateState blockchain accounts.
- * Provides trade-specific business logic and negotiation tracking.
- *
- * @author Senior Engineer - Following Google Code Standards
- */
-
 import type { TradeState, NewTradeState, TradeStatus, TradeType } from '#infra/db/schema'
 import type { DatabasePort } from '#infra/db/db.port'
 import type { BaseService, QueryFilters, PaginationOptions, PaginatedResult } from './base.service'

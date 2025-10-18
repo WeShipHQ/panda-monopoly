@@ -1,18 +1,39 @@
 import type { ParsedTransactionWithMeta } from '@solana/web3.js'
 import type { MonopolyRecord } from '#infra/queue/types'
-import type { GameStatus } from '#infra/db/schema'
+import env from '#config/env'
+
 import {
   parseKeyValueFromLog,
   buildPlatformConfigFromLog,
   buildGameStateFromLog,
   buildPlayerStateFromLog,
-  buildPropertyStateFromLog,
-  buildTradeStateFromLog,
   getTransactionSignature,
   getTransactionSlot,
   getTransactionBlockTimeMs
 } from './log-parsers'
-import { getPropertySpace, isPropertySpace, MONOPOLY_LOGS } from '#shared/config/board.config'
+import { MONOPOLY_LOGS } from '#shared/config/board.config'
+
+// ==================== CONSTANTS ====================
+
+/**
+ * Placeholder indicators for missing blockchain data
+ * These sentinel values indicate fields that need to be enriched from blockchain account data
+ */
+const NEEDS_BLOCKCHAIN_ENRICHMENT = -1
+const UNKNOWN_ACCOUNT = 'UNKNOWN'
+
+const ACCEPT_TRADE_DISCRIMINATOR = Buffer.from('8bda1d5f7c4b4074', 'hex')
+const REJECT_TRADE_DISCRIMINATOR = Buffer.from('93854adf39e84c50', 'hex')
+const CANCEL_TRADE_DISCRIMINATOR = Buffer.from('7c425b3baf6bd078', 'hex')
+
+type TradeInstructionStatus = 'Accepted' | 'Rejected' | 'Cancelled'
+
+type TradeInstructionUpdate = {
+  game: string
+  tradeId: number
+  status: TradeInstructionStatus
+  signature: string
+}
 
 // ==================== MAIN MAPPING FUNCTION ====================
 
@@ -50,7 +71,113 @@ export function mapTxToMonopolyRecords(tx: ParsedTransactionWithMeta): MonopolyR
   const instructionRecords = processInstructionLogs(tx, logs)
   records.push(...instructionRecords)
 
+  attachTradeInstructionMetadata(records, tx)
+
   return records
+}
+
+/**
+ * Attach trade instruction metadata (accept/reject/cancel) to game state records
+ */
+export function attachTradeInstructionMetadata(records: MonopolyRecord[], tx: ParsedTransactionWithMeta): void {
+  if (records.length === 0) return
+
+  const updates = extractTradeInstructionUpdates(tx)
+  if (updates.length === 0) return
+
+  const updatesByGame = new Map<string, TradeInstructionUpdate[]>()
+  for (const update of updates) {
+    const list = updatesByGame.get(update.game)
+    if (list) {
+      list.push(update)
+    } else {
+      updatesByGame.set(update.game, [update])
+    }
+  }
+
+  for (const record of records) {
+    if (record.kind !== 'gameState') continue
+    const gamePubkey = record.data.pubkey
+    if (!gamePubkey) continue
+    const updatesForGame = updatesByGame.get(gamePubkey)
+    if (updatesForGame && updatesForGame.length > 0) {
+      ;(record.data as any).__tradeUpdates = updatesForGame
+    }
+  }
+}
+
+function extractTradeInstructionUpdates(tx: ParsedTransactionWithMeta): TradeInstructionUpdate[] {
+  const updates: TradeInstructionUpdate[] = []
+  const message = tx.transaction.message
+  const signature = getTransactionSignature(tx)
+  const accountKeys = message.accountKeys.map((key) => toBase58(key)).map((key) => key ?? '')
+  const programIdString = env.solana.programId
+
+  for (const instruction of message.instructions as ReadonlyArray<any>) {
+    let programId: string | null = null
+    let instructionData: string | undefined
+    let instructionAccounts: string[] = []
+
+    if (typeof instruction?.programIdIndex === 'number') {
+      programId = accountKeys[instruction.programIdIndex] ?? null
+      instructionData = instruction.data
+      instructionAccounts = (instruction.accounts ?? [])
+        .map((index: number) => accountKeys[index] ?? '')
+        .filter(Boolean)
+    } else if (instruction?.programId) {
+      programId = toBase58(instruction.programId)
+      instructionData = typeof instruction.data === 'string' ? instruction.data : undefined
+      const rawAccounts = instruction.accounts ?? []
+      instructionAccounts = rawAccounts.map((acc: any) => toBase58(acc) ?? '').filter(Boolean)
+    }
+
+    if (!programId || programId !== programIdString) continue
+
+    const data = Buffer.from(instructionData ?? '', 'base64')
+    if (data.length < 9) continue
+
+    const discriminator = data.subarray(0, 8)
+    let status: TradeInstructionStatus | null = null
+    if (discriminatorEquals(discriminator, ACCEPT_TRADE_DISCRIMINATOR)) {
+      status = 'Accepted'
+    } else if (discriminatorEquals(discriminator, REJECT_TRADE_DISCRIMINATOR)) {
+      status = 'Rejected'
+    } else if (discriminatorEquals(discriminator, CANCEL_TRADE_DISCRIMINATOR)) {
+      status = 'Cancelled'
+    }
+
+    if (!status) continue
+
+    const tradeId = data.readUInt8(8)
+    const gamePubkey = instructionAccounts[0] ?? null
+    if (!gamePubkey) continue
+
+    updates.push({
+      game: gamePubkey,
+      tradeId,
+      status,
+      signature
+    })
+  }
+
+  return updates
+}
+
+function toBase58(key: any): string | null {
+  if (!key) return null
+  if (typeof key === 'string') return key
+  if (typeof key.toBase58 === 'function') return key.toBase58()
+  if (typeof key.pubkey === 'string') return key.pubkey
+  if (key.pubkey && typeof key.pubkey.toBase58 === 'function') return key.pubkey.toBase58()
+  return null
+}
+
+function discriminatorEquals(a: Buffer, b: Buffer): boolean {
+  if (a.length < 8 || b.length < 8) return false
+  for (let i = 0; i < 8; i++) {
+    if (a[i] !== b[i]) return false
+  }
+  return true
 }
 
 // ==================== LOG MESSAGE PROCESSING ====================
@@ -101,17 +228,8 @@ function processLogMessage(tx: ParsedTransactionWithMeta, logMessage: string): M
       } else {
         console.log('👤 Player parsing failed')
       }
-    } else if (logMessage.startsWith(MONOPOLY_LOGS.PROPERTY_UPDATE)) {
-      const propertyRecord = parsePropertyLog(tx, logMessage)
-      if (propertyRecord) {
-        records.push({ kind: 'propertyState', data: propertyRecord })
-      }
-    } else if (logMessage.startsWith(MONOPOLY_LOGS.TRADE_OPEN) || logMessage.startsWith(MONOPOLY_LOGS.TRADE_UPDATE)) {
-      const tradeRecord = parseTradeLog(tx, logMessage)
-      if (tradeRecord) {
-        records.push({ kind: 'tradeState', data: tradeRecord })
-      }
     }
+    // Note: Trade data is now embedded in game_states.trades JSON field, not separate records
   }
 
   return records
@@ -158,12 +276,36 @@ function processInstructionLogs(tx: ParsedTransactionWithMeta, logs: string[]): 
       }
     }
 
-    // Parse InitializeGame instruction
-    else if (logMessage.includes('InitializeGame')) {
-      const gameStateRecord = parseInitializeGameInstruction(tx, logs, i)
-      if (gameStateRecord) {
-        records.push({ kind: 'gameState', data: gameStateRecord })
+    // Parse InitializeGame instruction (actual account creation)
+    else if (logMessage.includes('InitializeGame') || logMessage.includes('Instruction: InitializeGame')) {
+      console.log('🏗️ InitializeGame instruction found, parsing...')
+
+      // Validate this transaction actually creates accounts by checking account balance changes
+      const hasAccountCreation =
+        tx.meta?.preBalances &&
+        tx.meta?.postBalances &&
+        tx.meta.preBalances.some((preBalance, index) => preBalance === 0 && tx.meta!.postBalances[index] > 0)
+
+      if (!hasAccountCreation) {
+        console.log('🏗️ InitializeGame: No account creation detected (no balance changes)')
+        return []
       }
+
+      const gameStateRecord = parseInitializeGameInstruction(tx)
+      if (gameStateRecord) {
+        console.log('🏗️ GameState record created successfully:', gameStateRecord.pubkey)
+        records.push({ kind: 'gameState', data: gameStateRecord })
+      } else {
+        console.log('🏗️ GameState record creation failed')
+      }
+    }
+
+    // Parse StartGame instruction (updates existing game - don't create new records)
+    else if (logMessage.includes('StartGame') || logMessage.includes('Instruction: StartGame')) {
+      console.log('🚀 StartGame instruction found - game update, not creating new record')
+      // StartGame doesn't create new accounts, it updates existing game state
+      // The game account should already exist from InitializeGame
+      // No need to create new gameState records here
     }
 
     // Parse JoinGame instruction
@@ -179,13 +321,7 @@ function processInstructionLogs(tx: ParsedTransactionWithMeta, logs: string[]): 
       }
     }
 
-    // Parse Property initialization
-    else if (logMessage.includes('Init property') || logMessage.includes('PropertyInit')) {
-      const propertyRecord = parseInitPropertyInstruction(tx, logs, i)
-      if (propertyRecord) {
-        records.push({ kind: 'propertyState', data: propertyRecord })
-      }
-    }
+    // Property initialization is now handled via game state updates - no separate property records
 
     // Parse Player creation/update - only for specific patterns to avoid duplicates
     else if (logMessage.includes('Player') && (logMessage.includes('joined') || logMessage.includes('delegated'))) {
@@ -240,31 +376,7 @@ function parsePlayerLog(tx: ParsedTransactionWithMeta, logMessage: string) {
   }
 }
 
-/**
- * Parse property-related log message
- */
-function parsePropertyLog(tx: ParsedTransactionWithMeta, logMessage: string) {
-  try {
-    const keyValueMap = parseKeyValueFromLog(logMessage)
-    return buildPropertyStateFromLog(tx, keyValueMap)
-  } catch (error) {
-    console.error('Failed to parse property log:', error, logMessage)
-    return null
-  }
-}
-
-/**
- * Parse trade-related log message
- */
-function parseTradeLog(tx: ParsedTransactionWithMeta, logMessage: string) {
-  try {
-    const keyValueMap = parseKeyValueFromLog(logMessage)
-    return buildTradeStateFromLog(tx, keyValueMap)
-  } catch (error) {
-    console.error('Failed to parse trade log:', error, logMessage)
-    return null
-  }
-}
+// Trade parsing removed - trades are now embedded in game_states.trades JSON field
 
 // ==================== INSTRUCTION-BASED PARSERS ====================
 
@@ -337,67 +449,58 @@ function parseInitializePlatformInstruction(tx: ParsedTransactionWithMeta, logs:
 /**
  * Parse InitializeGame instruction from multiple log lines
  */
-function parseInitializeGameInstruction(tx: ParsedTransactionWithMeta, logs: string[], startIndex: number) {
-  let gameAccount = ''
-  let authority = ''
-  let timestamp = ''
-  let configId = ''
-
-  // Extract config account from transaction accounts
+function parseInitializeGameInstruction(tx: ParsedTransactionWithMeta) {
+  // Extract accounts from transaction - InitializeGame typically has:
+  // [game_account, player_state, authority, config, system_program, clock]
   const accounts = tx.transaction.message.accountKeys || []
-
-  // Look for game details in subsequent lines
-  for (let j = startIndex + 1; j < Math.min(startIndex + 10, logs.length); j++) {
-    const logLine = logs[j]
-
-    const authMatch = logLine.match(/authority: ([A-Za-z0-9]+)/)
-    if (authMatch) {
-      authority = authMatch[1]
-    }
-
-    const accountMatch = logLine.match(/Game account: ([A-Za-z0-9]+)/)
-    if (accountMatch) {
-      gameAccount = accountMatch[1]
-    }
-
-    const timeMatch = logLine.match(/timestamp: (\d+)/)
-    if (timeMatch) {
-      timestamp = timeMatch[1]
-    }
-  }
-
-  // Try to extract configId from transaction accounts
-  if (accounts.length > 3) {
-    // Typically: [game, player_state, authority, config, system_program, clock]
-    configId = accounts[3]?.pubkey.toBase58() || 'ACCOUNT_NOT_FOUND'
-  }
-
-  if (!gameAccount || !authority) {
+  if (accounts.length < 4) {
+    console.log('🏗️ InitializeGame: Not enough accounts in transaction')
     return null
   }
 
-  // Build game record with blockchain account fetching placeholder
-  // GameId will be fetched and updated in post-processing step in the worker
+  // Extract from transaction accounts instead of relying on logs
+  const gameAccount = accounts[0]?.pubkey.toBase58() || ''
+  const authority = accounts[2]?.pubkey.toBase58() || ''
+  const configId = accounts[3]?.pubkey.toBase58() || ''
+
+  console.log(
+    `🏗️ InitializeGame detected - Game: ${gameAccount.slice(0, 8)}..., Authority: ${authority.slice(0, 8)}..., Config: ${configId.slice(0, 8)}...`
+  )
+
+  if (!gameAccount || !authority) {
+    console.log('🏗️ InitializeGame: Missing gameAccount or authority')
+    return null
+  }
+
+  // Try to extract game parameters from instruction data or logs
+  const gameParams = parseGameParametersFromTransaction(tx)
+
+  // Build game record with placeholder values for blockchain enrichment
   return {
     pubkey: gameAccount,
-    gameId: -1, // Placeholder: Will be fetched from blockchain account
-    configId: configId || 'UNKNOWN',
+    gameId: gameParams.gameId || NEEDS_BLOCKCHAIN_ENRICHMENT, // Will be enriched from blockchain
+    configId: configId || UNKNOWN_ACCOUNT,
     authority,
-    bump: 0,
-    maxPlayers: 4,
-    currentPlayers: 1,
-    currentTurn: 0,
-    nextTradeId: 0,
-    players: [authority],
-    createdAt: timestamp ? parseInt(timestamp) * 1000 : getTransactionBlockTimeMs(tx),
-    gameStatus: 'WaitingForPlayers' as GameStatus,
-    bankBalance: 1000000,
-    freeParkingPool: 0,
-    housesRemaining: 32,
-    hotelsRemaining: 12,
+    bump: gameParams.bump || NEEDS_BLOCKCHAIN_ENRICHMENT, // Will be enriched from blockchain
+    maxPlayers: gameParams.maxPlayers || NEEDS_BLOCKCHAIN_ENRICHMENT, // Will be enriched from blockchain
+    currentPlayers: NEEDS_BLOCKCHAIN_ENRICHMENT, // Will be enriched from blockchain
+    currentTurn: NEEDS_BLOCKCHAIN_ENRICHMENT, // Will be enriched from blockchain
+    nextTradeId: NEEDS_BLOCKCHAIN_ENRICHMENT, // Will be enriched from blockchain
+    players: [], // Will be enriched from blockchain
+    createdAt: getTransactionBlockTimeMs(tx), // Use transaction timestamp
+    gameStatus: 'WaitingForPlayers' as const, // Default status for new games
+    bankBalance: NEEDS_BLOCKCHAIN_ENRICHMENT, // Will be enriched from blockchain
+    freeParkingPool: NEEDS_BLOCKCHAIN_ENRICHMENT, // Will be enriched from blockchain
+    housesRemaining: NEEDS_BLOCKCHAIN_ENRICHMENT, // Will be enriched from blockchain
+    hotelsRemaining: NEEDS_BLOCKCHAIN_ENRICHMENT, // Will be enriched from blockchain
     timeLimit: null,
     turnStartedAt: getTransactionSlot(tx),
     winner: null,
+    // Initialize properties as empty array - will be populated when properties are created
+    properties: [],
+    // Initialize trades arrays
+    activeTrades: [],
+    trades: [],
     accountCreatedAt: new Date(),
     accountUpdatedAt: new Date(),
     createdSlot: getTransactionSlot(tx),
@@ -405,6 +508,55 @@ function parseInitializeGameInstruction(tx: ParsedTransactionWithMeta, logs: str
     lastSignature: getTransactionSignature(tx)
   }
 }
+
+/**
+ * Parse game parameters from transaction instruction data or logs
+ */
+function parseGameParametersFromTransaction(tx: ParsedTransactionWithMeta) {
+  const logs = tx.meta?.logMessages || []
+
+  // Default values - CRITICAL: gameId must come from blockchain, not generated by server
+  let gameId = NEEDS_BLOCKCHAIN_ENRICHMENT // Never generate gameId on server - always fetch from blockchain
+  let maxPlayers = 4
+  let bump = 255
+
+  // Try to extract from program logs - BUT NEVER FALLBACK TO HARDCODED gameId
+  for (const log of logs) {
+    // Look for patterns in logs that contain game parameters
+    if (log.includes('max_players') || log.includes('maxPlayers')) {
+      const numbers = log.match(/\d+/g)
+      if (numbers && numbers.length > 0) {
+        maxPlayers = Math.min(parseInt(numbers[0]) || 4, 8) // Cap at 8 players
+      }
+    }
+
+    // CRITICAL: Only parse gameId if it exists in logs, never fallback to hardcode
+    if (log.includes('game_id') || log.includes('gameId')) {
+      const numbers = log.match(/\d+/g)
+      if (numbers && numbers.length > 0) {
+        const parsedGameId = parseInt(numbers[0])
+        if (parsedGameId && parsedGameId > 0) {
+          gameId = parsedGameId
+          console.log(`✅ Found gameId ${gameId} in transaction logs`)
+        }
+      }
+    }
+
+    if (log.includes('bump')) {
+      const numbers = log.match(/\d+/g)
+      if (numbers && numbers.length > 0) {
+        bump = parseInt(numbers[0]) || 255
+      }
+    }
+  }
+
+  return { gameId, maxPlayers, bump }
+}
+
+/**
+}
+
+
 
 /**
  * Parse InitProperty instruction from multiple log lines
@@ -435,33 +587,40 @@ function parsePlayerInstruction(tx: ParsedTransactionWithMeta, logs: string[], s
     wallet = joinedMatch[1] // For now, assume wallet = player ID
   }
 
-  // Look for game ID in other logs that contain "Join game: [ID]"
+  // Look for additional info in logs, but prioritize transaction accounts
+  const initialGameAccount = gameAccount // Store initial value from tx accounts
+
   for (let j = Math.max(0, startIndex - 5); j < Math.min(startIndex + 5, logs.length); j++) {
     const logLine = logs[j]
 
-    const joinGameMatch = logLine.match(/Join game: ([A-Za-z0-9]+)/)
-    if (joinGameMatch) {
-      gameAccount = joinGameMatch[1]
-    }
-
-    // Also check other patterns
+    // Only parse player and wallet from logs if not already extracted from tx accounts
     const playerMatch = logLine.match(/Player account: ([A-Za-z0-9]+)/) || logLine.match(/player: ([A-Za-z0-9]+)/)
-    if (playerMatch) {
+    if (playerMatch && !playerAccount) {
       playerAccount = playerMatch[1]
     }
 
     const walletMatch = logLine.match(/wallet: ([A-Za-z0-9]+)/)
-    if (walletMatch) {
+    if (walletMatch && !wallet) {
       wallet = walletMatch[1]
     }
 
+    // Only parse game from logs if tx accounts failed AND avoid overwriting with player pubkey
     const gameMatch = logLine.match(/Game account: ([A-Za-z0-9]+)/) || logLine.match(/game: ([A-Za-z0-9]+)/)
-    if (gameMatch) {
+    if (gameMatch && !initialGameAccount && gameMatch[1] !== playerAccount) {
       gameAccount = gameMatch[1]
     }
+
+    // AVOID: Join game: [ID] parsing as it often contains player ID, not game account
+    // The transaction accounts approach is more reliable for JoinGame
   }
 
   if (!playerAccount || !gameAccount) {
+    return null
+  }
+
+  // Critical validation: game account should never equal player account
+  if (gameAccount === playerAccount) {
+    console.log(`🚨 PARSER ERROR: Game account equals player account (${gameAccount}), skipping record`)
     return null
   }
 
@@ -477,9 +636,9 @@ function parsePlayerInstruction(tx: ParsedTransactionWithMeta, logs: string[], s
     pubkey: playerAccount,
     wallet,
     game: gameAccount,
-    cashBalance: 1500, // Default - will be overridden by blockchain data
-    netWorth: 1500, // Default - will be overridden by blockchain data
-    position: 0, // Default - will be overridden by blockchain data
+    cashBalance: NEEDS_BLOCKCHAIN_ENRICHMENT, // Will be overridden by blockchain data
+    netWorth: NEEDS_BLOCKCHAIN_ENRICHMENT, // Will be overridden by blockchain data
+    position: NEEDS_BLOCKCHAIN_ENRICHMENT, // Will be overridden by blockchain data
     inJail: false, // Will be overridden by blockchain data
     jailTurns: 0, // Will be overridden by blockchain data
     doublesCount: 0, // Will be overridden by blockchain data
@@ -506,149 +665,7 @@ function parsePlayerInstruction(tx: ParsedTransactionWithMeta, logs: string[], s
   }
 }
 
-function parseInitPropertyInstruction(tx: ParsedTransactionWithMeta, logs: string[], startIndex: number) {
-  console.log('🔧 Parsing property instruction starting at:', startIndex, logs[startIndex])
-
-  let propertyAccount = ''
-  let position = 0
-  let gameAccount = ''
-
-  // Extract data from the starting log line first
-  const initLog = logs[startIndex]
-
-  // Parse "Init property X for game Y" pattern
-  const initMatch = initLog.match(/Init property (\d+) for game ([A-Za-z0-9]+)/)
-  if (initMatch) {
-    position = parseInt(initMatch[1])
-    gameAccount = initMatch[2]
-    console.log('🔧 Extracted from init log - position:', position, 'game:', gameAccount)
-  }
-
-  // Look for property details in subsequent lines
-  for (let j = startIndex + 1; j < Math.min(startIndex + 10, logs.length); j++) {
-    const logLine = logs[j]
-    console.log('🔧 Checking subsequent log:', j, logLine)
-
-    const propMatch = logLine.match(/Property account: ([A-Za-z0-9]+)/) || logLine.match(/property: ([A-Za-z0-9]+)/)
-    if (propMatch) {
-      propertyAccount = propMatch[1]
-      console.log('🔧 Found property account:', propertyAccount)
-    }
-
-    const posMatch = logLine.match(/position: (\d+)/)
-    if (posMatch) {
-      position = parseInt(posMatch[1])
-      console.log('🔧 Updated position from separate log:', position)
-    }
-
-    const gameMatch = logLine.match(/Game account: ([A-Za-z0-9]+)/) || logLine.match(/game: ([A-Za-z0-9]+)/)
-    if (gameMatch) {
-      gameAccount = gameMatch[1]
-      console.log('🔧 Updated game account from separate log:', gameAccount)
-    }
-  }
-
-  console.log('🔧 Final property data - account:', propertyAccount, 'position:', position, 'game:', gameAccount)
-
-  if (!propertyAccount || !gameAccount) {
-    console.log('🔧 Missing required data - returning null')
-    return null
-  }
-
-  const blockTimeMs = getTransactionBlockTimeMs(tx)
-
-  // Get property configuration from board config based on position
-  const propertyConfig = getPropertyConfiguration(position)
-
-  return {
-    pubkey: propertyAccount,
-    position,
-    game: gameAccount,
-    owner: null, // Will be enriched from blockchain data
-    price: propertyConfig.price,
-    colorGroup: propertyConfig.colorGroup,
-    propertyType: propertyConfig.propertyType,
-    houses: 0, // Will be enriched from blockchain data
-    hasHotel: false, // Will be enriched from blockchain data
-    isMortgaged: false, // Will be enriched from blockchain data
-    rentBase: propertyConfig.rentBase,
-    rentWithColorGroup: propertyConfig.rentWithColorGroup,
-    rentWithHouses: propertyConfig.rentWithHouses,
-    rentWithHotel: propertyConfig.rentWithHotel,
-    houseCost: propertyConfig.houseCost,
-    mortgageValue: propertyConfig.mortgageValue,
-    lastRentPaid: 0, // Will be enriched from blockchain data
-    init: true,
-    accountCreatedAt: new Date(blockTimeMs),
-    accountUpdatedAt: new Date(blockTimeMs),
-    createdSlot: getTransactionSlot(tx),
-    updatedSlot: getTransactionSlot(tx),
-    lastSignature: getTransactionSignature(tx)
-  }
-}
-
 // ==================== UTILITY FUNCTIONS ====================
-
-/**
- * Get property configuration based on board position
- */
-function getPropertyConfiguration(position: number) {
-  const boardSpace = getPropertySpace(position)
-
-  if (!boardSpace || !isPropertySpace(position)) {
-    // Default configuration for non-property spaces or missing config
-    return {
-      price: 0,
-      colorGroup: 'Special' as any,
-      propertyType: 'Corner' as any,
-      rentBase: 0,
-      rentWithColorGroup: 0,
-      rentWithHouses: [0, 0, 0, 0] as [number, number, number, number],
-      rentWithHotel: 0,
-      houseCost: 0,
-      mortgageValue: 0
-    }
-  }
-
-  // Calculate rent structure from board config
-  const rentBase = Math.floor(boardSpace.price * 0.06) // 6% of property price as base rent
-  const rentWithColorGroup = rentBase * 2
-  const rentWith1House = boardSpace.rentWith1House || rentBase * 5
-  const rentWith2Houses = boardSpace.rentWith2Houses || rentBase * 15
-  const rentWith3Houses = boardSpace.rentWith3Houses || rentBase * 45
-  const rentWith4Houses = boardSpace.rentWith4Houses || rentBase * 80
-  const rentWithHotel = rentBase * 120
-
-  // Determine color group based on position (matching classic Monopoly)
-  const getColorGroup = (pos: number): string => {
-    if (pos === 1 || pos === 3) return 'Brown'
-    if (pos === 6 || pos === 8 || pos === 9) return 'Light Blue'
-    if (pos === 11 || pos === 13 || pos === 14) return 'Pink'
-    if (pos === 16 || pos === 18 || pos === 19) return 'Orange'
-    if (pos === 21 || pos === 23 || pos === 24) return 'Red'
-    if (pos === 26 || pos === 27 || pos === 29) return 'Yellow'
-    if (pos === 31 || pos === 32 || pos === 34) return 'Green'
-    if (pos === 37 || pos === 39) return 'Dark Blue'
-    return 'Special'
-  }
-
-  return {
-    price: boardSpace.price,
-    colorGroup: getColorGroup(position),
-    propertyType: boardSpace.type,
-    rentBase,
-    rentWithColorGroup,
-    rentWithHouses: [rentWith1House, rentWith2Houses, rentWith3Houses, rentWith4Houses] as [
-      number,
-      number,
-      number,
-      number
-    ],
-    rentWithHotel,
-    houseCost: boardSpace.houseCost || 50,
-    mortgageValue: Math.floor(boardSpace.price * 0.5)
-  }
-}
 
 /**
  * Check if transaction contains property-related events
@@ -658,11 +675,3 @@ function isPropertyTransaction(logs: string[]): boolean {
 
   return logs.some((log) => propertyKeywords.some((keyword) => log.toLowerCase().includes(keyword.toLowerCase())))
 }
-
-/**
- * Validate and sanitize transaction data before processing
- */
-
-/**
- * Extract program-specific logs only
- */

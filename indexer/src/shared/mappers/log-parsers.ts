@@ -1,15 +1,3 @@
-/**
- * Log Parsing Utilities
- *
- * Contains specialized functions for parsing blockchain transaction logs
- * and converting them into typed database record objects.
- *
- * Each parser function handles a specific entity type (Game, Player, Property, Trade)
- * with proper type safety, validation, and default value handling.
- *
- * @author Senior Engineer - Following Google Code Standards
- */
-
 import type { ParsedTransactionWithMeta } from '@solana/web3.js'
 import type {
   NewPlatformConfig,
@@ -30,6 +18,7 @@ import {
   getRentWithHouses,
   getHouseCost
 } from './property.utils'
+import { logger } from '#utils/logger'
 
 // ==================== TRANSACTION UTILITY FUNCTIONS ====================
 
@@ -105,6 +94,23 @@ export function parseKeyValueFromLog(logLine: string): Record<string, string> {
   return keyValueMap
 }
 
+// ==================== UTILITY FUNCTIONS ====================
+
+/**
+ * Safely parse JSON with fallback value
+ */
+function safeJsonParse<T>(jsonString: string, fallback: T): T {
+  try {
+    return JSON.parse(jsonString) as T
+  } catch (error) {
+    logger.debug(
+      { error: error instanceof Error ? error.message : String(error) },
+      'Failed to parse JSON, using fallback'
+    )
+    return fallback
+  }
+}
+
 // ==================== ENTITY BUILDERS FROM LOGS ====================
 
 /**
@@ -122,28 +128,50 @@ export function buildGameStateFromLog(tx: ParsedTransactionWithMeta, kv: Record<
 
   // Validate platform config relationship
   if (!kv.config_id) {
-    console.warn('Game state missing config_id - platform config relationship not established:', pubkey)
+    logger.debug({ pubkey }, 'Game state missing config_id - platform config relationship not established')
+  }
+
+  // Log missing critical fields
+  const missingFields: string[] = []
+  if (!kv.game_id) missingFields.push('game_id')
+  if (!kv.config_id) missingFields.push('config_id')
+  if (!kv.authority) missingFields.push('authority')
+  if (!kv.max_players) missingFields.push('max_players')
+  if (!kv.current_players) missingFields.push('current_players')
+  if (!kv.current_turn) missingFields.push('current_turn')
+  if (!kv.bump) missingFields.push('bump')
+  if (!kv.bank_balance) missingFields.push('bank_balance')
+  if (!kv.free_parking_pool) missingFields.push('free_parking_pool')
+  if (!kv.houses_remaining) missingFields.push('houses_remaining')
+  if (!kv.hotels_remaining) missingFields.push('hotels_remaining')
+  if (!kv.next_trade_id) missingFields.push('next_trade_id')
+  if (!kv.active_trades) missingFields.push('active_trades')
+  if (!kv.players) missingFields.push('players')
+
+  if (missingFields.length > 0) {
+    logger.debug({ missingFields, pubkey }, '⚠️ Missing GameState fields from blockchain logs')
   }
 
   return {
     pubkey,
-    gameId: Number(kv.game_id ?? 0),
-    configId: kv.config_id ?? 'UNKNOWN',
-    authority: kv.authority ?? 'UNKNOWN',
-    bump: Number(kv.bump ?? 0),
-    maxPlayers: Number(kv.max_players ?? 4),
-    currentPlayers: Number(kv.current_players ?? 0),
-    currentTurn: Number(kv.current_turn ?? 0),
-    nextTradeId: Number(kv.next_trade_id ?? 0),
-    players: kv.players ? JSON.parse(kv.players) : [],
+    gameId: kv.game_id !== undefined ? Number(kv.game_id) : -1, // gameId 0 is valid, -1 = needs enrichment
+    configId: kv.config_id ?? 'UNKNOWN', // UNKNOWN = needs blockchain enrichment
+    authority: kv.authority ?? 'UNKNOWN', // UNKNOWN = needs blockchain enrichment
+    bump: kv.bump ? Number(kv.bump) : -1, // -1 = needs blockchain enrichment
+    maxPlayers: kv.max_players ? Number(kv.max_players) : -1, // -1 = needs blockchain enrichment
+    currentPlayers: kv.current_players ? Number(kv.current_players) : -1, // -1 = needs blockchain enrichment
+    currentTurn: kv.current_turn ? Number(kv.current_turn) : -1, // -1 = needs blockchain enrichment
+    nextTradeId: kv.next_trade_id ? Number(kv.next_trade_id) : -1, // -1 = needs blockchain enrichment
+    activeTrades: kv.active_trades ? safeJsonParse(kv.active_trades, []) : [], // Empty array = needs blockchain enrichment
+    players: kv.players ? safeJsonParse(kv.players, []) : [], // Empty array = needs blockchain enrichment
     createdAt: kv.created_at ? Number(kv.created_at) : blockTimeMs,
-    gameStatus: (kv.game_status as GameStatus) ?? 'WaitingForPlayers',
-    bankBalance: Number(kv.bank_balance ?? 0),
-    freeParkingPool: Number(kv.free_parking_pool ?? 0),
-    housesRemaining: Number(kv.houses_remaining ?? 32),
-    hotelsRemaining: Number(kv.hotels_remaining ?? 12),
+    gameStatus: (kv.game_status as GameStatus) ?? ('WaitingForPlayers' as GameStatus), // Default status = needs blockchain enrichment
+    bankBalance: kv.bank_balance ? Number(kv.bank_balance) : -1, // -1 = needs blockchain enrichment
+    freeParkingPool: kv.free_parking_pool ? Number(kv.free_parking_pool) : -1, // -1 = needs blockchain enrichment
+    housesRemaining: kv.houses_remaining ? Number(kv.houses_remaining) : -1, // -1 = needs blockchain enrichment
+    hotelsRemaining: kv.hotels_remaining ? Number(kv.hotels_remaining) : -1, // -1 = needs blockchain enrichment
     timeLimit: kv.time_limit ? Number(kv.time_limit) : null,
-    turnStartedAt: Number(kv.turn_started_at ?? slot),
+    turnStartedAt: kv.turn_started_at ? Number(kv.turn_started_at) : slot,
     winner: kv.winner ?? null,
     accountCreatedAt: new Date(),
     accountUpdatedAt: new Date(),
@@ -167,19 +195,19 @@ export function buildPlayerStateFromLog(tx: ParsedTransactionWithMeta, kv: Recor
 
   return {
     pubkey,
-    wallet: kv.wallet ?? 'UNKNOWN',
-    game: kv.game ?? 'UNKNOWN',
-    cashBalance: Number(kv.cash_balance ?? 1500),
-    netWorth: Number(kv.net_worth ?? 1500),
-    position: Number(kv.position ?? 0),
+    wallet: kv.wallet ?? 'UNKNOWN', // UNKNOWN = needs blockchain enrichment
+    game: kv.game ?? 'UNKNOWN', // UNKNOWN = needs blockchain enrichment
+    cashBalance: kv.cash_balance ? Number(kv.cash_balance) : -1, // -1 = needs blockchain enrichment
+    netWorth: kv.net_worth ? Number(kv.net_worth) : -1, // -1 = needs blockchain enrichment
+    position: kv.position ? Number(kv.position) : -1, // -1 = needs blockchain enrichment
     inJail: kv.in_jail === 'true',
     jailTurns: Number(kv.jail_turns ?? 0),
     doublesCount: Number(kv.doubles_count ?? 0),
     isBankrupt: kv.is_bankrupt === 'true',
-    propertiesOwned: kv.properties_owned ? JSON.parse(kv.properties_owned) : [],
+    propertiesOwned: kv.properties_owned ? safeJsonParse(kv.properties_owned, []) : [],
     getOutOfJailCards: Number(kv.get_out_of_jail_cards ?? 0),
     hasRolledDice: kv.has_rolled_dice === 'true',
-    lastDiceRoll: kv.last_dice_roll ? JSON.parse(kv.last_dice_roll) : [0, 0],
+    lastDiceRoll: kv.last_dice_roll ? safeJsonParse(kv.last_dice_roll, [0, 0]) : [0, 0],
     lastRentCollected: Number(kv.last_rent_collected ?? slot),
     festivalBoostTurns: Number(kv.festival_boost_turns ?? 0),
     cardDrawnAt: kv.card_drawn_at ? Number(kv.card_drawn_at) : null,
@@ -335,16 +363,30 @@ export function buildPlatformConfigFromLog(
     }
 
     const blockTimeMs = getTransactionBlockTimeMs(tx)
+    const pubkey = sanitizePubkey(kv.pubkey)
+    if (pubkey === 'UNKNOWN') {
+      console.error('Invalid platform config pubkey - skipping record', kv.pubkey)
+      return null
+    }
+
+    const parsedId = sanitizePubkey(kv.id)
+    const id = parsedId !== 'UNKNOWN' ? parsedId : pubkey
+
+    const parsedAuthority = sanitizePubkey(kv.authority)
+    const authority = parsedAuthority !== 'UNKNOWN' ? parsedAuthority : id
+
+    const parsedFeeVault = sanitizePubkey(kv.fee_vault)
+    const feeVault = parsedFeeVault !== 'UNKNOWN' ? parsedFeeVault : authority !== 'UNKNOWN' ? authority : id
 
     return {
       // Primary key
-      pubkey: sanitizePubkey(kv.pubkey),
+      pubkey,
 
       // Core platform config fields
-      id: sanitizePubkey(kv.id),
+      id,
       feeBasisPoints: parseInt(kv.fee_basis_points) || 500, // Default 5%
-      authority: sanitizePubkey(kv.authority),
-      feeVault: sanitizePubkey(kv.fee_vault),
+      authority,
+      feeVault,
       totalGamesCreated: parseInt(kv.total_games_created) || 0,
       nextGameId: parseInt(kv.next_game_id) || 0,
       bump: parseInt(kv.bump) || 0,

@@ -1,12 +1,3 @@
-/**
- * Player Service - Manages player state and gameplay operations
- *
- * Handles all database operations related to PlayerState blockchain accounts.
- * Provides player-specific business logic and performance optimizations.
- *
- * @author Senior Engineer - Following Google Code Standards
- */
-
 import type { PlayerState, NewPlayerState } from '#infra/db/schema'
 import type { DatabasePort } from '#infra/db/db.port'
 import type { BaseService, QueryFilters, PaginationOptions, PaginatedResult } from './base.service'

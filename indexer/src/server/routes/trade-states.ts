@@ -1,18 +1,3 @@
-/**
- * Trade States Routes
- *
- * Handles REST API endpoints for TradeState blockchain accounts.
- * ALL operations are game-scoped - trades belong to specific games.
- *
- * Architecture principles:
- * - Game-scoped operations (all endpoints require gameId)
- * - Standardized API response format
- * - Efficient filtering and pagination
- * - Trade lifecycle management (pending, accepted, rejected, etc.)
- *
- * @author Senior Engineer - Following Google Code Standards
- */
-
 import { FastifyInstance } from 'fastify'
 import { Type } from '@sinclair/typebox'
 import { DatabasePort } from '#infra/db/db.port'

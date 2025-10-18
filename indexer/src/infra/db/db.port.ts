@@ -84,6 +84,7 @@ export interface DatabasePort {
   upsertGameState(gameState: NewGameState): Promise<void>
   getGameState(pubkey: string): Promise<GameState | null>
   getGameStates(filters?: QueryFilters, pagination?: PaginationOptions): Promise<PaginatedResult<GameState>>
+  checkGameExists(pubkey: string): Promise<boolean>
 
   /**
    * Player state operations - mirrors PlayerState blockchain accounts
