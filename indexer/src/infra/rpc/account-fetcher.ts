@@ -43,8 +43,12 @@ export interface EnhancedGameData {
   winner?: string | null
   properties?: EmbeddedPropertyState[]
   slot?: number
+  createdAt?: number
   turnStartedAt?: number
   timeLimit?: number | null
+  startedAt?: number | null
+  endedAt?: number | null
+  gameEndTime?: number | null
 }
 
 export interface EnhancedPlatformData {
@@ -517,8 +521,12 @@ export function buildEnhancedGameDataFromBuffer(
     freeParkingPool: Number(decoded.freeParkingPool),
     winner: decoded.winner,
     properties,
+    createdAt: Number(decoded.createdAt),
     turnStartedAt: Number(decoded.turnStartedAt),
     timeLimit: decoded.timeLimit !== null ? Number(decoded.timeLimit) : null,
+    startedAt: decoded.startedAt !== null ? Number(decoded.startedAt) : null,
+    endedAt: decoded.endedAt !== null ? Number(decoded.endedAt) : null,
+    gameEndTime: decoded.gameEndTime !== null ? Number(decoded.gameEndTime) : null,
     slot
   }
 }
@@ -1213,6 +1221,21 @@ export class BlockchainAccountFetcher {
         logger.warn(`⚠️ Failed to decode GameState account ${gameAccountAddress}`)
         return null
       }
+
+      logger.info(
+        {
+          pubkey: gameAccountAddress,
+          createdAt: enhanced.createdAt,
+          createdAtType: typeof enhanced.createdAt,
+          startedAt: enhanced.startedAt,
+          endedAt: enhanced.endedAt,
+          gameEndTime: enhanced.gameEndTime,
+          turnStartedAt: enhanced.turnStartedAt,
+          timeLimit: enhanced.timeLimit,
+          slot
+        },
+        '⏱️ Decoded time fields from blockchain buffer'
+      )
 
       return enhanced
     } catch (error: unknown) {

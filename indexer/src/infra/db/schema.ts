@@ -166,6 +166,9 @@ export const gameStates = pgTable(
 
     // Game timing and state
     createdAt: bigint('created_at', { mode: 'number' }).notNull(), // i64 timestamp
+    startedAt: bigint('started_at', { mode: 'number' }),
+    endedAt: bigint('ended_at', { mode: 'number' }),
+    gameEndTime: bigint('game_end_time', { mode: 'number' }),
     gameStatus: gameStatusEnum('game_status').notNull(),
     turnStartedAt: bigint('turn_started_at', { mode: 'number' }).notNull(),
     timeLimit: bigint('time_limit', { mode: 'number' }), // Optional<i64>
@@ -258,7 +261,6 @@ export const playerStates = pgTable(
     needsSpecialSpaceAction: boolean('needs_special_space_action').notNull(),
     pendingSpecialSpacePosition: smallint('pending_special_space_position'), // Optional<u8>
 
-    // Card interaction timing
     cardDrawnAt: bigint('card_drawn_at', { mode: 'number' }), // Optional<i64>
 
     // Blockchain metadata
@@ -269,7 +271,7 @@ export const playerStates = pgTable(
     lastSignature: varchar('last_signature', { length: 88 })
   },
   (table) => [
-    // Performance indexes for player state queries
+    // Common query indexes
     index('idx_player_states_wallet').on(table.wallet),
     index('idx_player_states_game').on(table.game),
     index('idx_player_states_position').on(table.position),
@@ -281,13 +283,8 @@ export const playerStates = pgTable(
   ]
 )
 
-// Deprecated standalone table removed: propertyStates
-
-// Deprecated standalone table removed: tradeStates
-
 /**
  * Auction states table - mirrors AuctionState struct
- * Each row represents one auction account for property sales
  */
 export const auctionStates = pgTable(
   'auction_states',
@@ -295,13 +292,13 @@ export const auctionStates = pgTable(
     // Primary key - blockchain account pubkey
     pubkey: varchar('pubkey', { length: 44 }).primaryKey(),
 
-    // Core auction fields from AuctionState struct
+    // Core auction fields
     game: varchar('game', { length: 44 }).notNull(),
     propertyPosition: smallint('property_position').notNull(),
     currentBid: bigint('current_bid', { mode: 'number' }).notNull(),
     highestBidder: varchar('highest_bidder', { length: 44 }), // Optional<Pubkey>
 
-    // Auction timing
+    // Timing and status
     startedAt: bigint('started_at', { mode: 'number' }).notNull(),
     endsAt: bigint('ends_at', { mode: 'number' }).notNull(),
     isActive: boolean('is_active').notNull(),
@@ -315,7 +312,6 @@ export const auctionStates = pgTable(
     lastSignature: varchar('last_signature', { length: 88 })
   },
   (table) => [
-    // Performance indexes for auction state queries
     index('idx_auction_states_game').on(table.game),
     index('idx_auction_states_property_position').on(table.propertyPosition),
     index('idx_auction_states_highest_bidder').on(table.highestBidder),
@@ -325,11 +321,8 @@ export const auctionStates = pgTable(
   ]
 )
 
-// ==================== APPLICATION INFRASTRUCTURE TABLES ====================
-
 /**
- * Processing queue for async blockchain data processing
- * Essential for handling high-throughput account updates
+ * Processing queue for account updates and events
  */
 export const processingQueue = pgTable(
   'processing_queue',
@@ -346,7 +339,7 @@ export const processingQueue = pgTable(
     maxRetries: integer('max_retries').default(3),
     errorMessage: text('error_message'),
 
-    // Processing timestamps
+    // Timing
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     processingStartedAt: timestamp('processing_started_at', { withTimezone: true }),
     processedAt: timestamp('processed_at', { withTimezone: true })
@@ -360,7 +353,7 @@ export const processingQueue = pgTable(
 )
 
 /**
- * Sync status tracking for different indexer components
+ * Sync status tracking
  */
 export const syncComponentEnum = pgEnum('sync_component', [
   'historical_sync',
@@ -384,7 +377,7 @@ export const syncStatus = pgTable(
     status: syncStatusTypeEnum('status').notNull(),
     errorMessage: text('error_message'),
 
-    // Lifecycle timestamps
+    // Timing
     startedAt: timestamp('started_at', { withTimezone: true }),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow()
@@ -397,8 +390,7 @@ export const syncStatus = pgTable(
 )
 
 /**
- * Game logs for detailed event tracking and frontend display
- * Provides human-readable game event history
+ * Game logs for event tracking
  */
 export const gameLogs = pgTable(
   'game_logs',
@@ -412,13 +404,12 @@ export const gameLogs = pgTable(
     type: gameLogTypeEnum('type').notNull(),
     message: text('message').notNull(),
 
-    // Property-related event details
+    // Event-specific optional fields
     propertyName: varchar('property_name', { length: 100 }),
     position: smallint('position'),
     price: bigint('price', { mode: 'number' }),
     owner: varchar('owner', { length: 44 }),
 
-    // Card event details
     cardType: varchar('card_type', { length: 20 }), // 'chance' | 'community-chest'
     cardTitle: varchar('card_title', { length: 200 }),
     cardDescription: text('card_description'),
@@ -426,7 +417,6 @@ export const gameLogs = pgTable(
     effectType: smallint('effect_type'),
     amount: bigint('amount', { mode: 'number' }),
 
-    // Trade event details
     tradeId: varchar('trade_id', { length: 44 }),
     action: varchar('action', { length: 50 }),
     targetPlayer: varchar('target_player', { length: 44 }),
@@ -436,29 +426,25 @@ export const gameLogs = pgTable(
     offeredMoney: bigint('offered_money', { mode: 'number' }),
     requestedMoney: bigint('requested_money', { mode: 'number' }),
 
-    // Movement event details
     fromPosition: smallint('from_position'),
     toPosition: smallint('to_position'),
     diceRoll: json('dice_roll').$type<[number, number]>(),
     doublesCount: smallint('doubles_count'),
     passedGo: boolean('passed_go'),
 
-    // Jail event details
     jailReason: varchar('jail_reason', { length: 20 }), // 'doubles' | 'go_to_jail' | 'card'
     fineAmount: bigint('fine_amount', { mode: 'number' }),
 
-    // Building event details
     buildingType: varchar('building_type', { length: 10 }), // 'house' | 'hotel'
 
-    // Tax event details
     taxType: varchar('tax_type', { length: 50 }),
 
-    // Blockchain tracing
+    // Source and metadata
     signature: varchar('signature', { length: 88 }),
     error: text('error'),
     slot: bigint('slot', { mode: 'number' }),
 
-    // Event timestamps
+    // Timestamps
     timestamp: bigint('timestamp', { mode: 'number' }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     accountCreatedAt: timestamp('account_created_at', { withTimezone: true }).defaultNow(),
@@ -474,12 +460,8 @@ export const gameLogs = pgTable(
   ]
 )
 
-// ==================== TYPE DEFINITIONS ====================
+// ==================== TYPES ====================
 
-/**
- * TradeInfo interface - mirrors TradeInfo struct from Rust
- * Used in GameState.active_trades vector
- */
 export interface TradeInfo {
   id: number // u8 in Rust
   proposer: string // Pubkey as base58 string
@@ -493,8 +475,6 @@ export interface TradeInfo {
   createdAt: number // i64 timestamp
   expiresAt: number // i64 timestamp
 }
-
-// ==================== EMBEDDED TYPES ====================
 
 export interface EmbeddedPropertyState {
   pubkey: string
@@ -515,7 +495,7 @@ export interface EmbeddedPropertyState {
   mortgageValue: number
   lastRentPaid: number
   init: boolean
-  // per-account metadata (optional when embedded)
+  // Blockchain metadata
   accountCreatedAt?: string | Date
   accountUpdatedAt?: string | Date
   createdSlot?: number
@@ -537,7 +517,7 @@ export interface EmbeddedTradeState {
   createdAt: number
   expiresAt: number
   bump: number
-  // per-account metadata (optional when embedded)
+  // Blockchain metadata
   accountCreatedAt?: string | Date
   accountUpdatedAt?: string | Date
   createdSlot?: number
@@ -545,9 +525,6 @@ export interface EmbeddedTradeState {
   lastSignature?: string
 }
 
-// ==================== TYPE EXPORTS ====================
-
-// Blockchain-mirrored enum types
 export type GameStatus = InferEnum<typeof gameStatusEnum>
 export type TradeStatus = InferEnum<typeof tradeStatusEnum>
 export type ColorGroup = InferEnum<typeof colorGroupEnum>
@@ -556,11 +533,10 @@ export type BuildingType = InferEnum<typeof buildingTypeEnum>
 export type TradeType = InferEnum<typeof tradeTypeEnum>
 export type GameLogType = InferEnum<typeof gameLogTypeEnum>
 
-// Infrastructure enum types
+// Drizzle inferred types
 export type SyncComponent = InferEnum<typeof syncComponentEnum>
 export type SyncStatusType = InferEnum<typeof syncStatusTypeEnum>
 
-// Core table types - following Drizzle ORM conventions
 export type PlatformConfig = typeof platformConfigs.$inferSelect
 export type NewPlatformConfig = typeof platformConfigs.$inferInsert
 
@@ -575,14 +551,13 @@ export type NewPropertyState = EmbeddedPropertyState
 
 export type TradeState = EmbeddedTradeState
 export type NewTradeState = EmbeddedTradeState
-// Backward-compatibility exports: map to embedded types
+
 export type EmbeddedProperty = EmbeddedPropertyState
 export type EmbeddedTrade = EmbeddedTradeState
 
 export type AuctionState = typeof auctionStates.$inferSelect
 export type NewAuctionState = typeof auctionStates.$inferInsert
 
-// Infrastructure table types
 export type ProcessingQueueItem = typeof processingQueue.$inferSelect
 export type NewProcessingQueueItem = typeof processingQueue.$inferInsert
 
@@ -592,10 +567,6 @@ export type NewSyncStatusRecord = typeof syncStatus.$inferInsert
 export type GameLog = typeof gameLogs.$inferSelect
 export type NewGameLog = typeof gameLogs.$inferInsert
 
-/**
- * Frontend-optimized game log entry interface
- * Provides structured event data for UI consumption
- */
 export interface GameLogEntry {
   id: string
   timestamp: number
@@ -604,13 +575,13 @@ export interface GameLogEntry {
   playerName?: string
   message: string
   details?: {
-    // Property interaction details
+    // Property-related
     propertyName?: string
     position?: number
     price?: number
     owner?: string
 
-    // Card interaction details
+    // Card-related
     cardType?: 'chance' | 'community-chest'
     cardTitle?: string
     cardDescription?: string
@@ -618,7 +589,7 @@ export interface GameLogEntry {
     effectType?: number
     amount?: number
 
-    // Trade interaction details
+    // Trade-related
     tradeId?: string
     action?: string
     targetPlayer?: string
@@ -628,24 +599,24 @@ export interface GameLogEntry {
     offeredMoney?: number
     requestedMoney?: number
 
-    // Movement details
+    // Movement-related
     fromPosition?: number
     toPosition?: number
     diceRoll?: [number, number]
     doublesCount?: number
     passedGo?: boolean
 
-    // Jail interaction details
+    // Jail-related
     jailReason?: 'doubles' | 'go_to_jail' | 'card'
     fineAmount?: number
 
-    // Building details
+    // Building-related
     buildingType?: 'house' | 'hotel'
 
-    // Tax details
+    // Tax-related
     taxType?: string
 
-    // Blockchain tracing
+    // Source and error
     signature?: string
     error?: string
   }

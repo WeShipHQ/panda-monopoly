@@ -25,7 +25,7 @@ export interface RustGameState {
   players: PublicKey[]
   gameStatus: GameStatus
   turnStartedAt: number
-  timeLimit: number
+  timeLimit?: number | null
   bankBalance: bigint
   freeParkingPool: bigint
   housesRemaining: number
@@ -34,6 +34,9 @@ export interface RustGameState {
   nextTradeId: number
   activeTrades: TradeInfo[]
   createdAt: number
+  startedAt?: number | null
+  endedAt?: number | null
+  gameEndTime?: number | null
 }
 
 export enum GameStatus {
@@ -60,98 +63,233 @@ export function parseGameStateFromBlockchain(accountData: Buffer, pubkey: string
     const discriminator = accountData.subarray(0, 8)
     offset += 8
 
-    if (accountData.length < offset + 4) return null
-    const gameId = accountData.readUInt32LE(offset)
-    offset += 4
+    // gameId: u64
+    if (accountData.length < offset + 8) return null
+    const gameId = Number(accountData.readBigUInt64LE(offset))
+    offset += 8
 
+    // configId: Pubkey
     if (accountData.length < offset + 32) return null
     const configId = new PublicKey(accountData.subarray(offset, offset + 32))
     offset += 32
 
+    // authority/creator: Pubkey
     if (accountData.length < offset + 32) return null
     const authority = new PublicKey(accountData.subarray(offset, offset + 32))
     offset += 32
 
-    if (accountData.length < offset + 1) return null
+    // bump, maxPlayers, currentPlayers, currentTurn: u8
+    if (accountData.length < offset + 4) return null
     const bump = accountData.readUInt8(offset)
-    offset += 1
+    const maxPlayers = accountData.readUInt8(offset + 1)
+    const currentPlayers = accountData.readUInt8(offset + 2)
+    const currentTurn = accountData.readUInt8(offset + 3)
+    offset += 4
 
-    if (accountData.length < offset + 1) return null
-    const maxPlayers = accountData.readUInt8(offset)
-    offset += 1
-
-    if (accountData.length < offset + 1) return null
-    const currentPlayers = accountData.readUInt8(offset)
-    offset += 1
-
-    if (accountData.length < offset + 1) return null
-    const currentTurn = accountData.readUInt8(offset)
-    offset += 1
-
+    // players: Vec<Pubkey> => [len: u32] + N * 32
     if (accountData.length < offset + 4) return null
     const playersLength = accountData.readUInt32LE(offset)
     offset += 4
-
     const players: PublicKey[] = []
-    for (let i = 0; i < playersLength && i < 8; i++) {
+    for (let i = 0; i < playersLength; i++) {
       if (accountData.length < offset + 32) break
       players.push(new PublicKey(accountData.subarray(offset, offset + 32)))
       offset += 32
     }
 
+    // playerEliminated: Vec<bool> => [len: u32] + N * 1 (skip)
+    if (accountData.length < offset + 4) return null
+    const eliminatedLength = accountData.readUInt32LE(offset)
+    offset += 4
+    // skip N booleans
+    if (accountData.length < offset + eliminatedLength) return null
+    offset += eliminatedLength
+
+    // totalPlayers u8 + activePlayers u8
+    if (accountData.length < offset + 2) return null
+    offset += 2
+
+    // gameStatus: u8
     if (accountData.length < offset + 1) return null
     const gameStatus = accountData.readUInt8(offset) as GameStatus
     offset += 1
 
-    let turnStartedAt = 0,
-      createdAt = 0
-    if (accountData.length >= offset + 8) {
-      turnStartedAt = Number(accountData.readBigInt64LE(offset))
-      offset += 8
-    }
+    // bankBalance u64 + freeParkingPool u64
+    if (accountData.length < offset + 16) return null
+    const bankBalance = accountData.readBigUInt64LE(offset)
+    const freeParkingPool = accountData.readBigUInt64LE(offset + 8)
+    offset += 16
 
-    let timeLimit = 300
-    if (accountData.length >= offset + 4) {
-      timeLimit = accountData.readUInt32LE(offset)
-      offset += 4
-    }
+    // housesRemaining u8, hotelsRemaining u8
+    if (accountData.length < offset + 2) return null
+    const housesRemaining = accountData.readUInt8(offset)
+    const hotelsRemaining = accountData.readUInt8(offset + 1)
+    offset += 2
 
-    let bankBalance = 0n,
-      freeParkingPool = 0n
-    if (accountData.length >= offset + 16) {
-      bankBalance = accountData.readBigUInt64LE(offset)
-      freeParkingPool = accountData.readBigUInt64LE(offset + 8)
-      offset += 16
-    }
-
-    let housesRemaining = 32,
-      hotelsRemaining = 12
-    if (accountData.length >= offset + 8) {
-      housesRemaining = accountData.readUInt32LE(offset)
-      hotelsRemaining = accountData.readUInt32LE(offset + 4)
-      offset += 8
-    }
-
+    // winner: Option<Pubkey> => flag u8 + optional 32 bytes
+    if (accountData.length < offset + 1) return null
+    const winnerFlag = accountData.readUInt8(offset)
+    offset += 1
     let winner: PublicKey | null = null
-    if (accountData.length >= offset + 1) {
-      const hasWinner = accountData.readUInt8(offset) === 1
+    if (winnerFlag === 1) {
+      if (accountData.length < offset + 32) return null
+      winner = new PublicKey(accountData.subarray(offset, offset + 32))
+      offset += 32
+    }
+
+    // entryFee u64
+    if (accountData.length < offset + 8) return null
+    offset += 8
+
+    // tokenMint: Option<Address>
+    if (accountData.length < offset + 1) return null
+    const tokenMintFlag = accountData.readUInt8(offset)
+    offset += 1
+    if (tokenMintFlag === 1) {
+      if (accountData.length < offset + 32) return null
+      offset += 32
+    }
+
+    // tokenVault: Option<Address>
+    if (accountData.length < offset + 1) return null
+    const tokenVaultFlag = accountData.readUInt8(offset)
+    offset += 1
+    if (tokenVaultFlag === 1) {
+      if (accountData.length < offset + 32) return null
+      offset += 32
+    }
+
+    // totalPrizePool u64
+    if (accountData.length < offset + 8) return null
+    offset += 8
+
+    // prizeClaimed bool + endConditionMet bool
+    if (accountData.length < offset + 2) return null
+    offset += 2
+
+    // endReason: Option<GameEndReason> => flag u8 + optional enum u8
+    if (accountData.length < offset + 1) return null
+    const endReasonFlag = accountData.readUInt8(offset)
+    offset += 1
+    if (endReasonFlag === 1) {
+      if (accountData.length < offset + 1) return null
       offset += 1
-      if (hasWinner && accountData.length >= offset + 32) {
-        winner = new PublicKey(accountData.subarray(offset, offset + 32))
+    }
+
+    // activeTrades: Vec<TradeInfo>
+    if (accountData.length < offset + 4) return null
+    const tradesLength = accountData.readUInt32LE(offset)
+    offset += 4
+    const activeTrades: TradeInfo[] = []
+    for (let i = 0; i < tradesLength; i++) {
+      if (accountData.length < offset + 1 + 32 + 32) break
+      const tradeId = accountData.readUInt8(offset)
+      offset += 1
+      const proposer = new PublicKey(accountData.subarray(offset, offset + 32))
+      offset += 32
+      const receiver = new PublicKey(accountData.subarray(offset, offset + 32))
+      offset += 32
+      // tradeType enum u8
+      if (accountData.length < offset + 1) break
+      offset += 1
+      // proposerMoney u64 + receiverMoney u64
+      if (accountData.length < offset + 16) break
+      offset += 16
+      // proposerProperty: Option<u8>
+      if (accountData.length < offset + 1) break
+      const proposerPropFlag = accountData.readUInt8(offset)
+      offset += 1
+      if (proposerPropFlag === 1) {
+        if (accountData.length < offset + 1) break
+        offset += 1
+      }
+      // receiverProperty: Option<u8>
+      if (accountData.length < offset + 1) break
+      const receiverPropFlag = accountData.readUInt8(offset)
+      offset += 1
+      if (receiverPropFlag === 1) {
+        if (accountData.length < offset + 1) break
+        offset += 1
+      }
+      // status enum u8
+      if (accountData.length < offset + 1) break
+      offset += 1
+      // createdAt i64 + expiresAt i64
+      if (accountData.length < offset + 16) break
+      offset += 16
+      activeTrades.push({ tradeId, proposer, acceptor: receiver })
+    }
+
+    // nextTradeId: u8
+    if (accountData.length < offset + 1) return null
+    const nextTradeId = accountData.readUInt8(offset)
+    offset += 1
+
+    // properties: [PropertyInfo; 40]
+    for (let i = 0; i < 40; i++) {
+      if (accountData.length < offset + 1) return null
+      const ownerFlag = accountData.readUInt8(offset)
+      offset += 1
+      if (ownerFlag === 1) {
+        if (accountData.length < offset + 32) return null
         offset += 32
       }
+      // houses u8, hasHotel bool u8, isMortgaged bool u8
+      if (accountData.length < offset + 3) return null
+      offset += 3
     }
 
-    let nextTradeId = 0
-    if (accountData.length >= offset + 4) {
-      nextTradeId = accountData.readUInt32LE(offset)
-      offset += 4
+    // createdAt i64
+    if (accountData.length < offset + 8) return null
+    const createdAt = Number(accountData.readBigInt64LE(offset))
+    offset += 8
+
+    // startedAt Option<i64>
+    if (accountData.length < offset + 1) return null
+    const startedFlag = accountData.readUInt8(offset)
+    offset += 1
+    let startedAt: number | null = null
+    if (startedFlag === 1) {
+      if (accountData.length < offset + 8) return null
+      startedAt = Number(accountData.readBigInt64LE(offset))
+      offset += 8
     }
 
-    const activeTrades: TradeInfo[] = []
+    // endedAt Option<i64>
+    if (accountData.length < offset + 1) return null
+    const endedFlag = accountData.readUInt8(offset)
+    offset += 1
+    let endedAt: number | null = null
+    if (endedFlag === 1) {
+      if (accountData.length < offset + 8) return null
+      endedAt = Number(accountData.readBigInt64LE(offset))
+      offset += 8
+    }
 
-    if (accountData.length >= offset + 8) {
-      createdAt = Number(accountData.readBigInt64LE(offset))
+    // gameEndTime Option<i64>
+    if (accountData.length < offset + 1) return null
+    const endTimeFlag = accountData.readUInt8(offset)
+    offset += 1
+    let gameEndTime: number | null = null
+    if (endTimeFlag === 1) {
+      if (accountData.length < offset + 8) return null
+      gameEndTime = Number(accountData.readBigInt64LE(offset))
+      offset += 8
+    }
+
+    // turnStartedAt i64
+    if (accountData.length < offset + 8) return null
+    const turnStartedAt = Number(accountData.readBigInt64LE(offset))
+    offset += 8
+
+    // timeLimit Option<i64>
+    if (accountData.length < offset + 1) return null
+    const timeLimitFlag = accountData.readUInt8(offset)
+    offset += 1
+    let timeLimit: number | null = null
+    if (timeLimitFlag === 1) {
+      if (accountData.length < offset + 8) return null
+      timeLimit = Number(accountData.readBigInt64LE(offset))
       offset += 8
     }
 
@@ -175,7 +313,10 @@ export function parseGameStateFromBlockchain(accountData: Buffer, pubkey: string
       winner,
       nextTradeId,
       activeTrades,
-      createdAt
+      createdAt,
+      startedAt,
+      endedAt,
+      gameEndTime
     }
   } catch (error) {
     console.error(`Error parsing GameState ${pubkey}:`, error)
@@ -197,7 +338,7 @@ export function mapGameStateToDatabase(blockchainData: RustGameState, pubkey: st
     createdAt: blockchainData.createdAt,
     gameStatus: Object.keys(GameStatus)[blockchainData.gameStatus] as any,
     turnStartedAt: blockchainData.turnStartedAt,
-    timeLimit: blockchainData.timeLimit,
+    timeLimit: blockchainData.timeLimit ?? null,
     bankBalance: Number(blockchainData.bankBalance),
     freeParkingPool: Number(blockchainData.freeParkingPool),
     housesRemaining: blockchainData.housesRemaining,
@@ -205,6 +346,9 @@ export function mapGameStateToDatabase(blockchainData: RustGameState, pubkey: st
     winner: blockchainData.winner?.toString() || null,
     nextTradeId: blockchainData.nextTradeId,
     activeTrades: [],
+    startedAt: blockchainData.startedAt ?? null,
+    endedAt: blockchainData.endedAt ?? null,
+    gameEndTime: blockchainData.gameEndTime ?? null,
     accountUpdatedAt: new Date()
   }
 }

@@ -303,9 +303,9 @@ export class DrizzleAdapter implements DatabasePort {
           turn_started_at, time_limit, bank_balance, free_parking_pool, 
           houses_remaining, hotels_remaining, winner, next_trade_id, 
           active_trades, properties, trades, account_created_at, 
-          account_updated_at, created_slot, updated_slot, last_signature
+          account_updated_at, created_slot, updated_slot, last_signature, started_at, ended_at, game_end_time
         ) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)
         ON CONFLICT (pubkey) DO UPDATE SET
           game_id = $2,
           config_id = $3,
@@ -315,7 +315,7 @@ export class DrizzleAdapter implements DatabasePort {
           current_players = $7,
           current_turn = $8,
           players = $9,
-          created_at = $10,
+          created_at = COALESCE(game_states.created_at, EXCLUDED.created_at),
           game_status = $11,
           turn_started_at = $12,
           time_limit = $13,
@@ -332,10 +332,52 @@ export class DrizzleAdapter implements DatabasePort {
           account_updated_at = $24,
           created_slot = $25,
           updated_slot = $26,
-          last_signature = $27
+          last_signature = $27,
+          started_at = $28,
+          ended_at = $29,
+          game_end_time = $30
       `
 
       // Chuẩn bị các tham số
+      console.info('🧾 upsertGameState createdAt payload', {
+        pubkey: processedGameState.pubkey,
+        createdAt: processedGameState.createdAt,
+        createdAtType: typeof processedGameState.createdAt
+      })
+
+      // Validate createdAt to fit PostgreSQL bigint range and be finite
+      const PG_BIGINT_MAX = Number(9223372036854775807n)
+      const PG_BIGINT_MIN = Number(-9223372036854775808n)
+      let createdAtInsert = processedGameState.createdAt as number
+      if (
+        typeof createdAtInsert !== 'number' ||
+        !Number.isFinite(createdAtInsert) ||
+        createdAtInsert < PG_BIGINT_MIN ||
+        createdAtInsert > PG_BIGINT_MAX
+      ) {
+        console.warn('⚠️ Invalid createdAt detected; applying fallback', {
+          pubkey: processedGameState.pubkey,
+          createdAt: processedGameState.createdAt
+        })
+        const tsFallback = (() => {
+          const t = processedGameState.turnStartedAt as number
+          if (
+            typeof t === 'number' &&
+            Number.isFinite(t) &&
+            t >= PG_BIGINT_MIN &&
+            t <= PG_BIGINT_MAX
+          ) {
+            return t
+          }
+          return Date.now()
+        })()
+        createdAtInsert = tsFallback
+        console.info('✅ Using fallback createdAt for insert', {
+          pubkey: processedGameState.pubkey,
+          createdAt: createdAtInsert
+        })
+      }
+
       const params = [
         processedGameState.pubkey,
         processedGameState.gameId,
@@ -346,7 +388,7 @@ export class DrizzleAdapter implements DatabasePort {
         processedGameState.currentPlayers,
         processedGameState.currentTurn,
         JSON.stringify(processedGameState.players || []),
-        processedGameState.createdAt,
+        createdAtInsert,
         processedGameState.gameStatus,
         processedGameState.turnStartedAt,
         processedGameState.timeLimit,
@@ -363,7 +405,10 @@ export class DrizzleAdapter implements DatabasePort {
         processedGameState.accountUpdatedAt || new Date(),
         processedGameState.createdSlot,
         processedGameState.updatedSlot,
-        processedGameState.lastSignature
+        processedGameState.lastSignature,
+        processedGameState.startedAt ?? null,
+        processedGameState.endedAt ?? null,
+        processedGameState.gameEndTime ?? null
       ]
 
       // Thực hiện truy vấn
@@ -862,8 +907,11 @@ export class DrizzleAdapter implements DatabasePort {
       processed.accountUpdatedAt = new Date(processed.accountUpdatedAt)
     }
 
+    // Do NOT convert numeric `createdAt` fields to Date.
+    // Some payloads may accidentally send `createdAt` as a string; normalize to number.
     if ('createdAt' in processed && typeof processed.createdAt === 'string') {
-      processed.createdAt = new Date(processed.createdAt)
+      const maybeNum = Number(processed.createdAt)
+      processed.createdAt = Number.isFinite(maybeNum) ? maybeNum : processed.createdAt
     }
 
     return processed as T
@@ -922,6 +970,18 @@ export class DrizzleAdapter implements DatabasePort {
           whereParts.push(`game_id = $${idx++}`)
           params.push(Number(f.gameId))
         }
+        if (f.startedAt !== undefined) {
+          whereParts.push(`started_at = $${idx++}`)
+          params.push(Number(f.startedAt))
+        }
+        if (f.endedAt !== undefined) {
+          whereParts.push(`ended_at = $${idx++}`)
+          params.push(Number(f.endedAt))
+        }
+        if (f.gameEndTime !== undefined) {
+          whereParts.push(`game_end_time = $${idx++}`)
+          params.push(Number(f.gameEndTime))
+        }
 
         const whereSql = whereParts.length > 0 ? `WHERE ${whereParts.join(' AND ')}` : ''
 
@@ -952,7 +1012,10 @@ export class DrizzleAdapter implements DatabasePort {
           'account_updated_at',
           'created_slot',
           'updated_slot',
-          'last_signature'
+          'last_signature',
+          'started_at',
+          'ended_at',
+          'game_end_time'
         ])
         const sortColumn = allowedSortColumns.has(candidate) ? candidate : 'account_updated_at'
         const sortDir = pagination.sortOrder === 'asc' ? 'ASC' : 'DESC'
@@ -970,7 +1033,8 @@ export class DrizzleAdapter implements DatabasePort {
             current_players, current_turn, players, created_at, game_status, 
             turn_started_at, time_limit, bank_balance, free_parking_pool, 
             houses_remaining, hotels_remaining, winner, next_trade_id,
-            account_created_at, account_updated_at, created_slot, updated_slot, last_signature
+            account_created_at, account_updated_at, created_slot, updated_slot, last_signature,
+            started_at, ended_at, game_end_time
           FROM game_states
           ${whereSql}
           ${orderByClause}
@@ -1064,6 +1128,15 @@ export class DrizzleAdapter implements DatabasePort {
     }
     if (filters.gameId != null) {
       conditions.push(eq(gameStates.gameId, Number(filters.gameId)))
+    }
+    if (filters.startedAt != null) {
+      conditions.push(eq(gameStates.startedAt, Number(filters.startedAt)))
+    }
+    if (filters.endedAt != null) {
+      conditions.push(eq(gameStates.endedAt, Number(filters.endedAt)))
+    }
+    if (filters.gameEndTime != null) {
+      conditions.push(eq(gameStates.gameEndTime, Number(filters.gameEndTime)))
     }
 
     return conditions

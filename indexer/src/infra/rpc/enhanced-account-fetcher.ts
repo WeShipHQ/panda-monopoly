@@ -19,6 +19,10 @@ export interface EnhancedGameData {
   winner?: string | null
   nextTradeId: number
   activeTrades: any[]
+  createdAt?: number
+  startedAt?: number | null
+  endedAt?: number | null
+  gameEndTime?: number | null
 }
 
 export class EnhancedBlockchainAccountFetcher {
@@ -52,21 +56,28 @@ export class EnhancedBlockchainAccountFetcher {
 
       const enhancedData: EnhancedGameData = {
         gameId: rustGameState.gameId,
-        configId: rustGameState.configId.toString(),
-        authority: rustGameState.authority.toString(),
+        configId: rustGameState.configId.toBase58(),
+        authority: rustGameState.authority.toBase58(),
         bump: rustGameState.bump,
         maxPlayers: rustGameState.maxPlayers,
         currentPlayers: rustGameState.currentPlayers,
         currentTurn: rustGameState.currentTurn,
-        players: rustGameState.players.map((p) => p.toString()),
-        gameStatus: ['WaitingForPlayers', 'InProgress', 'Finished'][rustGameState.gameStatus] as any,
+        players: rustGameState.players.map((p) => p.toBase58()),
+        gameStatus: ['WaitingForPlayers', 'InProgress', 'Finished'][rustGameState.gameStatus] as
+          | 'WaitingForPlayers'
+          | 'InProgress'
+          | 'Finished',
         bankBalance: Number(rustGameState.bankBalance),
         freeParkingPool: Number(rustGameState.freeParkingPool),
         housesRemaining: rustGameState.housesRemaining,
         hotelsRemaining: rustGameState.hotelsRemaining,
         winner: rustGameState.winner?.toString() || null,
         nextTradeId: rustGameState.nextTradeId,
-        activeTrades: rustGameState.activeTrades || []
+        activeTrades: rustGameState.activeTrades || [],
+        createdAt: rustGameState.createdAt,
+        startedAt: rustGameState.startedAt ?? null,
+        endedAt: rustGameState.endedAt ?? null,
+        gameEndTime: rustGameState.gameEndTime ?? null
       }
 
       logger.debug(
@@ -77,6 +88,18 @@ export class EnhancedBlockchainAccountFetcher {
           bankBalance: enhancedData.bankBalance
         },
         '✅ Parsed GameState'
+      )
+
+      logger.info(
+        {
+          pubkey,
+          createdAt: enhancedData.createdAt,
+          createdAtType: typeof enhancedData.createdAt,
+          startedAt: enhancedData.startedAt,
+          endedAt: enhancedData.endedAt,
+          gameEndTime: enhancedData.gameEndTime
+        },
+        '⏱️ Decoded time fields'
       )
 
       return enhancedData
@@ -132,6 +155,9 @@ export class EnhancedBlockchainAccountFetcher {
       winner: blockchainData.winner,
       nextTradeId: blockchainData.nextTradeId,
       activeTrades: blockchainData.activeTrades,
+      startedAt: blockchainData.startedAt ?? undefined,
+      endedAt: blockchainData.endedAt ?? undefined,
+      gameEndTime: blockchainData.gameEndTime ?? undefined,
       accountUpdatedAt: new Date()
     }
   }

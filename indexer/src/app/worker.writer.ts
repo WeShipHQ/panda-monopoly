@@ -75,6 +75,29 @@ async function enrichRecordWithBlockchainData(record: MonopolyRecord): Promise<M
         record.data.bankBalance = enhancedData.bankBalance
         record.data.freeParkingPool = enhancedData.freeParkingPool
         record.data.winner = enhancedData.winner ?? record.data.winner ?? null
+        if (typeof enhancedData.createdAt === 'number') {
+          record.data.createdAt = enhancedData.createdAt
+        }
+        if (typeof enhancedData.turnStartedAt === 'number') {
+          record.data.turnStartedAt = enhancedData.turnStartedAt
+        }
+        record.data.timeLimit = enhancedData.timeLimit ?? record.data.timeLimit ?? null
+        record.data.startedAt = enhancedData.startedAt ?? record.data.startedAt ?? null
+        record.data.endedAt = enhancedData.endedAt ?? record.data.endedAt ?? null
+        record.data.gameEndTime = enhancedData.gameEndTime ?? record.data.gameEndTime ?? null
+        logger.info(
+          {
+            pubkey: record.data.pubkey,
+            createdAt: record.data.createdAt,
+            createdAtType: typeof record.data.createdAt,
+            startedAt: record.data.startedAt,
+            endedAt: record.data.endedAt,
+            gameEndTime: record.data.gameEndTime,
+            turnStartedAt: record.data.turnStartedAt,
+            timeLimit: record.data.timeLimit
+          },
+          '📝 Prepared DB payload time fields'
+        )
         if (typeof enhancedData.slot === 'number') {
           record.data.updatedSlot = enhancedData.slot
           if (!record.data.createdSlot || record.data.createdSlot === 0) {
@@ -89,8 +112,19 @@ async function enrichRecordWithBlockchainData(record: MonopolyRecord): Promise<M
           record.data.gameStatus = enhancedData.gameStatus as typeof record.data.gameStatus
         }
 
-        logger.debug(
-          `🎮 Enhanced gameState: gameId=${enhancedData.gameId}, players=${enhancedData.currentPlayers}, properties=${record.data.properties.length}`
+        logger.info(
+          {
+            pubkey: record.data.pubkey,
+            createdAt: enhancedData.createdAt,
+            createdAtType: typeof enhancedData.createdAt,
+            startedAt: enhancedData.startedAt,
+            endedAt: enhancedData.endedAt,
+            gameEndTime: enhancedData.gameEndTime,
+            turnStartedAt: enhancedData.turnStartedAt,
+            timeLimit: enhancedData.timeLimit,
+            slot: enhancedData.slot
+          },
+          '🧩 Blockchain enhanced data time fields'
         )
 
         const playerSnapshots = await fetcher.fetchPlayerStateSnapshots(record.data.pubkey, enhancedData.players ?? [])

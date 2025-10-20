@@ -388,6 +388,10 @@ export class BlockchainSyncService {
         game_status: (enhanced.gameStatus as any) ?? 'WaitingForPlayers',
         turn_started_at: enhanced.turnStartedAt ?? 0,
         time_limit: enhanced.timeLimit ?? null,
+        created_at: typeof enhanced.createdAt === 'number' ? enhanced.createdAt : null,
+        started_at: enhanced.startedAt ?? null,
+        ended_at: enhanced.endedAt ?? null,
+        game_end_time: enhanced.gameEndTime ?? null,
         bank_balance: this.validateBigInt(BigInt(enhanced.bankBalance ?? 0), 'bankBalance'),
         free_parking_pool: this.validateBigInt(BigInt(enhanced.freeParkingPool ?? 0), 'freeParkingPool'),
         houses_remaining: enhanced.housesRemaining,
@@ -464,15 +468,19 @@ export class BlockchainSyncService {
       game_status: gameStatus,
       turn_started_at: parsed.turnStartedAt ?? 0,
       time_limit: parsed.timeLimit ?? null,
+      created_at: typeof parsed.createdAt === 'number' ? parsed.createdAt : null,
+      started_at: parsed.startedAt ?? null,
+      ended_at: parsed.endedAt ?? null,
+      game_end_time: parsed.gameEndTime ?? null,
       bank_balance: this.validateBigInt(parsed.bankBalance ?? 0n, 'bankBalance'),
       free_parking_pool: this.validateBigInt(parsed.freeParkingPool ?? 0n, 'freeParkingPool'),
       houses_remaining: housesRemaining,
       hotels_remaining: hotelsRemaining,
       winner: parsed.winner ? parsed.winner.toString() : null,
       next_trade_id: nextTradeId,
-      active_trades: activeTrades,
-      properties: [],
-      trades: []
+      active_trades: JSON.stringify(activeTrades),
+      properties: JSON.stringify([]),
+      trades: JSON.stringify([])
     }
   }
 
@@ -485,9 +493,9 @@ export class BlockchainSyncService {
           current_turn, players, game_status, turn_started_at, time_limit, bank_balance,
           free_parking_pool, houses_remaining, hotels_remaining, winner, next_trade_id,
           active_trades, properties, trades, account_created_at, account_updated_at,
-          created_slot, updated_slot, last_signature, created_at
+          created_slot, updated_slot, last_signature, started_at, ended_at, game_end_time, created_at
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
         ) ON CONFLICT (pubkey) DO UPDATE SET
           game_id = EXCLUDED.game_id,
           config_id = EXCLUDED.config_id,
@@ -503,6 +511,10 @@ export class BlockchainSyncService {
           active_trades = EXCLUDED.active_trades,
           properties = EXCLUDED.properties,
           trades = EXCLUDED.trades,
+          started_at = EXCLUDED.started_at,
+          ended_at = EXCLUDED.ended_at,
+          game_end_time = EXCLUDED.game_end_time,
+          created_at = COALESCE(game_states.created_at, EXCLUDED.created_at),
           account_updated_at = NOW()
       `
 
@@ -534,7 +546,16 @@ export class BlockchainSyncService {
         gameState.createdSlot || 0,
         gameState.updatedSlot || 0,
         gameState.lastSignature ?? null,
-        gameState.blockTime ? gameState.blockTime * 1000 : Date.now()
+        gameState.started_at ?? null,
+        gameState.ended_at ?? null,
+        gameState.game_end_time ?? null,
+        typeof gameState.created_at === 'number'
+          ? gameState.created_at < 1e12
+            ? gameState.created_at * 1000
+            : gameState.created_at
+          : gameState.blockTime
+            ? gameState.blockTime * 1000
+            : Date.now()
       ])
     }
 
