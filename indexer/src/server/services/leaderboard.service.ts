@@ -328,6 +328,20 @@ export class LeaderboardService {
       const totalPlayersInGames = games.data.reduce((sum, game) => sum + game.currentPlayers, 0)
       const averagePlayersPerGame = games.data.length > 0 ? totalPlayersInGames / games.data.length : 0
 
+      // Compute average game duration (minutes) for finished games
+      const finishedDurationsMin = games.data
+        .filter((g) => g.gameStatus === 'Finished' && g.startedAt != null && g.endedAt != null)
+        .map((g) => {
+          const start = Number(g.startedAt as number)
+          const end = Number(g.endedAt as number)
+          const delta = end - start
+          const durationMs = end < 1e12 && start < 1e12 ? delta * 1000 : delta
+          return durationMs / 60000
+        })
+      const averageGameDuration = finishedDurationsMin.length
+        ? Math.round((finishedDurationsMin.reduce((a, b) => a + b, 0) / finishedDurationsMin.length) * 100) / 100
+        : 0
+
       return {
         totalGames: games.data.length,
         activeGames,
@@ -335,6 +349,7 @@ export class LeaderboardService {
         totalPlayers: uniquePlayers.size,
         activePlayers: uniquePlayers.size, // Simplified - would need more complex logic
         averagePlayersPerGame: Math.round(averagePlayersPerGame * 100) / 100,
+        averageGameDuration,
         topProperties: [] // Would need property purchase data
       }
     } catch (error) {
@@ -468,6 +483,27 @@ export class LeaderboardService {
                    SUM(COALESCE(json_array_length(properties_owned), 0)) AS total_properties_owned
             FROM filtered_ps
             GROUP BY wallet
+          ), game_durations AS (
+            SELECT 
+              gs.pubkey AS game,
+              CASE 
+                WHEN gs.started_at IS NOT NULL AND gs.ended_at IS NOT NULL THEN 
+                  CASE 
+                    WHEN gs.ended_at < 1000000000000 AND gs.started_at < 1000000000000 
+                      THEN (gs.ended_at - gs.started_at) * 1000
+                    ELSE (gs.ended_at - gs.started_at)
+                  END
+                ELSE NULL
+              END AS duration_ms
+            FROM game_states gs
+            WHERE gs.game_status = 'Finished' AND gs.started_at IS NOT NULL AND gs.ended_at IS NOT NULL
+            ${timePredicates.length ? ' AND ' + timePredicates.map((p) => `gs.${p}`).join(' AND ') : ''}
+          ), player_avg_duration AS (
+            SELECT fp.wallet,
+                   AVG(gd.duration_ms) / 60000.0 AS avg_game_duration_min
+            FROM filtered_ps fp
+            JOIN game_durations gd ON gd.game = fp.game
+            GROUP BY fp.wallet
           ), aggregated AS (
             SELECT p.wallet,
                    p.total_games_played,
@@ -477,10 +513,12 @@ export class LeaderboardService {
                    COALESCE(c.min_cash, 0) AS min_cash,
                    COALESCE(c.median_cash, 0) AS median_cash,
                    COALESCE(c.total_properties_owned, 0) AS total_properties_owned,
+                   COALESCE(pad.avg_game_duration_min, 0) AS avg_game_duration_min,
                    p.last_active
             FROM played p
             LEFT JOIN wins w ON w.wallet = p.wallet
             LEFT JOIN cash c ON c.wallet = p.wallet
+            LEFT JOIN player_avg_duration pad ON pad.wallet = p.wallet
           ), with_rate AS (
             SELECT wallet,
                    total_games_played,
@@ -492,6 +530,7 @@ export class LeaderboardService {
                    min_cash,
                    median_cash,
                    total_properties_owned,
+                   avg_game_duration_min,
                    last_active
             FROM aggregated
           ), ranked AS (
@@ -505,6 +544,7 @@ export class LeaderboardService {
                    min_cash,
                    median_cash,
                    total_properties_owned,
+                   avg_game_duration_min,
                    last_active,
                    ((total_games_played * ${activityWeight}) + (total_games_won * ${successWeight})) AS leaderboard_score
             FROM with_rate
@@ -542,6 +582,7 @@ export class LeaderboardService {
           averageCashBalance: Number(r.avg_cash ?? 0),
           highestCashBalance: Number(r.max_cash ?? 0),
           totalPropertiesOwned: Number(r.total_properties_owned ?? 0),
+          averageGameDuration: Number(r.avg_game_duration_min ?? 0),
           lastActiveDate: r.last_active ? new Date(r.last_active).toISOString() : new Date(0).toISOString(),
           leaderboardScore: Number(r.leaderboard_score ?? 0),
           rank: offset + idx + 1
@@ -551,9 +592,10 @@ export class LeaderboardService {
       }
 
       // Fallback to in-memory aggregation if SQL not available
-      const [playerStates, winThreshold] = await Promise.all([
+      const [playerStates, winThreshold, finishedGames] = await Promise.all([
         this.db.getPlayerStates({}, { limit: 2000, sortBy: 'accountUpdatedAt', sortOrder: 'desc' }),
-        this.getDynamicWinThreshold()
+        this.getDynamicWinThreshold(),
+        this.db.getGameStates({ gameStatus: 'Finished' }, { limit: 5000 })
       ])
 
       const playerStatsMap = new Map<
@@ -615,6 +657,19 @@ export class LeaderboardService {
         }
       }
 
+      // Build finished game durations map (minutes), normalizing seconds→ms if needed
+      const gameDurations = new Map<string, number>()
+      for (const gs of finishedGames.data) {
+        const start = Number((gs as any).startedAt ?? 0)
+        const end = Number((gs as any).endedAt ?? 0)
+        const gamePk = (gs as any).pubkey
+        if (gamePk && start && end && end > start) {
+          const delta = end - start
+          const durationMs = end < 1e12 && start < 1e12 ? delta * 1000 : delta
+          gameDurations.set(gamePk, durationMs / 60000)
+        }
+      }
+
       const playerStats = Array.from(playerStatsMap.values()).map((data) => {
         const totalGames = data.gamesPlayed.size
 
@@ -624,6 +679,10 @@ export class LeaderboardService {
         const winRate = LeaderboardUtils.calculateWinRate(validatedWins, totalGames)
         const avgCash = totalGames > 0 ? LeaderboardUtils.roundCash(data.totalCash / totalGames) : 0
         const leaderboardScore = LeaderboardUtils.calculateScore(totalGames, validatedWins)
+        const durations = Array.from(data.gamesPlayed)
+          .map((g) => gameDurations.get(g))
+          .filter((v): v is number => v !== undefined)
+        const avgDuration = durations.length ? durations.reduce((a, b) => a + b, 0) / durations.length : 0
 
         return {
           playerId: data.playerId,
@@ -636,6 +695,7 @@ export class LeaderboardService {
           averageCashBalance: avgCash,
           highestCashBalance: LeaderboardUtils.roundCash(data.maxCash),
           totalPropertiesOwned: data.properties,
+          averageGameDuration: avgDuration,
           lastActiveDate: data.lastActive.toISOString(),
           leaderboardScore
         }

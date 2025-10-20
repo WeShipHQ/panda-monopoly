@@ -116,6 +116,7 @@ export default async function leaderboardRoutes(fastify: FastifyInstance) {
             averageCashBalance: Type.Number(),
             highestCashBalance: Type.Number(),
             totalPropertiesOwned: Type.Number(),
+            averageGameDuration: Type.Optional(Type.Number()),
             lastActiveDate: Type.String(),
             leaderboardScore: Type.Number(),
             rank: Type.Optional(Type.Number())
