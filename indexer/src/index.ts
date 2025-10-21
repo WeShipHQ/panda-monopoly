@@ -30,7 +30,7 @@ async function main() {
   const { fastify, graceful } = await createServer(db)
 
   const writerWorker = startWriterWorker(db)
-  const { realtimeWorker } = startParserWorkers() // Only start realtime worker
+  // const { realtimeWorker } = startParserWorkers() // Only start realtime worker
   const dlqWorker = startDlqReplayer()
   const enrichmentWorker = startEnrichmentWorker(db)
   const syncService = new BlockchainSyncService(db)
@@ -102,7 +102,7 @@ async function main() {
       }
 
       // 3. Close workers
-      await Promise.allSettled([writerWorker.close(), realtimeWorker.close(), dlqWorker.close()])
+      await Promise.allSettled([writerWorker.close(), /* realtimeWorker.close(), */ dlqWorker.close()])
 
       // 4. Stop enrichment worker separately
       try {
@@ -112,7 +112,7 @@ async function main() {
       }
 
       // 5. Close queues and connections
-      await Promise.allSettled([writerQueue.close(), writerDlq.close(), realtimeQueue.close()])
+      await Promise.allSettled([writerQueue.close(), writerDlq.close() /* , realtimeQueue.close() */])
 
       // 6. Cleanup RPC pool
       rpcPool.destroy()
