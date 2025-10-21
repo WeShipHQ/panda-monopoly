@@ -23,6 +23,11 @@ export interface EnhancedGameData {
   startedAt?: number | null
   endedAt?: number | null
   gameEndTime?: number | null
+  entryFee?: number
+  tokenMint?: string | null
+  tokenVault?: string | null
+  totalPrizePool?: number
+  prizeClaimed?: boolean
 }
 
 export class EnhancedBlockchainAccountFetcher {
@@ -56,17 +61,14 @@ export class EnhancedBlockchainAccountFetcher {
 
       const enhancedData: EnhancedGameData = {
         gameId: rustGameState.gameId,
-        configId: rustGameState.configId.toBase58(),
-        authority: rustGameState.authority.toBase58(),
+        configId: rustGameState.configId.toString(),
+        authority: rustGameState.authority.toString(),
         bump: rustGameState.bump,
         maxPlayers: rustGameState.maxPlayers,
         currentPlayers: rustGameState.currentPlayers,
         currentTurn: rustGameState.currentTurn,
-        players: rustGameState.players.map((p) => p.toBase58()),
-        gameStatus: ['WaitingForPlayers', 'InProgress', 'Finished'][rustGameState.gameStatus] as
-          | 'WaitingForPlayers'
-          | 'InProgress'
-          | 'Finished',
+        players: rustGameState.players.map((p) => p.toString()),
+        gameStatus: (['WaitingForPlayers', 'InProgress', 'Finished'] as const)[rustGameState.gameStatus],
         bankBalance: Number(rustGameState.bankBalance),
         freeParkingPool: Number(rustGameState.freeParkingPool),
         housesRemaining: rustGameState.housesRemaining,
@@ -77,7 +79,13 @@ export class EnhancedBlockchainAccountFetcher {
         createdAt: rustGameState.createdAt,
         startedAt: rustGameState.startedAt ?? null,
         endedAt: rustGameState.endedAt ?? null,
-        gameEndTime: rustGameState.gameEndTime ?? null
+        gameEndTime: rustGameState.gameEndTime ?? null,
+        // Fee-related fields
+        entryFee: Number(rustGameState.entryFee || 0n),
+        tokenMint: rustGameState.tokenMint?.toString() || null,
+        tokenVault: rustGameState.tokenVault?.toString() || null,
+        totalPrizePool: Number(rustGameState.totalPrizePool || 0n),
+        prizeClaimed: rustGameState.prizeClaimed ?? false
       }
 
       logger.debug(
@@ -158,6 +166,12 @@ export class EnhancedBlockchainAccountFetcher {
       startedAt: blockchainData.startedAt ?? undefined,
       endedAt: blockchainData.endedAt ?? undefined,
       gameEndTime: blockchainData.gameEndTime ?? undefined,
+      // Fee-related mappings
+      entryFee: blockchainData.entryFee ?? 0,
+      totalPrizePool: blockchainData.totalPrizePool ?? 0,
+      tokenMint: blockchainData.tokenMint ?? 'UNKNOWN',
+      tokenVault: blockchainData.tokenVault ?? 'UNKNOWN',
+      prizeClaimed: blockchainData.prizeClaimed ?? false,
       accountUpdatedAt: new Date()
     }
   }

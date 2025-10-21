@@ -488,19 +488,33 @@ function parseInitializeGameInstruction(tx: ParsedTransactionWithMeta) {
     nextTradeId: NEEDS_BLOCKCHAIN_ENRICHMENT, // Will be enriched from blockchain
     players: [], // Will be enriched from blockchain
     createdAt: getTransactionBlockTimeMs(tx), // Use transaction timestamp
+    // Time fields
+    startedAt: null,
+    endedAt: null,
+    gameEndTime: null,
     gameStatus: 'WaitingForPlayers' as const, // Default status for new games
+    turnStartedAt: getTransactionSlot(tx),
+    timeLimit: null,
+    // Fee and earnings
+    entryFee: 0,
+    totalPrizePool: 0,
+    tokenMint: UNKNOWN_ACCOUNT,
+    tokenVault: UNKNOWN_ACCOUNT,
+    prizeClaimed: false,
+    // Financial state
     bankBalance: NEEDS_BLOCKCHAIN_ENRICHMENT, // Will be enriched from blockchain
     freeParkingPool: NEEDS_BLOCKCHAIN_ENRICHMENT, // Will be enriched from blockchain
+    // Resources
     housesRemaining: NEEDS_BLOCKCHAIN_ENRICHMENT, // Will be enriched from blockchain
     hotelsRemaining: NEEDS_BLOCKCHAIN_ENRICHMENT, // Will be enriched from blockchain
-    timeLimit: null,
-    turnStartedAt: getTransactionSlot(tx),
+    // Completion
     winner: null,
     // Initialize properties as empty array - will be populated when properties are created
     properties: [],
     // Initialize trades arrays
     activeTrades: [],
     trades: [],
+    // Blockchain metadata
     accountCreatedAt: new Date(),
     accountUpdatedAt: new Date(),
     createdSlot: getTransactionSlot(tx),

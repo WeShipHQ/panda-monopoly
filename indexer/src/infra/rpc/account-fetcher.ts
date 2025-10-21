@@ -49,6 +49,11 @@ export interface EnhancedGameData {
   startedAt?: number | null
   endedAt?: number | null
   gameEndTime?: number | null
+  entryFee?: number
+  tokenMint?: string | null
+  tokenVault?: string | null
+  totalPrizePool?: number
+  prizeClaimed?: boolean
 }
 
 export interface EnhancedPlatformData {
@@ -527,6 +532,12 @@ export function buildEnhancedGameDataFromBuffer(
     startedAt: decoded.startedAt !== null ? Number(decoded.startedAt) : null,
     endedAt: decoded.endedAt !== null ? Number(decoded.endedAt) : null,
     gameEndTime: decoded.gameEndTime !== null ? Number(decoded.gameEndTime) : null,
+    // Fee-related fields
+    entryFee: Number(decoded.entryFee || 0n),
+    tokenMint: decoded.tokenMint,
+    tokenVault: decoded.tokenVault,
+    totalPrizePool: Number(decoded.totalPrizePool || 0n),
+    prizeClaimed: decoded.prizeClaimed ?? false,
     slot
   }
 }

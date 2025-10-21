@@ -10,7 +10,8 @@ const LeaderboardFiltersSchema = Type.Object({
   timeRange: Type.Optional(Type.String({ enum: ['day', 'week', 'month', 'all'] })),
   minGames: Type.Optional(Type.Number({ minimum: 0 })),
   page: Type.Optional(Type.Number({ minimum: 1 })),
-  limit: Type.Optional(Type.Number({ minimum: 1, maximum: 100 }))
+  limit: Type.Optional(Type.Number({ minimum: 1, maximum: 100 })),
+  rankingBy: Type.Optional(Type.String({ enum: ['mostWins', 'highestEarnings', 'mostActive', 'combined'] }))
 })
 
 const PlayerStatsSchema = Type.Object({
@@ -45,7 +46,11 @@ const GameAnalyticsSchema = Type.Object({
       averagePrice: Type.Number(),
       totalRevenue: Type.Number()
     })
-  )
+  ),
+  // New analytics fields
+  totalEarnings: Type.Number(),
+  combinedPlayerEarnings: Type.Number(),
+  unclaimedPlayerEarnings: Type.Number()
 })
 
 const PaginationResponseSchema = (itemSchema: any) =>
@@ -119,6 +124,10 @@ export default async function leaderboardRoutes(fastify: FastifyInstance) {
             averageGameDuration: Type.Optional(Type.Number()),
             lastActiveDate: Type.String(),
             leaderboardScore: Type.Number(),
+            // New field: total earnings won by player across finished games
+            totalEarnings: Type.Number(),
+            // New field: total unclaimed prize from finished games won
+            unclaimedEarnings: Type.Number(),
             rank: Type.Optional(Type.Number())
           })
         ),
@@ -475,7 +484,7 @@ export default async function leaderboardRoutes(fastify: FastifyInstance) {
     schema: {
       tags: ['Leaderboard'],
       summary: 'Get dynamic configuration values',
-      description: 'Debug endpoint to view current dynamic configuration settings',
+      description: 'Debug endpoint to inspect dynamic thresholds and database stats used in calculations',
       response: {
         200: Type.Object({
           success: Type.Boolean(),
@@ -504,7 +513,7 @@ export default async function leaderboardRoutes(fastify: FastifyInstance) {
         500: ErrorResponseSchema
       }
     },
-    handler: async (request, reply) => {
+    handler: async (_request, reply) => {
       const requestId = getRequestId()
 
       try {
@@ -521,7 +530,7 @@ export default async function leaderboardRoutes(fastify: FastifyInstance) {
         reply.code(500).send({
           success: false,
           error: {
-            code: 'CONFIG_FETCH_FAILED',
+            code: 'FETCH_DYNAMIC_CONFIG_FAILED',
             message: 'Failed to fetch dynamic configuration'
           },
           requestId,

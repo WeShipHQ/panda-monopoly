@@ -44,8 +44,7 @@ export class BlockchainSyncService {
         return
       }
 
-      // 2. Save raw account data for backup
-      await this.saveRawAccountData(accounts)
+      // 2. (Removed) raw account backup storage
 
       // 3. Parse and classify accounts (using original robust method)
       const { gameStates, playerStates, platformConfigs } = this.parseAccounts(accounts)
@@ -360,11 +359,11 @@ export class BlockchainSyncService {
 
       const tradesPayload = {
         embedded: enhanced.trades ?? [],
-        entry_fee: 0,
-        token_mint: null,
-        token_vault: null,
-        total_prize_pool: 0,
-        prize_claimed: false,
+        entry_fee: enhanced.entryFee ?? 0,
+        token_mint: enhanced.tokenMint ?? 'UNKNOWN',
+        token_vault: enhanced.tokenVault ?? 'UNKNOWN',
+        total_prize_pool: enhanced.totalPrizePool ?? 0,
+        prize_claimed: enhanced.prizeClaimed ?? false,
         end_condition_met: false,
         end_reason: null,
         created_at: Date.now(),
@@ -400,7 +399,13 @@ export class BlockchainSyncService {
         next_trade_id: enhanced.nextTradeId ?? 0,
         active_trades: JSON.stringify(activeTrades),
         properties: JSON.stringify(enhanced.properties ?? []),
-        trades: JSON.stringify(tradesPayload)
+        trades: JSON.stringify(tradesPayload),
+        // Fee-related fields
+        entry_fee: this.validateBigInt(BigInt(enhanced.entryFee ?? 0), 'entryFee'),
+        token_mint: enhanced.tokenMint ?? 'UNKNOWN',
+        token_vault: enhanced.tokenVault ?? 'UNKNOWN',
+        total_prize_pool: this.validateBigInt(BigInt(enhanced.totalPrizePool ?? 0), 'totalPrizePool'),
+        prize_claimed: enhanced.prizeClaimed ?? false
       }
     }
 
@@ -480,7 +485,13 @@ export class BlockchainSyncService {
       next_trade_id: nextTradeId,
       active_trades: JSON.stringify(activeTrades),
       properties: JSON.stringify([]),
-      trades: JSON.stringify([])
+      trades: JSON.stringify([]),
+      // Fee-related fields
+      entry_fee: this.validateBigInt(parsed.entryFee ?? 0n, 'entryFee'),
+      token_mint: parsed.tokenMint?.toString() || 'UNKNOWN',
+      token_vault: parsed.tokenVault?.toString() || 'UNKNOWN',
+      total_prize_pool: this.validateBigInt(parsed.totalPrizePool ?? 0n, 'totalPrizePool'),
+      prize_claimed: parsed.prizeClaimed ?? false
     }
   }
 
@@ -493,9 +504,11 @@ export class BlockchainSyncService {
           current_turn, players, game_status, turn_started_at, time_limit, bank_balance,
           free_parking_pool, houses_remaining, hotels_remaining, winner, next_trade_id,
           active_trades, properties, trades, account_created_at, account_updated_at,
-          created_slot, updated_slot, last_signature, started_at, ended_at, game_end_time, created_at
+          created_slot, updated_slot, last_signature, started_at, ended_at, game_end_time, created_at,
+          entry_fee, token_mint, token_vault, total_prize_pool, prize_claimed
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+          $31, $32, $33, $34, $35
         ) ON CONFLICT (pubkey) DO UPDATE SET
           game_id = EXCLUDED.game_id,
           config_id = EXCLUDED.config_id,
@@ -515,6 +528,11 @@ export class BlockchainSyncService {
           ended_at = EXCLUDED.ended_at,
           game_end_time = EXCLUDED.game_end_time,
           created_at = COALESCE(game_states.created_at, EXCLUDED.created_at),
+          entry_fee = EXCLUDED.entry_fee,
+          token_mint = EXCLUDED.token_mint,
+          token_vault = EXCLUDED.token_vault,
+          total_prize_pool = EXCLUDED.total_prize_pool,
+          prize_claimed = EXCLUDED.prize_claimed,
           account_updated_at = NOW()
       `
 
@@ -555,7 +573,13 @@ export class BlockchainSyncService {
             : gameState.created_at
           : gameState.blockTime
             ? gameState.blockTime * 1000
-            : Date.now()
+            : Date.now(),
+        // Fee-related params
+        gameState.entry_fee ?? 0,
+        gameState.token_mint ?? 'UNKNOWN',
+        gameState.token_vault ?? 'UNKNOWN',
+        gameState.total_prize_pool ?? 0,
+        gameState.prize_claimed ?? false
       ])
     }
 
@@ -815,101 +839,9 @@ export class BlockchainSyncService {
     }
   }
 
-  private async saveRawAccountData(accounts: any[]): Promise<void> {
-    logger.info('💾 Saving raw account data for backup...')
-
-    try {
-      // Create raw_accounts table if not exists
-      await this.db.query(`
-        CREATE TABLE IF NOT EXISTS raw_accounts (
-          id SERIAL PRIMARY KEY,
-          pubkey TEXT NOT NULL,
-          data_base64 TEXT NOT NULL,
-          lamports BIGINT NOT NULL,
-          size INTEGER NOT NULL,
-          executable BOOLEAN NOT NULL,
-          rent_epoch BIGINT NOT NULL,
-          scraped_at TIMESTAMP DEFAULT NOW(),
-          created_slot BIGINT,
-          updated_slot BIGINT,
-          last_signature TEXT,
-          block_time TIMESTAMP,
-          UNIQUE(pubkey, scraped_at)
-        )
-      `)
-
-      // Insert raw data in batches
-      const batchSize = 100
-      let inserted = 0
-
-      const PG_MAX_NUMBER = Number(9223372036854775807n)
-
-      for (let i = 0; i < accounts.length; i += batchSize) {
-        const batch = accounts.slice(i, i + batchSize)
-
-        for (const account of batch) {
-          try {
-            const clamp = (rawValue: unknown, field: string) => {
-              const numeric = typeof rawValue === 'number' ? rawValue : Number(rawValue)
-              if (!Number.isFinite(numeric)) {
-                logger.warn(`Skipping raw account ${account.pubkey}: ${field} is not a finite number (${rawValue})`)
-                return null
-              }
-              if (Math.abs(numeric) > PG_MAX_NUMBER) {
-                logger.warn(
-                  `Skipping raw account ${account.pubkey}: ${field} value ${numeric} exceeds PostgreSQL bigint range`
-                )
-                return null
-              }
-              return Math.trunc(numeric)
-            }
-
-            const lamports = clamp(account.lamports, 'lamports')
-            const rentEpoch = clamp(account.rentEpoch, 'rent_epoch')
-            const createdSlot = clamp(account.createdSlot, 'created_slot')
-            const updatedSlot = clamp(account.updatedSlot, 'updated_slot')
-
-            if (lamports === null || rentEpoch === null || createdSlot === null || updatedSlot === null) {
-              continue
-            }
-
-            await this.db.query(
-              `
-              INSERT INTO raw_accounts (
-                pubkey, data_base64, lamports, size, executable, rent_epoch,
-                created_slot, updated_slot, last_signature, block_time
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-              ON CONFLICT (pubkey, scraped_at) DO NOTHING
-            `,
-              [
-                account.pubkey,
-                account.data.toString('base64'),
-                lamports,
-                account.size,
-                account.executable,
-                rentEpoch,
-                createdSlot,
-                updatedSlot,
-                account.lastSignature,
-                account.blockTime ? new Date(account.blockTime * 1000) : null
-              ]
-            )
-            inserted++
-          } catch (error) {
-            logger.warn(`Failed to save raw account ${account.pubkey}: ${error}`)
-          }
-        }
-
-        // Small delay between batches
-        if (i + batchSize < accounts.length) {
-          await new Promise((resolve) => setTimeout(resolve, 10))
-        }
-      }
-
-      logger.info(`💾 Saved ${inserted}/${accounts.length} raw accounts to backup table`)
-    } catch (error) {
-      logger.error(`❌ Failed to save raw account data: ${error}`)
-    }
+  // raw_accounts backup removed per data model cleanup
+  private async saveRawAccountData(_accounts: any[]): Promise<void> {
+    return
   }
 
   private parseAccountsWithRecovery(accounts: any[]) {

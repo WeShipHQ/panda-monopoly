@@ -45,17 +45,35 @@ export class DrizzleAdapter implements DatabasePort {
         rejectUnauthorized: false
       },
       max: 10, // Giảm số lượng kết nối để tránh quá tải
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
+      min: 2, // Maintain minimum connections
+      idleTimeoutMillis: 60000, // Increased idle timeout
+      connectionTimeoutMillis: 15000, // Increased connection timeout
       // Thêm các tùy chọn để tăng độ tin cậy
       application_name: 'monopoly-indexer',
       keepAlive: true,
-      keepAliveInitialDelayMillis: 10000
+      keepAliveInitialDelayMillis: 10000,
+      // Add query timeout (in milliseconds)
+      query_timeout: 30000,
+      // Add statement timeout (in milliseconds)
+      statement_timeout: 30000
     })
 
     // Thêm xử lý lỗi cho pool
     this.pool.on('error', (err) => {
       console.error('Unexpected database pool error:', err)
+      // Don't exit process on pool errors, just log them
+    })
+
+    this.pool.on('connect', (client) => {
+      console.log('New database client connected')
+    })
+
+    this.pool.on('acquire', (client) => {
+      console.log('Database client acquired from pool')
+    })
+
+    this.pool.on('remove', (client) => {
+      console.log('Database client removed from pool')
     })
 
     this.db = drizzle(this.pool)
@@ -94,85 +112,84 @@ export class DrizzleAdapter implements DatabasePort {
   }
 
   async init(): Promise<void> {
-    try {
-      // Thử kết nối với timeout ngắn hơn để phát hiện lỗi sớm
-      const client = await this.pool.connect()
+    let retryCount = 0
+    const maxRetries = 3
+    const retryDelay = 2000 // 2 seconds
+
+    while (retryCount < maxRetries) {
       try {
-        await client.query('SELECT 1 as connection_test')
-        console.log('✅ Database connection successful')
-        this.isConnected = true
-      } finally {
-        client.release()
-      }
-    } catch (error) {
-      console.warn(`Database initialization failed: ${this.formatDbError(error)}`)
-
-      // Kiểm tra xem có phải lỗi kết nối không và thử fallback sang direct 5432
-      if ((error as any).code === 'ECONNREFUSED') {
-        const fallbackUrl = this.buildDirectSupabaseUrl(process.env.DATABASE_URL)
-        if (fallbackUrl) {
-          console.warn('Primary DB refused; retrying with direct Supabase port 5432')
-          try {
-            const newPool = new Pool({
-              connectionString: fallbackUrl,
-              ssl: { rejectUnauthorized: false },
-              max: 10,
-              idleTimeoutMillis: 30000,
-              connectionTimeoutMillis: 10000,
-              application_name: 'monopoly-indexer',
-              keepAlive: true,
-              keepAliveInitialDelayMillis: 10000
-            })
-            newPool.on('error', (err) => {
-              console.error('Unexpected database pool error (fallback):', err)
-            })
-
-            const client2 = await newPool.connect()
-            try {
-              await client2.query('SELECT 1 as connection_test')
-              console.log('✅ Fallback database connection successful')
-              this.isConnected = true
-            } finally {
-              client2.release()
-            }
-
-            // Đóng pool cũ và hoán đổi sang pool fallback
-            try {
-              await this.pool.end()
-            } catch (e) {
-              console.warn('Failed to end old pool:', e)
-            }
-            this.pool = newPool
-            this.db = drizzle(this.pool)
-            return
-          } catch (fallbackErr) {
-            console.warn(`Fallback connection failed: ${this.formatDbError(fallbackErr)}`)
-          }
-        } else {
-          console.warn('Direct Supabase host not resolvable from current DATABASE_URL; skipping fallback to 5432')
+        // Thử kết nối với timeout ngắn hơn để phát hiện lỗi sớm
+        const client = await this.pool.connect()
+        try {
+          await client.query('SELECT 1 as connection_test')
+          console.log('✅ Database connection successful')
+          this.isConnected = true
+          return
+        } finally {
+          client.release()
         }
-      }
+      } catch (error) {
+        retryCount++
+        const errorMsg = this.formatDbError(error)
+        console.warn(`Database connection attempt ${retryCount}/${maxRetries} failed: ${errorMsg}`)
 
-      console.warn(`⚠️ Database connection failed, continuing without DB: ${this.formatDbError(error)}`)
-      // Keep isConnected=false and allow app to continue
-      return
+        if (retryCount < maxRetries) {
+          console.log(`Retrying in ${retryDelay}ms...`)
+          await new Promise(resolve => setTimeout(resolve, retryDelay))
+          continue
+        }
+
+        // Nếu đã thử hết số lần retry, log lỗi và tiếp tục mà không có DB
+        console.warn(`⚠️ Database connection failed after ${maxRetries} attempts, continuing without DB`)
+        console.warn('Error details:', errorMsg)
+        
+        // Kiểm tra các vấn đề phổ biến và đưa ra gợi ý
+        if ((error as any).code === 'ECONNREFUSED' || (error as any).code === 'ENOTFOUND') {
+          console.warn('💡 Connection refused/not found. Please check:')
+          console.warn('   - DATABASE_URL is correct and accessible')
+          console.warn('   - Network connectivity to Supabase')
+          console.warn('   - Supabase project is active and not paused')
+          console.warn('   - Firewall/proxy settings allow database connections')
+        }
+        
+        if (errorMsg.includes('timeout')) {
+          console.warn('💡 Connection timeout. Consider:')
+          console.warn('   - Increasing connectionTimeoutMillis in pool config')
+          console.warn('   - Checking network latency to database')
+        }
+
+        // Keep isConnected=false and allow app to continue
+        this.isConnected = false
+        return
+      }
     }
   }
 
   async query(sql: string, params?: unknown[]): Promise<unknown[]> {
     if (!this.isConnected) {
-      console.warn('DB not connected; skipping query execution')
+      console.warn('Database not connected, skipping query:', sql.substring(0, 100) + '...')
       return []
     }
+
     try {
       const result = await this.pool.query(sql, params)
       return result.rows
     } catch (error: any) {
+      const errorMsg = this.formatDbError(error)
+      console.error('Database query failed:', errorMsg)
+      
+      // Check if it's a connection error and mark as disconnected
+      if (error?.code === 'ECONNREFUSED' || error?.code === 'ENOTFOUND') {
+        console.warn('Database connection lost, marking as disconnected')
+        this.isConnected = false
+        return []
+      }
+      
       // Nếu lỗi kết nối bị từ chối, thử chuyển sang endpoint direct 5432 và retry
-      if (error?.code === 'ECONNREFUSED' || error?.name === 'AggregateError') {
+      if (error?.name === 'AggregateError') {
         const fallbackUrl = this.buildDirectSupabaseUrl(process.env.DATABASE_URL)
         if (fallbackUrl) {
-          console.warn('Query failed (ECONNREFUSED); switching to direct Supabase 5432 and retrying')
+          console.warn('Query failed (AggregateError); switching to direct Supabase 5432 and retrying')
           try {
             const newPool = new Pool({
               connectionString: fallbackUrl,
@@ -208,17 +225,24 @@ export class DrizzleAdapter implements DatabasePort {
             return retry.rows
           } catch (fallbackErr) {
             console.error('Fallback retry failed:', fallbackErr)
+            this.isConnected = false
+            return []
           }
         }
       }
 
-      throw new Error(`Raw query failed: ${error}`)
+      throw new Error(`Raw query failed: ${errorMsg}`)
     }
   }
 
   // ==================== PLATFORM CONFIG OPERATIONS ====================
 
   async upsertPlatformConfig(config: NewPlatformConfig): Promise<void> {
+    if (!this.isConnected) {
+      console.warn('Database not connected, skipping platform config upsert for:', config.pubkey)
+      return
+    }
+
     const processedConfig = this.processDateFields(config)
 
     try {
@@ -233,16 +257,39 @@ export class DrizzleAdapter implements DatabasePort {
           }
         })
     } catch (error) {
-      throw new Error(`Failed to upsert platform config ${config.pubkey}: ${error}`)
+      const errorMsg = this.formatDbError(error)
+      console.error(`Failed to upsert platform config: ${errorMsg}`)
+      
+      // Check if it's a connection error
+      if ((error as any).code === 'ECONNREFUSED' || (error as any).code === 'ENOTFOUND') {
+        this.isConnected = false
+        return
+      }
+      
+      throw new Error(`Failed to upsert platform config ${config.pubkey}: ${errorMsg}`)
     }
   }
 
   async getPlatformConfig(pubkey: string): Promise<PlatformConfig | null> {
+    if (!this.isConnected) {
+      console.warn('Database not connected, returning null for platform config:', pubkey)
+      return null
+    }
+
     try {
       const result = await this.db.select().from(platformConfigs).where(eq(platformConfigs.pubkey, pubkey)).limit(1)
       return result[0] ?? null
     } catch (error) {
-      throw new Error(`Failed to get platform config ${pubkey}: ${error}`)
+      const errorMsg = this.formatDbError(error)
+      console.error(`Failed to get platform config: ${errorMsg}`)
+      
+      // Check if it's a connection error
+      if ((error as any).code === 'ECONNREFUSED' || (error as any).code === 'ENOTFOUND') {
+        this.isConnected = false
+        return null
+      }
+      
+      throw new Error(`Failed to get platform config ${pubkey}: ${errorMsg}`)
     }
   }
 
@@ -256,6 +303,11 @@ export class DrizzleAdapter implements DatabasePort {
   // ==================== GAME STATE OPERATIONS ====================
 
   async upsertGameState(gameState: NewGameState): Promise<void> {
+    if (!this.isConnected) {
+      console.warn('Database not connected, skipping game state upsert for:', gameState.pubkey)
+      return
+    }
+
     const processedGameState = this.processDateFields(gameState)
 
     try {
@@ -303,9 +355,10 @@ export class DrizzleAdapter implements DatabasePort {
           turn_started_at, time_limit, bank_balance, free_parking_pool, 
           houses_remaining, hotels_remaining, winner, next_trade_id, 
           active_trades, properties, trades, account_created_at, 
-          account_updated_at, created_slot, updated_slot, last_signature, started_at, ended_at, game_end_time
+          account_updated_at, created_slot, updated_slot, last_signature, started_at, ended_at, game_end_time,
+          entry_fee, token_mint, token_vault, total_prize_pool, prize_claimed
         ) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35)
         ON CONFLICT (pubkey) DO UPDATE SET
           game_id = $2,
           config_id = $3,
@@ -328,14 +381,19 @@ export class DrizzleAdapter implements DatabasePort {
           active_trades = $20,
           properties = $21,
           trades = $22,
-          account_created_at = $23,
+          account_created_at = COALESCE(game_states.account_created_at, EXCLUDED.account_created_at),
           account_updated_at = $24,
           created_slot = $25,
           updated_slot = $26,
           last_signature = $27,
           started_at = $28,
           ended_at = $29,
-          game_end_time = $30
+          game_end_time = $30,
+          entry_fee = $31,
+          token_mint = $32,
+          token_vault = $33,
+          total_prize_pool = $34,
+          prize_claimed = $35
       `
 
       // Chuẩn bị các tham số
@@ -408,15 +466,30 @@ export class DrizzleAdapter implements DatabasePort {
         processedGameState.lastSignature,
         processedGameState.startedAt ?? null,
         processedGameState.endedAt ?? null,
-        processedGameState.gameEndTime ?? null
+        processedGameState.gameEndTime ?? null,
+        // Fee-related params
+        processedGameState.entryFee ?? 0,
+        processedGameState.tokenMint ?? 'UNKNOWN',
+        processedGameState.tokenVault ?? 'UNKNOWN',
+        processedGameState.totalPrizePool ?? 0,
+        processedGameState.prizeClaimed ?? false
       ]
 
       // Thực hiện truy vấn
       await this.pool.query(query, params)
     } catch (error) {
-      console.error(`Error details for game state ${gameState.pubkey}:`, error)
+      const errorMsg = this.formatDbError(error)
+      console.error(`Error details for game state ${gameState.pubkey}:`, errorMsg)
+      
+      // Check if it's a connection error and mark as disconnected
+      if ((error as any).code === 'ECONNREFUSED' || (error as any).code === 'ENOTFOUND') {
+        console.warn('Database connection lost during game state upsert, marking as disconnected')
+        this.isConnected = false
+        return
+      }
+      
       // Ghi log lỗi nhưng không dừng quá trình xử lý
-      console.warn(`⚠️ Failed to upsert game state ${gameState.pubkey}, continuing with processing: ${error}`)
+      console.warn(`⚠️ Failed to upsert game state ${gameState.pubkey}, continuing with processing: ${errorMsg}`)
     }
   }
 
@@ -534,6 +607,11 @@ export class DrizzleAdapter implements DatabasePort {
   // ==================== PLAYER STATE OPERATIONS ====================
 
   async upsertPlayerState(playerState: NewPlayerState): Promise<void> {
+    if (!this.isConnected) {
+      console.warn('Database not connected, skipping player state upsert for:', playerState.pubkey)
+      return
+    }
+
     const processedPlayerState = this.processDateFields(playerState)
 
     try {
@@ -548,16 +626,39 @@ export class DrizzleAdapter implements DatabasePort {
           }
         })
     } catch (error) {
-      throw new Error(`Failed to upsert player state ${playerState.pubkey}: ${error}`)
+      const errorMsg = this.formatDbError(error)
+      console.error(`Failed to upsert player state: ${errorMsg}`)
+      
+      // Check if it's a connection error
+      if ((error as any).code === 'ECONNREFUSED' || (error as any).code === 'ENOTFOUND') {
+        this.isConnected = false
+        return
+      }
+      
+      throw new Error(`Failed to upsert player state ${playerState.pubkey}: ${errorMsg}`)
     }
   }
 
   async getPlayerState(pubkey: string): Promise<PlayerState | null> {
+    if (!this.isConnected) {
+      console.warn('Database not connected, returning null for player state:', pubkey)
+      return null
+    }
+
     try {
       const result = await this.db.select().from(playerStates).where(eq(playerStates.pubkey, pubkey)).limit(1)
       return result[0] ?? null
     } catch (error) {
-      throw new Error(`Failed to get player state ${pubkey}: ${error}`)
+      const errorMsg = this.formatDbError(error)
+      console.error(`Failed to get player state: ${errorMsg}`)
+      
+      // Check if it's a connection error
+      if ((error as any).code === 'ECONNREFUSED' || (error as any).code === 'ENOTFOUND') {
+        this.isConnected = false
+        return null
+      }
+      
+      throw new Error(`Failed to get player state ${pubkey}: ${errorMsg}`)
     }
   }
 
@@ -770,6 +871,11 @@ export class DrizzleAdapter implements DatabasePort {
   // ==================== AUCTION STATE OPERATIONS ====================
 
   async upsertAuctionState(auctionState: NewAuctionState): Promise<void> {
+    if (!this.isConnected) {
+      console.warn('Database not connected, skipping auction state upsert for:', auctionState.pubkey)
+      return
+    }
+
     const processedAuctionState = this.processDateFields(auctionState)
 
     try {
@@ -784,16 +890,39 @@ export class DrizzleAdapter implements DatabasePort {
           }
         })
     } catch (error) {
-      throw new Error(`Failed to upsert auction state ${auctionState.pubkey}: ${error}`)
+      const errorMsg = this.formatDbError(error)
+      console.error(`Failed to upsert auction state: ${errorMsg}`)
+      
+      // Check if it's a connection error
+      if ((error as any).code === 'ECONNREFUSED' || (error as any).code === 'ENOTFOUND') {
+        this.isConnected = false
+        return
+      }
+      
+      throw new Error(`Failed to upsert auction state ${auctionState.pubkey}: ${errorMsg}`)
     }
   }
 
   async getAuctionState(pubkey: string): Promise<AuctionState | null> {
+    if (!this.isConnected) {
+      console.warn('Database not connected, returning null for auction state:', pubkey)
+      return null
+    }
+
     try {
       const result = await this.db.select().from(auctionStates).where(eq(auctionStates.pubkey, pubkey)).limit(1)
       return result[0] ?? null
     } catch (error) {
-      throw new Error(`Failed to get auction state ${pubkey}: ${error}`)
+      const errorMsg = this.formatDbError(error)
+      console.error(`Failed to get auction state: ${errorMsg}`)
+      
+      // Check if it's a connection error
+      if ((error as any).code === 'ECONNREFUSED' || (error as any).code === 'ENOTFOUND') {
+        this.isConnected = false
+        return null
+      }
+      
+      throw new Error(`Failed to get auction state ${pubkey}: ${errorMsg}`)
     }
   }
 
@@ -928,11 +1057,7 @@ export class DrizzleAdapter implements DatabasePort {
       const limit = Math.min(pagination.limit ?? 20, 100)
       const offset = (page - 1) * limit
 
-      // Nếu DB chưa kết nối, trả về kết quả rỗng an toàn
-      if (!this.isConnected) {
-        return { data: [], total: 0, page, limit }
-      }
-
+      // Xây dựng điều kiện với Drizzle cho các bảng nói chung
       const conditions = filterBuilder.call(this, filters)
       const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
@@ -941,142 +1066,148 @@ export class DrizzleAdapter implements DatabasePort {
       const sortDirection = pagination.sortOrder === 'asc' ? asc : desc
       const orderBy = sortDirection((table as any)[resolvedSortField])
 
-      // Kiểm tra nếu đang truy vấn bảng game_states
+      // Riêng bảng game_states: dùng raw SQL để tránh lỗi dữ liệu lớn
       if (table === gameStates) {
-        // Xây dựng WHERE clause an toàn với các bộ lọc đã biết
-        const whereParts: string[] = []
-        const params: unknown[] = []
-        let idx = 1
+        try {
+          const whereParts: string[] = []
+          const params: unknown[] = []
+          let idx = 1
+          const f = filters || {}
 
-        const f = filters || {}
-
-        if (f.gameStatus !== undefined) {
-          whereParts.push(`game_status = $${idx++}`)
-          params.push(f.gameStatus as string)
-        }
-        if (f.authority !== undefined) {
-          whereParts.push(`authority = $${idx++}`)
-          params.push(f.authority as string)
-        }
-        if (f.maxPlayers !== undefined) {
-          whereParts.push(`max_players = $${idx++}`)
-          params.push(Number(f.maxPlayers))
-        }
-        if (f.winner !== undefined) {
-          whereParts.push(`winner = $${idx++}`)
-          params.push(f.winner as string)
-        }
-        if (f.gameId !== undefined) {
-          whereParts.push(`game_id = $${idx++}`)
-          params.push(Number(f.gameId))
-        }
-        if (f.startedAt !== undefined) {
-          whereParts.push(`started_at = $${idx++}`)
-          params.push(Number(f.startedAt))
-        }
-        if (f.endedAt !== undefined) {
-          whereParts.push(`ended_at = $${idx++}`)
-          params.push(Number(f.endedAt))
-        }
-        if (f.gameEndTime !== undefined) {
-          whereParts.push(`game_end_time = $${idx++}`)
-          params.push(Number(f.gameEndTime))
-        }
-
-        const whereSql = whereParts.length > 0 ? `WHERE ${whereParts.join(' AND ')}` : ''
-
-        // Chuyển sort field về snake_case cột DB và xác thực
-        const toSnake = (s: string) => s.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase())
-        const sortRequested = pagination.sortBy ?? 'accountUpdatedAt'
-        const candidate = sortRequested.includes('_') ? sortRequested : toSnake(sortRequested)
-        const allowedSortColumns = new Set([
-          'pubkey',
-          'game_id',
-          'config_id',
-          'authority',
-          'bump',
-          'max_players',
-          'current_players',
-          'current_turn',
-          'created_at',
-          'game_status',
-          'turn_started_at',
-          'time_limit',
-          'bank_balance',
-          'free_parking_pool',
-          'houses_remaining',
-          'hotels_remaining',
-          'winner',
-          'next_trade_id',
-          'account_created_at',
-          'account_updated_at',
-          'created_slot',
-          'updated_slot',
-          'last_signature',
-          'started_at',
-          'ended_at',
-          'game_end_time'
-        ])
-        const sortColumn = allowedSortColumns.has(candidate) ? candidate : 'account_updated_at'
-        const sortDir = pagination.sortOrder === 'asc' ? 'ASC' : 'DESC'
-        const orderByClause = `ORDER BY ${sortColumn} ${sortDir}`
-
-        // Truy vấn đếm tổng số bản ghi (có tham số)
-        const countQuery = `SELECT COUNT(*) FROM game_states ${whereSql}`
-        const countRows = (await this.query(countQuery, params)) as any[]
-        const total = parseInt(countRows[0]?.count ?? '0', 10)
-
-        // Truy vấn dữ liệu với các trường cần thiết (bỏ qua các trường JSON lớn)
-        const dataQuery = `
-          SELECT 
-            pubkey, game_id, config_id, authority, bump, max_players, 
-            current_players, current_turn, players, created_at, game_status, 
-            turn_started_at, time_limit, bank_balance, free_parking_pool, 
-            houses_remaining, hotels_remaining, winner, next_trade_id,
-            account_created_at, account_updated_at, created_slot, updated_slot, last_signature,
-            started_at, ended_at, game_end_time
-          FROM game_states
-          ${whereSql}
-          ${orderByClause}
-          LIMIT ${limit} OFFSET ${offset}
-        `
-        const dataRows = (await this.query(dataQuery, params)) as any[]
-
-        // Chuyển đổi kết quả từ snake_case sang camelCase
-        const data = dataRows.map((row) => {
-          const camelCaseRow: any = {}
-          for (const [key, value] of Object.entries(row)) {
-            const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase())
-            camelCaseRow[camelKey] = value
+          if (f.gameStatus !== undefined) {
+            whereParts.push(`game_status = $${idx++}`)
+            params.push(f.gameStatus as string)
+          }
+          if (f.authority !== undefined) {
+            whereParts.push(`authority = $${idx++}`)
+            params.push(f.authority as string)
+          }
+          if (f.maxPlayers !== undefined) {
+            whereParts.push(`max_players = $${idx++}`)
+            params.push(Number(f.maxPlayers))
+          }
+          if (f.winner !== undefined) {
+            whereParts.push(`winner = $${idx++}`)
+            params.push(f.winner as string)
+          }
+          if (f.gameId !== undefined) {
+            whereParts.push(`game_id = $${idx++}`)
+            params.push(Number(f.gameId))
+          }
+          if (f.startedAt !== undefined) {
+            whereParts.push(`started_at = $${idx++}`)
+            params.push(Number(f.startedAt))
+          }
+          if (f.endedAt !== undefined) {
+            whereParts.push(`ended_at = $${idx++}`)
+            params.push(Number(f.endedAt))
+          }
+          if (f.gameEndTime !== undefined) {
+            whereParts.push(`game_end_time = $${idx++}`)
+            params.push(Number(f.gameEndTime))
           }
 
-          // Thêm các trường JSON rỗng để tránh lỗi
-          camelCaseRow.activeTrades = []
-          camelCaseRow.properties = []
-          camelCaseRow.trades = []
+          const whereSql = whereParts.length > 0 ? `WHERE ${whereParts.join(' AND ')}` : ''
 
-          return camelCaseRow
-        })
+          const toSnake = (s: string) => s.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase())
+          const sortRequested = pagination.sortBy ?? 'accountUpdatedAt'
+          const candidate = sortRequested.includes('_') ? sortRequested : toSnake(sortRequested)
+          const allowedSortColumns = new Set([
+            'pubkey',
+            'game_id',
+            'config_id',
+            'authority',
+            'bump',
+            'max_players',
+            'current_players',
+            'current_turn',
+            'created_at',
+            'game_status',
+            'turn_started_at',
+            'time_limit',
+            'bank_balance',
+            'free_parking_pool',
+            'houses_remaining',
+            'hotels_remaining',
+            'winner',
+            'next_trade_id',
+            'account_created_at',
+            'account_updated_at',
+            'created_slot',
+            'updated_slot',
+            'last_signature',
+            'started_at',
+            'ended_at',
+            'game_end_time'
+          ])
+          const sortColumn = allowedSortColumns.has(candidate) ? candidate : 'account_updated_at'
+          const sortDir = pagination.sortOrder === 'asc' ? 'ASC' : 'DESC'
+          const orderByClause = `ORDER BY ${sortColumn} ${sortDir}`
 
+          const countQuery = `SELECT COUNT(*) FROM game_states ${whereSql}`
+          const countRows = (await this.query(countQuery, params)) as any[]
+          const total = parseInt(countRows[0]?.count ?? '0', 10)
+
+          const dataQuery = `
+            SELECT 
+              pubkey, game_id, config_id, authority, bump, max_players, 
+              current_players, current_turn, players, created_at, game_status, 
+              turn_started_at, time_limit, bank_balance, free_parking_pool, 
+              houses_remaining, hotels_remaining, winner, next_trade_id,
+              account_created_at, account_updated_at, created_slot, updated_slot, last_signature,
+              started_at, ended_at, game_end_time
+            FROM game_states
+            ${whereSql}
+            ${orderByClause}
+            LIMIT ${limit} OFFSET ${offset}
+          `
+          const dataRows = (await this.query(dataQuery, params)) as any[]
+
+          const data = dataRows.map((row) => {
+            const camelCaseRow: any = {}
+            for (const [key, value] of Object.entries(row)) {
+              const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase())
+              camelCaseRow[camelKey] = value
+            }
+            camelCaseRow.activeTrades = []
+            camelCaseRow.properties = []
+            camelCaseRow.trades = []
+            return camelCaseRow
+          })
+
+          return {
+            data: data as T[],
+            total,
+            page,
+            limit
+          }
+        } catch (err) {
+          console.warn('DB not connected for game_states; returning empty result', err)
+          return { data: [] as T[], total: 0, page, limit }
+        }
+      }
+
+      // Các bảng khác: nếu DB chưa kết nối thì trả về rỗng thay vì throw
+      if (!this.isConnected) {
+        console.warn('DB not connected; returning empty result for non-game table query')
         return {
-          data: data as T[],
-          total,
+          data: [] as T[],
+          total: 0,
           page,
           limit
         }
-      } else {
-        // Sử dụng Drizzle ORM cho các bảng khác
-        const [data, totalResult] = await Promise.all([
-          this.db.select().from(table).where(whereClause).orderBy(orderBy).limit(limit).offset(offset),
-          this.db.select({ count: count() }).from(table).where(whereClause)
-        ])
+      }
 
-        return {
-          data,
-          total: totalResult[0]?.count ?? 0,
-          page,
-          limit
-        }
+      const [data, totalResult] = await Promise.all([
+        this.db.select().from(table).where(whereClause).orderBy(orderBy).limit(limit).offset(offset),
+        this.db.select({ count: count() }).from(table).where(whereClause)
+      ])
+
+      return {
+        data: data as T[],
+        total: totalResult[0]?.count ?? 0,
+        page,
+        limit
       }
     } catch (error) {
       console.error('Query error details:', error)

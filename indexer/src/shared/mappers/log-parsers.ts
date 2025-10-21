@@ -164,15 +164,29 @@ export function buildGameStateFromLog(tx: ParsedTransactionWithMeta, kv: Record<
     nextTradeId: kv.next_trade_id ? Number(kv.next_trade_id) : -1, // -1 = needs blockchain enrichment
     activeTrades: kv.active_trades ? safeJsonParse(kv.active_trades, []) : [], // Empty array = needs blockchain enrichment
     players: kv.players ? safeJsonParse(kv.players, []) : [], // Empty array = needs blockchain enrichment
+    // Time fields
     createdAt: kv.created_at ? Number(kv.created_at) : blockTimeMs,
+    startedAt: kv.started_at ? Number(kv.started_at) : null,
+    endedAt: kv.ended_at ? Number(kv.ended_at) : null,
+    gameEndTime: kv.game_end_time ? Number(kv.game_end_time) : null,
     gameStatus: (kv.game_status as GameStatus) ?? ('WaitingForPlayers' as GameStatus), // Default status = needs blockchain enrichment
+    turnStartedAt: kv.turn_started_at ? Number(kv.turn_started_at) : slot,
+    timeLimit: kv.time_limit ? Number(kv.time_limit) : null,
+    // Fee and earnings
+    entryFee: kv.entry_fee ? Number(kv.entry_fee) : 0,
+    totalPrizePool: kv.total_prize_pool ? Number(kv.total_prize_pool) : 0,
+    tokenMint: kv.token_mint ?? 'UNKNOWN',
+    tokenVault: kv.token_vault ?? 'UNKNOWN',
+    prizeClaimed: kv.prize_claimed === 'true',
+    // Financial state
     bankBalance: kv.bank_balance ? Number(kv.bank_balance) : -1, // -1 = needs blockchain enrichment
     freeParkingPool: kv.free_parking_pool ? Number(kv.free_parking_pool) : -1, // -1 = needs blockchain enrichment
+    // Resource
     housesRemaining: kv.houses_remaining ? Number(kv.houses_remaining) : -1, // -1 = needs blockchain enrichment
     hotelsRemaining: kv.hotels_remaining ? Number(kv.hotels_remaining) : -1, // -1 = needs blockchain enrichment
-    timeLimit: kv.time_limit ? Number(kv.time_limit) : null,
-    turnStartedAt: kv.turn_started_at ? Number(kv.turn_started_at) : slot,
+    // Completion
     winner: kv.winner ?? null,
+    // Blockchain metadata
     accountCreatedAt: new Date(),
     accountUpdatedAt: new Date(),
     createdSlot: slot,
@@ -249,21 +263,21 @@ export function buildPropertyStateFromLog(tx: ParsedTransactionWithMeta, kv: Rec
     pubkey,
     game: kv.game ?? 'UNKNOWN',
     position,
-    init: kv.init === 'true',
     owner: kv.owner ?? null,
-    price: Number(kv.price ?? getPropertyPrice(position)),
+    price: kv.price ? Number(kv.price) : getPropertyPrice(position),
     colorGroup: (kv.color_group as any) ?? getPropertyColorGroup(position),
     propertyType: (kv.property_type as any) ?? getPropertyType(position),
-    houses: Number(kv.houses ?? 0),
+    houses: kv.houses ? Number(kv.houses) : 0,
     hasHotel: kv.has_hotel === 'true',
     isMortgaged: kv.is_mortgaged === 'true',
-    rentBase: Number(kv.rent_base ?? getBaseRent(position)),
-    rentWithColorGroup: Number(kv.rent_with_color_group ?? getMonopolyRent(position)),
-    rentWithHouses,
-    rentWithHotel: Number(kv.rent_with_hotel ?? rentWithHouses[3] ?? 0),
-    houseCost: Number(kv.house_cost ?? getHouseCost(position)),
-    mortgageValue: Number(kv.mortgage_value ?? Math.floor(getPropertyPrice(position) / 2)),
-    lastRentPaid: Number(kv.last_rent_paid ?? slot),
+    rentBase: kv.rent_base ? Number(kv.rent_base) : getBaseRent(position),
+    rentWithColorGroup: kv.rent_with_color_group ? Number(kv.rent_with_color_group) : getMonopolyRent(position),
+    rentWithHouses: rentWithHouses as [number, number, number, number],
+    rentWithHotel: kv.rent_with_hotel ? Number(kv.rent_with_hotel) : rentWithHouses[3],
+    houseCost: kv.house_cost ? Number(kv.house_cost) : getHouseCost(position),
+    mortgageValue: kv.mortgage_value ? Number(kv.mortgage_value) : Math.floor(getPropertyPrice(position) / 2),
+    lastRentPaid: kv.last_rent_paid ? Number(kv.last_rent_paid) : Date.now(),
+    init: kv.init === 'true',
     accountCreatedAt: new Date(),
     accountUpdatedAt: new Date(),
     createdSlot: slot,
@@ -282,7 +296,6 @@ export function buildPropertyStateFromLog(tx: ParsedTransactionWithMeta, kv: Rec
 export function buildTradeStateFromLog(tx: ParsedTransactionWithMeta, kv: Record<string, string>): NewTradeState {
   const pubkey = kv.pubkey ?? extractPdaByIndex(tx, 3) ?? 'UNKNOWN'
   const slot = getTransactionSlot(tx)
-  const blockTimeSec = getTransactionBlockTimeSec(tx)
   const signature = getTransactionSignature(tx)
 
   return {
@@ -290,15 +303,15 @@ export function buildTradeStateFromLog(tx: ParsedTransactionWithMeta, kv: Record
     game: kv.game ?? 'UNKNOWN',
     proposer: kv.proposer ?? 'UNKNOWN',
     receiver: kv.receiver ?? 'UNKNOWN',
-    tradeType: (kv.trade_type as TradeType) ?? 'MoneyOnly',
-    proposerMoney: Number(kv.proposer_money ?? 0),
-    receiverMoney: Number(kv.receiver_money ?? 0),
+    tradeType: (kv.trade_type as any) ?? ('MoneyOnly' as TradeType),
+    proposerMoney: kv.proposer_money ? Number(kv.proposer_money) : 0,
+    receiverMoney: kv.receiver_money ? Number(kv.receiver_money) : 0,
     proposerProperty: kv.proposer_property ? Number(kv.proposer_property) : null,
     receiverProperty: kv.receiver_property ? Number(kv.receiver_property) : null,
-    status: (kv.status as TradeStatus) ?? 'Pending',
-    createdAt: Number(kv.created_at ?? slot),
-    expiresAt: Number(kv.expires_at ?? blockTimeSec + 3600),
-    bump: Number(kv.bump ?? 0),
+    status: (kv.status as any) ?? ('Pending' as TradeStatus),
+    createdAt: kv.created_at ? Number(kv.created_at) : Date.now(),
+    expiresAt: kv.expires_at ? Number(kv.expires_at) : Date.now() + 60000,
+    bump: kv.bump ? Number(kv.bump) : 255,
     accountCreatedAt: new Date(),
     accountUpdatedAt: new Date(),
     createdSlot: slot,
@@ -307,99 +320,61 @@ export function buildTradeStateFromLog(tx: ParsedTransactionWithMeta, kv: Record
   }
 }
 
-// ==================== VALIDATION UTILITIES ====================
-
 /**
- * Validate that required fields are present in log data
- *
- * @param kv - Parsed key-value data
- * @param requiredFields - Array of required field names
- * @returns Array of missing field names (empty if all present)
+ * Validate required fields in log kv map
  */
 export function validateRequiredLogFields(kv: Record<string, string>, requiredFields: string[]): string[] {
-  return requiredFields.filter((field) => !kv[field])
+  const missing = requiredFields.filter((field) => kv[field] === undefined)
+  if (missing.length > 0) {
+    logger.debug({ missing }, 'Missing required fields in log kv map')
+  }
+  return missing
 }
 
 /**
- * Sanitize and validate pubkey from log data
- *
- * @param rawPubkey - Raw pubkey string from log
- * @returns Validated pubkey or 'UNKNOWN' if invalid
+ * Sanitize pubkey string from log data
  */
 export function sanitizePubkey(rawPubkey: string | undefined): string {
-  if (!rawPubkey || rawPubkey.length !== 44) {
-    return 'UNKNOWN'
-  }
-
-  // Basic base58 validation - should contain only valid base58 characters
-  const base58Regex = /^[1-9A-HJ-NP-Za-km-z]+$/
-  return base58Regex.test(rawPubkey) ? rawPubkey : 'UNKNOWN'
+  if (!rawPubkey || rawPubkey === 'UNKNOWN') return 'UNKNOWN'
+  return rawPubkey
 }
 
-// ==================== PLATFORM CONFIG BUILDER ====================
-
 /**
- * Build platform config record from parsed log data
- *
- * Maps blockchain log key-value pairs to NewPlatformConfig database record.
- * Handles both platform creation and updates with proper validation.
- *
- * @param tx - Transaction metadata for blockchain fields
- * @param kv - Parsed key-value data from log
- * @returns Validated NewPlatformConfig record or null if parsing fails
+ * Build platform config record from log data
  */
 export function buildPlatformConfigFromLog(
   tx: ParsedTransactionWithMeta,
   kv: Record<string, string>
 ): NewPlatformConfig | null {
-  try {
-    // Validate required fields for platform config
-    const requiredFields = ['pubkey', 'id', 'authority', 'fee_vault', 'fee_basis_points', 'bump']
-    const missingFields = validateRequiredLogFields(kv, requiredFields)
+  const pubkey = kv.pubkey ?? extractPdaByIndex(tx, 0)
+  const slot = getTransactionSlot(tx)
+  const signature = getTransactionSignature(tx)
 
-    if (missingFields.length > 0) {
-      console.error('Missing required platform config fields:', missingFields)
-      return null
-    }
+  // Required fields for platform config
+  const requiredFields = ['authority', 'fee_vault', 'fee_basis_points']
+  const missing = validateRequiredLogFields(kv, requiredFields)
+  if (missing.length > 0) {
+    logger.debug({ missing }, 'Missing required fields for platform config')
+  }
 
-    const blockTimeMs = getTransactionBlockTimeMs(tx)
-    const pubkey = sanitizePubkey(kv.pubkey)
-    if (pubkey === 'UNKNOWN') {
-      console.error('Invalid platform config pubkey - skipping record', kv.pubkey)
-      return null
-    }
-
-    const parsedId = sanitizePubkey(kv.id)
-    const id = parsedId !== 'UNKNOWN' ? parsedId : pubkey
-
-    const parsedAuthority = sanitizePubkey(kv.authority)
-    const authority = parsedAuthority !== 'UNKNOWN' ? parsedAuthority : id
-
-    const parsedFeeVault = sanitizePubkey(kv.fee_vault)
-    const feeVault = parsedFeeVault !== 'UNKNOWN' ? parsedFeeVault : authority !== 'UNKNOWN' ? authority : id
-
-    return {
-      // Primary key
-      pubkey,
-
-      // Core platform config fields
-      id,
-      feeBasisPoints: parseInt(kv.fee_basis_points) || 500, // Default 5%
-      authority,
-      feeVault,
-      totalGamesCreated: parseInt(kv.total_games_created) || 0,
-      nextGameId: parseInt(kv.next_game_id) || 0,
-      bump: parseInt(kv.bump) || 0,
-
-      // Blockchain metadata
-      accountCreatedAt: new Date(blockTimeMs),
-      accountUpdatedAt: new Date(blockTimeMs),
-      createdSlot: getTransactionSlot(tx),
-      updatedSlot: getTransactionSlot(tx),
-      lastSignature: getTransactionSignature(tx)
-    }
-  } catch (error) {
-    console.error('Failed to build platform config from log:', error)
+  if (!pubkey) {
+    logger.debug('Missing pubkey for platform config')
     return null
+  }
+
+  return {
+    pubkey,
+    id: pubkey,
+    authority: sanitizePubkey(kv.authority),
+    feeVault: sanitizePubkey(kv.fee_vault ?? kv.authority),
+    feeBasisPoints: kv.fee_basis_points ? Number(kv.fee_basis_points) : 500,
+    totalGamesCreated: kv.total_games_created ? Number(kv.total_games_created) : 0,
+    nextGameId: kv.next_game_id ? Number(kv.next_game_id) : 0,
+    bump: kv.bump ? Number(kv.bump) : 255,
+    accountCreatedAt: new Date(),
+    accountUpdatedAt: new Date(),
+    createdSlot: slot,
+    updatedSlot: slot,
+    lastSignature: signature
   }
 }

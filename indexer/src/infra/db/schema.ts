@@ -164,7 +164,7 @@ export const gameStates = pgTable(
     // Players array - stores pubkeys of joined players
     players: json('players').$type<string[]>().notNull(),
 
-    // Game timing and state
+    // Game timing
     createdAt: bigint('created_at', { mode: 'number' }).notNull(), // i64 timestamp
     startedAt: bigint('started_at', { mode: 'number' }),
     endedAt: bigint('ended_at', { mode: 'number' }),
@@ -172,6 +172,13 @@ export const gameStates = pgTable(
     gameStatus: gameStatusEnum('game_status').notNull(),
     turnStartedAt: bigint('turn_started_at', { mode: 'number' }).notNull(),
     timeLimit: bigint('time_limit', { mode: 'number' }), // Optional<i64>
+
+    // Fee and earnings tracking
+    entryFee: bigint('entry_fee', { mode: 'number' }).notNull().default(0), // Entry fee per player
+    totalPrizePool: bigint('total_prize_pool', { mode: 'number' }).notNull().default(0), // Total prize pool
+    tokenMint: varchar('token_mint', { length: 44 }), // Token mint address
+    tokenVault: varchar('token_vault', { length: 44 }), // Token vault address
+    prizeClaimed: boolean('prize_claimed').notNull().default(false), // Whether prize has been claimed
 
     // Financial state
     bankBalance: bigint('bank_balance', { mode: 'number' }).notNull(),
@@ -324,33 +331,6 @@ export const auctionStates = pgTable(
 /**
  * Processing queue for account updates and events
  */
-export const processingQueue = pgTable(
-  'processing_queue',
-  {
-    id: serial('id').primaryKey(),
-    accountPubkey: varchar('account_pubkey', { length: 44 }).notNull(),
-    accountType: varchar('account_type', { length: 30 }).notNull(),
-    accountData: json('account_data').notNull(),
-    eventType: varchar('event_type', { length: 20 }).notNull(), // 'create' | 'update' | 'close'
-    slot: bigint('slot', { mode: 'number' }).notNull(),
-    signature: varchar('signature', { length: 88 }),
-    status: varchar('status', { length: 20 }).default('pending'),
-    retryCount: integer('retry_count').default(0),
-    maxRetries: integer('max_retries').default(3),
-    errorMessage: text('error_message'),
-
-    // Timing
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-    processingStartedAt: timestamp('processing_started_at', { withTimezone: true }),
-    processedAt: timestamp('processed_at', { withTimezone: true })
-  },
-  (table) => [
-    index('idx_processing_queue_status_created').on(table.status, table.createdAt),
-    index('idx_processing_queue_account_pubkey').on(table.accountPubkey),
-    index('idx_processing_queue_slot').on(table.slot),
-    index('idx_processing_queue_event_type').on(table.eventType)
-  ]
-)
 
 /**
  * Sync status tracking
@@ -557,9 +537,6 @@ export type EmbeddedTrade = EmbeddedTradeState
 
 export type AuctionState = typeof auctionStates.$inferSelect
 export type NewAuctionState = typeof auctionStates.$inferInsert
-
-export type ProcessingQueueItem = typeof processingQueue.$inferSelect
-export type NewProcessingQueueItem = typeof processingQueue.$inferInsert
 
 export type SyncStatusRecord = typeof syncStatus.$inferSelect
 export type NewSyncStatusRecord = typeof syncStatus.$inferInsert

@@ -259,18 +259,32 @@ function createPlaceholderGameState(
     currentTurn: PLACEHOLDER_NUMERIC,
     players: [] as string[],
     createdAt: timestamp,
+    startedAt: null,
+    endedAt: null,
+    gameEndTime: null,
     gameStatus: 'WaitingForPlayers',
     turnStartedAt: slot,
     timeLimit: null,
+    // Fee and earnings
+    entryFee: 0,
+    totalPrizePool: 0,
+    tokenMint: 'UNKNOWN',
+    tokenVault: 'UNKNOWN',
+    prizeClaimed: false,
+    // Financial state
     bankBalance: PLACEHOLDER_NUMERIC,
     freeParkingPool: PLACEHOLDER_NUMERIC,
+    // Resources
     housesRemaining: PLACEHOLDER_NUMERIC,
     hotelsRemaining: PLACEHOLDER_NUMERIC,
+    // Completion
     winner: null,
+    // Trades and properties
     nextTradeId: PLACEHOLDER_NUMERIC,
     activeTrades: [] as TradeInfo[],
     properties: [] as EmbeddedPropertyState[],
     trades: [] as EmbeddedTradeState[],
+    // Blockchain metadata
     accountCreatedAt: metadataDate,
     accountUpdatedAt: metadataDate,
     createdSlot: slot,

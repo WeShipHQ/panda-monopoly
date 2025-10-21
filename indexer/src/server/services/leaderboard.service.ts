@@ -2,6 +2,10 @@ import type { DatabasePort, QueryFilters, PaginatedResult } from '#infra/db/db.p
 import type { GameState, GameStatus } from '#infra/db/schema'
 import { DatabaseError } from './base.service'
 
+const LAMPORTS_PER_SOL = 1_000_000_000
+// Round SOL to a fixed number of decimals (default 4)
+const roundSol = (value: number, decimals = 4): number =>
+  Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals)
 /**
  * Optimized scoring and calculation utilities
  */
@@ -77,6 +81,10 @@ export interface GameAnalytics {
   readonly averageGameDuration?: number
   readonly mostPopularTimeSlot?: string
   readonly topProperties: PropertyStats[]
+  // Earnings analytics
+  readonly totalEarnings: number
+  readonly combinedPlayerEarnings: number
+  readonly unclaimedPlayerEarnings: number
 }
 
 /**
@@ -97,6 +105,7 @@ export interface LeaderboardFilters extends QueryFilters {
   readonly timeRange?: 'day' | 'week' | 'month' | 'all'
   readonly minGames?: number
   readonly gameStatus?: GameStatus
+  readonly rankingBy?: 'mostWins' | 'highestEarnings' | 'mostActive' | 'combined'
 }
 
 /**
@@ -342,6 +351,21 @@ export class LeaderboardService {
         ? Math.round((finishedDurationsMin.reduce((a, b) => a + b, 0) / finishedDurationsMin.length) * 100) / 100
         : 0
 
+      // Earnings: sum of prize pools for finished and claimed games (lamports)
+      const claimedPrizeLamports = games.data
+        .filter((g) => g.gameStatus === 'Finished' && g.prizeClaimed)
+        .reduce((sum, g) => sum + Number(g.totalPrizePool || 0), 0)
+
+      // Combined player earnings now sourced from game_states prize pools for finished, claimed games (SOL)
+      const claimedPrizeSol = claimedPrizeLamports / LAMPORTS_PER_SOL
+      const combinedPlayerEarnings = claimedPrizeSol
+
+      // Unclaimed prize pools from finished games where winner hasn't claimed yet (lamports -> SOL)
+      const unclaimedPrizeSol =
+        games.data
+          .filter((g) => g.gameStatus === 'Finished' && !g.prizeClaimed)
+          .reduce((sum, g) => sum + Number(g.totalPrizePool || 0), 0) / LAMPORTS_PER_SOL
+
       return {
         totalGames: games.data.length,
         activeGames,
@@ -350,7 +374,10 @@ export class LeaderboardService {
         activePlayers: uniquePlayers.size, // Simplified - would need more complex logic
         averagePlayersPerGame: Math.round(averagePlayersPerGame * 100) / 100,
         averageGameDuration,
-        topProperties: [] // Would need property purchase data
+        topProperties: [], // Would need property purchase data
+        totalEarnings: roundSol(claimedPrizeSol),
+        combinedPlayerEarnings: roundSol(combinedPlayerEarnings),
+        unclaimedPlayerEarnings: roundSol(unclaimedPrizeSol)
       }
     } catch (error) {
       throw new DatabaseError('Failed to get game analytics', error as Error)
@@ -431,7 +458,9 @@ export class LeaderboardService {
   async getTopPlayersLeaderboard(
     filters: LeaderboardFilters = {},
     pagination = { limit: 10, page: 1 }
-  ): Promise<PaginatedResult<PlayerStats & { leaderboardScore: number }>> {
+  ): Promise<
+    PaginatedResult<PlayerStats & { leaderboardScore: number; totalEarnings: number; unclaimedEarnings: number }>
+  > {
     try {
       const page = Math.max(1, pagination.page || 1)
       const limit = Math.min(pagination.limit || 10, 50)
@@ -446,149 +475,137 @@ export class LeaderboardService {
       const activityWeight = LeaderboardUtils.SCORING.ACTIVITY_WEIGHT
       const successWeight = LeaderboardUtils.SCORING.SUCCESS_WEIGHT
 
-      // Build time range predicate
-      const timePredicates: string[] = []
+      // Determine ORDER BY based on rankingBy
+      const rankingBy = filters.rankingBy || 'combined'
+      const orderByClause =
+        rankingBy === 'mostWins'
+          ? 'ORDER BY total_games_won DESC, win_rate DESC, total_games_played DESC, wallet ASC'
+          : rankingBy === 'highestEarnings'
+          ? 'ORDER BY total_earnings DESC, win_rate DESC, total_games_played DESC, wallet ASC'
+          : rankingBy === 'mostActive'
+          ? 'ORDER BY total_games_played DESC, win_rate DESC, total_games_won DESC, wallet ASC'
+          : 'ORDER BY leaderboard_score DESC, win_rate DESC, total_games_played DESC, wallet ASC'
+
+      // Build time range predicates for player_states and game_states
+      let psWhere = ''
+      let gsWhere = 'WHERE gs.winner IS NOT NULL'
+      let gsDurationTimeFilter = ''
       if (filters.timeRange && filters.timeRange !== 'all') {
         const days = filters.timeRange === 'day' ? 1 : filters.timeRange === 'week' ? 7 : 30
-        timePredicates.push(`account_updated_at >= NOW() - INTERVAL '${days} days'`)
+        psWhere = `WHERE ps.account_updated_at >= NOW() - INTERVAL '${days} days'`
+        gsWhere = `WHERE gs.winner IS NOT NULL AND TO_TIMESTAMP(gs.created_at) >= NOW() - INTERVAL '${days} days'`
+        gsDurationTimeFilter = `WHERE TO_TIMESTAMP(gs.created_at) >= NOW() - INTERVAL '${days} days'`
       }
-      const psWhere = timePredicates.length ? `WHERE ${timePredicates.map((p) => `ps.${p}`).join(' AND ')}` : ''
-      const gsWhere = `WHERE gs.winner IS NOT NULL${timePredicates.length ? ' AND ' + timePredicates.map((p) => `gs.${p}`).join(' AND ') : ''}`
 
-      if (adapter?.query && adapter?.isConnected) {
-        // Optimized SQL aggregation combining player_states and game_states
-        const sql = `
-          WITH filtered_ps AS (
-            SELECT ps.wallet, ps.game, ps.cash_balance, ps.properties_owned, ps.account_updated_at
-            FROM player_states ps
-            ${psWhere}
-          ), played AS (
-            SELECT wallet,
-                   COUNT(DISTINCT game) AS total_games_played,
-                   MAX(account_updated_at) AS last_active
-            FROM filtered_ps
-            GROUP BY wallet
-          ), wins AS (
-            SELECT gs.winner AS wallet,
-                   COUNT(*) AS total_games_won
-            FROM game_states gs
-            ${gsWhere}
-            GROUP BY gs.winner
-          ), cash AS (
-            SELECT wallet,
-                   AVG(cash_balance) AS avg_cash,
-                   MAX(cash_balance) AS max_cash,
-                   MIN(cash_balance) AS min_cash,
-                   PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY cash_balance::numeric) AS median_cash,
-                   SUM(COALESCE(json_array_length(properties_owned), 0)) AS total_properties_owned
-            FROM filtered_ps
-            GROUP BY wallet
-          ), game_durations AS (
-            SELECT 
-              gs.pubkey AS game,
-              CASE 
-                WHEN gs.started_at IS NOT NULL AND gs.ended_at IS NOT NULL THEN 
-                  CASE 
-                    WHEN gs.ended_at < 1000000000000 AND gs.started_at < 1000000000000 
-                      THEN (gs.ended_at - gs.started_at) * 1000
-                    ELSE (gs.ended_at - gs.started_at)
-                  END
-                ELSE NULL
-              END AS duration_ms
-            FROM game_states gs
-            WHERE gs.game_status = 'Finished' AND gs.started_at IS NOT NULL AND gs.ended_at IS NOT NULL
-            ${timePredicates.length ? ' AND ' + timePredicates.map((p) => `gs.${p}`).join(' AND ') : ''}
-          ), player_avg_duration AS (
-            SELECT fp.wallet,
-                   AVG(gd.duration_ms) / 60000.0 AS avg_game_duration_min
-            FROM filtered_ps fp
-            JOIN game_durations gd ON gd.game = fp.game
-            GROUP BY fp.wallet
-          ), aggregated AS (
-            SELECT p.wallet,
-                   p.total_games_played,
-                   COALESCE(w.total_games_won, 0) AS total_games_won,
-                   COALESCE(c.avg_cash, 0) AS avg_cash,
-                   COALESCE(c.max_cash, 0) AS max_cash,
-                   COALESCE(c.min_cash, 0) AS min_cash,
-                   COALESCE(c.median_cash, 0) AS median_cash,
-                   COALESCE(c.total_properties_owned, 0) AS total_properties_owned,
-                   COALESCE(pad.avg_game_duration_min, 0) AS avg_game_duration_min,
-                   p.last_active
-            FROM played p
-            LEFT JOIN wins w ON w.wallet = p.wallet
-            LEFT JOIN cash c ON c.wallet = p.wallet
-            LEFT JOIN player_avg_duration pad ON pad.wallet = p.wallet
-          ), with_rate AS (
-            SELECT wallet,
-                   total_games_played,
-                   total_games_won,
-                   (total_games_played - total_games_won) AS total_games_lost,
-                   CASE WHEN total_games_played > 0 THEN (total_games_won::float / total_games_played) * 100 ELSE 0 END AS win_rate,
-                   avg_cash,
-                   max_cash,
-                   min_cash,
-                   median_cash,
-                   total_properties_owned,
-                   avg_game_duration_min,
-                   last_active
-            FROM aggregated
-          ), ranked AS (
-            SELECT wallet,
-                   total_games_played,
-                   total_games_won,
-                   total_games_lost,
-                   win_rate,
-                   avg_cash,
-                   max_cash,
-                   min_cash,
-                   median_cash,
-                   total_properties_owned,
-                   avg_game_duration_min,
-                   last_active,
-                   ((total_games_played * ${activityWeight}) + (total_games_won * ${successWeight})) AS leaderboard_score
-            FROM with_rate
-            WHERE total_games_played >= ${minGames}
+      if (adapter?.rawQuery && adapter?.isConnected?.()) {
+        try {
+          const result = await adapter.rawQuery(
+            `WITH player_stats AS (
+              SELECT ps.wallet,
+                     COUNT(DISTINCT ps.game) AS total_games_played,
+                     SUM(CASE WHEN ps.cash_balance::numeric > 0 THEN 1 ELSE 0 END) AS total_games_won,
+                     SUM(CASE WHEN ps.cash_balance::numeric <= 0 THEN 1 ELSE 0 END) AS total_games_lost,
+                     AVG(ps.cash_balance::numeric) AS avg_cash,
+                     MAX(ps.cash_balance::numeric) AS max_cash,
+                     MIN(ps.cash_balance::numeric) AS min_cash,
+                     COUNT(ps.properties_owned) AS total_properties_owned,
+                     MAX(ps.account_updated_at) AS last_active
+              FROM player_states ps
+              ${psWhere}
+              GROUP BY ps.wallet
+            ), game_stats AS (
+              SELECT gs.winner AS wallet,
+                     SUM(CASE WHEN gs.prize_claimed THEN gs.total_prize_pool ELSE 0 END) AS total_earnings,
+                     SUM(CASE WHEN gs.prize_claimed = false THEN gs.total_prize_pool ELSE 0 END) AS total_unclaimed_earnings
+              FROM game_states gs
+              ${gsWhere}
+              GROUP BY gs.winner
+            ), combined AS (
+              SELECT ps.wallet,
+                     ps.total_games_played,
+                     ps.total_games_won,
+                     ps.total_games_lost,
+                     COALESCE(gs.total_earnings, 0) AS total_earnings,
+                     COALESCE(gs.total_unclaimed_earnings, 0) AS total_unclaimed_earnings,
+                     ps.avg_cash,
+                     ps.max_cash,
+                     ps.min_cash,
+                     ps.total_properties_owned,
+                     ps.last_active
+              FROM player_stats ps
+              LEFT JOIN game_stats gs ON gs.wallet = ps.wallet
+            ), with_rate AS (
+              SELECT wallet,
+                     total_games_played,
+                     total_games_won,
+                     total_games_lost,
+                     total_earnings,
+                     total_unclaimed_earnings,
+                     ROUND((CASE WHEN total_games_played > 0 THEN (total_games_won::numeric / total_games_played::numeric) * 100 ELSE 0 END)::numeric, 2) AS win_rate,
+                     ROUND(avg_cash::numeric, 2) AS avg_cash,
+                     ROUND(max_cash::numeric, 2) AS max_cash,
+                     ROUND(min_cash::numeric, 2) AS min_cash,
+                     total_properties_owned,
+                     (SELECT ROUND((AVG(
+                        CASE WHEN gs2.started_at IS NOT NULL AND gs2.ended_at IS NOT NULL THEN 
+                          CASE WHEN gs2.ended_at < 1000000000000 AND gs2.started_at < 1000000000000 
+                            THEN (gs2.ended_at - gs2.started_at) * 1000 
+                          ELSE (gs2.ended_at - gs2.started_at) 
+                          END 
+                        END
+                      )::numeric) / 60000, 2) FROM game_states gs2 ${gsDurationTimeFilter}) AS avg_game_duration_min,
+                     last_active
+              FROM combined
+            ), ranked AS (
+              SELECT wallet,
+                     total_games_played,
+                     total_games_won,
+                     total_games_lost,
+                     total_earnings,
+                     total_unclaimed_earnings,
+                     win_rate,
+                     avg_cash,
+                     max_cash,
+                     min_cash,
+                     median_cash,
+                     total_properties_owned,
+                     avg_game_duration_min,
+                     last_active,
+                     ((total_games_played * ${activityWeight}) + (total_games_won * ${successWeight})) AS leaderboard_score
+              FROM with_rate
+              WHERE total_games_played >= ${minGames}
+            )
+            SELECT *
+            FROM ranked
+            ${orderByClause}
+            LIMIT ${limit} OFFSET ${offset};
+          `
           )
-          SELECT *
-          FROM ranked
-          ORDER BY leaderboard_score DESC, win_rate DESC, total_games_played DESC, wallet ASC
-          LIMIT ${limit} OFFSET ${offset};
-        `
 
-        const rows = await this.db.query(sql)
+          const total: number = result.rowCount || result.rows.length
+          const data = result.rows.map((row: any, idx: number) => ({
+            playerId: row.wallet,
+            walletAddress: row.wallet,
+            playerName: undefined,
+            totalGamesPlayed: Number(row.total_games_played) || 0,
+            totalGamesWon: Number(row.total_games_won) || 0,
+            totalGamesLost: Number(row.total_games_lost) || 0,
+            winRate: Number(row.win_rate) || 0,
+            averageCashBalance: Number(row.avg_cash) || 0,
+            highestCashBalance: Number(row.max_cash) || 0,
+            totalPropertiesOwned: Number(row.total_properties_owned) || 0,
+            averageGameDuration: Number(row.avg_game_duration_min) || undefined,
+            lastActiveDate: new Date(row.last_active).toISOString(),
+            leaderboardScore: Math.round(((Number(row.total_games_played) || 0) * activityWeight + ((Number(row.total_games_won) || 0) * successWeight)) * 100) / 100,
+            totalEarnings: roundSol((Number(row.total_earnings) || 0) / LAMPORTS_PER_SOL),
+            unclaimedEarnings: roundSol((Number(row.total_unclaimed_earnings) || 0) / LAMPORTS_PER_SOL),
+            rank: offset + idx + 1
+          }))
 
-        const countSql = `
-          SELECT COUNT(*) AS total
-          FROM (
-            SELECT ps.wallet
-            FROM player_states ps
-            ${psWhere}
-            GROUP BY ps.wallet
-            HAVING COUNT(DISTINCT ps.game) >= ${minGames}
-          ) t;
-        `
-        const countRows = await this.db.query(countSql)
-        const total = Number((countRows?.[0] as any)?.total ?? rows.length)
-
-        const data = (rows as any[]).map((r, idx) => ({
-          playerId: r.wallet,
-          walletAddress: r.wallet,
-          playerName: undefined,
-          totalGamesPlayed: Number(r.total_games_played ?? 0),
-          totalGamesWon: Number(r.total_games_won ?? 0),
-          totalGamesLost: Number(r.total_games_lost ?? 0),
-          winRate: Number(r.win_rate ?? 0),
-          averageCashBalance: Number(r.avg_cash ?? 0),
-          highestCashBalance: Number(r.max_cash ?? 0),
-          totalPropertiesOwned: Number(r.total_properties_owned ?? 0),
-          averageGameDuration: Number(r.avg_game_duration_min ?? 0),
-          lastActiveDate: r.last_active ? new Date(r.last_active).toISOString() : new Date(0).toISOString(),
-          leaderboardScore: Number(r.leaderboard_score ?? 0),
-          rank: offset + idx + 1
-        }))
-
-        return { data, total, page, limit }
+          return { data, total, page, limit }
+        } catch (e) {
+          console.warn('Raw SQL leaderboard query failed, falling back to in-memory aggregation:', e)
+        }
       }
 
       // Fallback to in-memory aggregation if SQL not available
@@ -670,6 +687,28 @@ export class LeaderboardService {
         }
       }
 
+      // Earnings per wallet from finished and claimed games
+      const earningsByWallet = new Map<string, number>()
+      for (const gs of finishedGames.data) {
+        const winner = (gs as any).winner as string | undefined
+        const prizeClaimed = Boolean((gs as any).prizeClaimed)
+        const prize = Number((gs as any).totalPrizePool || 0)
+        if (winner && prizeClaimed) {
+          earningsByWallet.set(winner, (earningsByWallet.get(winner) || 0) + prize)
+        }
+      }
+
+      // Unclaimed earnings per wallet from finished games
+      const unclaimedByWallet = new Map<string, number>()
+      for (const gs of finishedGames.data) {
+        const winner = (gs as any).winner as string | undefined
+        const prizeClaimed = Boolean((gs as any).prizeClaimed)
+        const prize = Number((gs as any).totalPrizePool || 0)
+        if (winner && !prizeClaimed) {
+          unclaimedByWallet.set(winner, (unclaimedByWallet.get(winner) || 0) + prize)
+        }
+      }
+
       const playerStats = Array.from(playerStatsMap.values()).map((data) => {
         const totalGames = data.gamesPlayed.size
 
@@ -683,6 +722,8 @@ export class LeaderboardService {
           .map((g) => gameDurations.get(g))
           .filter((v): v is number => v !== undefined)
         const avgDuration = durations.length ? durations.reduce((a, b) => a + b, 0) / durations.length : 0
+        const totalEarnings = earningsByWallet.get(data.playerId) || 0
+        const unclaimedEarnings = unclaimedByWallet.get(data.playerId) || 0
 
         return {
           playerId: data.playerId,
@@ -697,7 +738,9 @@ export class LeaderboardService {
           totalPropertiesOwned: data.properties,
           averageGameDuration: avgDuration,
           lastActiveDate: data.lastActive.toISOString(),
-          leaderboardScore
+          leaderboardScore,
+          totalEarnings: roundSol(totalEarnings / LAMPORTS_PER_SOL),
+          unclaimedEarnings: roundSol(unclaimedEarnings / LAMPORTS_PER_SOL)
         }
       })
 
@@ -717,9 +760,10 @@ export class LeaderboardService {
       const rankedStats = filteredStats.map((player, index) => ({ ...player, rank: index + 1 }))
 
       const start = Math.max(((page || 1) - 1) * limit, 0)
-      const paginatedData = rankedStats.slice(start, start + limit)
+      const end = Math.min(start + limit, rankedStats.length)
+      const paginated = rankedStats.slice(start, end)
 
-      return { data: paginatedData, total: rankedStats.length, page, limit }
+      return { data: paginated, total: rankedStats.length, page, limit }
     } catch (error) {
       throw new DatabaseError('Failed to get top players leaderboard', error as Error)
     }
@@ -1149,6 +1193,12 @@ export class LeaderboardService {
       errors.push('Time range must be one of: day, week, month, all')
     }
 
+    if (filters.rankingBy && !['mostWins', 'highestEarnings', 'mostActive', 'combined'].includes(filters.rankingBy)) {
+      errors.push('RankingBy must be one of: mostWins, highestEarnings, mostActive, combined')
+    }
+
     return errors
   }
 }
+
+// Remove duplicate roundSol at file end}

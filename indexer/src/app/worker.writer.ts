@@ -85,6 +85,25 @@ async function enrichRecordWithBlockchainData(record: MonopolyRecord): Promise<M
         record.data.startedAt = enhancedData.startedAt ?? record.data.startedAt ?? null
         record.data.endedAt = enhancedData.endedAt ?? record.data.endedAt ?? null
         record.data.gameEndTime = enhancedData.gameEndTime ?? record.data.gameEndTime ?? null
+        // Fee and earnings
+        record.data.entryFee =
+          typeof enhancedData.entryFee === 'number' ? enhancedData.entryFee : (record.data.entryFee ?? 0)
+        record.data.totalPrizePool =
+          typeof enhancedData.totalPrizePool === 'number'
+            ? enhancedData.totalPrizePool
+            : (record.data.totalPrizePool ?? 0)
+        record.data.tokenMint =
+          enhancedData.tokenMint && enhancedData.tokenMint !== 'UNKNOWN'
+            ? enhancedData.tokenMint
+            : (record.data.tokenMint ?? 'UNKNOWN')
+        record.data.tokenVault =
+          enhancedData.tokenVault && enhancedData.tokenVault !== 'UNKNOWN'
+            ? enhancedData.tokenVault
+            : (record.data.tokenVault ?? 'UNKNOWN')
+        record.data.prizeClaimed =
+          typeof enhancedData.prizeClaimed === 'boolean'
+            ? enhancedData.prizeClaimed
+            : (record.data.prizeClaimed ?? false)
         logger.info(
           {
             pubkey: record.data.pubkey,
@@ -130,68 +149,25 @@ async function enrichRecordWithBlockchainData(record: MonopolyRecord): Promise<M
         const playerSnapshots = await fetcher.fetchPlayerStateSnapshots(record.data.pubkey, enhancedData.players ?? [])
         const propertySnapshots = await fetcher.fetchPropertyStateSnapshots(
           record.data.pubkey,
-          Array.isArray(record.data.properties) ? record.data.properties.map((prop) => prop.position) : []
+          enhancedData.properties?.map((p) => p.position) ?? []
         )
 
-        if ((playerSnapshots.length > 0 || propertySnapshots.length > 0) && Array.isArray(record.data.properties)) {
-          const normalizeOwner = (value: string | null | undefined): string | null =>
-            value && value !== 'UNKNOWN' ? value : null
-
-          const propertySnapshotsByPosition = new Map<number, PropertyStateSnapshot>()
-          const ownershipByPosition = new Map<number, string | null>()
-
-          for (const snapshot of propertySnapshots) {
-            propertySnapshotsByPosition.set(snapshot.position, snapshot)
-            ownershipByPosition.set(snapshot.position, normalizeOwner(snapshot.data.owner))
-          }
-
-          for (const snapshot of playerSnapshots) {
-            const wallet = normalizeOwner(snapshot.data.wallet)
-            if (!wallet) continue
-
-            for (const position of snapshot.data.propertiesOwned ?? []) {
-              if (typeof position === 'number' && position >= 0 && position < 40) {
-                if (!ownershipByPosition.has(position) || ownershipByPosition.get(position) === null) {
-                  ownershipByPosition.set(position, wallet)
-                }
+        if (Array.isArray(playerSnapshots)) {
+          // Merge player/property snapshots with any forced positions from property snapshot
+          const propertyPositionsByWallet = new Map<string, Set<number>>()
+          for (const snapshot of propertySnapshots ?? []) {
+            const { owner, position } = snapshot.data
+            if (owner) {
+              if (!propertyPositionsByWallet.has(owner)) {
+                propertyPositionsByWallet.set(owner, new Set<number>())
               }
+              propertyPositionsByWallet.get(owner)!.add(position)
             }
           }
-
-          record.data.properties = record.data.properties.map((property) => {
-            const propertySnapshot = propertySnapshotsByPosition.get(property.position)
-            const mappedOwner = ownershipByPosition.get(property.position)
-            let owner = mappedOwner ?? property.owner ?? null
-            if (owner === 'UNKNOWN') owner = null
-
-            const houses = propertySnapshot?.data.houses ?? property.houses
-            const hasHotel = propertySnapshot?.data.hasHotel ?? property.hasHotel
-            const rentWithHouses = propertySnapshot?.data.rentWithHouses ?? property.rentWithHouses
-            const rentWithHotel = propertySnapshot?.data.rentWithHotel ?? property.rentWithHotel
-
-            return {
-              ...property,
-              owner,
-              houses,
-              hasHotel,
-              isMortgaged: propertySnapshot?.data.isMortgaged ?? property.isMortgaged,
-              rentBase: propertySnapshot?.data.rentBase ?? property.rentBase,
-              rentWithColorGroup: propertySnapshot?.data.rentWithColorGroup ?? property.rentWithColorGroup,
-              rentWithHouses: [
-                rentWithHouses[0] ?? 0,
-                rentWithHouses[1] ?? 0,
-                rentWithHouses[2] ?? 0,
-                rentWithHouses[3] ?? 0
-              ] as [number, number, number, number],
-              rentWithHotel: rentWithHotel ?? rentWithHouses[3] ?? property.rentWithHotel,
-              houseCost: propertySnapshot?.data.houseCost ?? property.houseCost,
-              mortgageValue: propertySnapshot?.data.mortgageValue ?? property.mortgageValue,
-              lastRentPaid: propertySnapshot?.data.lastRentPaid ?? property.lastRentPaid,
-              init: owner !== null || houses > 0 || hasHotel
-            }
-          })
+          // Attach snapshots for downstream player sync
           ;(record as any).__playerSnapshots = playerSnapshots
           ;(record as any).__propertySnapshots = propertySnapshots
+          ;(record as any).__propertyPositionsByWallet = propertyPositionsByWallet
         }
       } else {
         logger.warn(`⚠️ Could not fetch enhanced game data for ${record.data.pubkey}`)

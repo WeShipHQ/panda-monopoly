@@ -37,6 +37,11 @@ export interface RustGameState {
   startedAt?: number | null
   endedAt?: number | null
   gameEndTime?: number | null
+  entryFee: bigint
+  tokenMint: PublicKey | null
+  tokenVault: PublicKey | null
+  totalPrizePool: bigint
+  prizeClaimed: boolean
 }
 
 export enum GameStatus {
@@ -139,14 +144,17 @@ export function parseGameStateFromBlockchain(accountData: Buffer, pubkey: string
 
     // entryFee u64
     if (accountData.length < offset + 8) return null
+    const entryFee = accountData.readBigUInt64LE(offset)
     offset += 8
 
     // tokenMint: Option<Address>
     if (accountData.length < offset + 1) return null
     const tokenMintFlag = accountData.readUInt8(offset)
     offset += 1
+    let tokenMint: PublicKey | null = null
     if (tokenMintFlag === 1) {
       if (accountData.length < offset + 32) return null
+      tokenMint = new PublicKey(accountData.subarray(offset, offset + 32))
       offset += 32
     }
 
@@ -154,20 +162,25 @@ export function parseGameStateFromBlockchain(accountData: Buffer, pubkey: string
     if (accountData.length < offset + 1) return null
     const tokenVaultFlag = accountData.readUInt8(offset)
     offset += 1
+    let tokenVault: PublicKey | null = null
     if (tokenVaultFlag === 1) {
       if (accountData.length < offset + 32) return null
+      tokenVault = new PublicKey(accountData.subarray(offset, offset + 32))
       offset += 32
     }
 
     // totalPrizePool u64
     if (accountData.length < offset + 8) return null
+    const totalPrizePool = accountData.readBigUInt64LE(offset)
     offset += 8
 
     // prizeClaimed bool + endConditionMet bool
     if (accountData.length < offset + 2) return null
+    const prizeClaimed = accountData.readUInt8(offset) === 1
+    const endConditionMet = accountData.readUInt8(offset + 1) === 1
     offset += 2
 
-    // endReason: Option<GameEndReason> => flag u8 + optional enum u8
+    // endReason: Option<GameEndReason> => flag u8 + optional enum u8 (skip value)
     if (accountData.length < offset + 1) return null
     const endReasonFlag = accountData.readUInt8(offset)
     offset += 1
@@ -184,49 +197,17 @@ export function parseGameStateFromBlockchain(accountData: Buffer, pubkey: string
     for (let i = 0; i < tradesLength; i++) {
       if (accountData.length < offset + 1 + 32 + 32) break
       const tradeId = accountData.readUInt8(offset)
-      offset += 1
-      const proposer = new PublicKey(accountData.subarray(offset, offset + 32))
-      offset += 32
-      const receiver = new PublicKey(accountData.subarray(offset, offset + 32))
-      offset += 32
-      // tradeType enum u8
-      if (accountData.length < offset + 1) break
-      offset += 1
-      // proposerMoney u64 + receiverMoney u64
-      if (accountData.length < offset + 16) break
-      offset += 16
-      // proposerProperty: Option<u8>
-      if (accountData.length < offset + 1) break
-      const proposerPropFlag = accountData.readUInt8(offset)
-      offset += 1
-      if (proposerPropFlag === 1) {
-        if (accountData.length < offset + 1) break
-        offset += 1
-      }
-      // receiverProperty: Option<u8>
-      if (accountData.length < offset + 1) break
-      const receiverPropFlag = accountData.readUInt8(offset)
-      offset += 1
-      if (receiverPropFlag === 1) {
-        if (accountData.length < offset + 1) break
-        offset += 1
-      }
-      // status enum u8
-      if (accountData.length < offset + 1) break
-      offset += 1
-      // createdAt i64 + expiresAt i64
-      if (accountData.length < offset + 16) break
-      offset += 16
-      activeTrades.push({ tradeId, proposer, acceptor: receiver })
+      const proposer = new PublicKey(accountData.subarray(offset + 1, offset + 33))
+      const acceptor = new PublicKey(accountData.subarray(offset + 33, offset + 65))
+      activeTrades.push({ tradeId, proposer, acceptor })
+      offset += 65
     }
 
-    // nextTradeId: u8
-    if (accountData.length < offset + 1) return null
-    const nextTradeId = accountData.readUInt8(offset)
-    offset += 1
-
-    // properties: [PropertyInfo; 40]
-    for (let i = 0; i < 40; i++) {
+    // properties: Vec<PropertyInfo> (skip parsing details here)
+    if (accountData.length < offset + 4) return null
+    const propertiesLength = accountData.readUInt32LE(offset)
+    offset += 4
+    for (let i = 0; i < propertiesLength; i++) {
       if (accountData.length < offset + 1) return null
       const ownerFlag = accountData.readUInt8(offset)
       offset += 1
@@ -311,12 +292,17 @@ export function parseGameStateFromBlockchain(accountData: Buffer, pubkey: string
       housesRemaining,
       hotelsRemaining,
       winner,
-      nextTradeId,
+      nextTradeId: 0,
       activeTrades,
       createdAt,
       startedAt,
       endedAt,
-      gameEndTime
+      gameEndTime,
+      entryFee,
+      tokenMint,
+      tokenVault,
+      totalPrizePool,
+      prizeClaimed
     }
   } catch (error) {
     console.error(`Error parsing GameState ${pubkey}:`, error)
@@ -349,6 +335,12 @@ export function mapGameStateToDatabase(blockchainData: RustGameState, pubkey: st
     startedAt: blockchainData.startedAt ?? null,
     endedAt: blockchainData.endedAt ?? null,
     gameEndTime: blockchainData.gameEndTime ?? null,
+    // Fee-related mappings
+    entryFee: Number(blockchainData.entryFee || 0n),
+    totalPrizePool: Number(blockchainData.totalPrizePool || 0n),
+    tokenMint: blockchainData.tokenMint?.toString() || 'UNKNOWN',
+    tokenVault: blockchainData.tokenVault?.toString() || 'UNKNOWN',
+    prizeClaimed: blockchainData.prizeClaimed ?? false,
     accountUpdatedAt: new Date()
   }
 }
