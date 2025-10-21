@@ -16,27 +16,22 @@ const globalRateLimiter = new Bottleneck({
 })
 
 export function makeConnection(kind: 'http' | 'ws' = 'http') {
-  const httpEndpoint = env.solana.rpcUrl
+  const httpEndpoint = env.rpc.er.http
   if (!httpEndpoint || !httpEndpoint.startsWith('http')) {
-    throw new TypeError('SOLANA_RPC must start with http:// or https://')
+    throw new TypeError('ER_RPC_URL must start with http:// or https://')
   }
 
   // Dùng ConnectionConfig typed để tránh "any"
   const config: ConnectionConfig = { commitment: env.solana.commitment as Commitment }
 
   if (kind === 'ws') {
-    // ✅ Chỉ override wsEndpoint nếu hợp lệ; vẫn truyền HTTP vào constructor
-    if (env.solana.wsUrl) {
-      if (!env.solana.wsUrl.startsWith('ws')) {
-        logger.warn('SOLANA_WEBSOCKET is set but does not start with ws:// or wss://. Ignoring it.')
-      } else {
-        config.wsEndpoint = env.solana.wsUrl
-      }
+    const wsEndpoint = env.rpc.er.ws
+    if (!wsEndpoint || !wsEndpoint.startsWith('ws')) {
+      logger.warn('ER_RPC_WS_URL is not set or does not start with ws:// or wss://. Using derived ws endpoint.')
     } else {
-      logger.warn('SOLANA_WEBSOCKET not set. Using derived ws endpoint from SOLANA_RPC.')
+      config.wsEndpoint = wsEndpoint
     }
 
-    // ❗️ĐIỂM SỬA CHÍNH: luôn truyền httpEndpoint vào đây
     return new Connection(httpEndpoint, config)
   }
 
@@ -100,7 +95,6 @@ export const rateLimitedRPC = {
       )
     ),
 
-  // Có thể dùng rateLimitedRPC thay vì Connection trực tiếp trong backfill
   getSignaturesForAddress: (addr: PublicKey, cfg: { limit?: number; before?: string; until?: string } = {}) =>
     globalRateLimiter.schedule(() =>
       rpcPool.executeWithFailover(

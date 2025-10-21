@@ -1,11 +1,11 @@
 {
-  "id": "b92a359c-8e81-4d72-9a10-d17e625f2c7f",
-  "prevId": "810a5ba6-d53b-4467-a947-ac905cb082ac",
+  "id": "3a4cbbe8-91b7-4a44-a3a5-59c7b31d53d4",
+  "prevId": "8f26808f-4eda-4302-80f5-182ac1c6f849",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.auctions": {
-      "name": "auctions",
+    "public.auction_states": {
+      "name": "auction_states",
       "schema": "",
       "columns": {
         "pubkey": {
@@ -30,8 +30,7 @@
           "name": "current_bid",
           "type": "bigint",
           "primaryKey": false,
-          "notNull": false,
-          "default": 0
+          "notNull": true
         },
         "highest_bidder": {
           "name": "highest_bidder",
@@ -55,8 +54,7 @@
           "name": "is_active",
           "type": "boolean",
           "primaryKey": false,
-          "notNull": false,
-          "default": true
+          "notNull": true
         },
         "bump": {
           "name": "bump",
@@ -68,15 +66,13 @@
           "name": "account_created_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+          "notNull": true
         },
         "account_updated_at": {
           "name": "account_updated_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+          "notNull": true
         },
         "created_slot": {
           "name": "created_slot",
@@ -98,8 +94,8 @@
         }
       },
       "indexes": {
-        "idx_auction_game": {
-          "name": "idx_auction_game",
+        "idx_auction_states_game": {
+          "name": "idx_auction_states_game",
           "columns": [
             {
               "expression": "game",
@@ -113,8 +109,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_auction_property": {
-          "name": "idx_auction_property",
+        "idx_auction_states_property_position": {
+          "name": "idx_auction_states_property_position",
           "columns": [
             {
               "expression": "property_position",
@@ -128,8 +124,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_auction_bidder": {
-          "name": "idx_auction_bidder",
+        "idx_auction_states_highest_bidder": {
+          "name": "idx_auction_states_highest_bidder",
           "columns": [
             {
               "expression": "highest_bidder",
@@ -143,8 +139,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_auction_active": {
-          "name": "idx_auction_active",
+        "idx_auction_states_is_active": {
+          "name": "idx_auction_states_is_active",
           "columns": [
             {
               "expression": "is_active",
@@ -158,8 +154,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_auction_ends_at": {
-          "name": "idx_auction_ends_at",
+        "idx_auction_states_ends_at": {
+          "name": "idx_auction_states_ends_at",
           "columns": [
             {
               "expression": "ends_at",
@@ -173,8 +169,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_auction_updated_at": {
-          "name": "idx_auction_updated_at",
+        "idx_auction_states_updated_at": {
+          "name": "idx_auction_states_updated_at",
           "columns": [
             {
               "expression": "account_updated_at",
@@ -187,21 +183,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "idx_auction_updated_slot": {
-          "name": "idx_auction_updated_slot",
-          "columns": [
-            {
-              "expression": "updated_slot",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {},
@@ -211,297 +192,209 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.chance_card_events": {
-      "name": "chance_card_events",
+    "public.game_logs": {
+      "name": "game_logs",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "varchar(88)",
+          "type": "varchar(36)",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
-        "player": {
-          "name": "player",
+        "game_id": {
+          "name": "game_id",
           "type": "varchar(44)",
           "primaryKey": false,
           "notNull": true
         },
-        "game": {
-          "name": "game",
+        "player_id": {
+          "name": "player_id",
           "type": "varchar(44)",
           "primaryKey": false,
           "notNull": true
         },
-        "card_index": {
-          "name": "card_index",
+        "player_name": {
+          "name": "player_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "game_log_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "property_name": {
+          "name": "property_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "position": {
+          "name": "position",
           "type": "smallint",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
-        "effect_type": {
-          "name": "effect_type",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "amount": {
-          "name": "amount",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "timestamp": {
-          "name": "timestamp",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "idx_chance_player": {
-          "name": "idx_chance_player",
-          "columns": [
-            {
-              "expression": "player",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_chance_game": {
-          "name": "idx_chance_game",
-          "columns": [
-            {
-              "expression": "game",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_chance_timestamp": {
-          "name": "idx_chance_timestamp",
-          "columns": [
-            {
-              "expression": "timestamp",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_chance_created_at": {
-          "name": "idx_chance_created_at",
-          "columns": [
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.community_chest_card_events": {
-      "name": "community_chest_card_events",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "varchar(88)",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "player": {
-          "name": "player",
-          "type": "varchar(44)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "game": {
-          "name": "game",
-          "type": "varchar(44)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "card_index": {
-          "name": "card_index",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "effect_type": {
-          "name": "effect_type",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "amount": {
-          "name": "amount",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "timestamp": {
-          "name": "timestamp",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "idx_community_player": {
-          "name": "idx_community_player",
-          "columns": [
-            {
-              "expression": "player",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_community_game": {
-          "name": "idx_community_game",
-          "columns": [
-            {
-              "expression": "game",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_community_timestamp": {
-          "name": "idx_community_timestamp",
-          "columns": [
-            {
-              "expression": "timestamp",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_community_created_at": {
-          "name": "idx_community_created_at",
-          "columns": [
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.game_events": {
-      "name": "game_events",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "varchar(88)",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "game": {
-          "name": "game",
-          "type": "varchar(44)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "player": {
-          "name": "player",
-          "type": "varchar(44)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "event_type": {
-          "name": "event_type",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "event_data": {
-          "name": "event_data",
-          "type": "json",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "timestamp": {
-          "name": "timestamp",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "slot": {
-          "name": "slot",
+        "price": {
+          "name": "price",
           "type": "bigint",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "owner": {
+          "name": "owner",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "card_type": {
+          "name": "card_type",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "card_title": {
+          "name": "card_title",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "card_description": {
+          "name": "card_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "card_index": {
+          "name": "card_index",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "effect_type": {
+          "name": "effect_type",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amount": {
+          "name": "amount",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trade_id": {
+          "name": "trade_id",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "action": {
+          "name": "action",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "target_player": {
+          "name": "target_player",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "target_player_name": {
+          "name": "target_player_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "offered_properties": {
+          "name": "offered_properties",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "requested_properties": {
+          "name": "requested_properties",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "offered_money": {
+          "name": "offered_money",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "requested_money": {
+          "name": "requested_money",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "from_position": {
+          "name": "from_position",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_position": {
+          "name": "to_position",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dice_roll": {
+          "name": "dice_roll",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "doubles_count": {
+          "name": "doubles_count",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "passed_go": {
+          "name": "passed_go",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "jail_reason": {
+          "name": "jail_reason",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fine_amount": {
+          "name": "fine_amount",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "building_type": {
+          "name": "building_type",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tax_type": {
+          "name": "tax_type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
         },
         "signature": {
           "name": "signature",
@@ -509,8 +402,40 @@
           "primaryKey": false,
           "notNull": false
         },
+        "error": {
+          "name": "error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "slot": {
+          "name": "slot",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
         "created_at": {
           "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "account_created_at": {
+          "name": "account_created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "account_updated_at": {
+          "name": "account_updated_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
@@ -518,11 +443,11 @@
         }
       },
       "indexes": {
-        "idx_game_event_game": {
-          "name": "idx_game_event_game",
+        "idx_game_logs_game_id": {
+          "name": "idx_game_logs_game_id",
           "columns": [
             {
-              "expression": "game",
+              "expression": "game_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -533,11 +458,11 @@
           "method": "btree",
           "with": {}
         },
-        "idx_game_event_player": {
-          "name": "idx_game_event_player",
+        "idx_game_logs_player_id": {
+          "name": "idx_game_logs_player_id",
           "columns": [
             {
-              "expression": "player",
+              "expression": "player_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -548,11 +473,11 @@
           "method": "btree",
           "with": {}
         },
-        "idx_game_event_type": {
-          "name": "idx_game_event_type",
+        "idx_game_logs_type": {
+          "name": "idx_game_logs_type",
           "columns": [
             {
-              "expression": "event_type",
+              "expression": "type",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -563,8 +488,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_game_event_timestamp": {
-          "name": "idx_game_event_timestamp",
+        "idx_game_logs_timestamp": {
+          "name": "idx_game_logs_timestamp",
           "columns": [
             {
               "expression": "timestamp",
@@ -578,11 +503,26 @@
           "method": "btree",
           "with": {}
         },
-        "idx_game_event_slot": {
-          "name": "idx_game_event_slot",
+        "idx_game_logs_position": {
+          "name": "idx_game_logs_position",
           "columns": [
             {
-              "expression": "slot",
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_game_logs_created_at": {
+          "name": "idx_game_logs_created_at",
+          "columns": [
+            {
+              "expression": "created_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -601,8 +541,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.games": {
-      "name": "games",
+    "public.game_states": {
+      "name": "game_states",
       "schema": "",
       "columns": {
         "pubkey": {
@@ -645,15 +585,13 @@
           "name": "current_players",
           "type": "smallint",
           "primaryKey": false,
-          "notNull": false,
-          "default": 0
+          "notNull": true
         },
         "current_turn": {
           "name": "current_turn",
           "type": "smallint",
           "primaryKey": false,
-          "notNull": false,
-          "default": 0
+          "notNull": true
         },
         "players": {
           "name": "players",
@@ -663,7 +601,7 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp with time zone",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true
         },
@@ -674,33 +612,11 @@
           "primaryKey": false,
           "notNull": true
         },
-        "bank_balance": {
-          "name": "bank_balance",
+        "turn_started_at": {
+          "name": "turn_started_at",
           "type": "bigint",
           "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "free_parking_pool": {
-          "name": "free_parking_pool",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "houses_remaining": {
-          "name": "houses_remaining",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 32
-        },
-        "hotels_remaining": {
-          "name": "hotels_remaining",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 12
+          "notNull": true
         },
         "time_limit": {
           "name": "time_limit",
@@ -708,9 +624,27 @@
           "primaryKey": false,
           "notNull": false
         },
-        "turn_started_at": {
-          "name": "turn_started_at",
+        "bank_balance": {
+          "name": "bank_balance",
           "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "free_parking_pool": {
+          "name": "free_parking_pool",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "houses_remaining": {
+          "name": "houses_remaining",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hotels_remaining": {
+          "name": "hotels_remaining",
+          "type": "smallint",
           "primaryKey": false,
           "notNull": true
         },
@@ -720,19 +654,30 @@
           "primaryKey": false,
           "notNull": false
         },
+        "next_trade_id": {
+          "name": "next_trade_id",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "active_trades": {
+          "name": "active_trades",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::json"
+        },
         "account_created_at": {
           "name": "account_created_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+          "notNull": true
         },
         "account_updated_at": {
           "name": "account_updated_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+          "notNull": true
         },
         "created_slot": {
           "name": "created_slot",
@@ -754,8 +699,8 @@
         }
       },
       "indexes": {
-        "idx_game_id": {
-          "name": "idx_game_id",
+        "idx_games_game_id": {
+          "name": "idx_games_game_id",
           "columns": [
             {
               "expression": "game_id",
@@ -769,8 +714,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_game_config_id": {
-          "name": "idx_game_config_id",
+        "idx_games_config_id": {
+          "name": "idx_games_config_id",
           "columns": [
             {
               "expression": "config_id",
@@ -784,8 +729,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_game_authority": {
-          "name": "idx_game_authority",
+        "idx_games_authority": {
+          "name": "idx_games_authority",
           "columns": [
             {
               "expression": "authority",
@@ -799,8 +744,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_game_status": {
-          "name": "idx_game_status",
+        "idx_games_status": {
+          "name": "idx_games_status",
           "columns": [
             {
               "expression": "game_status",
@@ -814,8 +759,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_current_turn": {
-          "name": "idx_current_turn",
+        "idx_games_current_turn": {
+          "name": "idx_games_current_turn",
           "columns": [
             {
               "expression": "current_turn",
@@ -829,8 +774,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_game_winner": {
-          "name": "idx_game_winner",
+        "idx_games_winner": {
+          "name": "idx_games_winner",
           "columns": [
             {
               "expression": "winner",
@@ -844,8 +789,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_game_created_at": {
-          "name": "idx_game_created_at",
+        "idx_games_created_at": {
+          "name": "idx_games_created_at",
           "columns": [
             {
               "expression": "created_at",
@@ -859,8 +804,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_game_updated_at": {
-          "name": "idx_game_updated_at",
+        "idx_games_updated_at": {
+          "name": "idx_games_updated_at",
           "columns": [
             {
               "expression": "account_updated_at",
@@ -874,188 +819,17 @@
           "method": "btree",
           "with": {}
         },
-        "idx_game_updated_slot": {
-          "name": "idx_game_updated_slot",
+        "idx_games_composite_status_created": {
+          "name": "idx_games_composite_status_created",
           "columns": [
             {
-              "expression": "updated_slot",
+              "expression": "game_status",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.integrator_configs": {
-      "name": "integrator_configs",
-      "schema": "",
-      "columns": {
-        "pubkey": {
-          "name": "pubkey",
-          "type": "varchar(44)",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "integrator_id": {
-          "name": "integrator_id",
-          "type": "varchar(44)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "integrator": {
-          "name": "integrator",
-          "type": "varchar(44)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "fee_basis_points": {
-          "name": "fee_basis_points",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "fee_vault": {
-          "name": "fee_vault",
-          "type": "varchar(44)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "total_games_created": {
-          "name": "total_games_created",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "active_games_count": {
-          "name": "active_games_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "total_volume": {
-          "name": "total_volume",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "platform_fees_collected": {
-          "name": "platform_fees_collected",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "next_game_id": {
-          "name": "next_game_id",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "bump": {
-          "name": "bump",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "account_created_at": {
-          "name": "account_created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        },
-        "account_updated_at": {
-          "name": "account_updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        },
-        "created_slot": {
-          "name": "created_slot",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_slot": {
-          "name": "updated_slot",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "last_signature": {
-          "name": "last_signature",
-          "type": "varchar(88)",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "idx_integrator_id": {
-          "name": "idx_integrator_id",
-          "columns": [
+            },
             {
-              "expression": "integrator_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_integrator": {
-          "name": "idx_integrator",
-          "columns": [
-            {
-              "expression": "integrator",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_integrator_total_games": {
-          "name": "idx_integrator_total_games",
-          "columns": [
-            {
-              "expression": "total_games_created",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_integrator_active_games": {
-          "name": "idx_integrator_active_games",
-          "columns": [
-            {
-              "expression": "active_games_count",
+              "expression": "created_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1132,15 +906,13 @@
           "name": "account_created_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+          "notNull": true
         },
         "account_updated_at": {
           "name": "account_updated_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+          "notNull": true
         },
         "created_slot": {
           "name": "created_slot",
@@ -1192,8 +964,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_next_game_id": {
-          "name": "idx_next_game_id",
+        "idx_platform_next_game_id": {
+          "name": "idx_platform_next_game_id",
           "columns": [
             {
               "expression": "next_game_id",
@@ -1206,114 +978,12 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.player_passed_go_events": {
-      "name": "player_passed_go_events",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "varchar(88)",
-          "primaryKey": true,
-          "notNull": true
         },
-        "player": {
-          "name": "player",
-          "type": "varchar(44)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "game": {
-          "name": "game",
-          "type": "varchar(44)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "salary_collected": {
-          "name": "salary_collected",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "new_position": {
-          "name": "new_position",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "timestamp": {
-          "name": "timestamp",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "idx_passed_go_player": {
-          "name": "idx_passed_go_player",
+        "idx_platform_updated_at": {
+          "name": "idx_platform_updated_at",
           "columns": [
             {
-              "expression": "player",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_passed_go_game": {
-          "name": "idx_passed_go_game",
-          "columns": [
-            {
-              "expression": "game",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_passed_go_timestamp": {
-          "name": "idx_passed_go_timestamp",
-          "columns": [
-            {
-              "expression": "timestamp",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_passed_go_created_at": {
-          "name": "idx_passed_go_created_at",
-          "columns": [
-            {
-              "expression": "created_at",
+              "expression": "account_updated_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1332,8 +1002,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.players": {
-      "name": "players",
+    "public.player_states": {
+      "name": "player_states",
       "schema": "",
       "columns": {
         "pubkey": {
@@ -1358,78 +1028,55 @@
           "name": "cash_balance",
           "type": "bigint",
           "primaryKey": false,
-          "notNull": false,
-          "default": 1500
+          "notNull": true
         },
         "net_worth": {
           "name": "net_worth",
           "type": "bigint",
           "primaryKey": false,
-          "notNull": false,
-          "default": 1500
+          "notNull": true
         },
         "position": {
           "name": "position",
           "type": "smallint",
           "primaryKey": false,
-          "notNull": false,
-          "default": 0
+          "notNull": true
         },
         "in_jail": {
           "name": "in_jail",
           "type": "boolean",
           "primaryKey": false,
-          "notNull": false,
-          "default": false
+          "notNull": true
         },
         "jail_turns": {
           "name": "jail_turns",
           "type": "smallint",
           "primaryKey": false,
-          "notNull": false,
-          "default": 0
+          "notNull": true
         },
         "doubles_count": {
           "name": "doubles_count",
           "type": "smallint",
           "primaryKey": false,
-          "notNull": false,
-          "default": 0
+          "notNull": true
         },
         "is_bankrupt": {
           "name": "is_bankrupt",
           "type": "boolean",
           "primaryKey": false,
-          "notNull": false,
-          "default": false
+          "notNull": true
         },
         "properties_owned": {
           "name": "properties_owned",
           "type": "json",
           "primaryKey": false,
-          "notNull": false,
-          "default": "'[]'::json"
+          "notNull": true
         },
         "get_out_of_jail_cards": {
           "name": "get_out_of_jail_cards",
           "type": "smallint",
           "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "has_rolled_dice": {
-          "name": "has_rolled_dice",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
-        "last_dice_roll": {
-          "name": "last_dice_roll",
-          "type": "json",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'[0,0]'::json"
+          "notNull": true
         },
         "last_rent_collected": {
           "name": "last_rent_collected",
@@ -1441,21 +1088,25 @@
           "name": "festival_boost_turns",
           "type": "smallint",
           "primaryKey": false,
-          "notNull": false,
-          "default": 0
+          "notNull": true
         },
-        "card_drawn_at": {
-          "name": "card_drawn_at",
-          "type": "bigint",
+        "has_rolled_dice": {
+          "name": "has_rolled_dice",
+          "type": "boolean",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
+        },
+        "last_dice_roll": {
+          "name": "last_dice_roll",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true
         },
         "needs_property_action": {
           "name": "needs_property_action",
           "type": "boolean",
           "primaryKey": false,
-          "notNull": false,
-          "default": false
+          "notNull": true
         },
         "pending_property_position": {
           "name": "pending_property_position",
@@ -1467,29 +1118,25 @@
           "name": "needs_chance_card",
           "type": "boolean",
           "primaryKey": false,
-          "notNull": false,
-          "default": false
+          "notNull": true
         },
         "needs_community_chest_card": {
           "name": "needs_community_chest_card",
           "type": "boolean",
           "primaryKey": false,
-          "notNull": false,
-          "default": false
+          "notNull": true
         },
         "needs_bankruptcy_check": {
           "name": "needs_bankruptcy_check",
           "type": "boolean",
           "primaryKey": false,
-          "notNull": false,
-          "default": false
+          "notNull": true
         },
         "needs_special_space_action": {
           "name": "needs_special_space_action",
           "type": "boolean",
           "primaryKey": false,
-          "notNull": false,
-          "default": false
+          "notNull": true
         },
         "pending_special_space_position": {
           "name": "pending_special_space_position",
@@ -1497,19 +1144,23 @@
           "primaryKey": false,
           "notNull": false
         },
+        "card_drawn_at": {
+          "name": "card_drawn_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
         "account_created_at": {
           "name": "account_created_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+          "notNull": true
         },
         "account_updated_at": {
           "name": "account_updated_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+          "notNull": true
         },
         "created_slot": {
           "name": "created_slot",
@@ -1531,8 +1182,8 @@
         }
       },
       "indexes": {
-        "idx_player_wallet": {
-          "name": "idx_player_wallet",
+        "idx_player_states_wallet": {
+          "name": "idx_player_states_wallet",
           "columns": [
             {
               "expression": "wallet",
@@ -1546,8 +1197,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_player_game": {
-          "name": "idx_player_game",
+        "idx_player_states_game": {
+          "name": "idx_player_states_game",
           "columns": [
             {
               "expression": "game",
@@ -1561,8 +1212,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_player_position": {
-          "name": "idx_player_position",
+        "idx_player_states_position": {
+          "name": "idx_player_states_position",
           "columns": [
             {
               "expression": "position",
@@ -1576,8 +1227,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_player_in_jail": {
-          "name": "idx_player_in_jail",
+        "idx_player_states_in_jail": {
+          "name": "idx_player_states_in_jail",
           "columns": [
             {
               "expression": "in_jail",
@@ -1591,23 +1242,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_player_cash_balance": {
-          "name": "idx_player_cash_balance",
-          "columns": [
-            {
-              "expression": "cash_balance",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_player_bankrupt": {
-          "name": "idx_player_bankrupt",
+        "idx_player_states_is_bankrupt": {
+          "name": "idx_player_states_is_bankrupt",
           "columns": [
             {
               "expression": "is_bankrupt",
@@ -1621,8 +1257,23 @@
           "method": "btree",
           "with": {}
         },
-        "idx_player_updated_at": {
-          "name": "idx_player_updated_at",
+        "idx_player_states_cash_balance": {
+          "name": "idx_player_states_cash_balance",
+          "columns": [
+            {
+              "expression": "cash_balance",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_player_states_updated_at": {
+          "name": "idx_player_states_updated_at",
           "columns": [
             {
               "expression": "account_updated_at",
@@ -1636,11 +1287,17 @@
           "method": "btree",
           "with": {}
         },
-        "idx_player_updated_slot": {
-          "name": "idx_player_updated_slot",
+        "idx_player_states_composite_game_wallet": {
+          "name": "idx_player_states_composite_game_wallet",
           "columns": [
             {
-              "expression": "updated_slot",
+              "expression": "game",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "wallet",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1753,8 +1410,8 @@
         }
       },
       "indexes": {
-        "idx_processing_status_created": {
-          "name": "idx_processing_status_created",
+        "idx_processing_queue_status_created": {
+          "name": "idx_processing_queue_status_created",
           "columns": [
             {
               "expression": "status",
@@ -1774,8 +1431,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_processing_account_pubkey": {
-          "name": "idx_processing_account_pubkey",
+        "idx_processing_queue_account_pubkey": {
+          "name": "idx_processing_queue_account_pubkey",
           "columns": [
             {
               "expression": "account_pubkey",
@@ -1789,8 +1446,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_processing_slot": {
-          "name": "idx_processing_slot",
+        "idx_processing_queue_slot": {
+          "name": "idx_processing_queue_slot",
           "columns": [
             {
               "expression": "slot",
@@ -1804,8 +1461,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_processing_event_type": {
-          "name": "idx_processing_event_type",
+        "idx_processing_queue_event_type": {
+          "name": "idx_processing_queue_event_type",
           "columns": [
             {
               "expression": "event_type",
@@ -1827,8 +1484,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.properties": {
-      "name": "properties",
+    "public.property_states": {
+      "name": "property_states",
       "schema": "",
       "columns": {
         "pubkey": {
@@ -1840,6 +1497,12 @@
         "position": {
           "name": "position",
           "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "game": {
+          "name": "game",
+          "type": "varchar(44)",
           "primaryKey": false,
           "notNull": true
         },
@@ -1873,22 +1536,19 @@
           "name": "houses",
           "type": "smallint",
           "primaryKey": false,
-          "notNull": false,
-          "default": 0
+          "notNull": true
         },
         "has_hotel": {
           "name": "has_hotel",
           "type": "boolean",
           "primaryKey": false,
-          "notNull": false,
-          "default": false
+          "notNull": true
         },
         "is_mortgaged": {
           "name": "is_mortgaged",
           "type": "boolean",
           "primaryKey": false,
-          "notNull": false,
-          "default": false
+          "notNull": true
         },
         "rent_base": {
           "name": "rent_base",
@@ -1932,19 +1592,23 @@
           "primaryKey": false,
           "notNull": true
         },
+        "init": {
+          "name": "init",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
         "account_created_at": {
           "name": "account_created_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+          "notNull": true
         },
         "account_updated_at": {
           "name": "account_updated_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+          "notNull": true
         },
         "created_slot": {
           "name": "created_slot",
@@ -1966,8 +1630,8 @@
         }
       },
       "indexes": {
-        "idx_property_position": {
-          "name": "idx_property_position",
+        "idx_property_states_position": {
+          "name": "idx_property_states_position",
           "columns": [
             {
               "expression": "position",
@@ -1981,8 +1645,23 @@
           "method": "btree",
           "with": {}
         },
-        "idx_property_owner": {
-          "name": "idx_property_owner",
+        "idx_property_states_game": {
+          "name": "idx_property_states_game",
+          "columns": [
+            {
+              "expression": "game",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_property_states_owner": {
+          "name": "idx_property_states_owner",
           "columns": [
             {
               "expression": "owner",
@@ -1996,8 +1675,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_property_color_group": {
-          "name": "idx_property_color_group",
+        "idx_property_states_color_group": {
+          "name": "idx_property_states_color_group",
           "columns": [
             {
               "expression": "color_group",
@@ -2011,8 +1690,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_property_type": {
-          "name": "idx_property_type",
+        "idx_property_states_property_type": {
+          "name": "idx_property_states_property_type",
           "columns": [
             {
               "expression": "property_type",
@@ -2026,8 +1705,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_property_mortgaged": {
-          "name": "idx_property_mortgaged",
+        "idx_property_states_is_mortgaged": {
+          "name": "idx_property_states_is_mortgaged",
           "columns": [
             {
               "expression": "is_mortgaged",
@@ -2041,8 +1720,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_property_updated_at": {
-          "name": "idx_property_updated_at",
+        "idx_property_states_updated_at": {
+          "name": "idx_property_states_updated_at",
           "columns": [
             {
               "expression": "account_updated_at",
@@ -2056,11 +1735,17 @@
           "method": "btree",
           "with": {}
         },
-        "idx_property_updated_slot": {
-          "name": "idx_property_updated_slot",
+        "idx_property_states_composite_game_position": {
+          "name": "idx_property_states_composite_game_position",
           "columns": [
             {
-              "expression": "updated_slot",
+              "expression": "game",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -2155,8 +1840,8 @@
         }
       },
       "indexes": {
-        "idx_sync_component": {
-          "name": "idx_sync_component",
+        "idx_sync_status_component": {
+          "name": "idx_sync_status_component",
           "columns": [
             {
               "expression": "component",
@@ -2170,8 +1855,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_sync_status": {
-          "name": "idx_sync_status",
+        "idx_sync_status_status": {
+          "name": "idx_sync_status_status",
           "columns": [
             {
               "expression": "status",
@@ -2185,8 +1870,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_sync_updated_at": {
-          "name": "idx_sync_updated_at",
+        "idx_sync_status_updated_at": {
+          "name": "idx_sync_status_updated_at",
           "columns": [
             {
               "expression": "updated_at",
@@ -2216,8 +1901,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.trades": {
-      "name": "trades",
+    "public.trade_states": {
+      "name": "trade_states",
       "schema": "",
       "columns": {
         "pubkey": {
@@ -2255,15 +1940,13 @@
           "name": "proposer_money",
           "type": "bigint",
           "primaryKey": false,
-          "notNull": false,
-          "default": 0
+          "notNull": true
         },
         "receiver_money": {
           "name": "receiver_money",
           "type": "bigint",
           "primaryKey": false,
-          "notNull": false,
-          "default": 0
+          "notNull": true
         },
         "proposer_property": {
           "name": "proposer_property",
@@ -2306,15 +1989,13 @@
           "name": "account_created_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+          "notNull": true
         },
         "account_updated_at": {
           "name": "account_updated_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+          "notNull": true
         },
         "created_slot": {
           "name": "created_slot",
@@ -2336,8 +2017,8 @@
         }
       },
       "indexes": {
-        "idx_trade_game": {
-          "name": "idx_trade_game",
+        "idx_trade_states_game": {
+          "name": "idx_trade_states_game",
           "columns": [
             {
               "expression": "game",
@@ -2351,8 +2032,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_trade_proposer": {
-          "name": "idx_trade_proposer",
+        "idx_trade_states_proposer": {
+          "name": "idx_trade_states_proposer",
           "columns": [
             {
               "expression": "proposer",
@@ -2366,8 +2047,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_trade_receiver": {
-          "name": "idx_trade_receiver",
+        "idx_trade_states_receiver": {
+          "name": "idx_trade_states_receiver",
           "columns": [
             {
               "expression": "receiver",
@@ -2381,8 +2062,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_trade_status": {
-          "name": "idx_trade_status",
+        "idx_trade_states_status": {
+          "name": "idx_trade_states_status",
           "columns": [
             {
               "expression": "status",
@@ -2396,8 +2077,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_trade_expires_at": {
-          "name": "idx_trade_expires_at",
+        "idx_trade_states_expires_at": {
+          "name": "idx_trade_states_expires_at",
           "columns": [
             {
               "expression": "expires_at",
@@ -2411,8 +2092,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_trade_updated_at": {
-          "name": "idx_trade_updated_at",
+        "idx_trade_states_updated_at": {
+          "name": "idx_trade_states_updated_at",
           "columns": [
             {
               "expression": "account_updated_at",
@@ -2426,11 +2107,17 @@
           "method": "btree",
           "with": {}
         },
-        "idx_trade_updated_slot": {
-          "name": "idx_trade_updated_slot",
+        "idx_trade_states_composite_game_status": {
+          "name": "idx_trade_states_composite_game_status",
           "columns": [
             {
-              "expression": "updated_slot",
+              "expression": "game",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -2474,6 +2161,25 @@
         "Railroad",
         "Utility",
         "Special"
+      ]
+    },
+    "public.game_log_type": {
+      "name": "game_log_type",
+      "schema": "public",
+      "values": [
+        "move",
+        "purchase",
+        "rent",
+        "card",
+        "jail",
+        "bankruptcy",
+        "turn",
+        "dice",
+        "building",
+        "trade",
+        "game",
+        "skip",
+        "join"
       ]
     },
     "public.game_status": {

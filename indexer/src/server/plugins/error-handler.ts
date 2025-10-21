@@ -1,5 +1,6 @@
 import { FastifyError, FastifyInstance } from 'fastify'
 import fp from 'fastify-plugin'
+import { ResponseFormatter, ERROR_CODES } from '#shared/utils/response-formatter'
 import { getRequestId } from './request-context'
 
 // Base exception class
@@ -81,20 +82,22 @@ async function errorHandler(fastify: FastifyInstance) {
     if (error.message?.includes('database') || error.message?.includes('ECONNREFUSED')) {
       fastify.log.error(error, 'Database connection error')
       return reply.status(503).send({
+        success: false,
         statusCode: 503,
         message: 'Service Temporarily Unavailable',
         error: 'Database Connection Error',
-        correlationId: requestId
+        requestId
       })
     }
 
     // Handle rate limit errors
     if ((error as FastifyError).statusCode === 429) {
       return reply.status(429).send({
+        success: false,
         statusCode: 429,
         message: 'Too Many Requests',
         error: 'Rate Limit Exceeded',
-        correlationId: requestId
+        requestId
       })
     }
 
@@ -103,23 +106,23 @@ async function errorHandler(fastify: FastifyInstance) {
 
     fastify.log.error(error, 'Unhandled error')
     return reply.status(statusCode).send({
-      statusCode,
-      message: statusCode === 500 ? 'Internal Server Error' : error.message,
-      error: statusCode === 500 ? 'Internal Server Error' : error.name,
-      correlationId: requestId
+      success: false,
+      error: {
+        message: statusCode === 500 ? 'Internal Server Error' : error.message,
+        statusCode
+      },
+      requestId
     })
   })
 
   // Handle 404 routes
   fastify.setNotFoundHandler((request, reply) => {
-    const requestId = getRequestId()
-
-    return reply.status(404).send({
-      statusCode: 404,
-      message: `Route ${request.method}:${request.url} not found`,
-      error: 'Not Found',
-      correlationId: requestId
-    })
+    return reply.status(404).send(
+      ResponseFormatter.error(ERROR_CODES.NOT_FOUND, 'Route not found', {
+        path: request.url,
+        method: request.method
+      })
+    )
   })
 }
 

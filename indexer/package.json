@@ -12,9 +12,11 @@
     "prettier": "prettier --check .",
     "prettier:fix": "prettier --write .",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "npx tsx src/infra/db/migrate.ts",
+    "db:migrate": "drizzle-kit push",
+    "db:migrate:files": "npx tsx src/infra/db/migrate.ts",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "blockchain:sync": "tsx src/scripts/blockchain-sync/index.ts"
   },
   "keywords": [],
   "author": "",
@@ -38,6 +40,7 @@
     "typescript-eslint": "^8.44.1"
   },
   "dependencies": {
+    "@coral-xyz/borsh": "^0.31.1",
     "@fastify/autoload": "^6.3.1",
     "@fastify/cors": "^11.1.0",
     "@fastify/helmet": "^13.0.2",
@@ -61,13 +64,14 @@
     "compression": "^1.8.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
-    "drizzle-orm": "^0.44.5",
+    "drizzle-orm": "^0.44.6",
     "env-schema": "^6.0.1",
     "express": "^5.1.0",
     "fastify": "^5.6.1",
     "fastify-plugin": "^5.1.0",
     "helmet": "^8.1.0",
     "ioredis": "^5.8.0",
+    "jiti": "^2.6.1",
     "morgan": "^1.10.1",
     "pg": "^8.16.3",
     "pino": "^9.11.0",

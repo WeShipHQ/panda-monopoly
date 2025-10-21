@@ -1,5 +1,5 @@
 import { env } from '#config'
-import { Connection, PublicKey } from '@solana/web3.js'
+import { Connection } from '@solana/web3.js'
 import { CircuitBreaker } from '#utils/circuit-breaker'
 import { logger } from '#utils/logger'
 
@@ -15,19 +15,15 @@ interface RpcEndpoint {
 
 export class RpcPool {
   private endpoints: RpcEndpoint[] = []
+  private healthCheckInterval?: NodeJS.Timeout
 
   constructor() {
     this.initializeEndpoints()
+    this.startHealthCheckTimer()
   }
 
   private initializeEndpoints() {
-    // Primary RPC (highest priority)
-    this.addEndpoint(env.solana.rpcUrl, 1)
-
-    // Backup RPCs (lower priority)
-    env.solana.backupRpcUrls.forEach((url, index) => {
-      this.addEndpoint(url, 2 + index)
-    })
+    this.addEndpoint(env.rpc.er.http, 1)
 
     logger.info(`RPC Pool initialized with ${this.endpoints.length} endpoints`)
   }
@@ -43,9 +39,9 @@ export class RpcPool {
 
     const circuitBreaker = new CircuitBreaker({
       name: `rpc-${this.endpoints.length}`,
-      failureThreshold: 5, // Open after 5 failures
-      resetTimeout: 30000, // Try again after 30 seconds
-      successThreshold: 2 // Need 2 successes to close
+      failureThreshold: 3, // Open after 3 failures (more aggressive)
+      resetTimeout: 15000, // Try again after 15 seconds (faster recovery)
+      successThreshold: 1 // Need only 1 success to close (faster recovery)
     })
 
     this.endpoints.push({
@@ -64,7 +60,7 @@ export class RpcPool {
    */
   getHealthyEndpoint(): { connection: Connection; endpoint: RpcEndpoint } | null {
     // Sort by priority and health
-    const availableEndpoints = this.endpoints
+    let availableEndpoints = this.endpoints
       .filter((endpoint) => endpoint.circuitBreaker.getState() !== 'OPEN')
       .sort((a, b) => {
         // First by priority (lower number = higher priority)
@@ -75,9 +71,38 @@ export class RpcPool {
         return a.lastUsed - b.lastUsed
       })
 
+    // If no healthy endpoints, try to reset circuit breakers that have been OPEN for too long
     if (availableEndpoints.length === 0) {
-      logger.error('No healthy RPC endpoints available!')
-      return null
+      const now = Date.now()
+      this.endpoints.forEach((endpoint) => {
+        if (endpoint.circuitBreaker.getState() === 'OPEN') {
+          // Force reset circuit breakers that have been open for more than 5 minutes
+          const timeSinceLastFailure = now - endpoint.lastUsed
+          if (timeSinceLastFailure > 300000) {
+            // 5 minutes
+            logger.info(
+              `Force resetting circuit breaker for ${endpoint.url} (been open for ${Math.floor(timeSinceLastFailure / 60000)}m)`
+            )
+            endpoint.circuitBreaker.reset()
+          }
+        }
+      })
+
+      // Retry after reset
+      availableEndpoints = this.endpoints
+        .filter((endpoint) => endpoint.circuitBreaker.getState() !== 'OPEN')
+        .sort((a, b) => {
+          if (a.priority !== b.priority) {
+            return a.priority - b.priority
+          }
+          return a.lastUsed - b.lastUsed
+        })
+
+      if (availableEndpoints.length === 0) {
+        logger.error('No healthy RPC endpoints available!')
+        logger.error('RPC Pool Stats:' + JSON.stringify(this.getStats(), null, 2))
+        return null
+      }
     }
 
     const endpoint = availableEndpoints[0]
@@ -114,7 +139,7 @@ export class RpcPool {
         const isRateLimit = error?.code === 429 || msg.includes('429') || msg.includes('Too Many Requests')
         const isRetryable =
           isRateLimit ||
-          msg.includes('Failed to query long-term storage') || // -32019 (backfill hay gặp)
+          msg.includes('Failed to query long-term storage') || // -32019
           msg.includes('ETIMEDOUT') ||
           msg.includes('ECONNRESET')
 
@@ -160,6 +185,36 @@ export class RpcPool {
       endpoint.circuitBreaker.reset()
     })
     logger.info('All RPC circuit breakers reset')
+  }
+
+  private startHealthCheckTimer() {
+    // Check health every 2 minutes
+    this.healthCheckInterval = setInterval(() => {
+      this.performHealthCheck()
+    }, 120000)
+  }
+
+  private async performHealthCheck() {
+    logger.debug('Performing RPC health check...')
+
+    for (const endpoint of this.endpoints) {
+      if (endpoint.circuitBreaker.getState() === 'OPEN') {
+        try {
+          // Try a simple getSlot call to test endpoint health
+          await endpoint.connection.getSlot()
+          logger.info(`RPC endpoint ${endpoint.url} is healthy again, resetting circuit breaker`)
+          endpoint.circuitBreaker.reset()
+        } catch (error) {
+          logger.debug(`RPC endpoint ${endpoint.url} still unhealthy: ${(error as Error).message}`)
+        }
+      }
+    }
+  }
+
+  destroy() {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval)
+    }
   }
 
   private sleep(ms: number): Promise<void> {

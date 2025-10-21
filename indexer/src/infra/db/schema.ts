@@ -12,13 +12,22 @@ import {
   serial,
   text
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
+
+// ==================== TYPE UTILITIES ====================
 
 export type InferEnum<T extends { enumValues: string[] }> = T['enumValues'][number]
 
-// ==================== ENUMS ====================
+// ==================== BLOCKCHAIN-MIRRORED ENUMS ====================
 
+/**
+ * Game status enum - directly mirrors GameStatus in mod.rs
+ */
 export const gameStatusEnum = pgEnum('game_status', ['WaitingForPlayers', 'InProgress', 'Finished'] as const)
 
+/**
+ * Trade status enum - directly mirrors TradeStatus in mod.rs
+ */
 export const tradeStatusEnum = pgEnum('trade_status', [
   'Pending',
   'Accepted',
@@ -27,6 +36,9 @@ export const tradeStatusEnum = pgEnum('trade_status', [
   'Expired'
 ] as const)
 
+/**
+ * Property color group enum - directly mirrors ColorGroup in mod.rs
+ */
 export const colorGroupEnum = pgEnum('color_group', [
   'Brown',
   'LightBlue',
@@ -41,6 +53,9 @@ export const colorGroupEnum = pgEnum('color_group', [
   'Special'
 ] as const)
 
+/**
+ * Property type enum - directly mirrors PropertyType in mod.rs
+ */
 export const propertyTypeEnum = pgEnum('property_type', [
   'Property',
   'Street',
@@ -54,8 +69,14 @@ export const propertyTypeEnum = pgEnum('property_type', [
   'Festival'
 ] as const)
 
+/**
+ * Building type enum - directly mirrors BuildingType in mod.rs
+ */
 export const buildingTypeEnum = pgEnum('building_type', ['House', 'Hotel'] as const)
 
+/**
+ * Trade type enum - directly mirrors TradeType in mod.rs
+ */
 export const tradeTypeEnum = pgEnum('trade_type', [
   'MoneyOnly',
   'PropertyOnly',
@@ -63,370 +84,257 @@ export const tradeTypeEnum = pgEnum('trade_type', [
   'PropertyForMoney'
 ] as const)
 
-// ==================== TABLES ====================
+/**
+ * Game log type enum for event tracking and frontend display
+ */
+export const gameLogTypeEnum = pgEnum('game_log_type', [
+  'move',
+  'purchase',
+  'rent',
+  'card',
+  'jail',
+  'bankruptcy',
+  'turn',
+  'dice',
+  'building',
+  'trade',
+  'game',
+  'skip',
+  'join'
+] as const)
 
+// ==================== CORE BLOCKCHAIN TABLES ====================
+
+/**
+ * Platform configuration table - mirrors PlatformConfig struct
+ * Stores global platform settings and fee configuration
+ */
 export const platformConfigs = pgTable(
   'platform_configs',
   {
+    // Primary key - blockchain account pubkey
     pubkey: varchar('pubkey', { length: 44 }).primaryKey(),
+
+    // Core platform fields from PlatformConfig struct
     id: varchar('id', { length: 44 }).notNull(),
-    feeBasisPoints: smallint('fee_basis_points').notNull(),
+    feeBasisPoints: smallint('fee_basis_points').notNull(), // 500 = 5%
     authority: varchar('authority', { length: 44 }).notNull(),
     feeVault: varchar('fee_vault', { length: 44 }).notNull(),
     totalGamesCreated: bigint('total_games_created', { mode: 'number' }).default(0),
     nextGameId: bigint('next_game_id', { mode: 'number' }).default(0),
     bump: smallint('bump').notNull(),
 
-    // Metadata - consistent naming
-    accountCreatedAt: timestamp('account_created_at', { withTimezone: true }).defaultNow(),
-    accountUpdatedAt: timestamp('account_updated_at', { withTimezone: true }).defaultNow(),
+    // Blockchain metadata - consistent across all tables
+    accountCreatedAt: timestamp('account_created_at', { withTimezone: true }).notNull(),
+    accountUpdatedAt: timestamp('account_updated_at', { withTimezone: true }).notNull(),
     createdSlot: bigint('created_slot', { mode: 'number' }).notNull(),
     updatedSlot: bigint('updated_slot', { mode: 'number' }).notNull(),
     lastSignature: varchar('last_signature', { length: 88 })
   },
   (table) => [
+    // Performance-optimized indexes for common queries
     index('idx_platform_authority').on(table.authority),
     index('idx_platform_fee_vault').on(table.feeVault),
-    index('idx_next_game_id').on(table.nextGameId)
+    index('idx_platform_next_game_id').on(table.nextGameId),
+    index('idx_platform_updated_at').on(table.accountUpdatedAt)
   ]
 )
 
-// Games
-export const games = pgTable(
-  'games',
+/**
+ * Game States table - mirrors GameState struct from blockchain
+ *
+ * Each record represents the complete state of one Monopoly game instance.
+ * This is a direct mapping of the GameState account from the Solana program.
+ */
+export const gameStates = pgTable(
+  'game_states',
   {
+    // Primary key - blockchain account pubkey
     pubkey: varchar('pubkey', { length: 44 }).primaryKey(),
+
+    // Core game fields from GameState struct
     gameId: bigint('game_id', { mode: 'number' }).notNull(),
     configId: varchar('config_id', { length: 44 }).notNull(),
-    authority: varchar('authority', { length: 44 }).notNull(),
-    bump: smallint('bump').notNull(),
-    maxPlayers: smallint('max_players').notNull(),
-    currentPlayers: smallint('current_players').default(0),
-    currentTurn: smallint('current_turn').default(0),
+    authority: varchar('authority', { length: 44 }).notNull(), // game creator
+    bump: smallint('bump').notNull(), // PDA bump seed
+    maxPlayers: smallint('max_players').notNull(), // 2-8 players
+    currentPlayers: smallint('current_players').notNull(),
+    currentTurn: smallint('current_turn').notNull(), // player index whose turn
 
-    // Players array
+    // Players array - stores pubkeys of joined players
     players: json('players').$type<string[]>().notNull(),
 
-    // Business timestamps
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+    // Game timing
+    createdAt: bigint('created_at', { mode: 'number' }).notNull(), // i64 timestamp
+    startedAt: bigint('started_at', { mode: 'number' }),
+    endedAt: bigint('ended_at', { mode: 'number' }),
+    gameEndTime: bigint('game_end_time', { mode: 'number' }),
     gameStatus: gameStatusEnum('game_status').notNull(),
-
-    // Financial
-    bankBalance: bigint('bank_balance', { mode: 'number' }).default(0),
-    freeParkingPool: bigint('free_parking_pool', { mode: 'number' }).default(0),
-
-    // Property management
-    housesRemaining: smallint('houses_remaining').default(32),
-    hotelsRemaining: smallint('hotels_remaining').default(12),
-
-    // Time controls
-    timeLimit: bigint('time_limit', { mode: 'number' }),
     turnStartedAt: bigint('turn_started_at', { mode: 'number' }).notNull(),
+    timeLimit: bigint('time_limit', { mode: 'number' }), // Optional<i64>
 
-    // Winner
-    winner: varchar('winner', { length: 44 }),
+    // Fee and earnings tracking
+    entryFee: bigint('entry_fee', { mode: 'number' }).notNull().default(0), // Entry fee per player
+    totalPrizePool: bigint('total_prize_pool', { mode: 'number' }).notNull().default(0), // Total prize pool
+    tokenMint: varchar('token_mint', { length: 44 }), // Token mint address
+    tokenVault: varchar('token_vault', { length: 44 }), // Token vault address
+    prizeClaimed: boolean('prize_claimed').notNull().default(false), // Whether prize has been claimed
 
-    // Metadata - consistent naming
-    accountCreatedAt: timestamp('account_created_at', { withTimezone: true }).defaultNow(),
-    accountUpdatedAt: timestamp('account_updated_at', { withTimezone: true }).defaultNow(),
+    // Financial state
+    bankBalance: bigint('bank_balance', { mode: 'number' }).notNull(),
+    freeParkingPool: bigint('free_parking_pool', { mode: 'number' }).notNull(),
+
+    // Resource management
+    housesRemaining: smallint('houses_remaining').notNull(), // 32 total
+    hotelsRemaining: smallint('hotels_remaining').notNull(), // 12 total
+
+    // Game completion
+    winner: varchar('winner', { length: 44 }), // Optional<Pubkey>
+
+    // Trade management from GameState (embedded trades)
+    nextTradeId: smallint('next_trade_id').notNull(),
+    activeTrades: json('active_trades').$type<TradeInfo[]>().notNull().default([]),
+
+    // Embedded properties: one row per game contains all property states
+    properties: json('properties').$type<EmbeddedPropertyState[]>().notNull().default([]),
+
+    // Embedded historical/active trades if needed (optional mirror of activeTrades with details)
+    trades: json('trades').$type<EmbeddedTradeState[]>().notNull().default([]),
+
+    // Blockchain metadata
+    accountCreatedAt: timestamp('account_created_at', { withTimezone: true }).notNull(),
+    accountUpdatedAt: timestamp('account_updated_at', { withTimezone: true }).notNull(),
     createdSlot: bigint('created_slot', { mode: 'number' }).notNull(),
     updatedSlot: bigint('updated_slot', { mode: 'number' }).notNull(),
     lastSignature: varchar('last_signature', { length: 88 })
   },
   (table) => [
-    index('idx_game_id').on(table.gameId),
-    index('idx_game_config_id').on(table.configId),
-    index('idx_game_authority').on(table.authority),
-    index('idx_game_status').on(table.gameStatus),
-    index('idx_current_turn').on(table.currentTurn),
-    index('idx_game_winner').on(table.winner),
-    index('idx_game_created_at').on(table.createdAt),
-    index('idx_game_updated_at').on(table.accountUpdatedAt),
-    index('idx_game_updated_slot').on(table.updatedSlot)
+    // Performance indexes for game queries
+    index('idx_games_game_id').on(table.gameId),
+    index('idx_games_config_id').on(table.configId),
+    index('idx_games_authority').on(table.authority),
+    index('idx_games_status').on(table.gameStatus),
+    index('idx_games_current_turn').on(table.currentTurn),
+    index('idx_games_winner').on(table.winner),
+    index('idx_games_created_at').on(table.createdAt),
+    index('idx_games_updated_at').on(table.accountUpdatedAt),
+    index('idx_games_composite_status_created').on(table.gameStatus, table.createdAt)
   ]
 )
 
-// Players
-export const players = pgTable(
-  'players',
+/**
+ * Player states table - mirrors PlayerState struct
+ * Each row represents one player account in one game
+ */
+export const playerStates = pgTable(
+  'player_states',
   {
+    // Primary key - blockchain account pubkey
     pubkey: varchar('pubkey', { length: 44 }).primaryKey(),
-    wallet: varchar('wallet', { length: 44 }).notNull(),
-    game: varchar('game', { length: 44 }).notNull(),
 
-    // Financial
-    cashBalance: bigint('cash_balance', { mode: 'number' }).default(1500),
-    netWorth: bigint('net_worth', { mode: 'number' }).default(1500),
+    // Core identification from PlayerState struct
+    wallet: varchar('wallet', { length: 44 }).notNull(), // player's wallet
+    game: varchar('game', { length: 44 }).notNull(), // game account pubkey
 
-    // Position & Status
-    position: smallint('position').default(0),
-    inJail: boolean('in_jail').default(false),
-    jailTurns: smallint('jail_turns').default(0),
-    doublesCount: smallint('doubles_count').default(0),
-    isBankrupt: boolean('is_bankrupt').default(false),
+    // Financial state
+    cashBalance: bigint('cash_balance', { mode: 'number' }).notNull(),
+    netWorth: bigint('net_worth', { mode: 'number' }).notNull(),
 
-    // Properties
-    propertiesOwned: json('properties_owned').$type<number[]>().default([]),
+    // Board position and status
+    position: smallint('position').notNull(), // 0-39 board position
+    inJail: boolean('in_jail').notNull(),
+    jailTurns: smallint('jail_turns').notNull(),
+    doublesCount: smallint('doubles_count').notNull(), // consecutive doubles
+    isBankrupt: boolean('is_bankrupt').notNull(),
 
-    // Jail cards
-    getOutOfJailCards: smallint('get_out_of_jail_cards').default(0),
+    // Property ownership - array of position numbers
+    propertiesOwned: json('properties_owned').$type<number[]>().notNull(),
 
-    // Turn state
-    hasRolledDice: boolean('has_rolled_dice').default(false),
-    lastDiceRoll: json('last_dice_roll').$type<[number, number]>().default([0, 0]),
-
-    // Timestamps
+    // Special items and timing
+    getOutOfJailCards: smallint('get_out_of_jail_cards').notNull(),
     lastRentCollected: bigint('last_rent_collected', { mode: 'number' }).notNull(),
-    festivalBoostTurns: smallint('festival_boost_turns').default(0),
-    cardDrawnAt: bigint('card_drawn_at', { mode: 'number' }),
+    festivalBoostTurns: smallint('festival_boost_turns').notNull(),
 
-    // Pending actions
-    needsPropertyAction: boolean('needs_property_action').default(false),
-    pendingPropertyPosition: smallint('pending_property_position'),
-    needsChanceCard: boolean('needs_chance_card').default(false),
-    needsCommunityChestCard: boolean('needs_community_chest_card').default(false),
-    needsBankruptcyCheck: boolean('needs_bankruptcy_check').default(false),
-    needsSpecialSpaceAction: boolean('needs_special_space_action').default(false),
-    pendingSpecialSpacePosition: smallint('pending_special_space_position'),
+    // Turn state management
+    hasRolledDice: boolean('has_rolled_dice').notNull(),
+    lastDiceRoll: json('last_dice_roll').$type<[number, number]>().notNull(),
 
-    // Metadata
-    accountCreatedAt: timestamp('account_created_at', { withTimezone: true }).defaultNow(),
-    accountUpdatedAt: timestamp('account_updated_at', { withTimezone: true }).defaultNow(),
+    // Pending action flags
+    needsPropertyAction: boolean('needs_property_action').notNull(),
+    pendingPropertyPosition: smallint('pending_property_position'), // Optional<u8>
+    needsChanceCard: boolean('needs_chance_card').notNull(),
+    needsCommunityChestCard: boolean('needs_community_chest_card').notNull(),
+    needsBankruptcyCheck: boolean('needs_bankruptcy_check').notNull(),
+    needsSpecialSpaceAction: boolean('needs_special_space_action').notNull(),
+    pendingSpecialSpacePosition: smallint('pending_special_space_position'), // Optional<u8>
+
+    cardDrawnAt: bigint('card_drawn_at', { mode: 'number' }), // Optional<i64>
+
+    // Blockchain metadata
+    accountCreatedAt: timestamp('account_created_at', { withTimezone: true }).notNull(),
+    accountUpdatedAt: timestamp('account_updated_at', { withTimezone: true }).notNull(),
     createdSlot: bigint('created_slot', { mode: 'number' }).notNull(),
     updatedSlot: bigint('updated_slot', { mode: 'number' }).notNull(),
     lastSignature: varchar('last_signature', { length: 88 })
   },
   (table) => [
-    index('idx_player_wallet').on(table.wallet),
-    index('idx_player_game').on(table.game),
-    index('idx_player_position').on(table.position),
-    index('idx_player_in_jail').on(table.inJail),
-    index('idx_player_cash_balance').on(table.cashBalance),
-    index('idx_player_bankrupt').on(table.isBankrupt),
-    index('idx_player_updated_at').on(table.accountUpdatedAt),
-    index('idx_player_updated_slot').on(table.updatedSlot)
+    // Common query indexes
+    index('idx_player_states_wallet').on(table.wallet),
+    index('idx_player_states_game').on(table.game),
+    index('idx_player_states_position').on(table.position),
+    index('idx_player_states_in_jail').on(table.inJail),
+    index('idx_player_states_is_bankrupt').on(table.isBankrupt),
+    index('idx_player_states_cash_balance').on(table.cashBalance),
+    index('idx_player_states_updated_at').on(table.accountUpdatedAt),
+    index('idx_player_states_composite_game_wallet').on(table.game, table.wallet)
   ]
 )
 
-// Properties
-export const properties = pgTable(
-  'properties',
+/**
+ * Auction states table - mirrors AuctionState struct
+ */
+export const auctionStates = pgTable(
+  'auction_states',
   {
+    // Primary key - blockchain account pubkey
     pubkey: varchar('pubkey', { length: 44 }).primaryKey(),
-    position: smallint('position').notNull(),
-    owner: varchar('owner', { length: 44 }),
-    price: smallint('price').notNull(),
-    colorGroup: colorGroupEnum('color_group').notNull(),
-    propertyType: propertyTypeEnum('property_type').notNull(),
-    houses: smallint('houses').default(0),
-    hasHotel: boolean('has_hotel').default(false),
-    isMortgaged: boolean('is_mortgaged').default(false),
 
-    // Rent information
-    rentBase: smallint('rent_base').notNull(),
-    rentWithColorGroup: smallint('rent_with_color_group').notNull(),
-    rentWithHouses: json('rent_with_houses').$type<[number, number, number, number]>().notNull(),
-    rentWithHotel: smallint('rent_with_hotel').notNull(),
-    houseCost: smallint('house_cost').notNull(),
-    mortgageValue: smallint('mortgage_value').notNull(),
-
-    // Timestamp
-    lastRentPaid: bigint('last_rent_paid', { mode: 'number' }).notNull(),
-
-    // Metadata
-    accountCreatedAt: timestamp('account_created_at', { withTimezone: true }).defaultNow(),
-    accountUpdatedAt: timestamp('account_updated_at', { withTimezone: true }).defaultNow(),
-    createdSlot: bigint('created_slot', { mode: 'number' }).notNull(),
-    updatedSlot: bigint('updated_slot', { mode: 'number' }).notNull(),
-    lastSignature: varchar('last_signature', { length: 88 })
-  },
-  (table) => [
-    index('idx_property_position').on(table.position),
-    index('idx_property_owner').on(table.owner),
-    index('idx_property_color_group').on(table.colorGroup),
-    index('idx_property_type').on(table.propertyType),
-    index('idx_property_mortgaged').on(table.isMortgaged),
-    index('idx_property_updated_at').on(table.accountUpdatedAt),
-    index('idx_property_updated_slot').on(table.updatedSlot)
-  ]
-)
-
-// Trades
-export const trades = pgTable(
-  'trades',
-  {
-    pubkey: varchar('pubkey', { length: 44 }).primaryKey(),
-    game: varchar('game', { length: 44 }).notNull(),
-    proposer: varchar('proposer', { length: 44 }).notNull(),
-    receiver: varchar('receiver', { length: 44 }).notNull(),
-    tradeType: tradeTypeEnum('trade_type').notNull(),
-
-    // Money amounts
-    proposerMoney: bigint('proposer_money', { mode: 'number' }).default(0),
-    receiverMoney: bigint('receiver_money', { mode: 'number' }).default(0),
-
-    // Properties (single property per trade)
-    proposerProperty: smallint('proposer_property'),
-    receiverProperty: smallint('receiver_property'),
-
-    // Status and timing
-    status: tradeStatusEnum('status').notNull(),
-    createdAt: bigint('created_at', { mode: 'number' }).notNull(),
-    expiresAt: bigint('expires_at', { mode: 'number' }).notNull(),
-    bump: smallint('bump').notNull(),
-
-    // Metadata
-    accountCreatedAt: timestamp('account_created_at', { withTimezone: true }).defaultNow(),
-    accountUpdatedAt: timestamp('account_updated_at', { withTimezone: true }).defaultNow(),
-    createdSlot: bigint('created_slot', { mode: 'number' }).notNull(),
-    updatedSlot: bigint('updated_slot', { mode: 'number' }).notNull(),
-    lastSignature: varchar('last_signature', { length: 88 })
-  },
-  (table) => [
-    index('idx_trade_game').on(table.game),
-    index('idx_trade_proposer').on(table.proposer),
-    index('idx_trade_receiver').on(table.receiver),
-    index('idx_trade_status').on(table.status),
-    index('idx_trade_expires_at').on(table.expiresAt),
-    index('idx_trade_updated_at').on(table.accountUpdatedAt),
-    index('idx_trade_updated_slot').on(table.updatedSlot)
-  ]
-)
-
-// Auctions
-export const auctions = pgTable(
-  'auctions',
-  {
-    pubkey: varchar('pubkey', { length: 44 }).primaryKey(),
+    // Core auction fields
     game: varchar('game', { length: 44 }).notNull(),
     propertyPosition: smallint('property_position').notNull(),
-    currentBid: bigint('current_bid', { mode: 'number' }).default(0),
-    highestBidder: varchar('highest_bidder', { length: 44 }),
+    currentBid: bigint('current_bid', { mode: 'number' }).notNull(),
+    highestBidder: varchar('highest_bidder', { length: 44 }), // Optional<Pubkey>
+
+    // Timing and status
     startedAt: bigint('started_at', { mode: 'number' }).notNull(),
     endsAt: bigint('ends_at', { mode: 'number' }).notNull(),
-    isActive: boolean('is_active').default(true),
+    isActive: boolean('is_active').notNull(),
     bump: smallint('bump').notNull(),
 
-    // Metadata
-    accountCreatedAt: timestamp('account_created_at', { withTimezone: true }).defaultNow(),
-    accountUpdatedAt: timestamp('account_updated_at', { withTimezone: true }).defaultNow(),
+    // Blockchain metadata
+    accountCreatedAt: timestamp('account_created_at', { withTimezone: true }).notNull(),
+    accountUpdatedAt: timestamp('account_updated_at', { withTimezone: true }).notNull(),
     createdSlot: bigint('created_slot', { mode: 'number' }).notNull(),
     updatedSlot: bigint('updated_slot', { mode: 'number' }).notNull(),
     lastSignature: varchar('last_signature', { length: 88 })
   },
   (table) => [
-    index('idx_auction_game').on(table.game),
-    index('idx_auction_property').on(table.propertyPosition),
-    index('idx_auction_bidder').on(table.highestBidder),
-    index('idx_auction_active').on(table.isActive),
-    index('idx_auction_ends_at').on(table.endsAt),
-    index('idx_auction_updated_at').on(table.accountUpdatedAt),
-    index('idx_auction_updated_slot').on(table.updatedSlot)
+    index('idx_auction_states_game').on(table.game),
+    index('idx_auction_states_property_position').on(table.propertyPosition),
+    index('idx_auction_states_highest_bidder').on(table.highestBidder),
+    index('idx_auction_states_is_active').on(table.isActive),
+    index('idx_auction_states_ends_at').on(table.endsAt),
+    index('idx_auction_states_updated_at').on(table.accountUpdatedAt)
   ]
 )
 
-// ==================== EVENT TABLES ====================
+/**
+ * Processing queue for account updates and events
+ */
 
-// Chance Card Events
-export const chanceCardEvents = pgTable(
-  'chance_card_events',
-  {
-    id: varchar('id', { length: 88 }).primaryKey(),
-    player: varchar('player', { length: 44 }).notNull(),
-    game: varchar('game', { length: 44 }).notNull(),
-    cardIndex: smallint('card_index').notNull(),
-    effectType: smallint('effect_type').notNull(),
-    amount: integer('amount').notNull(),
-    timestamp: timestamp('timestamp', { withTimezone: true }).notNull(),
-
-    // Metadata
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow()
-  },
-  (table) => [
-    index('idx_chance_player').on(table.player),
-    index('idx_chance_game').on(table.game),
-    index('idx_chance_timestamp').on(table.timestamp),
-    index('idx_chance_created_at').on(table.createdAt)
-  ]
-)
-
-// Community Chest Card Events
-export const communityChestCardEvents = pgTable(
-  'community_chest_card_events',
-  {
-    id: varchar('id', { length: 88 }).primaryKey(),
-    player: varchar('player', { length: 44 }).notNull(),
-    game: varchar('game', { length: 44 }).notNull(),
-    cardIndex: smallint('card_index').notNull(),
-    effectType: smallint('effect_type').notNull(),
-    amount: integer('amount').notNull(),
-    timestamp: timestamp('timestamp', { withTimezone: true }).notNull(),
-
-    // Metadata
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow()
-  },
-  (table) => [
-    index('idx_community_player').on(table.player),
-    index('idx_community_game').on(table.game),
-    index('idx_community_timestamp').on(table.timestamp),
-    index('idx_community_created_at').on(table.createdAt)
-  ]
-)
-
-// Player Passed Go Events
-export const playerPassedGoEvents = pgTable(
-  'player_passed_go_events',
-  {
-    id: varchar('id', { length: 88 }).primaryKey(),
-    player: varchar('player', { length: 44 }).notNull(),
-    game: varchar('game', { length: 44 }).notNull(),
-    salaryCollected: bigint('salary_collected', { mode: 'number' }).notNull(),
-    newPosition: smallint('new_position').notNull(),
-    timestamp: timestamp('timestamp', { withTimezone: true }).notNull(),
-
-    // Metadata
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow()
-  },
-  (table) => [
-    index('idx_passed_go_player').on(table.player),
-    index('idx_passed_go_game').on(table.game),
-    index('idx_passed_go_timestamp').on(table.timestamp),
-    index('idx_passed_go_created_at').on(table.createdAt)
-  ]
-)
-
-// ==================== INFRASTRUCTURE TABLES ====================
-
-// Processing Queue - Essential for async processing
-export const processingQueue = pgTable(
-  'processing_queue',
-  {
-    id: serial('id').primaryKey(),
-    accountPubkey: varchar('account_pubkey', { length: 44 }).notNull(),
-    accountType: varchar('account_type', { length: 30 }).notNull(),
-    accountData: json('account_data').notNull(),
-    eventType: varchar('event_type', { length: 20 }).notNull(), // 'create' | 'update' | 'close'
-    slot: bigint('slot', { mode: 'number' }).notNull(),
-    signature: varchar('signature', { length: 88 }),
-    status: varchar('status', { length: 20 }).default('pending'),
-    retryCount: integer('retry_count').default(0),
-    maxRetries: integer('max_retries').default(3),
-    errorMessage: text('error_message'),
-
-    // Timestamps
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-    processingStartedAt: timestamp('processing_started_at', { withTimezone: true }),
-    processedAt: timestamp('processed_at', { withTimezone: true })
-  },
-  (table) => [
-    index('idx_processing_status_created').on(table.status, table.createdAt),
-    index('idx_processing_account_pubkey').on(table.accountPubkey),
-    index('idx_processing_slot').on(table.slot),
-    index('idx_processing_event_type').on(table.eventType)
-  ]
-)
-
-// Sync Status
+/**
+ * Sync status tracking
+ */
 export const syncComponentEnum = pgEnum('sync_component', [
   'historical_sync',
   'account_listener',
@@ -435,11 +343,7 @@ export const syncComponentEnum = pgEnum('sync_component', [
   'gap_recovery'
 ] as const)
 
-export type SyncComponent = InferEnum<typeof syncComponentEnum>
-
-export const syncStatusEnum = pgEnum('sync_status_type', ['running', 'stopped', 'completed', 'failed'] as const)
-
-export type SyncStatus = InferEnum<typeof syncStatusEnum>
+export const syncStatusTypeEnum = pgEnum('sync_status_type', ['running', 'stopped', 'completed', 'failed'] as const)
 
 export const syncStatus = pgTable(
   'sync_status',
@@ -450,127 +354,247 @@ export const syncStatus = pgTable(
     lastProcessedSignature: varchar('last_processed_signature', { length: 88 }),
     lastProcessedTimestamp: bigint('last_processed_timestamp', { mode: 'number' }),
     accountsProcessed: integer('accounts_processed').default(0),
-    status: syncStatusEnum('status').notNull(),
+    status: syncStatusTypeEnum('status').notNull(),
     errorMessage: text('error_message'),
 
-    // Timestamps
+    // Timing
     startedAt: timestamp('started_at', { withTimezone: true }),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow()
   },
   (table) => [
-    index('idx_sync_component').on(table.component),
-    index('idx_sync_status').on(table.status),
-    index('idx_sync_updated_at').on(table.updatedAt)
+    index('idx_sync_status_component').on(table.component),
+    index('idx_sync_status_status').on(table.status),
+    index('idx_sync_status_updated_at').on(table.updatedAt)
   ]
 )
 
-// Integrator Configs
-export const integratorConfigs = pgTable(
-  'integrator_configs',
+/**
+ * Game logs for event tracking
+ */
+export const gameLogs = pgTable(
+  'game_logs',
   {
-    pubkey: varchar('pubkey', { length: 44 }).primaryKey(),
-    integratorId: varchar('integrator_id', { length: 44 }).notNull(),
-    integrator: varchar('integrator', { length: 44 }).notNull(),
-    feeBasisPoints: smallint('fee_basis_points').notNull(),
-    feeVault: varchar('fee_vault', { length: 44 }).notNull(),
-    totalGamesCreated: bigint('total_games_created', { mode: 'number' }).default(0),
-    activeGamesCount: integer('active_games_count').default(0),
-    totalVolume: bigint('total_volume', { mode: 'number' }).default(0),
-    platformFeesCollected: bigint('platform_fees_collected', { mode: 'number' }).default(0),
-    nextGameId: bigint('next_game_id', { mode: 'number' }).default(0),
-    bump: smallint('bump').notNull(),
+    id: varchar('id', { length: 36 })
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    gameId: varchar('game_id', { length: 44 }).notNull(),
+    playerId: varchar('player_id', { length: 44 }).notNull(),
+    playerName: varchar('player_name', { length: 100 }),
+    type: gameLogTypeEnum('type').notNull(),
+    message: text('message').notNull(),
 
-    // Metadata
-    accountCreatedAt: timestamp('account_created_at', { withTimezone: true }).defaultNow(),
-    accountUpdatedAt: timestamp('account_updated_at', { withTimezone: true }).defaultNow(),
-    createdSlot: bigint('created_slot', { mode: 'number' }).notNull(),
-    updatedSlot: bigint('updated_slot', { mode: 'number' }).notNull(),
-    lastSignature: varchar('last_signature', { length: 88 })
-  },
-  (table) => [
-    index('idx_integrator_id').on(table.integratorId),
-    index('idx_integrator').on(table.integrator),
-    index('idx_integrator_total_games').on(table.totalGamesCreated),
-    index('idx_integrator_active_games').on(table.activeGamesCount)
-  ]
-)
+    // Event-specific optional fields
+    propertyName: varchar('property_name', { length: 100 }),
+    position: smallint('position'),
+    price: bigint('price', { mode: 'number' }),
+    owner: varchar('owner', { length: 44 }),
 
-// Game Events
-export const gameEvents = pgTable(
-  'game_events',
-  {
-    id: varchar('id', { length: 88 }).primaryKey(),
-    game: varchar('game', { length: 44 }).notNull(),
-    player: varchar('player', { length: 44 }).notNull(),
-    eventType: varchar('event_type', { length: 50 }).notNull(), // 'dice_roll', 'property_purchase', 'trade', 'card_draw', etc.
-    eventData: json('event_data').notNull(), // Flexible JSON structure for different event types
-    timestamp: timestamp('timestamp', { withTimezone: true }).notNull(),
+    cardType: varchar('card_type', { length: 20 }), // 'chance' | 'community-chest'
+    cardTitle: varchar('card_title', { length: 200 }),
+    cardDescription: text('card_description'),
+    cardIndex: smallint('card_index'),
+    effectType: smallint('effect_type'),
+    amount: bigint('amount', { mode: 'number' }),
 
-    // Blockchain metadata
-    slot: bigint('slot', { mode: 'number' }).notNull(),
+    tradeId: varchar('trade_id', { length: 44 }),
+    action: varchar('action', { length: 50 }),
+    targetPlayer: varchar('target_player', { length: 44 }),
+    targetPlayerName: varchar('target_player_name', { length: 100 }),
+    offeredProperties: json('offered_properties').$type<number[]>(),
+    requestedProperties: json('requested_properties').$type<number[]>(),
+    offeredMoney: bigint('offered_money', { mode: 'number' }),
+    requestedMoney: bigint('requested_money', { mode: 'number' }),
+
+    fromPosition: smallint('from_position'),
+    toPosition: smallint('to_position'),
+    diceRoll: json('dice_roll').$type<[number, number]>(),
+    doublesCount: smallint('doubles_count'),
+    passedGo: boolean('passed_go'),
+
+    jailReason: varchar('jail_reason', { length: 20 }), // 'doubles' | 'go_to_jail' | 'card'
+    fineAmount: bigint('fine_amount', { mode: 'number' }),
+
+    buildingType: varchar('building_type', { length: 10 }), // 'house' | 'hotel'
+
+    taxType: varchar('tax_type', { length: 50 }),
+
+    // Source and metadata
     signature: varchar('signature', { length: 88 }),
+    error: text('error'),
+    slot: bigint('slot', { mode: 'number' }),
 
-    // Database metadata
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow()
+    // Timestamps
+    timestamp: bigint('timestamp', { mode: 'number' }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    accountCreatedAt: timestamp('account_created_at', { withTimezone: true }).defaultNow(),
+    accountUpdatedAt: timestamp('account_updated_at', { withTimezone: true }).defaultNow()
   },
   (table) => [
-    index('idx_game_event_game').on(table.game),
-    index('idx_game_event_player').on(table.player),
-    index('idx_game_event_type').on(table.eventType),
-    index('idx_game_event_timestamp').on(table.timestamp),
-    index('idx_game_event_slot').on(table.slot)
+    index('idx_game_logs_game_id').on(table.gameId),
+    index('idx_game_logs_player_id').on(table.playerId),
+    index('idx_game_logs_type').on(table.type),
+    index('idx_game_logs_timestamp').on(table.timestamp),
+    index('idx_game_logs_position').on(table.position),
+    index('idx_game_logs_created_at').on(table.createdAt)
   ]
 )
 
 // ==================== TYPES ====================
 
-// Enum Types
+export interface TradeInfo {
+  id: number // u8 in Rust
+  proposer: string // Pubkey as base58 string
+  receiver: string // Pubkey as base58 string
+  tradeType: InferEnum<typeof tradeTypeEnum> // TradeType enum
+  proposerMoney: number // u64
+  receiverMoney: number // u64
+  proposerProperty: number | null // Option<u8>
+  receiverProperty: number | null // Option<u8>
+  status: InferEnum<typeof tradeStatusEnum> // TradeStatus enum
+  createdAt: number // i64 timestamp
+  expiresAt: number // i64 timestamp
+}
+
+export interface EmbeddedPropertyState {
+  pubkey: string
+  game?: string
+  position: number
+  owner: string | null
+  price: number
+  colorGroup: InferEnum<typeof colorGroupEnum>
+  propertyType: InferEnum<typeof propertyTypeEnum>
+  houses: number
+  hasHotel: boolean
+  isMortgaged: boolean
+  rentBase: number
+  rentWithColorGroup: number
+  rentWithHouses: [number, number, number, number]
+  rentWithHotel: number
+  houseCost: number
+  mortgageValue: number
+  lastRentPaid: number
+  init: boolean
+  // Blockchain metadata
+  accountCreatedAt?: string | Date
+  accountUpdatedAt?: string | Date
+  createdSlot?: number
+  updatedSlot?: number
+  lastSignature?: string
+}
+
+export interface EmbeddedTradeState {
+  pubkey: string
+  game?: string
+  proposer: string
+  receiver: string
+  tradeType: InferEnum<typeof tradeTypeEnum>
+  proposerMoney: number
+  receiverMoney: number
+  proposerProperty: number | null
+  receiverProperty: number | null
+  status: InferEnum<typeof tradeStatusEnum>
+  createdAt: number
+  expiresAt: number
+  bump: number
+  // Blockchain metadata
+  accountCreatedAt?: string | Date
+  accountUpdatedAt?: string | Date
+  createdSlot?: number
+  updatedSlot?: number
+  lastSignature?: string
+}
+
 export type GameStatus = InferEnum<typeof gameStatusEnum>
 export type TradeStatus = InferEnum<typeof tradeStatusEnum>
 export type ColorGroup = InferEnum<typeof colorGroupEnum>
 export type PropertyType = InferEnum<typeof propertyTypeEnum>
 export type BuildingType = InferEnum<typeof buildingTypeEnum>
 export type TradeType = InferEnum<typeof tradeTypeEnum>
+export type GameLogType = InferEnum<typeof gameLogTypeEnum>
 
-// Table Types
+// Drizzle inferred types
+export type SyncComponent = InferEnum<typeof syncComponentEnum>
+export type SyncStatusType = InferEnum<typeof syncStatusTypeEnum>
+
 export type PlatformConfig = typeof platformConfigs.$inferSelect
 export type NewPlatformConfig = typeof platformConfigs.$inferInsert
 
-export type Game = typeof games.$inferSelect
-export type NewGame = typeof games.$inferInsert
+export type GameState = typeof gameStates.$inferSelect
+export type NewGameState = typeof gameStates.$inferInsert
 
-export type Player = typeof players.$inferSelect
-export type NewPlayer = typeof players.$inferInsert
+export type PlayerState = typeof playerStates.$inferSelect
+export type NewPlayerState = typeof playerStates.$inferInsert
 
-export type Property = typeof properties.$inferSelect
-export type NewProperty = typeof properties.$inferInsert
+export type PropertyState = EmbeddedPropertyState
+export type NewPropertyState = EmbeddedPropertyState
 
-export type Trade = typeof trades.$inferSelect
-export type NewTrade = typeof trades.$inferInsert
+export type TradeState = EmbeddedTradeState
+export type NewTradeState = EmbeddedTradeState
 
-export type Auction = typeof auctions.$inferSelect
-export type NewAuction = typeof auctions.$inferInsert
+export type EmbeddedProperty = EmbeddedPropertyState
+export type EmbeddedTrade = EmbeddedTradeState
 
-// Event Types
-export type ChanceCardEvent = typeof chanceCardEvents.$inferSelect
-export type NewChanceCardEvent = typeof chanceCardEvents.$inferInsert
-
-export type CommunityChestCardEvent = typeof communityChestCardEvents.$inferSelect
-export type NewCommunityChestCardEvent = typeof communityChestCardEvents.$inferInsert
-
-export type PlayerPassedGoEvent = typeof playerPassedGoEvents.$inferSelect
-export type NewPlayerPassedGoEvent = typeof playerPassedGoEvents.$inferInsert
-
-// Infrastructure Types
-export type ProcessingQueue = typeof processingQueue.$inferSelect
-export type NewProcessingQueue = typeof processingQueue.$inferInsert
+export type AuctionState = typeof auctionStates.$inferSelect
+export type NewAuctionState = typeof auctionStates.$inferInsert
 
 export type SyncStatusRecord = typeof syncStatus.$inferSelect
-export type NewSyncStatus = typeof syncStatus.$inferInsert
+export type NewSyncStatusRecord = typeof syncStatus.$inferInsert
 
-export type IntegratorConfig = typeof integratorConfigs.$inferSelect
-export type NewIntegratorConfig = typeof integratorConfigs.$inferInsert
+export type GameLog = typeof gameLogs.$inferSelect
+export type NewGameLog = typeof gameLogs.$inferInsert
 
-export type GameEvent = typeof gameEvents.$inferSelect
-export type NewGameEvent = typeof gameEvents.$inferInsert
+export interface GameLogEntry {
+  id: string
+  timestamp: number
+  type: GameLogType
+  playerId: string
+  playerName?: string
+  message: string
+  details?: {
+    // Property-related
+    propertyName?: string
+    position?: number
+    price?: number
+    owner?: string
+
+    // Card-related
+    cardType?: 'chance' | 'community-chest'
+    cardTitle?: string
+    cardDescription?: string
+    cardIndex?: number
+    effectType?: number
+    amount?: number
+
+    // Trade-related
+    tradeId?: string
+    action?: string
+    targetPlayer?: string
+    targetPlayerName?: string
+    offeredProperties?: number[]
+    requestedProperties?: number[]
+    offeredMoney?: number
+    requestedMoney?: number
+
+    // Movement-related
+    fromPosition?: number
+    toPosition?: number
+    diceRoll?: [number, number]
+    doublesCount?: number
+    passedGo?: boolean
+
+    // Jail-related
+    jailReason?: 'doubles' | 'go_to_jail' | 'card'
+    fineAmount?: number
+
+    // Building-related
+    buildingType?: 'house' | 'hotel'
+
+    // Tax-related
+    taxType?: string
+
+    // Source and error
+    signature?: string
+    error?: string
+  }
+}

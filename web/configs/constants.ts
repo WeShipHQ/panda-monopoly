@@ -1,4 +1,5 @@
 import { address } from "@solana/kit";
+import envConfig from "./env";
 
 export const DELEGATION_PROGRAM_ID = address(
   "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
@@ -20,7 +21,6 @@ export const PLATFORM_ID = address(
 export const MEV_TAX_POSITION = 4;
 export const PRIORITY_FEE_TAX_POSITION = 38;
 export const JAIL_FINE = 50;
-
 export const USE_VRF = false;
 
 export const PLAYER_COLORS = ["#00c8f0", "#ff4d50", "#ffbf00", "#00d696"];
