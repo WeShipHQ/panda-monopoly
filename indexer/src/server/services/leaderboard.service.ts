@@ -194,13 +194,17 @@ export class LeaderboardService {
 
       // Filter by minimum games (use provided filter or database-derived default)
       let filteredStats = playerStats
-      const minGamesFilter = filters.minGames && filters.minGames > 0 ? filters.minGames : defaultMinGames
+      const minGamesFilter = filters.minGames || queryDefaults.minGamesThreshold
       if (minGamesFilter > 0) {
         filteredStats = playerStats.filter((p) => p.totalGamesPlayed >= minGamesFilter)
       }
 
-      // Sort by win rate
-      filteredStats.sort((a, b) => b.winRate - a.winRate)
+      // Sort strictly by win rate with deterministic tie-breakers
+      filteredStats.sort((a, b) => {
+        if (b.winRate !== a.winRate) return b.winRate - a.winRate
+        if (b.totalGamesPlayed !== a.totalGamesPlayed) return b.totalGamesPlayed - a.totalGamesPlayed
+        return a.walletAddress.localeCompare(b.walletAddress)
+      })
 
       // Add ranks
       filteredStats = filteredStats.map((player, index) => ({
@@ -481,10 +485,12 @@ export class LeaderboardService {
         rankingBy === 'mostWins'
           ? 'ORDER BY total_games_won DESC, win_rate DESC, total_games_played DESC, wallet ASC'
           : rankingBy === 'highestEarnings'
-          ? 'ORDER BY total_earnings DESC, win_rate DESC, total_games_played DESC, wallet ASC'
-          : rankingBy === 'mostActive'
-          ? 'ORDER BY total_games_played DESC, win_rate DESC, total_games_won DESC, wallet ASC'
-          : 'ORDER BY leaderboard_score DESC, win_rate DESC, total_games_played DESC, wallet ASC'
+            ? 'ORDER BY total_earnings DESC, win_rate DESC, total_games_played DESC, wallet ASC'
+            : rankingBy === 'mostActive'
+              ? 'ORDER BY total_games_played DESC, win_rate DESC, total_games_won DESC, wallet ASC'
+              : rankingBy === 'combined'
+                ? 'ORDER BY leaderboard_score DESC, win_rate DESC, total_games_played DESC, wallet ASC'
+                : 'ORDER BY leaderboard_score DESC, win_rate DESC, total_games_played DESC, wallet ASC'
 
       // Build time range predicates for player_states and game_states
       let psWhere = ''
@@ -596,7 +602,12 @@ export class LeaderboardService {
             totalPropertiesOwned: Number(row.total_properties_owned) || 0,
             averageGameDuration: Number(row.avg_game_duration_min) || undefined,
             lastActiveDate: new Date(row.last_active).toISOString(),
-            leaderboardScore: Math.round(((Number(row.total_games_played) || 0) * activityWeight + ((Number(row.total_games_won) || 0) * successWeight)) * 100) / 100,
+            leaderboardScore:
+              Math.round(
+                ((Number(row.total_games_played) || 0) * activityWeight +
+                  (Number(row.total_games_won) || 0) * successWeight) *
+                  100
+              ) / 100,
             totalEarnings: roundSol((Number(row.total_earnings) || 0) / LAMPORTS_PER_SOL),
             unclaimedEarnings: roundSol((Number(row.total_unclaimed_earnings) || 0) / LAMPORTS_PER_SOL),
             rank: offset + idx + 1
@@ -709,7 +720,9 @@ export class LeaderboardService {
         }
       }
 
-      const playerStats = Array.from(playerStatsMap.values()).map((data) => {
+      const playerStats: Array<
+        PlayerStats & { leaderboardScore: number; totalEarnings: number; unclaimedEarnings: number }
+      > = Array.from(playerStatsMap.values()).map((data) => {
         const totalGames = data.gamesPlayed.size
 
         const validatedWins = Math.min(data.gamesWon, totalGames)
@@ -751,10 +764,33 @@ export class LeaderboardService {
       }
 
       filteredStats.sort((a, b) => {
-        if (b.leaderboardScore !== a.leaderboardScore) return b.leaderboardScore - a.leaderboardScore
-        if (b.winRate !== a.winRate) return b.winRate - a.winRate
-        if (b.totalGamesPlayed !== a.totalGamesPlayed) return b.totalGamesPlayed - a.totalGamesPlayed
-        return a.walletAddress.localeCompare(b.walletAddress)
+        switch (rankingBy) {
+          case 'mostWins':
+            if (b.totalGamesWon !== a.totalGamesWon) return b.totalGamesWon - a.totalGamesWon
+            if (b.winRate !== a.winRate) return b.winRate - a.winRate
+            if (b.totalGamesPlayed !== a.totalGamesPlayed) return b.totalGamesPlayed - a.totalGamesPlayed
+            return a.walletAddress.localeCompare(b.walletAddress)
+          case 'highestEarnings':
+            if (b.totalEarnings !== a.totalEarnings) return b.totalEarnings - a.totalEarnings
+            if (b.winRate !== a.winRate) return b.winRate - a.winRate
+            if (b.totalGamesPlayed !== a.totalGamesPlayed) return b.totalGamesPlayed - a.totalGamesPlayed
+            return a.walletAddress.localeCompare(b.walletAddress)
+          case 'mostActive':
+            if (b.totalGamesPlayed !== a.totalGamesPlayed) return b.totalGamesPlayed - a.totalGamesPlayed
+            if (b.winRate !== a.winRate) return b.winRate - a.winRate
+            if (b.totalGamesWon !== a.totalGamesWon) return b.totalGamesWon - a.totalGamesWon
+            return a.walletAddress.localeCompare(b.walletAddress)
+          case 'combined':
+            if (b.leaderboardScore !== a.leaderboardScore) return b.leaderboardScore - a.leaderboardScore
+            if (b.winRate !== a.winRate) return b.winRate - a.winRate
+            if (b.totalGamesPlayed !== a.totalGamesPlayed) return b.totalGamesPlayed - a.totalGamesPlayed
+            return a.walletAddress.localeCompare(b.walletAddress)
+          default:
+            if (b.leaderboardScore !== a.leaderboardScore) return b.leaderboardScore - a.leaderboardScore
+            if (b.winRate !== a.winRate) return b.winRate - a.winRate
+            if (b.totalGamesPlayed !== a.totalGamesPlayed) return b.totalGamesPlayed - a.totalGamesPlayed
+            return a.walletAddress.localeCompare(b.walletAddress)
+        }
       })
 
       const rankedStats = filteredStats.map((player, index) => ({ ...player, rank: index + 1 }))
