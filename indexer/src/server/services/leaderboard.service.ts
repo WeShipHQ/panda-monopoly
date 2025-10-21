@@ -6,6 +6,8 @@ const LAMPORTS_PER_SOL = 1_000_000_000
 // Round SOL to a fixed number of decimals (default 4)
 const roundSol = (value: number, decimals = 4): number =>
   Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals)
+import { buildCacheKey, getJsonCache, setJsonCache } from '#infra/cache/redis-cache'
+
 /**
  * Optimized scoring and calculation utilities
  */
@@ -470,6 +472,13 @@ export class LeaderboardService {
       const limit = Math.min(pagination.limit || 10, 50)
       const offset = (page - 1) * limit
 
+      // Cache lookup
+      const cacheKey = buildCacheKey('leaderboard:top-players', { filters, pagination: { page, limit } })
+      const cached = (await getJsonCache(cacheKey)) as PaginatedResult<
+        PlayerStats & { leaderboardScore: number; totalEarnings: number; unclaimedEarnings: number }
+      > | null
+      if (cached) return cached
+
       // Load dynamic defaults
       const queryDefaults = await this.getQueryDefaults()
       const minGames = filters.minGames ?? queryDefaults.minGamesThreshold
@@ -496,11 +505,13 @@ export class LeaderboardService {
       let psWhere = ''
       let gsWhere = 'WHERE gs.winner IS NOT NULL'
       let gsDurationTimeFilter = ''
+      let daysFilter: number | null = null
       if (filters.timeRange && filters.timeRange !== 'all') {
         const days = filters.timeRange === 'day' ? 1 : filters.timeRange === 'week' ? 7 : 30
+        daysFilter = days
         psWhere = `WHERE ps.account_updated_at >= NOW() - INTERVAL '${days} days'`
-        gsWhere = `WHERE gs.winner IS NOT NULL AND TO_TIMESTAMP(gs.created_at) >= NOW() - INTERVAL '${days} days'`
-        gsDurationTimeFilter = `WHERE TO_TIMESTAMP(gs.created_at) >= NOW() - INTERVAL '${days} days'`
+        gsWhere = `WHERE gs.winner IS NOT NULL AND (CASE WHEN gs.created_at >= 1000000000000 THEN TO_TIMESTAMP(gs.created_at / 1000.0) ELSE TO_TIMESTAMP(gs.created_at) END) >= NOW() - INTERVAL '${days} days'`
+        gsDurationTimeFilter = `WHERE (CASE WHEN gs.created_at >= 1000000000000 THEN TO_TIMESTAMP(gs.created_at / 1000.0) ELSE TO_TIMESTAMP(gs.created_at) END) >= NOW() - INTERVAL '${days} days'`
       }
 
       if (adapter?.rawQuery && adapter?.isConnected?.()) {
@@ -509,18 +520,18 @@ export class LeaderboardService {
             `WITH player_stats AS (
               SELECT ps.wallet,
                      COUNT(DISTINCT ps.game) AS total_games_played,
-                     SUM(CASE WHEN ps.cash_balance::numeric > 0 THEN 1 ELSE 0 END) AS total_games_won,
-                     SUM(CASE WHEN ps.cash_balance::numeric <= 0 THEN 1 ELSE 0 END) AS total_games_lost,
+                     /* games_won/lost computed from game_stats below */
                      AVG(ps.cash_balance::numeric) AS avg_cash,
                      MAX(ps.cash_balance::numeric) AS max_cash,
                      MIN(ps.cash_balance::numeric) AS min_cash,
-                     COUNT(ps.properties_owned) AS total_properties_owned,
+                     SUM(COALESCE(json_array_length(ps.properties_owned), 0)) AS total_properties_owned,
                      MAX(ps.account_updated_at) AS last_active
               FROM player_states ps
               ${psWhere}
               GROUP BY ps.wallet
             ), game_stats AS (
               SELECT gs.winner AS wallet,
+                     COUNT(*) AS total_games_won,
                      SUM(CASE WHEN gs.prize_claimed THEN gs.total_prize_pool ELSE 0 END) AS total_earnings,
                      SUM(CASE WHEN gs.prize_claimed = false THEN gs.total_prize_pool ELSE 0 END) AS total_unclaimed_earnings
               FROM game_states gs
@@ -529,8 +540,8 @@ export class LeaderboardService {
             ), combined AS (
               SELECT ps.wallet,
                      ps.total_games_played,
-                     ps.total_games_won,
-                     ps.total_games_lost,
+                     COALESCE(gs.total_games_won, 0) AS total_games_won,
+                     GREATEST(ps.total_games_played - COALESCE(gs.total_games_won, 0), 0) AS total_games_lost,
                      COALESCE(gs.total_earnings, 0) AS total_earnings,
                      COALESCE(gs.total_unclaimed_earnings, 0) AS total_unclaimed_earnings,
                      ps.avg_cash,
@@ -573,7 +584,6 @@ export class LeaderboardService {
                      avg_cash,
                      max_cash,
                      min_cash,
-                     median_cash,
                      total_properties_owned,
                      avg_game_duration_min,
                      last_active,
@@ -613,7 +623,17 @@ export class LeaderboardService {
             rank: offset + idx + 1
           }))
 
-          return { data, total, page, limit }
+          const payload = { data, total, page, limit }
+          const ttl =
+            filters.timeRange === 'day'
+              ? 30
+              : filters.timeRange === 'week'
+                ? 60
+                : filters.timeRange === 'month'
+                  ? 120
+                  : 300
+          await setJsonCache(cacheKey, payload, ttl)
+          return payload
         } catch (e) {
           console.warn('Raw SQL leaderboard query failed, falling back to in-memory aggregation:', e)
         }
@@ -625,6 +645,26 @@ export class LeaderboardService {
         this.getDynamicWinThreshold(),
         this.db.getGameStates({ gameStatus: 'Finished' }, { limit: 5000 })
       ])
+
+      // Apply timeRange filter for fallback paths
+      const filteredPlayerStates = (() => {
+        if (!daysFilter) return playerStates.data
+        const cutoff = Date.now() - daysFilter * 86400000
+        return playerStates.data.filter((ps: any) => {
+          const t = new Date(ps.accountUpdatedAt).getTime()
+          return Number.isFinite(t) && t >= cutoff
+        })
+      })()
+
+      const filteredFinishedGames = (() => {
+        if (!daysFilter) return finishedGames.data
+        const cutoff = Date.now() - daysFilter * 86400000
+        return finishedGames.data.filter((gs: any) => {
+          const created = Number(gs.createdAt ?? 0)
+          const createdMs = created < 1e12 ? created * 1000 : created
+          return createdMs >= cutoff
+        })
+      })()
 
       const playerStatsMap = new Map<
         string,
@@ -641,7 +681,7 @@ export class LeaderboardService {
 
       const gameWinTracker = new Map<string, { game: string; maxCash: number; playerId: string }>()
 
-      for (const player of playerStates.data) {
+      for (const player of filteredPlayerStates) {
         const playerId = player.wallet
         const cashBalance = Number(player.cashBalance || 0)
         const gameKey = `${playerId}-${player.game}`
@@ -687,7 +727,7 @@ export class LeaderboardService {
 
       // Build finished game durations map (minutes), normalizing seconds→ms if needed
       const gameDurations = new Map<string, number>()
-      for (const gs of finishedGames.data) {
+      for (const gs of filteredFinishedGames) {
         const start = Number((gs as any).startedAt ?? 0)
         const end = Number((gs as any).endedAt ?? 0)
         const gamePk = (gs as any).pubkey
@@ -799,7 +839,11 @@ export class LeaderboardService {
       const end = Math.min(start + limit, rankedStats.length)
       const paginated = rankedStats.slice(start, end)
 
-      return { data: paginated, total: rankedStats.length, page, limit }
+      const payload = { data: paginated, total: rankedStats.length, page, limit }
+      const ttl =
+        filters.timeRange === 'day' ? 30 : filters.timeRange === 'week' ? 60 : filters.timeRange === 'month' ? 120 : 300
+      await setJsonCache(cacheKey, payload, ttl)
+      return payload
     } catch (error) {
       throw new DatabaseError('Failed to get top players leaderboard', error as Error)
     }

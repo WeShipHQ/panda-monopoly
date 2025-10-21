@@ -1,7 +1,7 @@
 import { realtimeQueue, writerDlq, writerQueue, connection } from '#infra/queue/bull'
 import { startRealtimeListener } from '#app/listener.realtime'
 import { DrizzleAdapter } from '#infra/db/drizzle.adapter'
-import { startParserWorkers } from '#app/worker.parser'
+// import { startParserWorkers } from '#app/worker.parser'
 import { startWriterWorker } from '#app/worker.writer'
 import { startDlqReplayer } from '#app/worker.dlq'
 import { startEnrichmentWorker } from '#app/worker.enrichment'

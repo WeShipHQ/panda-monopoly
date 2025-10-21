@@ -24,7 +24,7 @@ import {
   type NewGameLog,
   type GameLogEntry
 } from './schema'
-import { env } from '#config'
+import { logger } from '#utils/logger'
 
 /**
  * PostgreSQL adapter implementation using Drizzle ORM with proper naming
@@ -48,13 +48,10 @@ export class DrizzleAdapter implements DatabasePort {
       min: 2, // Maintain minimum connections
       idleTimeoutMillis: 60000, // Increased idle timeout
       connectionTimeoutMillis: 15000, // Increased connection timeout
-      // Thêm các tùy chọn để tăng độ tin cậy
       application_name: 'monopoly-indexer',
       keepAlive: true,
       keepAliveInitialDelayMillis: 10000,
-      // Add query timeout (in milliseconds)
       query_timeout: 30000,
-      // Add statement timeout (in milliseconds)
       statement_timeout: 30000
     })
 
@@ -69,7 +66,7 @@ export class DrizzleAdapter implements DatabasePort {
     })
 
     this.pool.on('acquire', (client) => {
-      console.log('Database client acquired from pool')
+      logger.debug('Database client acquired from pool')
     })
 
     this.pool.on('remove', (client) => {
@@ -631,6 +628,135 @@ export class DrizzleAdapter implements DatabasePort {
       }
 
       throw new Error(`Failed to upsert player state ${playerState.pubkey}: ${errorMsg}`)
+    }
+  }
+
+  async bulkUpsertPlayerStates(states: NewPlayerState[]): Promise<void> {
+    if (!this.isConnected) {
+      console.warn('Database not connected, skipping bulk player states upsert for batch of:', states.length)
+      return
+    }
+    if (!Array.isArray(states) || states.length === 0) return
+
+    const batch = states.map((s) => this.processDateFields(s))
+
+    // Column order must match VALUES tuple order below
+    const columns = [
+      'pubkey',
+      'wallet',
+      'game',
+      'cash_balance',
+      'net_worth',
+      'position',
+      'in_jail',
+      'jail_turns',
+      'doubles_count',
+      'is_bankrupt',
+      'properties_owned',
+      'get_out_of_jail_cards',
+      'last_rent_collected',
+      'festival_boost_turns',
+      'has_rolled_dice',
+      'last_dice_roll',
+      'needs_property_action',
+      'pending_property_position',
+      'needs_chance_card',
+      'needs_community_chest_card',
+      'needs_bankruptcy_check',
+      'needs_special_space_action',
+      'pending_special_space_position',
+      'card_drawn_at',
+      'account_created_at',
+      'account_updated_at',
+      'created_slot',
+      'updated_slot',
+      'last_signature'
+    ]
+
+    // Build parameterized placeholders
+    const valuePlaceholders: string[] = []
+    const params: any[] = []
+    let p = 1
+    for (const row of batch) {
+      valuePlaceholders.push(`(${columns.map(() => `$${p++}`).join(', ')})`)
+      // push params in same order as columns
+      params.push(
+        (row as any).pubkey,
+        (row as any).wallet,
+        (row as any).game,
+        (row as any).cashBalance,
+        (row as any).netWorth,
+        (row as any).position,
+        (row as any).inJail,
+        (row as any).jailTurns,
+        (row as any).doublesCount,
+        (row as any).isBankrupt,
+        (row as any).propertiesOwned,
+        (row as any).getOutOfJailCards,
+        (row as any).lastRentCollected,
+        (row as any).festivalBoostTurns,
+        (row as any).hasRolledDice,
+        (row as any).lastDiceRoll,
+        (row as any).needsPropertyAction,
+        (row as any).pendingPropertyPosition ?? null,
+        (row as any).needsChanceCard,
+        (row as any).needsCommunityChestCard,
+        (row as any).needsBankruptcyCheck,
+        (row as any).needsSpecialSpaceAction,
+        (row as any).pendingSpecialSpacePosition ?? null,
+        (row as any).cardDrawnAt ?? null,
+        (row as any).accountCreatedAt,
+        (row as any).accountUpdatedAt,
+        (row as any).createdSlot,
+        (row as any).updatedSlot,
+        (row as any).lastSignature ?? null
+      )
+    }
+
+    const sql = `
+      INSERT INTO player_states (${columns.join(',')})
+      VALUES ${valuePlaceholders.join(',')}
+      ON CONFLICT (pubkey) DO UPDATE SET
+        wallet = EXCLUDED.wallet,
+        game = EXCLUDED.game,
+        cash_balance = EXCLUDED.cash_balance,
+        net_worth = EXCLUDED.net_worth,
+        position = EXCLUDED.position,
+        in_jail = EXCLUDED.in_jail,
+        jail_turns = EXCLUDED.jail_turns,
+        doubles_count = EXCLUDED.doubles_count,
+        is_bankrupt = EXCLUDED.is_bankrupt,
+        properties_owned = EXCLUDED.properties_owned,
+        get_out_of_jail_cards = EXCLUDED.get_out_of_jail_cards,
+        last_rent_collected = EXCLUDED.last_rent_collected,
+        festival_boost_turns = EXCLUDED.festival_boost_turns,
+        has_rolled_dice = EXCLUDED.has_rolled_dice,
+        last_dice_roll = EXCLUDED.last_dice_roll,
+        needs_property_action = EXCLUDED.needs_property_action,
+        pending_property_position = EXCLUDED.pending_property_position,
+        needs_chance_card = EXCLUDED.needs_chance_card,
+        needs_community_chest_card = EXCLUDED.needs_community_chest_card,
+        needs_bankruptcy_check = EXCLUDED.needs_bankruptcy_check,
+        needs_special_space_action = EXCLUDED.needs_special_space_action,
+        pending_special_space_position = EXCLUDED.pending_special_space_position,
+        card_drawn_at = EXCLUDED.card_drawn_at,
+        account_created_at = EXCLUDED.account_created_at,
+        account_updated_at = NOW(),
+        created_slot = EXCLUDED.created_slot,
+        updated_slot = EXCLUDED.updated_slot,
+        last_signature = EXCLUDED.last_signature;
+    `
+
+    try {
+      await this.pool.query(sql, params)
+    } catch (error) {
+      const errorMsg = this.formatDbError(error)
+      console.error(`Failed bulk upsert player states: ${errorMsg}`)
+      if ((error as any).code === 'ECONNREFUSED' || (error as any).code === 'ENOTFOUND') {
+        this.isConnected = false
+        return
+      }
+      throw new Error(`Failed bulk upsert player states: ${errorMsg}`)
     }
   }
 

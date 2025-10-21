@@ -428,55 +428,35 @@ async function syncGamePlayers(
   cachedSnapshots: PlayerStateSnapshot[] = [],
   propertySnapshots: PropertyStateSnapshot[] = []
 ) {
-  if (!Array.isArray(playerWallets) || playerWallets.length === 0) {
-    return
-  }
-
-  const gameKey = new PublicKey(gamePubkey)
   const programId = new PublicKey(env.solana.programId)
-  const snapshotsByPubkey = new Map<string, PlayerStateSnapshot>()
-  const snapshotsByWallet = new Map<string, PlayerStateSnapshot>()
+
+  // Build property positions by wallet for enrichment
   const propertyPositionsByWallet = new Map<string, Set<number>>()
-
-  for (const snapshot of cachedSnapshots) {
-    snapshotsByPubkey.set(snapshot.playerStatePubkey, snapshot)
-    if (snapshot.wallet && snapshot.wallet !== 'UNKNOWN') {
-      snapshotsByWallet.set(snapshot.wallet, snapshot)
-    }
-  }
-
   for (const snapshot of propertySnapshots) {
-    const owner = snapshot.data.owner
-    if (!owner || owner === 'UNKNOWN') continue
-    if (!propertyPositionsByWallet.has(owner)) {
-      propertyPositionsByWallet.set(owner, new Set<number>())
-    }
+    const owner = snapshot.data.owner ?? 'UNKNOWN'
+    if (!propertyPositionsByWallet.has(owner)) propertyPositionsByWallet.set(owner, new Set())
     propertyPositionsByWallet.get(owner)!.add(snapshot.position)
   }
 
+  // Prefetch existing player states for this game in one query
+  const existingStates = await db
+    .getPlayerStates({ game: gamePubkey }, { limit: 1000 })
+    .catch(() => ({ data: [], total: 0 }))
+  const existingMap = new Map<string, PlayerState>()
+  for (const s of existingStates.data) existingMap.set(s.pubkey, s)
+
+  const upserts: NewPlayerState[] = []
+
   for (const wallet of playerWallets) {
-    if (!wallet || wallet === 'UNKNOWN') continue
+    let playerStatePubkey = ''
+    const cached = cachedSnapshots.find((s) => s.wallet === wallet)
 
-    let walletKey: PublicKey
-    try {
-      walletKey = new PublicKey(wallet)
-    } catch (error) {
-      logger.warn(
-        { wallet, gamePubkey, error: error instanceof Error ? error.message : String(error) },
-        '⚠️ Invalid player wallet'
-      )
-      continue
-    }
-
-    const snapshotFromWallet = snapshotsByWallet.get(wallet)
-    let playerStatePubkey: string
-
-    if (snapshotFromWallet) {
-      playerStatePubkey = snapshotFromWallet.playerStatePubkey
+    if (cached?.playerStatePubkey) {
+      playerStatePubkey = cached.playerStatePubkey
     } else {
       try {
         const [playerPda] = PublicKey.findProgramAddressSync(
-          [Buffer.from('player'), gameKey.toBuffer(), walletKey.toBuffer()],
+          [Buffer.from('player'), new PublicKey(gamePubkey).toBuffer(), new PublicKey(wallet).toBuffer()],
           programId
         )
         playerStatePubkey = playerPda.toBase58()
@@ -490,21 +470,13 @@ async function syncGamePlayers(
     }
 
     try {
-      const cached = snapshotsByPubkey.get(playerStatePubkey)
-      const enhancedPlayerData = cached?.data ?? (await blockchainFetcher.fetchEnhancedPlayerData(playerStatePubkey))
+      const snapshot = cachedSnapshots.find((s) => s.playerStatePubkey === playerStatePubkey)
+      const enhancedPlayerData = snapshot?.data ?? (await blockchainFetcher.fetchEnhancedPlayerData(playerStatePubkey))
 
       if (!enhancedPlayerData) {
         logger.warn({ playerStatePubkey, wallet, gamePubkey }, '⚠️ Skipping player sync - enhanced data unavailable')
         continue
       }
-
-      const existing = await db.getPlayerState(playerStatePubkey).catch((error: unknown) => {
-        logger.warn(
-          { error: error instanceof Error ? error.message : String(error), playerStatePubkey, gamePubkey },
-          '⚠️ Failed to load existing player state before sync'
-        )
-        return null
-      })
 
       const extraPositions = new Set<number>()
       const normalizedWallet =
@@ -515,13 +487,13 @@ async function syncGamePlayers(
       }
 
       const upsertRecord = toPlayerStateRecord(
-        existing,
+        existingMap.get(playerStatePubkey) ?? null,
         playerStatePubkey,
         enhancedPlayerData,
         gamePubkey,
         Array.from(extraPositions)
       )
-      await db.upsertPlayerState(upsertRecord)
+      upserts.push(upsertRecord)
 
       logger.debug(
         {
@@ -530,7 +502,7 @@ async function syncGamePlayers(
           gamePubkey,
           propertiesOwned: upsertRecord.propertiesOwned.length
         },
-        '👤 Synced player state from game enrichment'
+        '👤 Prepared player state for batch sync'
       )
     } catch (error: unknown) {
       logger.error(
@@ -539,8 +511,24 @@ async function syncGamePlayers(
           gamePubkey,
           wallet
         },
-        '❌ Failed to sync player from game update'
+        '❌ Failed to prepare player for game update'
       )
+    }
+  }
+
+  if (upserts.length > 0) {
+    try {
+      await db.bulkUpsertPlayerStates(upserts)
+      logger.debug({ gamePubkey, count: upserts.length }, '✅ Bulk upserted player states')
+    } catch (err: unknown) {
+      logger.error({ gamePubkey, err }, '❌ Bulk upsert failed, falling back to individual upserts')
+      for (const rec of upserts) {
+        try {
+          await db.upsertPlayerState(rec)
+        } catch (e) {
+          logger.error({ pubkey: rec.pubkey, e }, '❌ Failed individual upsert after bulk failure')
+        }
+      }
     }
   }
 }
