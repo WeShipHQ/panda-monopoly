@@ -135,14 +135,14 @@ export class DrizzleAdapter implements DatabasePort {
 
         if (retryCount < maxRetries) {
           console.log(`Retrying in ${retryDelay}ms...`)
-          await new Promise(resolve => setTimeout(resolve, retryDelay))
+          await new Promise((resolve) => setTimeout(resolve, retryDelay))
           continue
         }
 
         // Nếu đã thử hết số lần retry, log lỗi và tiếp tục mà không có DB
         console.warn(`⚠️ Database connection failed after ${maxRetries} attempts, continuing without DB`)
         console.warn('Error details:', errorMsg)
-        
+
         // Kiểm tra các vấn đề phổ biến và đưa ra gợi ý
         if ((error as any).code === 'ECONNREFUSED' || (error as any).code === 'ENOTFOUND') {
           console.warn('💡 Connection refused/not found. Please check:')
@@ -151,7 +151,7 @@ export class DrizzleAdapter implements DatabasePort {
           console.warn('   - Supabase project is active and not paused')
           console.warn('   - Firewall/proxy settings allow database connections')
         }
-        
+
         if (errorMsg.includes('timeout')) {
           console.warn('💡 Connection timeout. Consider:')
           console.warn('   - Increasing connectionTimeoutMillis in pool config')
@@ -177,14 +177,14 @@ export class DrizzleAdapter implements DatabasePort {
     } catch (error: any) {
       const errorMsg = this.formatDbError(error)
       console.error('Database query failed:', errorMsg)
-      
+
       // Check if it's a connection error and mark as disconnected
       if (error?.code === 'ECONNREFUSED' || error?.code === 'ENOTFOUND') {
         console.warn('Database connection lost, marking as disconnected')
         this.isConnected = false
         return []
       }
-      
+
       // Nếu lỗi kết nối bị từ chối, thử chuyển sang endpoint direct 5432 và retry
       if (error?.name === 'AggregateError') {
         const fallbackUrl = this.buildDirectSupabaseUrl(process.env.DATABASE_URL)
@@ -259,13 +259,13 @@ export class DrizzleAdapter implements DatabasePort {
     } catch (error) {
       const errorMsg = this.formatDbError(error)
       console.error(`Failed to upsert platform config: ${errorMsg}`)
-      
+
       // Check if it's a connection error
       if ((error as any).code === 'ECONNREFUSED' || (error as any).code === 'ENOTFOUND') {
         this.isConnected = false
         return
       }
-      
+
       throw new Error(`Failed to upsert platform config ${config.pubkey}: ${errorMsg}`)
     }
   }
@@ -282,13 +282,13 @@ export class DrizzleAdapter implements DatabasePort {
     } catch (error) {
       const errorMsg = this.formatDbError(error)
       console.error(`Failed to get platform config: ${errorMsg}`)
-      
+
       // Check if it's a connection error
       if ((error as any).code === 'ECONNREFUSED' || (error as any).code === 'ENOTFOUND') {
         this.isConnected = false
         return null
       }
-      
+
       throw new Error(`Failed to get platform config ${pubkey}: ${errorMsg}`)
     }
   }
@@ -419,12 +419,7 @@ export class DrizzleAdapter implements DatabasePort {
         })
         const tsFallback = (() => {
           const t = processedGameState.turnStartedAt as number
-          if (
-            typeof t === 'number' &&
-            Number.isFinite(t) &&
-            t >= PG_BIGINT_MIN &&
-            t <= PG_BIGINT_MAX
-          ) {
+          if (typeof t === 'number' && Number.isFinite(t) && t >= PG_BIGINT_MIN && t <= PG_BIGINT_MAX) {
             return t
           }
           return Date.now()
@@ -480,14 +475,14 @@ export class DrizzleAdapter implements DatabasePort {
     } catch (error) {
       const errorMsg = this.formatDbError(error)
       console.error(`Error details for game state ${gameState.pubkey}:`, errorMsg)
-      
+
       // Check if it's a connection error and mark as disconnected
       if ((error as any).code === 'ECONNREFUSED' || (error as any).code === 'ENOTFOUND') {
         console.warn('Database connection lost during game state upsert, marking as disconnected')
         this.isConnected = false
         return
       }
-      
+
       // Ghi log lỗi nhưng không dừng quá trình xử lý
       console.warn(`⚠️ Failed to upsert game state ${gameState.pubkey}, continuing with processing: ${errorMsg}`)
     }
@@ -628,13 +623,13 @@ export class DrizzleAdapter implements DatabasePort {
     } catch (error) {
       const errorMsg = this.formatDbError(error)
       console.error(`Failed to upsert player state: ${errorMsg}`)
-      
+
       // Check if it's a connection error
       if ((error as any).code === 'ECONNREFUSED' || (error as any).code === 'ENOTFOUND') {
         this.isConnected = false
         return
       }
-      
+
       throw new Error(`Failed to upsert player state ${playerState.pubkey}: ${errorMsg}`)
     }
   }
@@ -651,13 +646,13 @@ export class DrizzleAdapter implements DatabasePort {
     } catch (error) {
       const errorMsg = this.formatDbError(error)
       console.error(`Failed to get player state: ${errorMsg}`)
-      
+
       // Check if it's a connection error
       if ((error as any).code === 'ECONNREFUSED' || (error as any).code === 'ENOTFOUND') {
         this.isConnected = false
         return null
       }
-      
+
       throw new Error(`Failed to get player state ${pubkey}: ${errorMsg}`)
     }
   }
@@ -892,13 +887,13 @@ export class DrizzleAdapter implements DatabasePort {
     } catch (error) {
       const errorMsg = this.formatDbError(error)
       console.error(`Failed to upsert auction state: ${errorMsg}`)
-      
+
       // Check if it's a connection error
       if ((error as any).code === 'ECONNREFUSED' || (error as any).code === 'ENOTFOUND') {
         this.isConnected = false
         return
       }
-      
+
       throw new Error(`Failed to upsert auction state ${auctionState.pubkey}: ${errorMsg}`)
     }
   }
@@ -915,13 +910,13 @@ export class DrizzleAdapter implements DatabasePort {
     } catch (error) {
       const errorMsg = this.formatDbError(error)
       console.error(`Failed to get auction state: ${errorMsg}`)
-      
+
       // Check if it's a connection error
       if ((error as any).code === 'ECONNREFUSED' || (error as any).code === 'ENOTFOUND') {
         this.isConnected = false
         return null
       }
-      
+
       throw new Error(`Failed to get auction state ${pubkey}: ${errorMsg}`)
     }
   }
@@ -1155,7 +1150,8 @@ export class DrizzleAdapter implements DatabasePort {
               turn_started_at, time_limit, bank_balance, free_parking_pool, 
               houses_remaining, hotels_remaining, winner, next_trade_id,
               account_created_at, account_updated_at, created_slot, updated_slot, last_signature,
-              started_at, ended_at, game_end_time
+              started_at, ended_at, game_end_time,
+              entry_fee, total_prize_pool, token_mint, token_vault, prize_claimed
             FROM game_states
             ${whereSql}
             ${orderByClause}
