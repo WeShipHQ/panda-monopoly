@@ -46,9 +46,10 @@ async function createServer(db: DatabasePort) {
 
   // Enable CORS for cross-origin requests
   await server.register(Cors, {
-    origin: env.isDevelopment ? true : false,
+    origin: env.isDevelopment ? true : ['https://www.pandatown.fun', 'http://localhost:3000'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key']
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
+    credentials: true
   })
 
   // Add overload protection and health monitoring
