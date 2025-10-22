@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { fetchTopPlayers, fetchAnalytics, type RankingBy, type TimeRange, type TopPlayerItem, type GameAnalytics } from "@/services/leaderboard";
+import env from "@/configs/env";
 
 interface UseRealtimeLeaderboardOptions {
   rankingBy: RankingBy;
@@ -24,7 +25,7 @@ export function useRealtimeLeaderboard({
   rankingBy,
   timeRange,
   enabled = true,
-  pollingInterval = 30000, // 30 seconds default
+  pollingInterval,
 }: UseRealtimeLeaderboardOptions): UseRealtimeLeaderboardReturn {
   const [players, setPlayers] = useState<TopPlayerItem[]>([]);
   const [analytics, setAnalytics] = useState<GameAnalytics | null>(null);
@@ -33,8 +34,30 @@ export function useRealtimeLeaderboard({
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const pollIntervalMs = typeof pollingInterval === "number"
+    ? pollingInterval
+    : (env.NEXT_PUBLIC_LEADERBOARD_POLL_INTERVAL_MS ?? 60000);
+  const pollOffsetMs = env.NEXT_PUBLIC_LEADERBOARD_POLL_OFFSET_MS ?? 5000; 
+  const scheduleNext = useCallback(() => {
+    if (!enabled || pollIntervalMs <= 0) return;
+
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    const now = Date.now();
+    const remainder = now % pollIntervalMs;
+    let delay = pollIntervalMs - remainder + pollOffsetMs;
+    if (delay < 0) delay += pollIntervalMs;
+
+    timerRef.current = setTimeout(async () => {
+      await fetchData(false);
+      scheduleNext();
+    }, delay);
+  }, [enabled, pollIntervalMs, pollOffsetMs]);
 
   const fetchData = useCallback(async (isInitial = false) => {
     if (!enabled) return;
@@ -70,7 +93,6 @@ export function useRealtimeLeaderboard({
       if (err instanceof Error && err.name === 'AbortError') {
         return; // Request was cancelled, ignore
       }
-      
       console.error("Failed to fetch leaderboard data:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch data");
       setIsConnected(false);
@@ -88,75 +110,49 @@ export function useRealtimeLeaderboard({
   // Initial fetch
   useEffect(() => {
     if (enabled) {
-      fetchData(true);
+      fetchData(true).then(() => scheduleNext());
     }
-  }, [fetchData, enabled]);
-
-  // Setup polling
-  useEffect(() => {
-    if (!enabled || pollingInterval <= 0) {
-      return;
-    }
-
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-
-    // Set up new interval
-    intervalRef.current = setInterval(() => {
-      fetchData(false);
-    }, pollingInterval);
-
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
       }
     };
-  }, [fetchData, enabled, pollingInterval]);
+  }, [fetchData, enabled, scheduleNext]);
 
-  
+  // Align polling with page visibility
+  useEffect(() => {
+    if (!enabled) return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+          timerRef.current = null;
+        }
+        setIsConnected(false);
+      } else {
+        setIsConnected(true);
+        fetchData(false).then(() => scheduleNext());
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [enabled, scheduleNext, fetchData]);
+
   useEffect(() => {
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
       }
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
     };
   }, []);
-
-  useEffect(() => {
-    if (!enabled) return;
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-    
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        setIsConnected(false);
-      } else {
-    
-        setIsConnected(true);
-        fetchData(false);
-        
-        if (pollingInterval > 0) {
-          intervalRef.current = setInterval(() => {
-            fetchData(false);
-          }, pollingInterval);
-        }
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [enabled, pollingInterval, fetchData]);
 
   return {
     players,

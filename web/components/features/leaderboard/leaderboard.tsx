@@ -9,6 +9,7 @@ import { useRealtimeLeaderboard } from "@/hooks/use-realtime-leaderboard";
 import { type RankingBy, type TimeRange, type TopPlayerItem } from "@/services/leaderboard";
 import { formatAddress } from "@/lib/utils";
 import { getRandomAvatarByAddress } from "@/lib/avatar-utils";
+import env from "@/configs/env";
 
 export type LeaderboardTimeframe = "all" | "week" | "month";
 export type LeaderboardMetric = "wins" | "earnings" | "games_played";
@@ -44,7 +45,16 @@ function metricToRankingBy(metric: LeaderboardMetric): RankingBy {
 }
 
 function timeframeToTimeRange(timeframe: LeaderboardTimeframe): TimeRange {
-  return timeframe;
+  switch (timeframe) {
+    case "week":
+      return "week";
+    case "month":
+      return "month";
+    case "all":
+      return "all";
+    default:
+      return "all";
+  }
 }
 
 function mapTopPlayerToStats(item: TopPlayerItem): PlayerStats {
@@ -88,7 +98,7 @@ export function Leaderboard() {
     rankingBy,
     timeRange,
     enabled: true,
-    pollingInterval: 30000, // 30 seconds
+    pollingInterval: env.NEXT_PUBLIC_LEADERBOARD_POLL_INTERVAL_MS,
   });
 
   const players = useMemo(() => rawPlayers.map(mapTopPlayerToStats), [rawPlayers]);

@@ -83,7 +83,7 @@ export function PlayerProfileModal({ player, isOpen, onClose }: PlayerProfileMod
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto sm:p-6 p-4 space-y-6">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto sm:p-6 p-4 space-y-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <Avatar className="w-12 h-12">
@@ -114,26 +114,42 @@ export function PlayerProfileModal({ player, isOpen, onClose }: PlayerProfileMod
         </DialogHeader>
 
         {/* Custom Tab Navigation */}
-        <div className="flex items-center gap-2 bg-muted/60 p-2 rounded-lg">
+        <div className="flex items-center gap-1 bg-muted/40 p-1.5 rounded-xl border border-border/50">
           <button
             onClick={() => setActiveTab("stats")}
-            className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors border cursor-pointer ${
+            className={`flex-1 px-4 py-3 text-sm font-semibold rounded-lg transition-all duration-300 cursor-pointer relative overflow-hidden group min-w-0 ${
               activeTab === "stats" 
-                ? "bg-background text-foreground shadow-sm border-border" 
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border-transparent"
+                ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 border-2 border-blue-400/50 transform scale-[1.02]" 
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/70 border-2 border-transparent hover:border-muted-foreground/20 hover:shadow-md"
             }`}
           >
-            Statistics
+            <span className="relative z-10 flex items-center justify-center gap-2 whitespace-nowrap">
+              <TrendingUp className={`w-4 h-4 transition-transform duration-300 flex-shrink-0 ${
+                activeTab === "stats" ? "scale-110" : "group-hover:scale-105"
+              }`} />
+              <span className="truncate">Statistics</span>
+            </span>
+            {activeTab === "stats" && (
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 animate-pulse" />
+            )}
           </button>
           <button
             onClick={() => setActiveTab("achievements")}
-            className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors border cursor-pointer ${
+            className={`flex-1 px-4 py-3 text-sm font-semibold rounded-lg transition-all duration-300 cursor-pointer relative overflow-hidden group min-w-0 ${
               activeTab === "achievements" 
-                ? "bg-background text-foreground shadow-sm border-border" 
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border-transparent"
+                ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25 border-2 border-amber-400/50 transform scale-[1.02]" 
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/70 border-2 border-transparent hover:border-muted-foreground/20 hover:shadow-md"
             }`}
           >
-            Achievements
+            <span className="relative z-10 flex items-center justify-center gap-2 whitespace-nowrap">
+              <Trophy className={`w-4 h-4 transition-transform duration-300 flex-shrink-0 ${
+                activeTab === "achievements" ? "scale-110" : "group-hover:scale-105"
+              }`} />
+              <span className="truncate">Achievements</span>
+            </span>
+            {activeTab === "achievements" && (
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 to-orange-500/20 animate-pulse" />
+            )}
           </button>
         </div>
 
@@ -217,11 +233,11 @@ export function PlayerProfileModal({ player, isOpen, onClose }: PlayerProfileMod
                 <CardContent className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
                      <span>Average Cash Balance</span>
-                     <span className="font-semibold">{player.averageCashBalance.toFixed(2)} SOL</span>
+                     <span className="font-semibold">{player.averageCashBalance.toFixed(2)}</span>
                    </div>
                   <div className="flex items-center justify-between text-sm">
                      <span>Highest Cash Balance</span>
-                     <span className="font-semibold">{player.highestCashBalance.toFixed(2)} SOL</span>
+                     <span className="font-semibold">{player.highestCashBalance.toFixed(2)}</span>
                    </div>
                   <div className="flex items-center justify-between text-sm">
                      <span>Properties Owned</span>
