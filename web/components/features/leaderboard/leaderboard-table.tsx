@@ -10,9 +10,10 @@ interface LeaderboardTableProps {
   players: PlayerStats[];
   metric: LeaderboardMetric;
   timeframe: LeaderboardTimeframe;
+  onPlayerClick?: (player: PlayerStats) => void;
 }
 
-export function LeaderboardTable({ players, metric, timeframe }: LeaderboardTableProps) {
+export function LeaderboardTable({ players, metric, timeframe, onPlayerClick }: LeaderboardTableProps) {
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
@@ -93,7 +94,8 @@ export function LeaderboardTable({ players, metric, timeframe }: LeaderboardTabl
           {players.map((player, index) => (
             <div
               key={player.id}
-              className={`flex items-center gap-4 p-4 rounded-lg border-2 transition-all hover:shadow-md ${
+              onClick={() => onPlayerClick?.(player)}
+              className={`flex items-center gap-4 p-4 rounded-lg border-2 transition-all hover:shadow-md cursor-pointer ${
                 index < 3 ? "bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200" : "bg-secondary-background border-border"
               }`}
             >

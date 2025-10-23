@@ -31,6 +31,15 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  async rewrites() {
+    const origin = process.env.NEXT_PUBLIC_INDEXER_API_URL || "http://localhost:8080";
+    return [
+      {
+        source: "/api/leaderboard/:path*",
+        destination: `${origin}/api/leaderboard/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

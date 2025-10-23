@@ -94,6 +94,11 @@ export interface DatabasePort {
   getPlayerStates(filters?: QueryFilters, pagination?: PaginationOptions): Promise<PaginatedResult<PlayerState>>
 
   /**
+   * Bulk upsert player states to reduce write pressure
+   */
+  bulkUpsertPlayerStates(playerStates: NewPlayerState[]): Promise<void>
+
+  /**
    * Property state operations - mirrors PropertyState blockchain accounts
    */
   upsertPropertyState(propertyState: NewPropertyState): Promise<void>

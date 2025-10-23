@@ -2,18 +2,18 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Trophy, TrendingUp, Clock } from "lucide-react";
-import { PlayerStats } from "./leaderboard";
+import type { GameAnalytics } from "@/services/leaderboard";
 
 interface LeaderboardStatsProps {
-  players: PlayerStats[];
+  analytics: GameAnalytics | null;
 }
 
-export function LeaderboardStats({ players }: LeaderboardStatsProps) {
-  const totalPlayers = players.length;
-  const totalGames = players.reduce((sum, player) => sum + player.totalGames, 0);
-  const totalEarnings = players.reduce((sum, player) => sum + player.totalEarnings, 0);
-  const averageWinRate = players.reduce((sum, player) => sum + player.winRate, 0) / players.length;
-  const averageGameTime = players.reduce((sum, player) => sum + player.averageGameTime, 0) / players.length;
+export function LeaderboardStats({ analytics }: LeaderboardStatsProps) {
+  const totalPlayers = analytics?.totalPlayers ?? 0;
+  const totalGames = analytics?.totalGames ?? 0;
+  const totalEarnings = analytics?.combinedPlayerEarnings ?? 0;
+  const averagePlayersPerGame = analytics?.averagePlayersPerGame ?? 0;
+  const averageGameDuration = analytics?.averageGameDuration ?? 0;
 
   const stats = [
     {
@@ -27,7 +27,7 @@ export function LeaderboardStats({ players }: LeaderboardStatsProps) {
       title: "Games Played",
       value: totalGames.toLocaleString(),
       icon: Trophy,
-      description: "Total games completed",
+      description: `${averagePlayersPerGame.toFixed(1)} avg players/game`,
       color: "text-green-500",
     },
     {
@@ -39,9 +39,9 @@ export function LeaderboardStats({ players }: LeaderboardStatsProps) {
     },
     {
       title: "Avg Game Time",
-      value: `${Math.round(averageGameTime)}m`,
+      value: `${Math.round(averageGameDuration)}m`,
       icon: Clock,
-      description: `${averageWinRate.toFixed(1)}% avg win rate`,
+      description: "Average duration of completed games",
       color: "text-purple-500",
     },
   ];

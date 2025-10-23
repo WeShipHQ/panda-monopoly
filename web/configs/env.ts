@@ -14,6 +14,11 @@ const configSchema = z.object({
   NEXT_PUBLIC_AUTH_ID_PRIVY: z.string(),
   NEXT_PUBLIC_AUTH_PRIVATE_KEY_PRIVY: z.string(),
 
+  NEXT_PUBLIC_LEADERBOARD_POLL_INTERVAL_MS: z
+    .preprocess((v) => (v === undefined ? undefined : Number(v)), z.number().optional()),
+  NEXT_PUBLIC_LEADERBOARD_POLL_OFFSET_MS: z
+    .preprocess((v) => (v === undefined ? undefined : Number(v)), z.number().optional()),
+
   IS_DEVELOPMENT: z.boolean(),
 });
 
@@ -33,6 +38,11 @@ const configProject = configSchema.safeParse({
   NEXT_PUBLIC_AUTH_ID_PRIVY: process.env.NEXT_PUBLIC_AUTH_ID_PRIVY,
   NEXT_PUBLIC_AUTH_PRIVATE_KEY_PRIVY:
     process.env.NEXT_PUBLIC_AUTH_PRIVATE_KEY_PRIVY,
+
+  NEXT_PUBLIC_LEADERBOARD_POLL_INTERVAL_MS:
+    process.env.NEXT_PUBLIC_LEADERBOARD_POLL_INTERVAL_MS,
+  NEXT_PUBLIC_LEADERBOARD_POLL_OFFSET_MS:
+    process.env.NEXT_PUBLIC_LEADERBOARD_POLL_OFFSET_MS,
 
   IS_DEVELOPMENT: process.env.NODE_ENV === "development",
 });
