@@ -62,6 +62,7 @@ const GameAnalyticsSchema = z.object({
       totalRevenue: z.number(),
     })
   ),
+  totalPrizePool: z.number(),
   totalEarnings: z.number(),
   combinedPlayerEarnings: z.number(),
   unclaimedPlayerEarnings: z.number(),
