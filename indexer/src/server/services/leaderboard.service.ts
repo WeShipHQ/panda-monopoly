@@ -84,6 +84,7 @@ export interface GameAnalytics {
   readonly mostPopularTimeSlot?: string
   readonly topProperties: PropertyStats[]
   // Earnings analytics
+  readonly totalPrizePool: number
   readonly totalEarnings: number
   readonly combinedPlayerEarnings: number
   readonly unclaimedPlayerEarnings: number
@@ -357,6 +358,8 @@ export class LeaderboardService {
         ? Math.round((finishedDurationsMin.reduce((a, b) => a + b, 0) / finishedDurationsMin.length) * 100) / 100
         : 0
 
+      const totalPrizePoolSol = games.data.reduce((sum, g) => sum + Number(g.totalPrizePool || 0), 0) / LAMPORTS_PER_SOL
+
       // Earnings: sum of prize pools for finished and claimed games (lamports)
       const claimedPrizeLamports = games.data
         .filter((g) => g.gameStatus === 'Finished' && g.prizeClaimed)
@@ -381,6 +384,7 @@ export class LeaderboardService {
         averagePlayersPerGame: Math.round(averagePlayersPerGame * 100) / 100,
         averageGameDuration,
         topProperties: [], // Would need property purchase data
+        totalPrizePool: roundSol(totalPrizePoolSol),
         totalEarnings: roundSol(claimedPrizeSol),
         combinedPlayerEarnings: roundSol(combinedPlayerEarnings),
         unclaimedPlayerEarnings: roundSol(unclaimedPrizeSol)

@@ -48,6 +48,7 @@ const GameAnalyticsSchema = Type.Object({
     })
   ),
   // New analytics fields
+  totalPrizePool: Type.Number(),
   totalEarnings: Type.Number(),
   combinedPlayerEarnings: Type.Number(),
   unclaimedPlayerEarnings: Type.Number()
@@ -124,9 +125,7 @@ export default async function leaderboardRoutes(fastify: FastifyInstance) {
             averageGameDuration: Type.Optional(Type.Number()),
             lastActiveDate: Type.String(),
             leaderboardScore: Type.Number(),
-            // New field: total earnings won by player across finished games
             totalEarnings: Type.Number(),
-            // New field: total unclaimed prize from finished games won
             unclaimedEarnings: Type.Number(),
             rank: Type.Optional(Type.Number())
           })

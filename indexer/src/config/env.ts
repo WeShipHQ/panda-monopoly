@@ -43,6 +43,7 @@ const schema = Type.Object({
 
   // Indexer
   REALTIME_ENABLED: Type.Boolean({ default: true }),
+  BLOCKCHAIN_SYNC_INTERVAL_MINUTES: Type.Number({ default: 3 }),
 
   // DLQ replayer
   DLQ_MAX_REPLAYS: Type.Number({ default: 3 }),
@@ -179,7 +180,8 @@ const env = {
   },
 
   indexer: {
-    realtimeEnabled: raw.REALTIME_ENABLED
+    realtimeEnabled: raw.REALTIME_ENABLED,
+    syncIntervalMinutes: raw.BLOCKCHAIN_SYNC_INTERVAL_MINUTES
   },
 
   dlq: {
