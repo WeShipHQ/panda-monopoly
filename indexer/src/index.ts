@@ -35,6 +35,7 @@ async function main() {
   const enrichmentWorker = startEnrichmentWorker(db)
   const syncService = new BlockchainSyncService(db)
   let syncInProgress = false
+
   const runBlockchainSync = async () => {
     if (syncInProgress) {
       logger.warn('Blockchain sync already running, skipping scheduled run')
@@ -53,7 +54,8 @@ async function main() {
     }
   }
 
-  let blockchainSyncTimer: NodeJS.Timeout | null = setInterval(runBlockchainSync, 3 * 60 * 1000)
+  const syncIntervalMinutes = Math.max(1, Number(env.indexer.syncIntervalMinutes ?? 3))
+  let blockchainSyncTimer: NodeJS.Timeout | null = setInterval(runBlockchainSync, syncIntervalMinutes * 60 * 1000)
 
   const stopQueuePoller = startQueueMetricsPoller({
     realtime: realtimeQueue,
@@ -118,18 +120,21 @@ async function main() {
       rpcPool.destroy()
 
       try {
-        await db.pool.end()
-      } catch (err) {
-        logger.warn(err, 'Database pool already closed')
-      }
-      try {
         await connection.quit()
       } catch (err) {
-        logger.warn(err, 'Redis connection already closed')
+        logger.warn(err, 'Error closing Redis connection')
       }
+
+      try {
+        await fastify.close()
+      } catch (err) {
+        logger.warn(err, 'Error closing API server')
+      }
+
+      logger.info('Indexer shutdown complete')
       process.exit(0)
-    } catch (e) {
-      logger.error(e, 'Error during shutdown')
+    } catch (error) {
+      logger.error({ error }, 'Indexer shutdown failed')
       process.exit(1)
     }
   }
@@ -139,6 +144,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  logger.error(err)
+  logger.error({ err }, 'Fatal error in indexer main')
   process.exit(1)
 })
