@@ -11,7 +11,7 @@ interface LeaderboardStatsProps {
 export function LeaderboardStats({ analytics }: LeaderboardStatsProps) {
   const totalPlayers = analytics?.totalPlayers ?? 0;
   const totalGames = analytics?.totalGames ?? 0;
-  const totalEarnings = analytics?.combinedPlayerEarnings ?? 0;
+  const totalEarnings = analytics?.totalPrizePool ?? 0;
   const averagePlayersPerGame = analytics?.averagePlayersPerGame ?? 0;
   const averageGameDuration = analytics?.averageGameDuration ?? 0;
 
